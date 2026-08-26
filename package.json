@@ -1,0 +1,19 @@
+{
+  "name": "plotpilot-pluginized",
+  "private": true,
+  "version": "0.1.0",
+  "description": "PlotPilot pluginized integration workspace",
+  "packageManager": "pnpm@11.7.0",
+  "engines": {
+    "node": "24.18.0",
+    "pnpm": "11.7.0"
+  },
+  "scripts": {
+    "contracts:python": "python tools/integration/verify_contracts.py --all",
+    "contracts:node": "node tools/integration/verify_contracts.mjs --all",
+    "contracts:cross": "python tools/integration/verify_cross_language_goldens.py",
+    "webui": "pnpm --dir frontend exec vite --host 127.0.0.1 --port 3000 --strictPort",
+    "webui:check": "pnpm --dir frontend run check:shared-config",
+    "browser:smoke": "node tools/integration/browser_smoke.mjs"
+  }
+}

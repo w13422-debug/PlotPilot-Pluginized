@@ -34,6 +34,10 @@ out/
 frontend/node_modules/
 frontend/.vite/
 frontend/dist/
+/node_modules/
+
+# ── Worktree-local Codex recovery checkpoint (never a release artifact) ──
+.codex/active-work.json
 
 # ── 本地 Agent / MCP 缓存 ──
 .playwright-mcp/
@@ -174,4 +178,10 @@ data/
 !data/.gitkeep
 
 
-docs
+/docs/*
+!/docs/
+!/docs/contracts/
+!/docs/contracts/**
+!/docs/deliveries/
+!/docs/deliveries/PPA-00/
+!/docs/deliveries/PPA-00/**

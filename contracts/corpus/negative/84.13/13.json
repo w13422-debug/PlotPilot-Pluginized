@@ -1,0 +1,26 @@
+{
+  "group_id": "84.13-13",
+  "negative": [
+    {
+      "case_id": "unknown-component",
+      "expected_error_code": 1011,
+      "kind": "ui_tree_whitelist"
+    },
+    {
+      "case_id": "stale-intent",
+      "expected_error_code": 1010,
+      "kind": "ui_freshness"
+    },
+    {
+      "case_id": "duplicate-intent-different-payload",
+      "expected_error_code": 1008,
+      "kind": "ui_idempotency"
+    }
+  ],
+  "positive": [
+    "plugin-ui-tree",
+    "plugin-ui-intent",
+    "plugin-ui-message"
+  ],
+  "title": "UI immutable URL/CSP, stale/duplicate intent and tree whitelist"
+}

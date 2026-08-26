@@ -1,0 +1,23 @@
+{
+  "group_id": "84.13-01",
+  "negative": [
+    {
+      "case_id": "skill-order-permutation",
+      "expected": "snapshot_hash_changes",
+      "kind": "hash_must_change",
+      "target": "run-snapshot"
+    },
+    {
+      "case_id": "package-crlf",
+      "expected": "package_hash_changes",
+      "kind": "bytes_change",
+      "target": "package/files.sha256"
+    }
+  ],
+  "positive": [
+    "package-golden",
+    "skill-golden",
+    "run-snapshot-golden"
+  ],
+  "title": "JCS set/ordered permutation and package/request/Skill golden"
+}

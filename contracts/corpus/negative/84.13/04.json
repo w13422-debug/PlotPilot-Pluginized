@@ -1,0 +1,19 @@
+{
+  "group_id": "84.13-04",
+  "negative": [
+    {
+      "case_id": "unsupported-data-format",
+      "expected_error_code": 1012,
+      "kind": "interpreter_unavailable"
+    },
+    {
+      "case_id": "snapshot-parameters-not-in-assets",
+      "expected_error_code": 1011,
+      "kind": "asset_binding"
+    }
+  ],
+  "positive": [
+    "run-snapshot"
+  ],
+  "title": "Data format/interpreter/Plan/Snapshot mismatch"
+}

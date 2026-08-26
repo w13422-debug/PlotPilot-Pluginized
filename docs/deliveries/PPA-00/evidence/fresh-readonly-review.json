@@ -1,0 +1,266 @@
+{
+  "base_sha": "1c481237b6fa32ef5f85d7f8da4cb16f366cd4f0",
+  "branch": "codex/ppa-00-integration",
+  "commands": [
+    {
+      "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe tools/integration/verify_contracts.py --all",
+      "exit_code": 0,
+      "id": "python-contracts-all",
+      "status": "passed",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/deliveries/PPA-00/evidence/raw/fresh-review-python-contracts-all.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 17483,
+        "first_line": "{",
+        "last_line": "}",
+        "path": "docs/deliveries/PPA-00/evidence/raw/fresh-review-python-contracts-all.stdout.txt",
+        "sha256": "00c77e93d2496b25083f903899d8549321839f04152480f3c017633e792bd4f4"
+      }
+    },
+    {
+      "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe tools/integration/verify_cross_language_goldens.py",
+      "exit_code": 0,
+      "id": "cross-language-goldens",
+      "status": "passed",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/deliveries/PPA-00/evidence/raw/fresh-review-cross-language-goldens.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 1322,
+        "first_line": "{",
+        "last_line": "}",
+        "path": "docs/deliveries/PPA-00/evidence/raw/fresh-review-cross-language-goldens.stdout.txt",
+        "sha256": "731b8bfc7340cfc09230a6d0bf750d77f02c2b07ff982d8e381565ff74a17b40"
+      }
+    },
+    {
+      "command": "node tools/integration/verify_contracts.mjs --all",
+      "exit_code": 0,
+      "id": "node-contracts-all",
+      "status": "passed",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/deliveries/PPA-00/evidence/raw/fresh-review-node-contracts-all.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 777,
+        "first_line": "{",
+        "last_line": "}",
+        "path": "docs/deliveries/PPA-00/evidence/raw/fresh-review-node-contracts-all.stdout.txt",
+        "sha256": "1bf8d65828fc2bee704423689d247b73b53b811d958d1106d0654c905c96008c"
+      }
+    },
+    {
+      "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe tools/integration/validate_m0_delivery.py --json",
+      "exit_code": 0,
+      "id": "delivery-record-check",
+      "status": "passed",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/deliveries/PPA-00/evidence/raw/fresh-review-delivery-record-check.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 431,
+        "first_line": "{",
+        "last_line": "}",
+        "path": "docs/deliveries/PPA-00/evidence/raw/fresh-review-delivery-record-check.stdout.txt",
+        "sha256": "41c4c614cf5a1d87485faec1988981eec453a47995aadb3d6757446a0a8cf439"
+      }
+    },
+    {
+      "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe tools/integration/validate_merge_gate.py --json",
+      "exit_code": 0,
+      "id": "merge-gate",
+      "status": "passed",
+      "stderr": {
+        "bytes": 0,
+        "path": "docs/deliveries/PPA-00/evidence/raw/fresh-review-merge-gate.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 16290,
+        "first_line": "{",
+        "last_line": "}",
+        "path": "docs/deliveries/PPA-00/evidence/raw/fresh-review-merge-gate.stdout.txt",
+        "sha256": "fdd8c60deb7db2ff2c0be9e326864e05d9e47c741a695ce02ae9cb3fc898dc35"
+      }
+    }
+  ],
+  "findings": [],
+  "limitations": [
+    "review is pre-commit; exact M0-OPEN tag target is verified in the final close step",
+    "browser smoke is recorded prior headful evidence and is not repeated because source is unchanged"
+  ],
+  "m0_gate_matrix": {
+    "M0.1": {
+      "evidence": [
+        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\m0.1-donor-protection.json",
+        "C:\\Users\\Administrator\\Desktop\\PlotPilot-Pluginized-preconstruction-backup-20260826\\donor-backup-manifest.json",
+        "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p0-monorepo-bootstrap.json"
+      ],
+      "status": "passed"
+    },
+    "M0.2": {
+      "evidence": [
+        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\m0.2-identity-runtime.json",
+        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\runtime-toolchain-lock.json",
+        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\license-ledger.json"
+      ],
+      "status": "passed"
+    },
+    "M0.3": {
+      "evidence": [
+        "backend/plotpilot_core/bootstrap",
+        "backend/plotpilot_plugin_sdk/ports.py",
+        "frontend/src/contracts/types.ts",
+        "frontend/src/contracts/rpc.ts"
+      ],
+      "status": "passed"
+    },
+    "M0.4": {
+      "evidence": [
+        "contracts/manifest-v1.json",
+        "docs/contracts/README.md",
+        "docs/contracts/schema-map.md",
+        "docs/contracts/method-matrix.md",
+        "docs/contracts/negative-golden.md"
+      ],
+      "status": "passed"
+    },
+    "M0.5": {
+      "evidence": [
+        "backend/plotpilot_plugin_sdk/fake_provider.py",
+        "backend/plotpilot_plugin_sdk/fixtures.py",
+        "backend/plotpilot_plugin_sdk/ports.py",
+        "frontend/src/contracts/verifier.ts"
+      ],
+      "status": "passed"
+    },
+    "M0.6": {
+      "evidence": [
+        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity-ledger.json",
+        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
+        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots"
+      ],
+      "status": "passed"
+    },
+    "M0.7": {
+      "evidence": [
+        "AGENTS.md",
+        "coordination/integration-queue",
+        "coordination/PPA-00/state.json",
+        "tools/integration/validate_merge_gate.py"
+      ],
+      "status": "passed"
+    }
+  },
+  "mode": "fresh_read_only_structured_review",
+  "observations": {
+    "browser_api_trace_entries": 146,
+    "contract_record_hashes_match": true,
+    "contract_schemas": 48,
+    "m0_gates": {
+      "M0.1": "passed",
+      "M0.2": "passed",
+      "M0.3": "passed",
+      "M0.4": "passed",
+      "M0.5": "passed",
+      "M0.6": "passed",
+      "M0.7": "passed"
+    },
+    "m0_ledger_hash_matches": true,
+    "negative_cases": 39,
+    "negative_groups": 14,
+    "parity_features": 27,
+    "parity_main_flows": 10,
+    "screenshots": 10,
+    "state_json_valid": true,
+    "stub_marker_hits": [],
+    "tag_present_at_review": false
+  },
+  "observed_head": "1c481237b6fa32ef5f85d7f8da4cb16f366cd4f0",
+  "p1_p6_gate": {
+    "creation_gate": [
+      {
+        "branch": "codex/ppa-01-core",
+        "branch_exists": false,
+        "first_party_plugins": [],
+        "project_id": "P1",
+        "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-01-Core",
+        "worktree_exists": false
+      },
+      {
+        "branch": "codex/ppa-02-plugin-platform",
+        "branch_exists": false,
+        "first_party_plugins": [
+          "com.plotpilot.prompt-skill-runtime"
+        ],
+        "project_id": "P2",
+        "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-02-Plugin-Platform",
+        "worktree_exists": false
+      },
+      {
+        "branch": "codex/ppa-03-execution",
+        "branch_exists": false,
+        "first_party_plugins": [
+          "com.plotpilot.provider.openai-compatible"
+        ],
+        "project_id": "P3",
+        "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-03-Execution",
+        "worktree_exists": false
+      },
+      {
+        "branch": "codex/ppa-04-webui",
+        "branch_exists": false,
+        "first_party_plugins": [],
+        "project_id": "P4",
+        "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-04-WebUI",
+        "worktree_exists": false
+      },
+      {
+        "branch": "codex/ppa-05-planning",
+        "branch_exists": false,
+        "first_party_plugins": [
+          "com.plotpilot.project-planner",
+          "com.plotpilot.story-state"
+        ],
+        "project_id": "P5",
+        "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-05-Planning",
+        "worktree_exists": false
+      },
+      {
+        "branch": "codex/ppa-06-writing",
+        "branch_exists": false,
+        "first_party_plugins": [
+          "com.plotpilot.chapter-workflow",
+          "com.plotpilot.autopilot",
+          "com.plotpilot.quality-suite",
+          "com.plotpilot.export-suite"
+        ],
+        "project_id": "P6",
+        "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-06-Writing",
+        "worktree_exists": false
+      }
+    ],
+    "passed": true,
+    "tag_expected_after_commit": true
+  },
+  "review_task_id": "PPA-M0-FRESH-REVIEW-01",
+  "reviewed_at": "2026-08-26T08:51:46Z",
+  "reviewer": "P0 main control fallback (delegated Sol reviewer returned not_found)",
+  "root": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized",
+  "schema": "plotpilot-m0-fresh-readonly-review/v1",
+  "verdict": "passed_pre_commit",
+  "write_set_check": {
+    "changed_paths_count": 229,
+    "out_of_set_paths": [],
+    "passed": true
+  }
+}

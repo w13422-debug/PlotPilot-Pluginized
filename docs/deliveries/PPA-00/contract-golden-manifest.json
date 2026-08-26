@@ -1,0 +1,1104 @@
+{
+  "artifacts": {
+    "contract_docs": [
+      {
+        "bytes": 2199,
+        "path": "docs/contracts/README.md",
+        "sha256": "0af6ec0f48c22702a88e00a9bb724795ac529e28e7a89fecb154d971d253cde3"
+      },
+      {
+        "bytes": 6481,
+        "path": "docs/contracts/method-matrix.md",
+        "sha256": "fea85558b1e621df6dc2af0c97ebf3f8b7950f480e88f93739d19efe4fbf12ae"
+      },
+      {
+        "bytes": 3376,
+        "path": "docs/contracts/negative-golden.md",
+        "sha256": "1169c49821733fb6d4f37ae371bd554e4d49b3e2f4baefebcadf7aa5d4a45265"
+      },
+      {
+        "bytes": 7871,
+        "path": "docs/contracts/schema-map.md",
+        "sha256": "53d0eab3b69df9ec934dcde8f0fbfd8dc19c5bba877c6d8ac1537cdda3c2aeef"
+      },
+      {
+        "bytes": 4164,
+        "path": "docs/contracts/surface.md",
+        "sha256": "ea1b22d60544c3cd53be2c99343d331445dcd4cc5a5506caf4451aaa58ebd9e6"
+      }
+    ],
+    "contract_files": [
+      {
+        "bytes": 261,
+        "path": "contracts/json-schema/_common-v1.schema.json",
+        "sha256": "a53e0fb3c643ef101636a98379afe0bf7d30b7f0f4185efe4281352f68a355b6"
+      },
+      {
+        "bytes": 1995,
+        "path": "contracts/json-schema/artifact-item-v1.schema.json",
+        "sha256": "f2dff97e64f78f46a5dc5ea25cfb699e61c83cbfe8e6bde611d1cbbd313917c3"
+      },
+      {
+        "bytes": 5617,
+        "path": "contracts/json-schema/backup-bundle-v1.schema.json",
+        "sha256": "54887b44adea8be450aeb61158111fa9c0f461db9e73b6db2ff9df180d431f87"
+      },
+      {
+        "bytes": 2574,
+        "path": "contracts/json-schema/broker-child-record-v1.schema.json",
+        "sha256": "cb8f46a03b61517d0be1e882d5612b35a2dd05d8a4cbb76e32cd4872a34d5a7d"
+      },
+      {
+        "bytes": 2174,
+        "path": "contracts/json-schema/broker-invocation-v1.schema.json",
+        "sha256": "41e8735dafc917cd3edab0461951523401b6755641c3f5dc76b49e53962d4bf2"
+      },
+      {
+        "bytes": 4824,
+        "path": "contracts/json-schema/candidate-item-v1.schema.json",
+        "sha256": "53e7c97c9f41b62c8091a82fac549c1d27834e20ef497d0c7cd45b83c8743aab"
+      },
+      {
+        "bytes": 1925,
+        "path": "contracts/json-schema/capability-provider-v1.schema.json",
+        "sha256": "391c67236d54d127bc9ba363c8fb2fe544c55d46cffa6bf4fc4892cbb8edcb6b"
+      },
+      {
+        "bytes": 2383,
+        "path": "contracts/json-schema/checkpoint-v1.schema.json",
+        "sha256": "85e64e5a540b90fc968b6196c1c451eaf0a9149fa329e5e95c90dc37c8a3984c"
+      },
+      {
+        "bytes": 163,
+        "path": "contracts/json-schema/compatibility-matrix.v1.json",
+        "sha256": "309c9e20724bb58ae95c823cb223028151e44b788e4b868b652ec0066b677dc6"
+      },
+      {
+        "bytes": 734,
+        "path": "contracts/json-schema/compatibility-v1.schema.json",
+        "sha256": "56679d74bcb8d74a36038ffd6e37eeecf676eb235ee94156eeca5762bae073a7"
+      },
+      {
+        "bytes": 3110,
+        "path": "contracts/json-schema/core-event-v1.schema.json",
+        "sha256": "7ebe5b9967035f728474381f513856093ecbbc44ce0b30808fba54866fe3ae1e"
+      },
+      {
+        "bytes": 3131,
+        "path": "contracts/json-schema/core-snapshot-v1.schema.json",
+        "sha256": "c90460e5e85538f92aca5e11badee504f36a45685531e40f96f6b83f0817f6da"
+      },
+      {
+        "bytes": 2227,
+        "path": "contracts/json-schema/diagnostic-item-v1.schema.json",
+        "sha256": "e9a5b37fb85aca58375a1e4bb8eed88ab796e4960e86c6f0d971ce565cbb7e07"
+      },
+      {
+        "bytes": 3234,
+        "path": "contracts/json-schema/job-event-page-v1.schema.json",
+        "sha256": "3094be64440314cc398f312ae34359fde090d9824ef82c81bb8c0894989b7aa4"
+      },
+      {
+        "bytes": 5174,
+        "path": "contracts/json-schema/job-snapshot-v1.schema.json",
+        "sha256": "1ee52f372fd06896fef491eab863324f949c03cf69a9ea634cea239d8eb2fd78"
+      },
+      {
+        "bytes": 2155,
+        "path": "contracts/json-schema/plugin-data-bundle-v1.schema.json",
+        "sha256": "47b35fe0fb13078c0e2b23f1b2bbcf57dcb9ad61bfae1ba392a9cca0598531eb"
+      },
+      {
+        "bytes": 3821,
+        "path": "contracts/json-schema/plugin-generation-v1.schema.json",
+        "sha256": "79ecf7bdb52e23cd5e37e4ca598a14f8ddb1810a55ebb579a55cfab4eee85463"
+      },
+      {
+        "bytes": 2036,
+        "path": "contracts/json-schema/plugin-job-event-v1.schema.json",
+        "sha256": "adb63779272ea8a9573ea55c1cdba6fcd32b701e6cec807ae05ae3a58bc6c8e9"
+      },
+      {
+        "bytes": 3943,
+        "path": "contracts/json-schema/plugin-lifecycle-transition-v1.schema.json",
+        "sha256": "00ecb8104bdf9d6e61d8760e722d9f93bb166769abbea18531a05291de777ed8"
+      },
+      {
+        "bytes": 14901,
+        "path": "contracts/json-schema/plugin-manifest-v1.schema.json",
+        "sha256": "331ae621e5c071c0c16a156dab537684d5421b5aa46335e0c790925cf75a8850"
+      },
+      {
+        "bytes": 6113,
+        "path": "contracts/json-schema/plugin-plan-v1.schema.json",
+        "sha256": "ea2c83a040ff3f5c224149a17bf2303aecbd40b62f7d2b11d4d0af53dbcd6968"
+      },
+      {
+        "bytes": 1123,
+        "path": "contracts/json-schema/plugin-ui-ack-v1.schema.json",
+        "sha256": "d6154ad684e3fd739cca81a04fbad82cf4a8c1b334e4fc1080244f8cc809d3b1"
+      },
+      {
+        "bytes": 893,
+        "path": "contracts/json-schema/plugin-ui-dispose-v1.schema.json",
+        "sha256": "4bfdbeeb7fa223fb33e80a693046049ed6245d815b09a76d8f829decbc4a1890"
+      },
+      {
+        "bytes": 783,
+        "path": "contracts/json-schema/plugin-ui-error-v1.schema.json",
+        "sha256": "03b9c36f3a30f5ff32004133c5ee268ae1d67f7a7273c253d90dc86f0d7b5e1f"
+      },
+      {
+        "bytes": 2500,
+        "path": "contracts/json-schema/plugin-ui-event-v1.schema.json",
+        "sha256": "c259532a80e3917be944114bedf1c50adf7b850d9ac0260d888d5409005f002f"
+      },
+      {
+        "bytes": 938,
+        "path": "contracts/json-schema/plugin-ui-init-v1.schema.json",
+        "sha256": "4e1f515d6058263e89379c5283e15ca50505911afed9d0074a84af9f8d5a86b6"
+      },
+      {
+        "bytes": 3091,
+        "path": "contracts/json-schema/plugin-ui-intent-v1.schema.json",
+        "sha256": "4ea01be9a665c5705e36c16bd5d9159d0007bb55ab89f4c3b3c230f0b2471b91"
+      },
+      {
+        "bytes": 79449,
+        "path": "contracts/json-schema/plugin-ui-message-v1.schema.json",
+        "sha256": "059a00ae6a51bf1993635222de7b52670ddd1f6f9ced2d753d8af15d835fee27"
+      },
+      {
+        "bytes": 21465,
+        "path": "contracts/json-schema/plugin-ui-tree-v1.schema.json",
+        "sha256": "9dcd17fe33adb0786d0baf0677ce583c29b8e9c5edb55fae6d4458a8f652afb7"
+      },
+      {
+        "bytes": 5263,
+        "path": "contracts/json-schema/provenance-receipt-v1.schema.json",
+        "sha256": "7881ed77bdc687757f656405572ecf4d28355ca5d2a77709245e1bbd81625152"
+      },
+      {
+        "bytes": 1570,
+        "path": "contracts/json-schema/release-pin-v1.schema.json",
+        "sha256": "558ac4cbec8e996dd941f08e1e0b25173eff0cf04dda7433bc493619d4219213"
+      },
+      {
+        "bytes": 1388,
+        "path": "contracts/json-schema/release-retirement-v1.schema.json",
+        "sha256": "79e9901acf85216cb92400adb82b19012c3d945bfb40f52c6360f3578bb47f18"
+      },
+      {
+        "bytes": 3430,
+        "path": "contracts/json-schema/restore-report-v1.schema.json",
+        "sha256": "ffaa61c96ba8e817f9bc13e4e47f2f6d18a74c3e41b8583082c65676c186d3f7"
+      },
+      {
+        "bytes": 17891,
+        "path": "contracts/json-schema/result-bundle-v1.schema.json",
+        "sha256": "3879de30d28d6470bbb90d554f2b3d5c79648f346a54cdd318153ee2ddeebe63"
+      },
+      {
+        "bytes": 167060,
+        "path": "contracts/json-schema/rpc-envelope-v1.schema.json",
+        "sha256": "8bed71688adecd9e915a5d038774bdc6e3dfaf17300076a979dd2bc3ed7c2aed"
+      },
+      {
+        "bytes": 1887,
+        "path": "contracts/json-schema/rpc-error-v1.schema.json",
+        "sha256": "3e42dd53362d953a8f2e3f94d49aa59478acfa3403683c9fa69b7bed6c3f008f"
+      },
+      {
+        "bytes": 20235,
+        "path": "contracts/json-schema/rpc-method-matrix.v1.json",
+        "sha256": "7f2ef272ad8f0637b82800bb1e11856800cbc5bf799c38b095105da9382e5400"
+      },
+      {
+        "bytes": 2604,
+        "path": "contracts/json-schema/rpc-notification-v1.schema.json",
+        "sha256": "0c899c97503bb56af7d9544f0326c11bce2555ca6f4aa6592abe7015cb311e90"
+      },
+      {
+        "bytes": 110097,
+        "path": "contracts/json-schema/rpc-request-v1.schema.json",
+        "sha256": "2fdb68c75daf0de4e6a0fb17a898609dd506358e1d8e0818436351bac67a241d"
+      },
+      {
+        "bytes": 33157,
+        "path": "contracts/json-schema/rpc-success-v1.schema.json",
+        "sha256": "e7ab36d64fa052b16470a0a5452a59b38ad57aa5d2dbb73bba3828c56cd3056e"
+      },
+      {
+        "bytes": 8855,
+        "path": "contracts/json-schema/run-snapshot-v1.schema.json",
+        "sha256": "5a27ad82709b4102cb0638f64e0c6529b919102371619f4b119ceff2ce5278ae"
+      },
+      {
+        "bytes": 1861,
+        "path": "contracts/json-schema/settings-migration-manifest-v1.schema.json",
+        "sha256": "73028d3a7157dde3d5e6793fb9faa2a780a91f5e9dc4284b47e0f342944383cb"
+      },
+      {
+        "bytes": 2611,
+        "path": "contracts/json-schema/settings-revision-v1.schema.json",
+        "sha256": "edee64094a4792e260b1b06e83584b9fedcdfd19ebc1c960c0ef73dec3b8f4e7"
+      },
+      {
+        "bytes": 1722,
+        "path": "contracts/json-schema/settings-validation-receipt-v1.schema.json",
+        "sha256": "bdcd828206a2b8fd39bcfb80ca95e984daf9c1a6c7c8bbfbdae27ff4f082302d"
+      },
+      {
+        "bytes": 1803,
+        "path": "contracts/json-schema/skill-chain-ref-v1.schema.json",
+        "sha256": "9ae64fa81fb93a6e77a5f7e342c4884d547888ae3398c5c04fe9c22607f88474"
+      },
+      {
+        "bytes": 2696,
+        "path": "contracts/json-schema/skill-chain-result-v1.schema.json",
+        "sha256": "0d3440b33301510d1134a657f7aa4249cbd5abdf2cf529c84a9544f19e40db3c"
+      },
+      {
+        "bytes": 1030,
+        "path": "contracts/json-schema/skill-manifest-v1.schema.json",
+        "sha256": "ad07ed1fbf90946b3a1cf314d325f9f2c9be1ea090f8ae5410714a68b4a2e702"
+      },
+      {
+        "bytes": 6007,
+        "path": "contracts/json-schema/skill-run-receipt-v1.schema.json",
+        "sha256": "fe0b1ed36ca95a05eefc50c8adaddfed82c76854f36d8267240adfe9f8a0a154"
+      },
+      {
+        "bytes": 2013,
+        "path": "contracts/json-schema/sse-recovery-v1.schema.json",
+        "sha256": "ce15e29e51d706dc11333c16c6823d84ffb492b205022a8098fa940eea61665c"
+      },
+      {
+        "bytes": 2139,
+        "path": "contracts/json-schema/stream-prefix-v1.schema.json",
+        "sha256": "640a3410e6630b939fb4784607bd08ca8afd7fa2db39286a1f73531057c38be3"
+      },
+      {
+        "bytes": 877,
+        "path": "contracts/examples/candidate-item.json",
+        "sha256": "cf2da818896f3ad51e6fce57a8aef95df07c45dcfae45dbb38212959cd1139eb"
+      },
+      {
+        "bytes": 513,
+        "path": "contracts/examples/fixtures/broker-invocation.json",
+        "sha256": "f4a8e10e1caf247a020cb04910a39c3f37586759d250de2a5d4d50e907c47230"
+      },
+      {
+        "bytes": 387,
+        "path": "contracts/examples/fixtures/capability-provider.json",
+        "sha256": "8c5e25f9f6126710067d4a6e53e7d132931dee827514aad6433910ee8f502983"
+      },
+      {
+        "bytes": 623,
+        "path": "contracts/examples/fixtures/checkpoint.json",
+        "sha256": "55aceb0527fabc5033db3adf275bc2ec5e1d6b08cda69334d36f9a53eb0ac34c"
+      },
+      {
+        "bytes": 443,
+        "path": "contracts/examples/fixtures/core-event.json",
+        "sha256": "9602de80bc0c1df8858bf9faa631c9c38e6ac3e8dbce7c06aa8c5e5c9ce4d8d1"
+      },
+      {
+        "bytes": 424,
+        "path": "contracts/examples/fixtures/core-snapshot.json",
+        "sha256": "6c8b19eeb715a6e47c9be38a0a002f8940c0a4634dbbee3a6823061847b0153c"
+      },
+      {
+        "bytes": 151,
+        "path": "contracts/examples/fixtures/job-event-page.json",
+        "sha256": "34c5c2cb259be079321cf3339e5f1da71b8a1797619ea559d76492f0d47148dd"
+      },
+      {
+        "bytes": 615,
+        "path": "contracts/examples/fixtures/job-snapshot.json",
+        "sha256": "422b27f0bc90d4657821887a537336fbcbbc14d68b3b383c41742495bd8c3e2c"
+      },
+      {
+        "bytes": 633,
+        "path": "contracts/examples/fixtures/plugin-data-bundle.json",
+        "sha256": "84bb68dee9e3d1bb111bbe6c283ca054238d6364eecf6f9db20bf1923bed55b9"
+      },
+      {
+        "bytes": 301,
+        "path": "contracts/examples/fixtures/plugin-generation.json",
+        "sha256": "c71ee9628532268e417670d251a3c379d6aa92b9d1eaf6d916979402024a4e62"
+      },
+      {
+        "bytes": 466,
+        "path": "contracts/examples/fixtures/plugin-job-event.json",
+        "sha256": "91236ad2e63c4b9ea5d331a73700eab8b64e76ed4e59c108efe2337a9e1254ca"
+      },
+      {
+        "bytes": 511,
+        "path": "contracts/examples/fixtures/plugin-lifecycle-transition.json",
+        "sha256": "52357139958b0872ce9d5d1de95c3197463d7bcdb2888a31fe93d64ebbba51f6"
+      },
+      {
+        "bytes": 900,
+        "path": "contracts/examples/fixtures/plugin-manifest-code.json",
+        "sha256": "cdf85e610c86862fd1d3de848acac9923c3e20c09a2efab9b94dd45c5ebfceb3"
+      },
+      {
+        "bytes": 549,
+        "path": "contracts/examples/fixtures/plugin-manifest-data.json",
+        "sha256": "cd13c21fde4c5c9597e38de081207338aaf244107137059dc5a5cde9c4d6e9fe"
+      },
+      {
+        "bytes": 636,
+        "path": "contracts/examples/fixtures/plugin-plan.json",
+        "sha256": "beadf148fbf4626f21a2e4b7a4a3c4a5143213fb3fa0db443c2084c4c3ea50ce"
+      },
+      {
+        "bytes": 423,
+        "path": "contracts/examples/fixtures/plugin-ui-event.json",
+        "sha256": "3e3636a71d41cfaa356d4440df09710d6a7571b93a7d74538fd1c2b7c6f3a897"
+      },
+      {
+        "bytes": 165,
+        "path": "contracts/examples/fixtures/plugin-ui-init.json",
+        "sha256": "886924b16fca3c9d96ab78be0189950e9f47e722c4417088f20ddb3418ea7dd8"
+      },
+      {
+        "bytes": 517,
+        "path": "contracts/examples/fixtures/plugin-ui-intent.json",
+        "sha256": "8ea45dee9c10bccbed4b63c6e203a23e7f6b42b303015433c8071e98be9cd055"
+      },
+      {
+        "bytes": 818,
+        "path": "contracts/examples/fixtures/plugin-ui-message.json",
+        "sha256": "b6aa2becc155ea96b54e8852fcb401e5442b3435753dac0e0325455c35372f15"
+      },
+      {
+        "bytes": 292,
+        "path": "contracts/examples/fixtures/plugin-ui-tree.json",
+        "sha256": "ad9afc0f79312c3da29eba99f18c4792a9cd0521e8eb093492dbd86fdc98cd33"
+      },
+      {
+        "bytes": 786,
+        "path": "contracts/examples/fixtures/provenance-receipt.json",
+        "sha256": "f75b628bf12c77e37cf7906bf3d4114b74ec7f80fd79c85371c8684f0ebf8e90"
+      },
+      {
+        "bytes": 288,
+        "path": "contracts/examples/fixtures/release-pin.json",
+        "sha256": "f4f8fdb8db203be6389dfe7881d784696cffb2d6b9b8504050d6868f8ba7599a"
+      },
+      {
+        "bytes": 242,
+        "path": "contracts/examples/fixtures/release-retirement.json",
+        "sha256": "50edff642219431e0b8db4ef2e9738b9b5f85f89818337f013da0d89d7bdff52"
+      },
+      {
+        "bytes": 405,
+        "path": "contracts/examples/fixtures/restore-report.json",
+        "sha256": "6b2064af6c2365bdc6fd2182e56bb31d686bc03cf79197e700496c085fc29451"
+      },
+      {
+        "bytes": 251,
+        "path": "contracts/examples/fixtures/rpc-error.json",
+        "sha256": "2ff554b03415f6a41c6e24f34642da377bd694b830eb8ecd43decbb8c96bac80"
+      },
+      {
+        "bytes": 556,
+        "path": "contracts/examples/fixtures/rpc-notification.json",
+        "sha256": "50bbf62a90efd8baae977d5ad53f353fb9def55a48bacdd6b5eaa5124e7c7467"
+      },
+      {
+        "bytes": 856,
+        "path": "contracts/examples/fixtures/rpc-request.json",
+        "sha256": "9e147a533dd63d3844b699bd518b0e1adb4b309d0de8bc020855eca6f1201552"
+      },
+      {
+        "bytes": 230,
+        "path": "contracts/examples/fixtures/rpc-success.json",
+        "sha256": "c83af14ff982ee45cf0546b77c9bce2a7f6ece5e1f453467fcbffcdc281e3353"
+      },
+      {
+        "bytes": 373,
+        "path": "contracts/examples/fixtures/settings-migration-manifest.json",
+        "sha256": "8b90dc39de7e82cf7c307a507ad39f935e870e789afca2f5cdec321f444b2e59"
+      },
+      {
+        "bytes": 657,
+        "path": "contracts/examples/fixtures/settings-revision.json",
+        "sha256": "aca85b484555b50757782ec94aac1f182e041e9a11aa3164bdef6497fc3b66af"
+      },
+      {
+        "bytes": 605,
+        "path": "contracts/examples/fixtures/settings-validation-receipt.json",
+        "sha256": "82bb2bf4fcd86738ec9d63169aed225577d7447c7f153621636636625e4329c0"
+      },
+      {
+        "bytes": 770,
+        "path": "contracts/examples/fixtures/skill-chain-result.json",
+        "sha256": "f73cbc86f535c0a81427d50f34063a38a2bb8e1c6f5703b87cbbd7f76a67ac34"
+      },
+      {
+        "bytes": 193,
+        "path": "contracts/examples/fixtures/skill-manifest.json",
+        "sha256": "59f74375d114b61c6285723da2d86bc30c1f126e7b303255fd39248c178a46d5"
+      },
+      {
+        "bytes": 1148,
+        "path": "contracts/examples/fixtures/skill-run-receipt.json",
+        "sha256": "df4fd93bb84003716036ed1003124d154569a9edcae8631f2e967b9d4b8e826a"
+      },
+      {
+        "bytes": 331,
+        "path": "contracts/examples/fixtures/sse-recovery.json",
+        "sha256": "6ca83bbf5ff0f3b22969bbe05e89e1ffdcbddf49500c13a28540649dd3c3c1a2"
+      },
+      {
+        "bytes": 470,
+        "path": "contracts/examples/fixtures/stream-prefix.json",
+        "sha256": "9339b83ca03abfe866a737a07ca0d876dae2432cf0d86b6badee22f69b8d1d72"
+      },
+      {
+        "bytes": 460,
+        "path": "contracts/examples/plugin-ui-tree.json",
+        "sha256": "ca3c5f33d06981b762ab98e531a6af9097232947f96cd9066f34b95228aba402"
+      },
+      {
+        "bytes": 1664,
+        "path": "contracts/examples/result-bundle.json",
+        "sha256": "ead5985a98e5751b7f68d7a69be6fce9d928f22afe52d986495b0b5c403ad339"
+      },
+      {
+        "bytes": 3887,
+        "path": "contracts/examples/run-snapshot.json",
+        "sha256": "26d1d20b9d53931aa6ba54621e8f9262316660aa75df44f4620f71f9581b59df"
+      },
+      {
+        "bytes": 1328,
+        "path": "contracts/golden/backup/backup.json",
+        "sha256": "b0335417147f116a240022c408183d6a42109aab98cbee296f1084329d8c913b"
+      },
+      {
+        "bytes": 137,
+        "path": "contracts/golden/backup/expected.json",
+        "sha256": "ef7f57da0a215c5f3bcf5d0b456e5f93e09360f44da8ac606e03280b776461c2"
+      },
+      {
+        "bytes": 20,
+        "path": "contracts/golden/package/data/rules.json",
+        "sha256": "54bfa55d6557dcf1a11f3e845e6492e4fe34f35a0d6751f45e0e8ae77df36e78"
+      },
+      {
+        "bytes": 563,
+        "path": "contracts/golden/package/expected.json",
+        "sha256": "fcdf0eb8ac249871449eacad0aaad3101a53700f1bb7db5670b57a9dbe5dc484"
+      },
+      {
+        "bytes": 160,
+        "path": "contracts/golden/package/files.sha256",
+        "sha256": "3d1301d85626f86e3cbf7b43e88b614ea03c10574bc97457195b8dd66e6d7aa9"
+      },
+      {
+        "bytes": 386,
+        "path": "contracts/golden/package/plugin.json",
+        "sha256": "5e3188bf60c1e12c38e25f6e39ca11376bd82d3dee285e99cdb981b8e7b4186c"
+      },
+      {
+        "bytes": 383,
+        "path": "contracts/golden/run-snapshot/expected.json",
+        "sha256": "e57b3adb578951a6ba4c4f796124752c4df17694dbaa7aa146913eb629c92d6d"
+      },
+      {
+        "bytes": 294,
+        "path": "contracts/golden/run-snapshot/request-key.txt",
+        "sha256": "5e346b6254626cb314a0d4040a64e8a9797c0a890537ce07e9920a911a525e61"
+      },
+      {
+        "bytes": 3144,
+        "path": "contracts/golden/run-snapshot/snapshot.jcs",
+        "sha256": "b66c4dbed135079dc0098887ee387d84835f108d72db7e018e980c729fa31048"
+      },
+      {
+        "bytes": 3887,
+        "path": "contracts/golden/run-snapshot/snapshot.json",
+        "sha256": "26d1d20b9d53931aa6ba54621e8f9262316660aa75df44f4620f71f9581b59df"
+      },
+      {
+        "bytes": 581,
+        "path": "contracts/golden/skill/expected.json",
+        "sha256": "db51992769b1f01562a1d1b543f3c7c9f240915cc0644d072efec82848d6f609"
+      },
+      {
+        "bytes": 154,
+        "path": "contracts/golden/skill/files.sha256",
+        "sha256": "7ceb3f3c812ea8d094177d1816257bd4fff970e78ecee3522775ed390dec6e6b"
+      },
+      {
+        "bytes": 17,
+        "path": "contracts/golden/skill/prompt.txt",
+        "sha256": "240c9cc169ce9ea5b2b7802201b672812abb8f7cd2cfa3c3e2327b61b748e061"
+      },
+      {
+        "bytes": 158,
+        "path": "contracts/golden/skill/skill.json",
+        "sha256": "30f21bc4b70b1219d23f3fbf6dbbabc460ecddb6f373800f560d5441df8006c1"
+      },
+      {
+        "bytes": 331,
+        "path": "contracts/corpus/compatibility/invalid.json",
+        "sha256": "0a85ae7ca387aecf976ce64e972675672e67998cc97f88e362a5645fefa2012d"
+      },
+      {
+        "bytes": 92,
+        "path": "contracts/corpus/compatibility/valid.json",
+        "sha256": "d16da05108c47433ddc7248d607b2b933a193b01846adf442293dbd289848f11"
+      },
+      {
+        "bytes": 186,
+        "path": "contracts/corpus/history/v1-raw.json",
+        "sha256": "c4d34fb998681d5cf1513141a37eb33a310d074f6a486e6458f9a7e673935692"
+      },
+      {
+        "bytes": 490,
+        "path": "contracts/corpus/manifest.json",
+        "sha256": "c79eb501ee49c9ddb6be4538d95abe8178e9cf0fbef24e3f5c9b0778af900160"
+      },
+      {
+        "bytes": 535,
+        "path": "contracts/corpus/negative/84.13/01.json",
+        "sha256": "a006b82393a2d7d851db4cef980f1012a974bf06714a862b2e5a26bb3b4c95d0"
+      },
+      {
+        "bytes": 559,
+        "path": "contracts/corpus/negative/84.13/02.json",
+        "sha256": "e15ad45610b9e68bd70078fe71d13df0e8eb37e95bf226304b7ff320f268b467"
+      },
+      {
+        "bytes": 427,
+        "path": "contracts/corpus/negative/84.13/03.json",
+        "sha256": "79e2993df7f9452f5c927e151dbe0766b34cf3fedabe9ad1c868eb8239f9b364"
+      },
+      {
+        "bytes": 414,
+        "path": "contracts/corpus/negative/84.13/04.json",
+        "sha256": "e1846992c3eeccd3291602977f0f3358c300bf415ed517e131231efc646be241"
+      },
+      {
+        "bytes": 513,
+        "path": "contracts/corpus/negative/84.13/05.json",
+        "sha256": "8b6cd7ff0e7442df007db334575e80723213fcc3333dbe4553ca85a4cfbf6dea"
+      },
+      {
+        "bytes": 535,
+        "path": "contracts/corpus/negative/84.13/06.json",
+        "sha256": "10525b73e0b86d3274ef624d0e432faabef4083ba75b1de4e45d4ab1f69b8e4a"
+      },
+      {
+        "bytes": 568,
+        "path": "contracts/corpus/negative/84.13/07.json",
+        "sha256": "50e4341e999c0d3150522d09cbb6103e5bd54fa2ff6325709b72c15f950bb97b"
+      },
+      {
+        "bytes": 548,
+        "path": "contracts/corpus/negative/84.13/08.json",
+        "sha256": "e0ccc768d5daec45c195c5da9d219274b92d65b527471628342607bff3d310a8"
+      },
+      {
+        "bytes": 433,
+        "path": "contracts/corpus/negative/84.13/09.json",
+        "sha256": "ca579dc8e1b47774fbc60bce72fde4990881bc6e797eb5467bf8b8b3256de7e1"
+      },
+      {
+        "bytes": 543,
+        "path": "contracts/corpus/negative/84.13/10.json",
+        "sha256": "88ae60b67e76676d6ce287220ffab2f3e26a74611f351b6734f0a70ea9814bdb"
+      },
+      {
+        "bytes": 526,
+        "path": "contracts/corpus/negative/84.13/11.json",
+        "sha256": "6be7403164fbf85ef84214fc5a5903c1150797e640a98b4f4d2628dac233b732"
+      },
+      {
+        "bytes": 545,
+        "path": "contracts/corpus/negative/84.13/12.json",
+        "sha256": "09668ae51ea1ece53f3d19ce0e9cc4c79cc9a8f4e1a00453031e6e6a1d705916"
+      },
+      {
+        "bytes": 582,
+        "path": "contracts/corpus/negative/84.13/13.json",
+        "sha256": "1973267660e70012010d861d62e0acf46d7901fc7ed6eeff072e02b9224516f2"
+      },
+      {
+        "bytes": 679,
+        "path": "contracts/corpus/negative/84.13/14.json",
+        "sha256": "8f127d7d812a9a23e2eea6315b38384cb7554d7a32acc8c69ad2cd28cf4ad540"
+      },
+      {
+        "bytes": 558,
+        "path": "contracts/corpus/paths/windows-paths.json",
+        "sha256": "972dcd43a54b45602735d3ab2374f6fc23c4ba56fa775a39f50de2a0f7b403e0"
+      }
+    ],
+    "sdk": [
+      {
+        "bytes": 2279,
+        "path": "backend/plotpilot_plugin_sdk/__init__.py",
+        "sha256": "d909b2b4322e48dcd9f66af7f6a6702ba9f92161f0e9c7e2ae30e86b300b859e"
+      },
+      {
+        "bytes": 2760,
+        "path": "backend/plotpilot_plugin_sdk/canonical.py",
+        "sha256": "97c426fbbc39a01b10a3a70f77430e3b1a48d5160043e2fb2fb485bd16759c9e"
+      },
+      {
+        "bytes": 3588,
+        "path": "backend/plotpilot_plugin_sdk/contracts.py",
+        "sha256": "68ba127d7a4c166ff820b26c1df3a4a4b18e8fb788428fbc5672de54b476bc61"
+      },
+      {
+        "bytes": 1338,
+        "path": "backend/plotpilot_plugin_sdk/errors.py",
+        "sha256": "42a3004a20ac9b578e110d504b5cae6246442617a45888b79301944114a2d83e"
+      },
+      {
+        "bytes": 4314,
+        "path": "backend/plotpilot_plugin_sdk/fake_provider.py",
+        "sha256": "bb0bcc8376f3977b2539d6079f182cdfacc94783018a39e015bf7f6a93c0ef9c"
+      },
+      {
+        "bytes": 4629,
+        "path": "backend/plotpilot_plugin_sdk/fixtures.py",
+        "sha256": "94b6c6b2cf048825b3b78578f0c81eee7b8bc81c4d540af7940951a8832ef86b"
+      },
+      {
+        "bytes": 3742,
+        "path": "backend/plotpilot_plugin_sdk/framing.py",
+        "sha256": "dff3704d429a99b7616deadfa860a371b931e8eed0f157e5baaaeee70a63ee3f"
+      },
+      {
+        "bytes": 4978,
+        "path": "backend/plotpilot_plugin_sdk/package.py",
+        "sha256": "f579905344f5882ecf0eed1ba027d19e48dfec368446bc2824671548a87fdb7f"
+      },
+      {
+        "bytes": 3782,
+        "path": "backend/plotpilot_plugin_sdk/ports.py",
+        "sha256": "8db2a7c5ce4422c0fbd4185b59729c75597713c27cc2e5f038da2aff5fe318cc"
+      },
+      {
+        "bytes": 8825,
+        "path": "backend/plotpilot_plugin_sdk/rpc.py",
+        "sha256": "d07b298c42c327158923e36d05aa55928d209ebd6b3134f9f32201adca80ddab"
+      },
+      {
+        "bytes": 33624,
+        "path": "backend/plotpilot_plugin_sdk/verifier.py",
+        "sha256": "a45604c292ec6622b74ea02172e4704147d41bfe98477e0a8c4ea1abfcc40e10"
+      },
+      {
+        "bytes": 1847,
+        "path": "frontend/src/contracts/canonical.ts",
+        "sha256": "b6e642c15a7ce8c83c83310fec42628747aa4e64167df6466302c7bd83563d74"
+      },
+      {
+        "bytes": 2476,
+        "path": "frontend/src/contracts/rpc.ts",
+        "sha256": "19241d06901f052284303647b7538c0295d21ddb378bea7761490482d4049693"
+      },
+      {
+        "bytes": 7169,
+        "path": "frontend/src/contracts/types.ts",
+        "sha256": "c5871e08f512a97bfa14b6ff2b485805b692c0aadbc1766fe1cc3adf287d0157"
+      },
+      {
+        "bytes": 9765,
+        "path": "frontend/src/contracts/verifier.ts",
+        "sha256": "090b570651d33ed69e3a08abf0c3daa813a6b382bd432bec6202c462471c181b"
+      }
+    ],
+    "tooling": [
+      {
+        "bytes": 22337,
+        "path": "tools/integration/browser_smoke.mjs",
+        "sha256": "bc37a9eebb6e405c76bba7d1b2931b146d1a80697f4e2a9c4036ac42b9d922a9"
+      },
+      {
+        "bytes": 4923,
+        "path": "tools/integration/capture_m0_test_ledger.py",
+        "sha256": "cef3a40e66c36652d5e76febda1072bc320fc64ef132f011b6f7506e6a7bfa24"
+      },
+      {
+        "bytes": 12074,
+        "path": "tools/integration/fresh_m0_review.py",
+        "sha256": "45ae590b538d8a39deb88bec8097dcd515b78697580cb6294997eb652fef1e52"
+      },
+      {
+        "bytes": 4768,
+        "path": "tools/integration/generate_contract_manifest.py",
+        "sha256": "25d7656190ea37070cfd2e43007c39833389f1f8ebfa630508ab82cee442d820"
+      },
+      {
+        "bytes": 66742,
+        "path": "tools/integration/generate_contract_schemas.py",
+        "sha256": "dc3bbc29a4a58acb8e6b16e0649604d3620b6121616bfd54e07127c4b4cb4407"
+      },
+      {
+        "bytes": 8247,
+        "path": "tools/integration/generate_corpus.py",
+        "sha256": "4cfc27134f960e1028dffc6905197066e213649d47b100fd78b0ce69c6cff680"
+      },
+      {
+        "bytes": 15222,
+        "path": "tools/integration/generate_examples.py",
+        "sha256": "63078648be02faf776327845fd21af6e46273fe4e7cecaf7a65e3213f2b25f15"
+      },
+      {
+        "bytes": 12763,
+        "path": "tools/integration/generate_goldens.py",
+        "sha256": "94838ff81ee99ca03c7b4733270437af98ab22076f38598015bd06b1d660650c"
+      },
+      {
+        "bytes": 5593,
+        "path": "tools/integration/generate_license_ledger.py",
+        "sha256": "2dc8729302fcf8dfc9054fbea1e59c267994e7fb5434a83f44848d6fc6af452a"
+      },
+      {
+        "bytes": 44785,
+        "path": "tools/integration/generate_m0_delivery.py",
+        "sha256": "9877c1486ffb1d3c2e41807d4cdcba81e715b09b148d4e0dfbe6043fa1dc1e43"
+      },
+      {
+        "bytes": 7688,
+        "path": "tools/integration/validate_m0_delivery.py",
+        "sha256": "2fabc4a87ea3421c75fb7111cf33d1c2c0c618729dd4983d6425008da0b636c8"
+      },
+      {
+        "bytes": 10241,
+        "path": "tools/integration/validate_merge_gate.py",
+        "sha256": "a28a09549ec316cb3b46c53517704c87e99d8ce57e06febdb2c570090255d949"
+      },
+      {
+        "bytes": 10209,
+        "path": "tools/integration/verify_baseline.py",
+        "sha256": "b0dc512f3bd0bd7abb50b96ceb99fcf7379cb5c1fc95e96d10369e11b0ff7ec5"
+      },
+      {
+        "bytes": 7144,
+        "path": "tools/integration/verify_contracts.mjs",
+        "sha256": "ef39db2a463ce43edb26f8ef8a0c93e1b9dd5a33fce67b5ebfa2fccb4c0eb035"
+      },
+      {
+        "bytes": 39226,
+        "path": "tools/integration/verify_contracts.py",
+        "sha256": "07b1551d6f0c60467183bcf503f22d2b22ad11ecb0eb68c99470e6a6e92e4005"
+      },
+      {
+        "bytes": 2214,
+        "path": "tools/integration/verify_cross_language_goldens.py",
+        "sha256": "3d552a32f1cef6895fc5f14aba9f0630bedc1e8928737b0285c95a39bf2fd8b5"
+      }
+    ]
+  },
+  "contract_families": [
+    "84.1-common-jcs",
+    "84.2-manifest-capability-data",
+    "84.3-rpc-envelope-method-matrix",
+    "84.4-run-snapshot-request-key",
+    "84.5-result-candidate-provenance",
+    "84.6-event-sse-checkpoint-stream",
+    "84.7-plan-generation-settings-lifecycle",
+    "84.8-compatibility-history",
+    "84.9-backup-restore",
+    "84.10-plugin-ui-wire",
+    "84.11-skill-package-receipt",
+    "84.12-job-broker-outcome",
+    "84.13-negative-golden",
+    "84.14-finding-closure"
+  ],
+  "contract_version": "1.2.0",
+  "generated_from": {
+    "contract_file_count": 122,
+    "contract_manifest": {
+      "path": "contracts/manifest-v1.json",
+      "sha256": "c8be12b5e0389a3c67d71b0c2e9b00964b67543aa78fb982cb5d952273b929d0"
+    },
+    "schema_count": 48
+  },
+  "golden_vectors": {
+    "backup": {
+      "expected": {
+        "bundle_hash": "cb26bba0a85711962d2d6f44115b2c186bd9db0aa3514b58dcecc9c0083fbaf8",
+        "mode": "workspace",
+        "root_immutable": true
+      },
+      "files": [
+        {
+          "bytes": 1328,
+          "path": "contracts/golden/backup/backup.json",
+          "sha256": "b0335417147f116a240022c408183d6a42109aab98cbee296f1084329d8c913b"
+        },
+        {
+          "bytes": 137,
+          "path": "contracts/golden/backup/expected.json",
+          "sha256": "ef7f57da0a215c5f3bcf5d0b456e5f93e09360f44da8ac606e03280b776461c2"
+        }
+      ]
+    },
+    "package": {
+      "expected": {
+        "expected_from_design": {
+          "package_hash": "987e80013fe0cddd463eb8976fd75b62dbabef4f8e0e321ae6ad82a54f09b068",
+          "release_id": "00d365d816a45108cac08b5dc26eae015a44401c04aed0e9d512ed8fb24d88dd"
+        },
+        "files_sha256": "54bfa55d6557dcf1a11f3e845e6492e4fe34f35a0d6751f45e0e8ae77df36e78  data/rules.json\n5e3188bf60c1e12c38e25f6e39ca11376bd82d3dee285e99cdb981b8e7b4186c  plugin.json\n",
+        "package_hash": "987e80013fe0cddd463eb8976fd75b62dbabef4f8e0e321ae6ad82a54f09b068",
+        "release_id": "00d365d816a45108cac08b5dc26eae015a44401c04aed0e9d512ed8fb24d88dd"
+      },
+      "files": [
+        {
+          "bytes": 20,
+          "path": "contracts/golden/package/data/rules.json",
+          "sha256": "54bfa55d6557dcf1a11f3e845e6492e4fe34f35a0d6751f45e0e8ae77df36e78"
+        },
+        {
+          "bytes": 563,
+          "path": "contracts/golden/package/expected.json",
+          "sha256": "fcdf0eb8ac249871449eacad0aaad3101a53700f1bb7db5670b57a9dbe5dc484"
+        },
+        {
+          "bytes": 160,
+          "path": "contracts/golden/package/files.sha256",
+          "sha256": "3d1301d85626f86e3cbf7b43e88b614ea03c10574bc97457195b8dd66e6d7aa9"
+        },
+        {
+          "bytes": 386,
+          "path": "contracts/golden/package/plugin.json",
+          "sha256": "5e3188bf60c1e12c38e25f6e39ca11376bd82d3dee285e99cdb981b8e7b4186c"
+        }
+      ]
+    },
+    "run-snapshot": {
+      "expected": {
+        "expected_from_design": {
+          "request_key": "5e346b6254626cb314a0d4040a64e8a9797c0a890537ce07e9920a911a525e61",
+          "snapshot_hash": "5a7e60677a5ced4803c96f7b7db657409051ba8f3f5b18aa8ac28978e2b4a1d2"
+        },
+        "request_key": "5e346b6254626cb314a0d4040a64e8a9797c0a890537ce07e9920a911a525e61",
+        "snapshot_hash": "5a7e60677a5ced4803c96f7b7db657409051ba8f3f5b18aa8ac28978e2b4a1d2"
+      },
+      "files": [
+        {
+          "bytes": 383,
+          "path": "contracts/golden/run-snapshot/expected.json",
+          "sha256": "e57b3adb578951a6ba4c4f796124752c4df17694dbaa7aa146913eb629c92d6d"
+        },
+        {
+          "bytes": 294,
+          "path": "contracts/golden/run-snapshot/request-key.txt",
+          "sha256": "5e346b6254626cb314a0d4040a64e8a9797c0a890537ce07e9920a911a525e61"
+        },
+        {
+          "bytes": 3144,
+          "path": "contracts/golden/run-snapshot/snapshot.jcs",
+          "sha256": "b66c4dbed135079dc0098887ee387d84835f108d72db7e018e980c729fa31048"
+        },
+        {
+          "bytes": 3887,
+          "path": "contracts/golden/run-snapshot/snapshot.json",
+          "sha256": "26d1d20b9d53931aa6ba54621e8f9262316660aa75df44f4620f71f9581b59df"
+        }
+      ]
+    },
+    "skill": {
+      "expected": {
+        "expected_from_design": {
+          "skill_package_hash": "5cf3df6acea3c792ee36fa3c0c5757f87c8219aba88cfc568bd4a67738983b7f",
+          "skill_release_id": "abe35d45644a2ebac3b3c914876c613342b8d5a3e2421334241a06ec887436b7"
+        },
+        "files_sha256": "240c9cc169ce9ea5b2b7802201b672812abb8f7cd2cfa3c3e2327b61b748e061  prompt.txt\n30f21bc4b70b1219d23f3fbf6dbbabc460ecddb6f373800f560d5441df8006c1  skill.json\n",
+        "skill_package_hash": "5cf3df6acea3c792ee36fa3c0c5757f87c8219aba88cfc568bd4a67738983b7f",
+        "skill_release_id": "abe35d45644a2ebac3b3c914876c613342b8d5a3e2421334241a06ec887436b7"
+      },
+      "files": [
+        {
+          "bytes": 581,
+          "path": "contracts/golden/skill/expected.json",
+          "sha256": "db51992769b1f01562a1d1b543f3c7c9f240915cc0644d072efec82848d6f609"
+        },
+        {
+          "bytes": 154,
+          "path": "contracts/golden/skill/files.sha256",
+          "sha256": "7ceb3f3c812ea8d094177d1816257bd4fff970e78ecee3522775ed390dec6e6b"
+        },
+        {
+          "bytes": 17,
+          "path": "contracts/golden/skill/prompt.txt",
+          "sha256": "240c9cc169ce9ea5b2b7802201b672812abb8f7cd2cfa3c3e2327b61b748e061"
+        },
+        {
+          "bytes": 158,
+          "path": "contracts/golden/skill/skill.json",
+          "sha256": "30f21bc4b70b1219d23f3fbf6dbbabc460ecddb6f373800f560d5441df8006c1"
+        }
+      ]
+    }
+  },
+  "inventory": {
+    "combination_example_count": 4,
+    "negative_case_count": 39,
+    "negative_group_count": 14,
+    "positive_fixture_count": 35,
+    "schema_count": 48
+  },
+  "negative_groups": [
+    {
+      "group_id": "84.13-01",
+      "negative_case_count": 2,
+      "path": "contracts/corpus/negative/84.13/01.json",
+      "positive_fixture_ids": [
+        "package-golden",
+        "skill-golden",
+        "run-snapshot-golden"
+      ],
+      "sha256": "a006b82393a2d7d851db4cef980f1012a974bf06714a862b2e5a26bb3b4c95d0"
+    },
+    {
+      "group_id": "84.13-02",
+      "negative_case_count": 3,
+      "path": "contracts/corpus/negative/84.13/02.json",
+      "positive_fixture_ids": [
+        "result-bundle"
+      ],
+      "sha256": "e15ad45610b9e68bd70078fe71d13df0e8eb37e95bf226304b7ff320f268b467"
+    },
+    {
+      "group_id": "84.13-03",
+      "negative_case_count": 2,
+      "path": "contracts/corpus/negative/84.13/03.json",
+      "positive_fixture_ids": [
+        "broker-invocation"
+      ],
+      "sha256": "79e2993df7f9452f5c927e151dbe0766b34cf3fedabe9ad1c868eb8239f9b364"
+    },
+    {
+      "group_id": "84.13-04",
+      "negative_case_count": 2,
+      "path": "contracts/corpus/negative/84.13/04.json",
+      "positive_fixture_ids": [
+        "run-snapshot"
+      ],
+      "sha256": "e1846992c3eeccd3291602977f0f3358c300bf415ed517e131231efc646be241"
+    },
+    {
+      "group_id": "84.13-05",
+      "negative_case_count": 3,
+      "path": "contracts/corpus/negative/84.13/05.json",
+      "positive_fixture_ids": [
+        "rpc-upload"
+      ],
+      "sha256": "8b6cd7ff0e7442df007db334575e80723213fcc3333dbe4553ca85a4cfbf6dea"
+    },
+    {
+      "group_id": "84.13-06",
+      "negative_case_count": 3,
+      "path": "contracts/corpus/negative/84.13/06.json",
+      "positive_fixture_ids": [
+        "checkpoint"
+      ],
+      "sha256": "10525b73e0b86d3274ef624d0e432faabef4083ba75b1de4e45d4ab1f69b8e4a"
+    },
+    {
+      "group_id": "84.13-07",
+      "negative_case_count": 3,
+      "path": "contracts/corpus/negative/84.13/07.json",
+      "positive_fixture_ids": [
+        "result-bundle",
+        "provenance-receipt"
+      ],
+      "sha256": "50e4341e999c0d3150522d09cbb6103e5bd54fa2ff6325709b72c15f950bb97b"
+    },
+    {
+      "group_id": "84.13-08",
+      "negative_case_count": 3,
+      "path": "contracts/corpus/negative/84.13/08.json",
+      "positive_fixture_ids": [
+        "plugin-lifecycle-transition"
+      ],
+      "sha256": "e0ccc768d5daec45c195c5da9d219274b92d65b527471628342607bff3d310a8"
+    },
+    {
+      "group_id": "84.13-09",
+      "negative_case_count": 2,
+      "path": "contracts/corpus/negative/84.13/09.json",
+      "positive_fixture_ids": [
+        "release-retirement",
+        "release-pin"
+      ],
+      "sha256": "ca579dc8e1b47774fbc60bce72fde4990881bc6e797eb5467bf8b8b3256de7e1"
+    },
+    {
+      "group_id": "84.13-10",
+      "negative_case_count": 3,
+      "path": "contracts/corpus/negative/84.13/10.json",
+      "positive_fixture_ids": [
+        "core-event",
+        "sse-recovery",
+        "core-snapshot"
+      ],
+      "sha256": "88ae60b67e76676d6ce287220ffab2f3e26a74611f351b6734f0a70ea9814bdb"
+    },
+    {
+      "group_id": "84.13-11",
+      "negative_case_count": 3,
+      "path": "contracts/corpus/negative/84.13/11.json",
+      "positive_fixture_ids": [
+        "stream-prefix"
+      ],
+      "sha256": "6be7403164fbf85ef84214fc5a5903c1150797e640a98b4f4d2628dac233b732"
+    },
+    {
+      "group_id": "84.13-12",
+      "negative_case_count": 3,
+      "path": "contracts/corpus/negative/84.13/12.json",
+      "positive_fixture_ids": [
+        "skill-run-receipt",
+        "skill-chain-result"
+      ],
+      "sha256": "09668ae51ea1ece53f3d19ce0e9cc4c79cc9a8f4e1a00453031e6e6a1d705916"
+    },
+    {
+      "group_id": "84.13-13",
+      "negative_case_count": 3,
+      "path": "contracts/corpus/negative/84.13/13.json",
+      "positive_fixture_ids": [
+        "plugin-ui-tree",
+        "plugin-ui-intent",
+        "plugin-ui-message"
+      ],
+      "sha256": "1973267660e70012010d861d62e0acf46d7901fc7ed6eeff072e02b9224516f2"
+    },
+    {
+      "group_id": "84.13-14",
+      "negative_case_count": 4,
+      "path": "contracts/corpus/negative/84.13/14.json",
+      "positive_fixture_ids": [
+        "backup-golden",
+        "compatibility-valid",
+        "history-v1"
+      ],
+      "sha256": "8f127d7d812a9a23e2eea6315b38384cb7554d7a32acc8c69ad2cd28cf4ad540"
+    }
+  ],
+  "schema": "plotpilot-contract-golden-delivery/v1",
+  "source": {
+    "formal_design": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized正式设计规划-2026-08-25-v1.md",
+    "sha256": "e70f450b75cfa753148cf620d13855d0073f7d61294e7599ea9cc98f3e612b7b",
+    "version": "v1.2"
+  },
+  "verification": {
+    "cross_language": "python tools/integration/verify_cross_language_goldens.py",
+    "ledger": "docs/deliveries/PPA-00/integration-test-ledger.json",
+    "node": "node tools/integration/verify_contracts.mjs --all",
+    "python": "tools/integration/verify_contracts.py --all"
+  }
+}

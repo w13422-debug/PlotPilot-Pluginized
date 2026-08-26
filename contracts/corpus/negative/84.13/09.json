@@ -1,0 +1,20 @@
+{
+  "group_id": "84.13-09",
+  "negative": [
+    {
+      "case_id": "pin-while-retiring",
+      "expected_error_code": 1013,
+      "kind": "retire_pin_race"
+    },
+    {
+      "case_id": "retire-with-recoverable-attempt",
+      "expected_error_code": 1013,
+      "kind": "pin_barrier"
+    }
+  ],
+  "positive": [
+    "release-retirement",
+    "release-pin"
+  ],
+  "title": "Retire/new pin race and post-delete Candidate Publication"
+}

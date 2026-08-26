@@ -1,0 +1,15 @@
+{
+  "schema": "contract-delta/v1",
+  "status": "template",
+  "delta_id": null,
+  "raised_by_project": null,
+  "affected_contract_ids": [],
+  "formal_design_version": "v1.2",
+  "formal_design_sha256": "e70f450b75cfa753148cf620d13855d0073f7d61294e7599ea9cc98f3e612b7b",
+  "observed_mismatch": null,
+  "evidence": [],
+  "affected_slice_stopped": false,
+  "proposed_v2_or_adr": null,
+  "p0_decision": "pending",
+  "decision_evidence": null
+}

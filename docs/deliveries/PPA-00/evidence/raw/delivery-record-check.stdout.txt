@@ -1,0 +1,15 @@
+{
+  "base_sha": "1c481237b6fa32ef5f85d7f8da4cb16f366cd4f0",
+  "branch": "codex/ppa-00-integration",
+  "browser_api_trace_entries": 146,
+  "contract_schemas": 48,
+  "donor_local_push": "DISABLED",
+  "negative_cases": 39,
+  "negative_groups": 14,
+  "p1_p6_creation_gate": "closed",
+  "parity_features": 27,
+  "parity_main_flows": 10,
+  "passed": true,
+  "schema": "p0-m0-delivery-validation/v1",
+  "screenshots": 10
+}

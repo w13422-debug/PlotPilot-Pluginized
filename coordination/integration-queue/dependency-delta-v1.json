@@ -1,0 +1,18 @@
+{
+  "schema": "dependency-delta/v1",
+  "status": "template",
+  "delta_id": null,
+  "raised_by_project": null,
+  "package_or_tool": null,
+  "change": null,
+  "from_version": null,
+  "to_version": null,
+  "reason": null,
+  "license": null,
+  "source_and_provenance": null,
+  "compatibility": null,
+  "supply_chain_review": null,
+  "validation": [],
+  "p0_decision": "pending",
+  "decision_evidence": null
+}

@@ -1,0 +1,19 @@
+{
+  "bundle_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "bundle_id": "data-bundle-1",
+  "data_plugin_id": "com.plotpilot.fixture.data",
+  "data_release_id": "data-release-1",
+  "files": [
+    {
+      "asset_id": "asset-data-1",
+      "mime": "application/json",
+      "path": "data/rules.json",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "size": 18
+    }
+  ],
+  "format_id": "fixture-rules/v1",
+  "package_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "root_path": "data/rules.json",
+  "schema": "plugin-data-bundle/v1"
+}

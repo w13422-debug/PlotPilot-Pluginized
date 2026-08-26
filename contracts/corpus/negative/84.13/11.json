@@ -1,0 +1,24 @@
+{
+  "group_id": "84.13-11",
+  "negative": [
+    {
+      "case_id": "prefix-not-extension",
+      "expected_error_code": 1011,
+      "kind": "stream_prefix"
+    },
+    {
+      "case_id": "old-stream-id",
+      "expected_error_code": 1002,
+      "kind": "stream_binding"
+    },
+    {
+      "case_id": "duplicate-incomplete-candidate",
+      "expected_error_code": 1010,
+      "kind": "candidate_uniqueness"
+    }
+  ],
+  "positive": [
+    "stream-prefix"
+  ],
+  "title": "Durable stream prefix and unique incomplete Candidate"
+}

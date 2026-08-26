@@ -1,0 +1,24 @@
+{
+  "group_id": "84.13-05",
+  "negative": [
+    {
+      "case_id": "same-key-different-payload",
+      "expected_error_code": 1008,
+      "kind": "duplicate_operation"
+    },
+    {
+      "case_id": "upload-offset-ahead",
+      "expected_error_code": 1005,
+      "kind": "upload_offset"
+    },
+    {
+      "case_id": "upload-final-hash-mismatch",
+      "expected_error_code": 1005,
+      "kind": "upload_hash"
+    }
+  ],
+  "positive": [
+    "rpc-upload"
+  ],
+  "title": "Operation key and chunk upload ACK-loss"
+}

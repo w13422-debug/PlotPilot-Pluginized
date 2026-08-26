@@ -1,0 +1,10 @@
+{
+  "schema": "integration-queue/v1",
+  "queue_owner": "P0",
+  "merge_method": "no-ff",
+  "project_matrix_path": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized七项目任务书-2026-08-26\\project-matrix.json",
+  "accepted_submissions": [],
+  "pending_contract_deltas": [],
+  "pending_dependency_deltas": [],
+  "last_decision": null
+}

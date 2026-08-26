@@ -1,0 +1,19 @@
+{
+  "group_id": "84.13-03",
+  "negative": [
+    {
+      "case_id": "broker-different-input-same-key",
+      "expected_error_code": 1008,
+      "kind": "duplicate_operation"
+    },
+    {
+      "case_id": "cancel-after-child-terminal",
+      "expected_error_code": 1010,
+      "kind": "terminal_rewrite"
+    }
+  ],
+  "positive": [
+    "broker-invocation"
+  ],
+  "title": "Broker ACK-loss, child cancel and receipt propagation"
+}

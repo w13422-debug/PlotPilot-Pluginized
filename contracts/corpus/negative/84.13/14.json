@@ -1,0 +1,31 @@
+{
+  "group_id": "84.13-14",
+  "negative": [
+    {
+      "case_id": "workspace-with-package",
+      "expected_error_code": 1011,
+      "kind": "backup_mode"
+    },
+    {
+      "case_id": "reserved-device-name",
+      "expected_error_code": 1005,
+      "kind": "windows_path"
+    },
+    {
+      "case_id": "compatibility-or",
+      "expected_error_code": 1011,
+      "kind": "compatibility"
+    },
+    {
+      "case_id": "history-reserialized",
+      "expected_error_code": 1011,
+      "kind": "raw_bytes"
+    }
+  ],
+  "positive": [
+    "backup-golden",
+    "compatibility-valid",
+    "history-v1"
+  ],
+  "title": "Backup modes, restore, compatibility/history and Windows paths"
+}

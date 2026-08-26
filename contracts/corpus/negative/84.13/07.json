@@ -1,0 +1,25 @@
+{
+  "group_id": "84.13-07",
+  "negative": [
+    {
+      "case_id": "bundle-producer-mismatch",
+      "expected_error_code": 1011,
+      "kind": "producer_binding"
+    },
+    {
+      "case_id": "succeeded-partial-item",
+      "expected_error_code": 1011,
+      "kind": "outcome_matrix"
+    },
+    {
+      "case_id": "failed-candidate-bundle",
+      "expected_error_code": 1011,
+      "kind": "outcome_matrix"
+    }
+  ],
+  "positive": [
+    "result-bundle",
+    "provenance-receipt"
+  ],
+  "title": "Bundle producer/snapshot/lease/receipt/staging/outcome transaction"
+}

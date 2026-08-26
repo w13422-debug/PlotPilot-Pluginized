@@ -1,0 +1,171 @@
+{
+  "artifacts": {
+    "contract_golden_manifest": {
+      "bytes": 40689,
+      "path": "docs/deliveries/PPA-00/contract-golden-manifest.json",
+      "sha256": "c9bf177afd5224fca42654725710119b609451456e012e6551b708af99afa88a"
+    },
+    "donor_protection_evidence": {
+      "bytes": 14549,
+      "path": "docs/deliveries/PPA-00/m0.1-donor-protection.json",
+      "sha256": "d4f663a6da60a12e8fdfd3ff62f71229e32c48e796ab2f2213bfb7ed313b0c9c"
+    },
+    "identity_runtime_evidence": {
+      "bytes": 3642,
+      "path": "docs/deliveries/PPA-00/evidence/m0.2-identity-runtime.json",
+      "sha256": "4d7d10247858d5ecbbfe5b219179fce6fff9b47ca104af77c0d3e31203f412af"
+    },
+    "integration_test_ledger": {
+      "bytes": 8394,
+      "path": "docs/deliveries/PPA-00/integration-test-ledger.json",
+      "sha256": "286ee7d7d38fd5e5bfbdb6d4914d9c516f9522fa35020dd3f6d6f2d5df1f2880"
+    },
+    "license_ledger": {
+      "bytes": 87160,
+      "path": "docs/deliveries/PPA-00/license-ledger.json",
+      "sha256": "4232d50524dfa17e780bbf2c05c3416f49c7e7e59aee520f5baa4dd1a5d5224d"
+    },
+    "parity_ledger": {
+      "bytes": 116536,
+      "path": "docs/deliveries/PPA-00/parity-ledger.json",
+      "sha256": "87bc58039aef861367ba32f89f60ad8144af3704d840cc21057f2a3705a9199f"
+    },
+    "runtime_lock": {
+      "bytes": 1016,
+      "path": "docs/deliveries/PPA-00/runtime-toolchain-lock.json",
+      "sha256": "4a22e1d06b7b39fc82fe52b7df23a0b94bcf8c65a687f35dfc248e22e1048a30"
+    }
+  },
+  "commit_ref": "M0-OPEN",
+  "constraints": {
+    "contract_delta": "none",
+    "dependency_delta": "none",
+    "desktop_build": "not run",
+    "donor_local_push": "DISABLED",
+    "fixture_user_data": "none",
+    "network_in_contract_tests": "disabled",
+    "p1_p6_creation_gate": "closed",
+    "real_provider": "not used"
+  },
+  "gates": {
+    "M0.1": {
+      "assertion": "external donor manifest, three file hashes, donor HEAD/status and product bootstrap identity match",
+      "evidence": [
+        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\m0.1-donor-protection.json",
+        "C:\\Users\\Administrator\\Desktop\\PlotPilot-Pluginized-preconstruction-backup-20260826\\donor-backup-manifest.json",
+        "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p0-monorepo-bootstrap.json"
+      ],
+      "status": "passed"
+    },
+    "M0.2": {
+      "assertion": "baseline, exact runtime lock, browser-only scripts, source/data-root separation and license record",
+      "evidence": [
+        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\m0.2-identity-runtime.json",
+        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\runtime-toolchain-lock.json",
+        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\license-ledger.json"
+      ],
+      "status": "passed"
+    },
+    "M0.3": {
+      "assertion": "composition root, typed ports, unified errors/diagnostics and existing Home/Workbench composition preserved",
+      "evidence": [
+        "backend/plotpilot_core/bootstrap",
+        "backend/plotpilot_plugin_sdk/ports.py",
+        "frontend/src/contracts/types.ts",
+        "frontend/src/contracts/rpc.ts"
+      ],
+      "status": "passed"
+    },
+    "M0.4": {
+      "assertion": "48 closed schemas, §13.4/§20/§84 surface, four goldens and all fourteen negative groups",
+      "evidence": [
+        "contracts/manifest-v1.json",
+        "docs/contracts/README.md",
+        "docs/contracts/schema-map.md",
+        "docs/contracts/method-matrix.md",
+        "docs/contracts/negative-golden.md"
+      ],
+      "status": "passed"
+    },
+    "M0.5": {
+      "assertion": "deterministic fake Provider, typed port/UI/HTTP/SSE fixtures and Python/TypeScript SDK/verifiers",
+      "evidence": [
+        "backend/plotpilot_plugin_sdk/fake_provider.py",
+        "backend/plotpilot_plugin_sdk/fixtures.py",
+        "backend/plotpilot_plugin_sdk/ports.py",
+        "frontend/src/contracts/verifier.ts"
+      ],
+      "status": "passed"
+    },
+    "M0.6": {
+      "assertion": "ten formal flow records cite ten real screenshots, API trace and behavior assertions; safety-limited actions are explicitly unexecuted",
+      "evidence": [
+        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity-ledger.json",
+        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
+        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots"
+      ],
+      "status": "passed"
+    },
+    "M0.7": {
+      "assertion": "write-set, delta, integration-ready, checkpoint, state, single queue and merge gate are tracked",
+      "evidence": [
+        "AGENTS.md",
+        "coordination/integration-queue",
+        "coordination/PPA-00/state.json",
+        "tools/integration/validate_merge_gate.py"
+      ],
+      "status": "passed"
+    }
+  },
+  "identity": {
+    "base_sha": "1c481237b6fa32ef5f85d7f8da4cb16f366cd4f0",
+    "branch": "codex/ppa-00-integration",
+    "formal_design_sha256": "e70f450b75cfa753148cf620d13855d0073f7d61294e7599ea9cc98f3e612b7b",
+    "formal_design_version": "v1.2",
+    "project_id": "P0",
+    "project_name": "PPA-00-Integration",
+    "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized"
+  },
+  "limitations": [
+    "M0 browser smoke deliberately does not call generation, pause/cancel, SSE reconnect or task resume and does not save a non-empty chapter body; those rows remain explicit follow-up gates.",
+    "The read-only donor still contains its pre-construction dirty files; the external backup manifest is the authority and the donor was not cleaned or reset.",
+    "The legacy src-tauri directory and compatibility dependency remain read-only donor material; no Tauri build script or build was used in M0."
+  ],
+  "milestone": "M0",
+  "schema": "plotpilot-m0-open-manifest/v1",
+  "self_hash_excluded": true,
+  "source_inputs": {
+    "bootstrap_evidence": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p0-monorepo-bootstrap.json",
+    "design": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized正式设计规划-2026-08-25-v1.md",
+    "external_backup_manifest": "C:\\Users\\Administrator\\Desktop\\PlotPilot-Pluginized-preconstruction-backup-20260826\\donor-backup-manifest.json",
+    "project_matrix": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized七项目任务书-2026-08-26\\project-matrix.json",
+    "task": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized七项目任务书-2026-08-26\\PPA-00-Integration.md"
+  },
+  "status": "open",
+  "tag": "M0-OPEN",
+  "verification": {
+    "commands": [
+      "python tools/integration/verify_contracts.py --all",
+      "pytest tests/contract tests/acceptance -q",
+      "python tools/integration/verify_cross_language_goldens.py",
+      "node tools/integration/verify_contracts.mjs --all",
+      "python tools/integration/validate_merge_gate.py --json"
+    ],
+    "contract_golden_delivery": {
+      "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\contract-golden-manifest.json",
+      "sha256": "c9bf177afd5224fca42654725710119b609451456e012e6551b708af99afa88a"
+    },
+    "contract_manifest": {
+      "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\contracts\\manifest-v1.json",
+      "sha256": "c8be12b5e0389a3c67d71b0c2e9b00964b67543aa78fb982cb5d952273b929d0"
+    },
+    "parity_ledger": {
+      "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity-ledger.json",
+      "sha256": "87bc58039aef861367ba32f89f60ad8144af3704d840cc21057f2a3705a9199f"
+    },
+    "test_ledger": {
+      "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\integration-test-ledger.json",
+      "sha256": "286ee7d7d38fd5e5bfbdb6d4914d9c516f9522fa35020dd3f6d6f2d5df1f2880"
+    }
+  }
+}

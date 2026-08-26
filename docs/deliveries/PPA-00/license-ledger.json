@@ -1,0 +1,2040 @@
+{
+  "schema": "plotpilot-license-ledger/v1",
+  "generated_at": "2026-08-26T06:52:19Z",
+  "policy": {
+    "source_code": "PlotPilot baseline remains under the existing LICENSE; P0 adds no copied third-party source.",
+    "npm": "All direct and lock-resolved frontend packages are listed with lock path, license metadata, resolved URL and integrity when present.",
+    "python": "M0 verification runtime packages are listed from importlib.metadata; the checked-in requirements files remain the dependency declaration.",
+    "review": "Any package with missing license metadata blocks release until its upstream notice is reviewed."
+  },
+  "toolchain": {
+    "python": "3.12.10",
+    "node": "v24.18.0",
+    "platform": "Windows-11-10.0.26200-SP0"
+  },
+  "python_packages": [
+    {
+      "name": "jsonschema",
+      "version": "4.26.0",
+      "license": "MIT",
+      "home_page": null,
+      "source_urls": [
+        "Homepage, https://github.com/python-jsonschema/jsonschema",
+        "Source, https://github.com/python-jsonschema/jsonschema"
+      ]
+    },
+    {
+      "name": "rfc8785",
+      "version": "0.1.4",
+      "license": "see metadata classifiers",
+      "home_page": null,
+      "source_urls": [
+        "Homepage, https://pypi.org/project/rfc8785",
+        "Source, https://github.com/trailofbits/rfc8785.py"
+      ]
+    },
+    {
+      "name": "pytest",
+      "version": "9.1.1",
+      "license": "MIT",
+      "home_page": null,
+      "source_urls": [
+        "Homepage, https://docs.pytest.org/en/latest/",
+        "Source, https://github.com/pytest-dev/pytest"
+      ]
+    },
+    {
+      "name": "fastapi",
+      "version": "0.141.1",
+      "license": "MIT",
+      "home_page": null,
+      "source_urls": [
+        "Homepage, https://github.com/fastapi/fastapi"
+      ]
+    },
+    {
+      "name": "uvicorn",
+      "version": "0.52.4",
+      "license": "BSD-3-Clause",
+      "home_page": null,
+      "source_urls": [
+        "Homepage, https://uvicorn.dev/",
+        "Source, https://github.com/Kludex/uvicorn"
+      ]
+    },
+    {
+      "name": "pydantic",
+      "version": "2.13.4",
+      "license": "MIT",
+      "home_page": null,
+      "source_urls": [
+        "Homepage, https://github.com/pydantic/pydantic",
+        "Source, https://github.com/pydantic/pydantic"
+      ]
+    },
+    {
+      "name": "httpx",
+      "version": "0.28.1",
+      "license": "BSD-3-Clause",
+      "home_page": null,
+      "source_urls": [
+        "Homepage, https://github.com/encode/httpx",
+        "Source, https://github.com/encode/httpx"
+      ]
+    },
+    {
+      "name": "starlette",
+      "version": "1.6.0",
+      "license": "BSD-3-Clause",
+      "home_page": null,
+      "source_urls": [
+        "Homepage, https://github.com/Kludex/starlette",
+        "Source, https://github.com/Kludex/starlette"
+      ]
+    }
+  ],
+  "npm": {
+    "lockfile": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\frontend\\package-lock.json",
+    "lockfile_sha256": "da384b88436df12ddefca3f814ace2786770ed4a6c7e1fabfd068760022e9e08",
+    "lockfile_version": 3,
+    "direct": [
+      {
+        "name": "@tauri-apps/api",
+        "specifier": "^2",
+        "version": "2.10.1",
+        "license": "Apache-2.0 OR MIT",
+        "resolved": "https://registry.npmmirror.com/@tauri-apps/api/-/api-2.10.1.tgz",
+        "integrity": "sha512-hKL/jWf293UDSUN09rR69hrToyIXBb8CjGaWC7gfinvnQrBVvnLr08FeFi38gxtugAVyVcTa5/FD/Xnkb1siBw=="
+      },
+      {
+        "name": "@tauri-apps/cli",
+        "specifier": "^2",
+        "version": "2.10.1",
+        "license": "Apache-2.0 OR MIT",
+        "resolved": "https://registry.npmmirror.com/@tauri-apps/cli/-/cli-2.10.1.tgz",
+        "integrity": "sha512-jQNGF/5quwORdZSSLtTluyKQ+o6SMa/AUICfhf4egCGFdMHqWssApVgYSbg+jmrZoc8e1DscNvjTnXtlHLS11g=="
+      },
+      {
+        "name": "@types/dompurify",
+        "specifier": "^3.0.5",
+        "version": "3.0.5",
+        "license": "MIT",
+        "resolved": "https://registry.npmmirror.com/@types/dompurify/-/dompurify-3.0.5.tgz",
+        "integrity": "sha512-1Wg0g3BtQF7sSb27fJQAKck1HECM6zV1EB66j8JH9i3LCjYabJa0FSdiSgsD5K/RbrsR0SiraKacLB+T8ZVYAg=="
+      },
+      {
+        "name": "@types/node",
+        "specifier": "^24.12.0",
+        "version": "24.12.0",
+        "license": "MIT",
+        "resolved": "https://registry.npmmirror.com/@types/node/-/node-24.12.0.tgz",
+        "integrity": "sha512-GYDxsZi3ChgmckRT9HPU0WEhKLP08ev/Yfcq2AstjrDASOYCSXeyjDsHg4v5t4jOj7cyDX3vmprafKlWIG9MXQ=="
+      },
+      {
+        "name": "@vicons/ionicons5",
+        "specifier": "^0.13.0",
+        "version": "0.13.0",
+        "license": "MIT",
+        "resolved": "https://registry.npmmirror.com/@vicons/ionicons5/-/ionicons5-0.13.0.tgz",
+        "integrity": "sha512-zvZKBPjEXKN7AXNo2Na2uy+nvuv6SP4KAMQxpKL2vfHMj0fSvuw7JZcOPCjQC3e7ayssKnaoFVAhbYcW6v41qQ=="
+      },
+      {
+        "name": "@vitejs/plugin-vue",
+        "specifier": "^6.0.5",
+        "version": "6.0.5",
+        "license": "MIT",
+        "resolved": "https://registry.npmmirror.com/@vitejs/plugin-vue/-/plugin-vue-6.0.5.tgz",
+        "integrity": "sha512-bL3AxKuQySfk1iGcBsQnoRVexTPJq0Z/ixFVM8OhVJAP6ZXXXLtM7NFKWhLl30Kg7uTBqIaPXbh+nuQCuBDedg=="
+      },
+      {
+        "name": "@vue-flow/background",
+        "specifier": "^1.3.2",
+        "version": "1.3.2",
+        "license": "MIT",
+        "resolved": "https://registry.npmmirror.com/@vue-flow/background/-/background-1.3.2.tgz",
+        "integrity": "sha512-eJPhDcLj1wEo45bBoqTXw1uhl0yK2RaQGnEINqvvBsAFKh/camHJd5NPmOdS1w+M9lggc9igUewxaEd3iCQX2w=="
+      },
+      {
+        "name": "@vue-flow/controls",
+        "specifier": "^1.1.3",
+        "version": "1.1.3",
+        "license": "MIT",
+        "resolved": "https://registry.npmmirror.com/@vue-flow/controls/-/controls-1.1.3.tgz",
+        "integrity": "sha512-XCf+G+jCvaWURdFlZmOjifZGw3XMhN5hHlfMGkWh9xot+9nH9gdTZtn+ldIJKtarg3B21iyHU8JjKDhYcB6JMw=="
+      },
+      {
+        "name": "@vue-flow/core",
+        "specifier": "^1.48.2",
+        "version": "1.48.2",
+        "license": "MIT",
+        "resolved": "https://registry.npmmirror.com/@vue-flow/core/-/core-1.48.2.tgz",
+        "integrity": "sha512-raxhgKWE+G/mcEvXJjGFUDYW9rAI3GOtiHR3ZkNpwBWuIaCC1EYiBmKGwJOoNzVFgwO7COgErnK7i08i287AFA=="
+      },
+      {
+        "name": "@vue-flow/minimap",
+        "specifier": "^1.5.4",
+        "version": "1.5.4",
+        "license": "MIT",
+        "resolved": "https://registry.npmmirror.com/@vue-flow/minimap/-/minimap-1.5.4.tgz",
+        "integrity": "sha512-l4C+XTAXnRxsRpUdN7cAVFBennC1sVRzq4bDSpVK+ag7tdMczAnhFYGgbLkUw3v3sY6gokyWwMl8CDonp8eB2g=="
+      },
+      {
+        "name": "@vue/tsconfig",
+        "specifier": "^0.9.0",
+        "version": "0.9.1",
+        "license": "MIT",
+        "resolved": "https://registry.npmmirror.com/@vue/tsconfig/-/tsconfig-0.9.1.tgz",
+        "integrity": "sha512-buvjm+9NzLCJL29KY1j1991YYJ5e6275OiK+G4jtmfIb+z4POywbdm0wXusT9adVWqe0xqg70TbI7+mRx4uU9w=="
+      },
+      {
+        "name": "@vueuse/core",
+        "specifier": "^14.2.1",
+        "version": "14.2.1",
+        "license": "MIT",
+        "resolved": "https://registry.npmmirror.com/@vueuse/core/-/core-14.2.1.tgz",
+        "integrity": "sha512-3vwDzV+GDUNpdegRY6kzpLm4Igptq+GA0QkJ3W61Iv27YWwW/ufSlOfgQIpN6FZRMG0mkaz4gglJRtq5SeJyIQ=="
+      },
+      {
+        "name": "axios",
+        "specifier": "^1.14.0",
+        "version": "1.17.0",
+        "license": "MIT",
+        "resolved": "https://registry.npmjs.org/axios/-/axios-1.17.0.tgz",
+        "integrity": "sha512-J8SwNxprqqpbfenehxWYXE7CW+wM1BB4w3+N+g+/Wx40xM4rsLrfPmHHxSWIxJLYDgSY/HqlFPIYb2/S3rxafw=="
+      },
+      {
+        "name": "dayjs",
+        "specifier": "^1.11.20",
+        "version": "1.11.20",
+        "license": "MIT",
+        "resolved": "https://registry.npmmirror.com/dayjs/-/dayjs-1.11.20.tgz",
+        "integrity": "sha512-YbwwqR/uYpeoP4pu043q+LTDLFBLApUP6VxRihdfNTqu4ubqMlGDLd6ErXhEgsyvY0K6nCs7nggYumAN+9uEuQ=="
+      },
+      {
+        "name": "dompurify",
+        "specifier": "^3.3.3",
+        "version": "3.4.8",
+        "license": "(MPL-2.0 OR Apache-2.0)",
+        "resolved": "https://registry.npmjs.org/dompurify/-/dompurify-3.4.8.tgz",
+        "integrity": "sha512-yb1cEmaOum7wFvOCSQxyfgVlv5D47Rc30iZWoMpbDIWTnJ6grDDQyu2KFJzB2k7u0pMuJcQ1zphH//fFnw2tjQ=="
+      },
+      {
+        "name": "echarts",
+        "specifier": "^6.0.0",
+        "version": "6.0.0",
+        "license": "Apache-2.0",
+        "resolved": "https://registry.npmmirror.com/echarts/-/echarts-6.0.0.tgz",
+        "integrity": "sha512-Tte/grDQRiETQP4xz3iZWSvoHrkCQtwqd6hs+mifXcjrCuo2iKWbajFObuLJVBlDIJlOzgQPd1hsaKt/3+OMkQ=="
+      },
+      {
+        "name": "highlight.js",
+        "specifier": "^11.11.1",
+        "version": "11.11.1",
+        "license": "BSD-3-Clause",
+        "resolved": "https://registry.npmmirror.com/highlight.js/-/highlight.js-11.11.1.tgz",
+        "integrity": "sha512-Xwwo44whKBVCYoliBQwaPvtd/2tYFkRQtXDWj1nackaV2JPXx3L0+Jvd8/qCJ2p+ML0/XVkJ2q+Mr+UVdpJK5w=="
+      },
+      {
+        "name": "marked",
+        "specifier": "^17.0.5",
+        "version": "17.0.5",
+        "license": "MIT",
+        "resolved": "https://registry.npmmirror.com/marked/-/marked-17.0.5.tgz",
+        "integrity": "sha512-6hLvc0/JEbRjRgzI6wnT2P1XuM1/RrrDEX0kPt0N7jGm1133g6X7DlxFasUIx+72aKAr904GTxhSLDrd5DIlZg=="
+      },
+      {
+        "name": "naive-ui",
+        "specifier": "^2.44.1",
+        "version": "2.44.1",
+        "license": "MIT",
+        "resolved": "https://registry.npmmirror.com/naive-ui/-/naive-ui-2.44.1.tgz",
+        "integrity": "sha512-reo8Esw0p58liZwbUutC7meW24Xbn3EwNv91zReWKm2W4JPu+zfgJRn/F7aO0BFmvN+h2brA2M5lRvYqLq4kuA=="
+      },
+      {
+        "name": "pinia",
+        "specifier": "^3.0.4",
+        "version": "3.0.4",
+        "license": "MIT",
+        "resolved": "https://registry.npmmirror.com/pinia/-/pinia-3.0.4.tgz",
+        "integrity": "sha512-l7pqLUFTI/+ESXn6k3nu30ZIzW5E2WZF/LaHJEpoq6ElcLD+wduZoB2kBN19du6K/4FDpPMazY2wJr+IndBtQw=="
+      },
+      {
+        "name": "typescript",
+        "specifier": "~5.9.3",
+        "version": "5.9.3",
+        "license": "Apache-2.0",
+        "resolved": "https://registry.npmmirror.com/typescript/-/typescript-5.9.3.tgz",
+        "integrity": "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="
+      },
+      {
+        "name": "vite",
+        "specifier": "^8.0.1",
+        "version": "8.0.16",
+        "license": "MIT",
+        "resolved": "https://registry.npmjs.org/vite/-/vite-8.0.16.tgz",
+        "integrity": "sha512-h9bXPmJichP5fLmVQo3PyaGSDE2n3aPuomeAlVRm0JLmt4rY6zmPKd59HYI4LNW8oTK7tlTsuC7l/m7awx9Jcw=="
+      },
+      {
+        "name": "vue",
+        "specifier": "^3.5.30",
+        "version": "3.5.31",
+        "license": "MIT",
+        "resolved": "https://registry.npmmirror.com/vue/-/vue-3.5.31.tgz",
+        "integrity": "sha512-iV/sU9SzOlmA/0tygSmjkEN6Jbs3nPoIPFhCMLD2STrjgOU8DX7ZtzMhg4ahVwf5Rp9KoFzcXeB1ZrVbLBp5/Q=="
+      },
+      {
+        "name": "vue-echarts",
+        "specifier": "^8.0.1",
+        "version": "8.0.1",
+        "license": "MIT",
+        "resolved": "https://registry.npmmirror.com/vue-echarts/-/vue-echarts-8.0.1.tgz",
+        "integrity": "sha512-23rJTFLu1OUEGRWjJGmdGt8fP+8+ja1gVgzMYPIPaHWpXegcO1viIAaeu2H4QHESlVeHzUAHIxKXGrwjsyXAaA=="
+      },
+      {
+        "name": "vue-router",
+        "specifier": "^4.6.4",
+        "version": "4.6.4",
+        "license": "MIT",
+        "resolved": "https://registry.npmmirror.com/vue-router/-/vue-router-4.6.4.tgz",
+        "integrity": "sha512-Hz9q5sa33Yhduglwz6g9skT8OBPii+4bFn88w6J+J4MfEo4KRRpmiNG/hHHkdbRFlLBOqxN8y8gf2Fb0MTUgVg=="
+      },
+      {
+        "name": "vue-tsc",
+        "specifier": "^3.2.5",
+        "version": "3.2.6",
+        "license": "MIT",
+        "resolved": "https://registry.npmmirror.com/vue-tsc/-/vue-tsc-3.2.6.tgz",
+        "integrity": "sha512-gYW/kWI0XrwGzd0PKc7tVB/qpdeAkIZLNZb10/InizkQjHjnT8weZ/vBarZoj4kHKbUTZT/bAVgoOr8x4NsQ/Q=="
+      },
+      {
+        "name": "yaml",
+        "specifier": "^2.9.0",
+        "version": "2.9.0",
+        "license": "ISC",
+        "resolved": "https://registry.npmmirror.com/yaml/-/yaml-2.9.0.tgz",
+        "integrity": "sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA=="
+      }
+    ],
+    "resolved_package_entries": [
+      {
+        "lock_path": "node_modules/@babel/helper-string-parser",
+        "version": "7.27.1",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@babel/helper-string-parser/-/helper-string-parser-7.27.1.tgz",
+        "integrity": "sha512-qMlSxKbpRlAridDExk92nSobyDdpPijUq2DW6oDnUqd0iOGxmQjyqhMIihI9+zv4LPyZdRje2cavWPbCbWm3eA=="
+      },
+      {
+        "lock_path": "node_modules/@babel/helper-validator-identifier",
+        "version": "7.28.5",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@babel/helper-validator-identifier/-/helper-validator-identifier-7.28.5.tgz",
+        "integrity": "sha512-qSs4ifwzKJSV39ucNjsvc6WVHs6b7S03sOh2OcHF9UHfVPqWWALUsNUVzhSBiItjRZoLHx7nIarVjqKVusUZ1Q=="
+      },
+      {
+        "lock_path": "node_modules/@babel/parser",
+        "version": "7.29.2",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@babel/parser/-/parser-7.29.2.tgz",
+        "integrity": "sha512-4GgRzy/+fsBa72/RZVJmGKPmZu9Byn8o4MoLpmNe1m8ZfYnz5emHLQz3U4gLud6Zwl0RZIcgiLD7Uq7ySFuDLA=="
+      },
+      {
+        "lock_path": "node_modules/@babel/types",
+        "version": "7.29.0",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@babel/types/-/types-7.29.0.tgz",
+        "integrity": "sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A=="
+      },
+      {
+        "lock_path": "node_modules/@css-render/plugin-bem",
+        "version": "0.15.14",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@css-render/plugin-bem/-/plugin-bem-0.15.14.tgz",
+        "integrity": "sha512-QK513CJ7yEQxm/P3EwsI+d+ha8kSOcjGvD6SevM41neEMxdULE+18iuQK6tEChAWMOQNQPLG/Rw3Khb69r5neg=="
+      },
+      {
+        "lock_path": "node_modules/@css-render/vue3-ssr",
+        "version": "0.15.14",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@css-render/vue3-ssr/-/vue3-ssr-0.15.14.tgz",
+        "integrity": "sha512-//8027GSbxE9n3QlD73xFY6z4ZbHbvrOVB7AO6hsmrEzGbg+h2A09HboUyDgu+xsmj7JnvJD39Irt+2D0+iV8g=="
+      },
+      {
+        "lock_path": "node_modules/@emnapi/core",
+        "version": "1.10.0",
+        "license": "MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmjs.org/@emnapi/core/-/core-1.10.0.tgz",
+        "integrity": "sha512-yq6OkJ4p82CAfPl0u9mQebQHKPJkY7WrIuk205cTYnYe+k2Z8YBh11FrbRG/H6ihirqcacOgl2BIO8oyMQLeXw=="
+      },
+      {
+        "lock_path": "node_modules/@emnapi/runtime",
+        "version": "1.10.0",
+        "license": "MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmjs.org/@emnapi/runtime/-/runtime-1.10.0.tgz",
+        "integrity": "sha512-ewvYlk86xUoGI0zQRNq/mC+16R1QeDlKQy21Ki3oSYXNgLb45GV1P6A0M+/s6nyCuNDqe5VpaY84BzXGwVbwFA=="
+      },
+      {
+        "lock_path": "node_modules/@emnapi/wasi-threads",
+        "version": "1.2.1",
+        "license": "MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmjs.org/@emnapi/wasi-threads/-/wasi-threads-1.2.1.tgz",
+        "integrity": "sha512-uTII7OYF+/Mes/MrcIOYp5yOtSMLBWSIoLPpcgwipoiKbli6k322tcoFsxoIIxPDqW01SQGAgko4EzZi2BNv2w=="
+      },
+      {
+        "lock_path": "node_modules/@emotion/hash",
+        "version": "0.8.0",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@emotion/hash/-/hash-0.8.0.tgz",
+        "integrity": "sha512-kBJtf7PH6aWwZ6fka3zQ0p6SBYzx4fl1LoZXE2RrnYST9Xljm7WfKJrU4g/Xr3Beg72MLrp1AWNUmuYJTL7Cow=="
+      },
+      {
+        "lock_path": "node_modules/@jridgewell/sourcemap-codec",
+        "version": "1.5.5",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.5.5.tgz",
+        "integrity": "sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og=="
+      },
+      {
+        "lock_path": "node_modules/@juggle/resize-observer",
+        "version": "3.4.0",
+        "license": "Apache-2.0",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@juggle/resize-observer/-/resize-observer-3.4.0.tgz",
+        "integrity": "sha512-dfLbk+PwWvFzSxwk3n5ySL0hfBog779o8h68wK/7/APo/7cgyWp5jcXockbxdk5kFRkbeXWm4Fbi9FrdN381sA=="
+      },
+      {
+        "lock_path": "node_modules/@napi-rs/wasm-runtime",
+        "version": "1.1.4",
+        "license": "MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmjs.org/@napi-rs/wasm-runtime/-/wasm-runtime-1.1.4.tgz",
+        "integrity": "sha512-3NQNNgA1YSlJb/kMH1ildASP9HW7/7kYnRI2szWJaofaS1hWmbGI4H+d3+22aGzXXN9IJ+n+GiFVcGipJP18ow=="
+      },
+      {
+        "lock_path": "node_modules/@oxc-project/types",
+        "version": "0.133.0",
+        "license": "MIT",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmjs.org/@oxc-project/types/-/types-0.133.0.tgz",
+        "integrity": "sha512-KzkdCd6Uxqnf6l3HOw1xfatAlUURA0g14cvBYFyJ5SaNOQbOUvBr9PKArcPcrNIeRsBdgcUzOGrhKveVpvOIGA=="
+      },
+      {
+        "lock_path": "node_modules/@rolldown/binding-android-arm64",
+        "version": "1.0.3",
+        "license": "MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-android-arm64/-/binding-android-arm64-1.0.3.tgz",
+        "integrity": "sha512-454rs7jHngixp/NMxd5srYD57OnzSlZ/eFTETjORQHLwJG1lRtmNOJcBerZlfu4GjKqeq8aCCIQrMdHyhI51Hw=="
+      },
+      {
+        "lock_path": "node_modules/@rolldown/binding-darwin-arm64",
+        "version": "1.0.3",
+        "license": "MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-darwin-arm64/-/binding-darwin-arm64-1.0.3.tgz",
+        "integrity": "sha512-PcAhP+ynjURNyy8SKGl5DQP94aGuB/7JrXJb/t7P+hanXvQVMWzUvRRhBAcg/lNRadBhoUPqSoP4xw5tR/KBEA=="
+      },
+      {
+        "lock_path": "node_modules/@rolldown/binding-darwin-x64",
+        "version": "1.0.3",
+        "license": "MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-darwin-x64/-/binding-darwin-x64-1.0.3.tgz",
+        "integrity": "sha512-9YpfeUvSE2RS7wysJ81uOZkXJz7f7Q55H2Gvp3VEw/EsahqDtrphrZ0EwDLK5vvKOzaCrBsjF8JmnMLcUt78Gg=="
+      },
+      {
+        "lock_path": "node_modules/@rolldown/binding-freebsd-x64",
+        "version": "1.0.3",
+        "license": "MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-freebsd-x64/-/binding-freebsd-x64-1.0.3.tgz",
+        "integrity": "sha512-yB1IlAsSNHncV6SCTL27/MVGR5htvQsoGxIv5KMGXALp+Ll1wYsn+x98M9MW7qa+NdSbvrrY7ANI4wLJ0n1e6g=="
+      },
+      {
+        "lock_path": "node_modules/@rolldown/binding-linux-arm-gnueabihf",
+        "version": "1.0.3",
+        "license": "MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-arm-gnueabihf/-/binding-linux-arm-gnueabihf-1.0.3.tgz",
+        "integrity": "sha512-Yi30IVAAfLUCy2MseFjbB1jAMDl1VMCAas5StnYp8da9+CKvMd2H2cbEjWcw5NPaPqzvYkVIaF1nNUG+b7u/sw=="
+      },
+      {
+        "lock_path": "node_modules/@rolldown/binding-linux-arm64-gnu",
+        "version": "1.0.3",
+        "license": "MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-arm64-gnu/-/binding-linux-arm64-gnu-1.0.3.tgz",
+        "integrity": "sha512-jsO7R8To+AdlYgUmN5sHSCZbfhtMBkO0WUx8iORQnPcMMdgr7qM2DQmMwgabs3GhNztdmoKkMKQFHD6DTMCIQw=="
+      },
+      {
+        "lock_path": "node_modules/@rolldown/binding-linux-arm64-musl",
+        "version": "1.0.3",
+        "license": "MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-arm64-musl/-/binding-linux-arm64-musl-1.0.3.tgz",
+        "integrity": "sha512-VWkUHwWriDciit80wleYwKILoR/KMvxh/IdwS/paX+ZgpuRpCrKLUdadJbc0NpBEiyhpYawsJ73j9aCvOH+f7Q=="
+      },
+      {
+        "lock_path": "node_modules/@rolldown/binding-linux-ppc64-gnu",
+        "version": "1.0.3",
+        "license": "MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-ppc64-gnu/-/binding-linux-ppc64-gnu-1.0.3.tgz",
+        "integrity": "sha512-5f1laC0SlIR0yDbFCd8acUhvJIag6N3zC5P7oUPN6wX0aOma+uKJ0wBDH5aq7I1PVI2ttTlhJwzwRIBnLiSGEg=="
+      },
+      {
+        "lock_path": "node_modules/@rolldown/binding-linux-s390x-gnu",
+        "version": "1.0.3",
+        "license": "MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-s390x-gnu/-/binding-linux-s390x-gnu-1.0.3.tgz",
+        "integrity": "sha512-Iq4ko0r4XsgbrF/LunNgHtAGLRRVE2kXonAXQ/MV0mC6jQpMOhW1SvtZja2EhC/kd05++bP78dsqBeIQyYJ6Yg=="
+      },
+      {
+        "lock_path": "node_modules/@rolldown/binding-linux-x64-gnu",
+        "version": "1.0.3",
+        "license": "MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-x64-gnu/-/binding-linux-x64-gnu-1.0.3.tgz",
+        "integrity": "sha512-B8m6tD5+/N5FeNQFbKlLA/2yVq9ycQP1SeedyEYYKWBNR3ZQbkvIUcNnDNM03lO1l5F2roiiFJGgvoLLyZXtSg=="
+      },
+      {
+        "lock_path": "node_modules/@rolldown/binding-linux-x64-musl",
+        "version": "1.0.3",
+        "license": "MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-x64-musl/-/binding-linux-x64-musl-1.0.3.tgz",
+        "integrity": "sha512-pSdpdUJHkuCxun9LE7jvgUB9qsRgaiyNNCX7m/AvHTcq67AiT/Yhoxvw5zPfhrM8k/BfP8ce/hMOpthKDpEUow=="
+      },
+      {
+        "lock_path": "node_modules/@rolldown/binding-openharmony-arm64",
+        "version": "1.0.3",
+        "license": "MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-openharmony-arm64/-/binding-openharmony-arm64-1.0.3.tgz",
+        "integrity": "sha512-OXXS3RKJgX2uLwM+gYyuH5omcH8fL1LJs96pZGgtetVCahON57+d4SJHzTgZiOjxgGkSnpXpOsWuPDGAKAigEg=="
+      },
+      {
+        "lock_path": "node_modules/@rolldown/binding-wasm32-wasi",
+        "version": "1.0.3",
+        "license": "MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-wasm32-wasi/-/binding-wasm32-wasi-1.0.3.tgz",
+        "integrity": "sha512-JTtb8BWFynicNSoPrehsCzBtOKjZ6jhMiPFEmOiuXg1Fl8dn2KHQob+GuPSGR0dryQa1PQJbzjF3dqO/whhjLg=="
+      },
+      {
+        "lock_path": "node_modules/@rolldown/binding-win32-arm64-msvc",
+        "version": "1.0.3",
+        "license": "MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-win32-arm64-msvc/-/binding-win32-arm64-msvc-1.0.3.tgz",
+        "integrity": "sha512-gEdFFEN70A/jxb2svrWsN3aDL7OUtmvlOy+6fa2jxG8K0wQ1ZbdeLGnidov6Yu5/733dI5ySfzFlQ/cb0bSz1g=="
+      },
+      {
+        "lock_path": "node_modules/@rolldown/binding-win32-x64-msvc",
+        "version": "1.0.3",
+        "license": "MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmjs.org/@rolldown/binding-win32-x64-msvc/-/binding-win32-x64-msvc-1.0.3.tgz",
+        "integrity": "sha512-eXB7CHuaQdqmJcc3koCNtNPmT/bj2gc999kUFgBxG8Ac0NdgXc4rkCHhqrgrhN3zddvvvrgzj1e90SuSfmyIXA=="
+      },
+      {
+        "lock_path": "node_modules/@rolldown/pluginutils",
+        "version": "1.0.0-rc.2",
+        "license": "MIT",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@rolldown/pluginutils/-/pluginutils-1.0.0-rc.2.tgz",
+        "integrity": "sha512-izyXV/v+cHiRfozX62W9htOAvwMo4/bXKDrQ+vom1L1qRuexPock/7VZDAhnpHCLNejd3NJ6hiab+tO0D44Rgw=="
+      },
+      {
+        "lock_path": "node_modules/@tauri-apps/api",
+        "version": "2.10.1",
+        "license": "Apache-2.0 OR MIT",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@tauri-apps/api/-/api-2.10.1.tgz",
+        "integrity": "sha512-hKL/jWf293UDSUN09rR69hrToyIXBb8CjGaWC7gfinvnQrBVvnLr08FeFi38gxtugAVyVcTa5/FD/Xnkb1siBw=="
+      },
+      {
+        "lock_path": "node_modules/@tauri-apps/cli",
+        "version": "2.10.1",
+        "license": "Apache-2.0 OR MIT",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@tauri-apps/cli/-/cli-2.10.1.tgz",
+        "integrity": "sha512-jQNGF/5quwORdZSSLtTluyKQ+o6SMa/AUICfhf4egCGFdMHqWssApVgYSbg+jmrZoc8e1DscNvjTnXtlHLS11g=="
+      },
+      {
+        "lock_path": "node_modules/@tauri-apps/cli-darwin-arm64",
+        "version": "2.10.1",
+        "license": "Apache-2.0 OR MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmmirror.com/@tauri-apps/cli-darwin-arm64/-/cli-darwin-arm64-2.10.1.tgz",
+        "integrity": "sha512-Z2OjCXiZ+fbYZy7PmP3WRnOpM9+Fy+oonKDEmUE6MwN4IGaYqgceTjwHucc/kEEYZos5GICve35f7ZiizgqEnQ=="
+      },
+      {
+        "lock_path": "node_modules/@tauri-apps/cli-darwin-x64",
+        "version": "2.10.1",
+        "license": "Apache-2.0 OR MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmmirror.com/@tauri-apps/cli-darwin-x64/-/cli-darwin-x64-2.10.1.tgz",
+        "integrity": "sha512-V/irQVvjPMGOTQqNj55PnQPVuH4VJP8vZCN7ajnj+ZS8Kom1tEM2hR3qbbIRoS3dBKs5mbG8yg1WC+97dq17Pw=="
+      },
+      {
+        "lock_path": "node_modules/@tauri-apps/cli-linux-arm-gnueabihf",
+        "version": "2.10.1",
+        "license": "Apache-2.0 OR MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmmirror.com/@tauri-apps/cli-linux-arm-gnueabihf/-/cli-linux-arm-gnueabihf-2.10.1.tgz",
+        "integrity": "sha512-Hyzwsb4VnCWKGfTw+wSt15Z2pLw2f0JdFBfq2vHBOBhvg7oi6uhKiF87hmbXOBXUZaGkyRDkCHsdzJcIfoJC2w=="
+      },
+      {
+        "lock_path": "node_modules/@tauri-apps/cli-linux-arm64-gnu",
+        "version": "2.10.1",
+        "license": "Apache-2.0 OR MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmmirror.com/@tauri-apps/cli-linux-arm64-gnu/-/cli-linux-arm64-gnu-2.10.1.tgz",
+        "integrity": "sha512-OyOYs2t5GkBIvyWjA1+h4CZxTcdz1OZPCWAPz5DYEfB0cnWHERTnQ/SLayQzncrT0kwRoSfSz9KxenkyJoTelA=="
+      },
+      {
+        "lock_path": "node_modules/@tauri-apps/cli-linux-arm64-musl",
+        "version": "2.10.1",
+        "license": "Apache-2.0 OR MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmmirror.com/@tauri-apps/cli-linux-arm64-musl/-/cli-linux-arm64-musl-2.10.1.tgz",
+        "integrity": "sha512-MIj78PDDGjkg3NqGptDOGgfXks7SYJwhiMh8SBoZS+vfdz7yP5jN18bNaLnDhsVIPARcAhE1TlsZe/8Yxo2zqg=="
+      },
+      {
+        "lock_path": "node_modules/@tauri-apps/cli-linux-riscv64-gnu",
+        "version": "2.10.1",
+        "license": "Apache-2.0 OR MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmmirror.com/@tauri-apps/cli-linux-riscv64-gnu/-/cli-linux-riscv64-gnu-2.10.1.tgz",
+        "integrity": "sha512-X0lvOVUg8PCVaoEtEAnpxmnkwlE1gcMDTqfhbefICKDnOTJ5Est3qL0SrWxizDackIOKBcvtpejrSiVpuJI1kw=="
+      },
+      {
+        "lock_path": "node_modules/@tauri-apps/cli-linux-x64-gnu",
+        "version": "2.10.1",
+        "license": "Apache-2.0 OR MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmmirror.com/@tauri-apps/cli-linux-x64-gnu/-/cli-linux-x64-gnu-2.10.1.tgz",
+        "integrity": "sha512-2/12bEzsJS9fAKybxgicCDFxYD1WEI9kO+tlDwX5znWG2GwMBaiWcmhGlZ8fi+DMe9CXlcVarMTYc0L3REIRxw=="
+      },
+      {
+        "lock_path": "node_modules/@tauri-apps/cli-linux-x64-musl",
+        "version": "2.10.1",
+        "license": "Apache-2.0 OR MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmmirror.com/@tauri-apps/cli-linux-x64-musl/-/cli-linux-x64-musl-2.10.1.tgz",
+        "integrity": "sha512-Y8J0ZzswPz50UcGOFuXGEMrxbjwKSPgXftx5qnkuMs2rmwQB5ssvLb6tn54wDSYxe7S6vlLob9vt0VKuNOaCIQ=="
+      },
+      {
+        "lock_path": "node_modules/@tauri-apps/cli-win32-arm64-msvc",
+        "version": "2.10.1",
+        "license": "Apache-2.0 OR MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmmirror.com/@tauri-apps/cli-win32-arm64-msvc/-/cli-win32-arm64-msvc-2.10.1.tgz",
+        "integrity": "sha512-iSt5B86jHYAPJa/IlYw++SXtFPGnWtFJriHn7X0NFBVunF6zu9+/zOn8OgqIWSl8RgzhLGXQEEtGBdR4wzpVgg=="
+      },
+      {
+        "lock_path": "node_modules/@tauri-apps/cli-win32-ia32-msvc",
+        "version": "2.10.1",
+        "license": "Apache-2.0 OR MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmmirror.com/@tauri-apps/cli-win32-ia32-msvc/-/cli-win32-ia32-msvc-2.10.1.tgz",
+        "integrity": "sha512-gXyxgEzsFegmnWywYU5pEBURkcFN/Oo45EAwvZrHMh+zUSEAvO5E8TXsgPADYm31d1u7OQU3O3HsYfVBf2moHw=="
+      },
+      {
+        "lock_path": "node_modules/@tauri-apps/cli-win32-x64-msvc",
+        "version": "2.10.1",
+        "license": "Apache-2.0 OR MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmmirror.com/@tauri-apps/cli-win32-x64-msvc/-/cli-win32-x64-msvc-2.10.1.tgz",
+        "integrity": "sha512-6Cn7YpPFwzChy0ERz6djKEmUehWrYlM+xTaNzGPgZocw3BD7OfwfWHKVWxXzdjEW2KfKkHddfdxK1XXTYqBRLg=="
+      },
+      {
+        "lock_path": "node_modules/@tybys/wasm-util",
+        "version": "0.10.2",
+        "license": "MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmjs.org/@tybys/wasm-util/-/wasm-util-0.10.2.tgz",
+        "integrity": "sha512-RoBvJ2X0wuKlWFIjrwffGw1IqZHKQqzIchKaadZZfnNpsAYp2mM0h36JtPCjNDAHGgYez/15uMBpfGwchhiMgg=="
+      },
+      {
+        "lock_path": "node_modules/@types/dompurify",
+        "version": "3.0.5",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@types/dompurify/-/dompurify-3.0.5.tgz",
+        "integrity": "sha512-1Wg0g3BtQF7sSb27fJQAKck1HECM6zV1EB66j8JH9i3LCjYabJa0FSdiSgsD5K/RbrsR0SiraKacLB+T8ZVYAg=="
+      },
+      {
+        "lock_path": "node_modules/@types/lodash",
+        "version": "4.17.24",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@types/lodash/-/lodash-4.17.24.tgz",
+        "integrity": "sha512-gIW7lQLZbue7lRSWEFql49QJJWThrTFFeIMJdp3eH4tKoxm1OvEPg02rm4wCCSHS0cL3/Fizimb35b7k8atwsQ=="
+      },
+      {
+        "lock_path": "node_modules/@types/lodash-es",
+        "version": "4.17.12",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@types/lodash-es/-/lodash-es-4.17.12.tgz",
+        "integrity": "sha512-0NgftHUcV4v34VhXm8QBSftKVXtbkBG3ViCjs6+eJ5a6y6Mi/jiFGPc1sC7QK+9BFhWrURE3EOggmWaSxL9OzQ=="
+      },
+      {
+        "lock_path": "node_modules/@types/node",
+        "version": "24.12.0",
+        "license": "MIT",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@types/node/-/node-24.12.0.tgz",
+        "integrity": "sha512-GYDxsZi3ChgmckRT9HPU0WEhKLP08ev/Yfcq2AstjrDASOYCSXeyjDsHg4v5t4jOj7cyDX3vmprafKlWIG9MXQ=="
+      },
+      {
+        "lock_path": "node_modules/@types/trusted-types",
+        "version": "2.0.7",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@types/trusted-types/-/trusted-types-2.0.7.tgz",
+        "integrity": "sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw=="
+      },
+      {
+        "lock_path": "node_modules/@types/web-bluetooth",
+        "version": "0.0.21",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@types/web-bluetooth/-/web-bluetooth-0.0.21.tgz",
+        "integrity": "sha512-oIQLCGWtcFZy2JW77j9k8nHzAOpqMHLQejDA48XXMWH6tjCQHz5RCFz1bzsmROyL6PUm+LLnUiI4BCn221inxA=="
+      },
+      {
+        "lock_path": "node_modules/@vicons/ionicons5",
+        "version": "0.13.0",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vicons/ionicons5/-/ionicons5-0.13.0.tgz",
+        "integrity": "sha512-zvZKBPjEXKN7AXNo2Na2uy+nvuv6SP4KAMQxpKL2vfHMj0fSvuw7JZcOPCjQC3e7ayssKnaoFVAhbYcW6v41qQ=="
+      },
+      {
+        "lock_path": "node_modules/@vitejs/plugin-vue",
+        "version": "6.0.5",
+        "license": "MIT",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vitejs/plugin-vue/-/plugin-vue-6.0.5.tgz",
+        "integrity": "sha512-bL3AxKuQySfk1iGcBsQnoRVexTPJq0Z/ixFVM8OhVJAP6ZXXXLtM7NFKWhLl30Kg7uTBqIaPXbh+nuQCuBDedg=="
+      },
+      {
+        "lock_path": "node_modules/@volar/language-core",
+        "version": "2.4.28",
+        "license": "MIT",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@volar/language-core/-/language-core-2.4.28.tgz",
+        "integrity": "sha512-w4qhIJ8ZSitgLAkVay6AbcnC7gP3glYM3fYwKV3srj8m494E3xtrCv6E+bWviiK/8hs6e6t1ij1s2Endql7vzQ=="
+      },
+      {
+        "lock_path": "node_modules/@volar/source-map",
+        "version": "2.4.28",
+        "license": "MIT",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@volar/source-map/-/source-map-2.4.28.tgz",
+        "integrity": "sha512-yX2BDBqJkRXfKw8my8VarTyjv48QwxdJtvRgUpNE5erCsgEUdI2DsLbpa+rOQVAJYshY99szEcRDmyHbF10ggQ=="
+      },
+      {
+        "lock_path": "node_modules/@volar/typescript",
+        "version": "2.4.28",
+        "license": "MIT",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@volar/typescript/-/typescript-2.4.28.tgz",
+        "integrity": "sha512-Ja6yvWrbis2QtN4ClAKreeUZPVYMARDYZl9LMEv1iQ1QdepB6wn0jTRxA9MftYmYa4DQ4k/DaSZpFPUfxl8giw=="
+      },
+      {
+        "lock_path": "node_modules/@vue-flow/background",
+        "version": "1.3.2",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vue-flow/background/-/background-1.3.2.tgz",
+        "integrity": "sha512-eJPhDcLj1wEo45bBoqTXw1uhl0yK2RaQGnEINqvvBsAFKh/camHJd5NPmOdS1w+M9lggc9igUewxaEd3iCQX2w=="
+      },
+      {
+        "lock_path": "node_modules/@vue-flow/controls",
+        "version": "1.1.3",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vue-flow/controls/-/controls-1.1.3.tgz",
+        "integrity": "sha512-XCf+G+jCvaWURdFlZmOjifZGw3XMhN5hHlfMGkWh9xot+9nH9gdTZtn+ldIJKtarg3B21iyHU8JjKDhYcB6JMw=="
+      },
+      {
+        "lock_path": "node_modules/@vue-flow/core",
+        "version": "1.48.2",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vue-flow/core/-/core-1.48.2.tgz",
+        "integrity": "sha512-raxhgKWE+G/mcEvXJjGFUDYW9rAI3GOtiHR3ZkNpwBWuIaCC1EYiBmKGwJOoNzVFgwO7COgErnK7i08i287AFA=="
+      },
+      {
+        "lock_path": "node_modules/@vue-flow/core/node_modules/@types/web-bluetooth",
+        "version": "0.0.20",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@types/web-bluetooth/-/web-bluetooth-0.0.20.tgz",
+        "integrity": "sha512-g9gZnnXVq7gM7v3tJCWV/qw7w+KeOlSHAhgF9RytFyifW6AF61hdT2ucrYhPq9hLs5JIryeupHV3qGk95dH9ow=="
+      },
+      {
+        "lock_path": "node_modules/@vue-flow/core/node_modules/@vueuse/core",
+        "version": "10.11.1",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vueuse/core/-/core-10.11.1.tgz",
+        "integrity": "sha512-guoy26JQktXPcz+0n3GukWIy/JDNKti9v6VEMu6kV2sYBsWuGiTU8OWdg+ADfUbHg3/3DlqySDe7JmdHrktiww=="
+      },
+      {
+        "lock_path": "node_modules/@vue-flow/core/node_modules/@vueuse/core/node_modules/vue-demi",
+        "version": "0.14.10",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/vue-demi/-/vue-demi-0.14.10.tgz",
+        "integrity": "sha512-nMZBOwuzabUO0nLgIcc6rycZEebF6eeUfaiQx9+WSk8e29IbLvPU9feI6tqW4kTo3hvoYAJkMh8n8D0fuISphg=="
+      },
+      {
+        "lock_path": "node_modules/@vue-flow/core/node_modules/@vueuse/metadata",
+        "version": "10.11.1",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vueuse/metadata/-/metadata-10.11.1.tgz",
+        "integrity": "sha512-IGa5FXd003Ug1qAZmyE8wF3sJ81xGLSqTqtQ6jaVfkeZ4i5kS2mwQF61yhVqojRnenVew5PldLyRgvdl4YYuSw=="
+      },
+      {
+        "lock_path": "node_modules/@vue-flow/core/node_modules/@vueuse/shared",
+        "version": "10.11.1",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vueuse/shared/-/shared-10.11.1.tgz",
+        "integrity": "sha512-LHpC8711VFZlDaYUXEBbFBCQ7GS3dVU9mjOhhMhXP6txTV4EhYQg/KGnQuvt/sPAtoUKq7VVUnL6mVtFoL42sA=="
+      },
+      {
+        "lock_path": "node_modules/@vue-flow/core/node_modules/@vueuse/shared/node_modules/vue-demi",
+        "version": "0.14.10",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/vue-demi/-/vue-demi-0.14.10.tgz",
+        "integrity": "sha512-nMZBOwuzabUO0nLgIcc6rycZEebF6eeUfaiQx9+WSk8e29IbLvPU9feI6tqW4kTo3hvoYAJkMh8n8D0fuISphg=="
+      },
+      {
+        "lock_path": "node_modules/@vue-flow/minimap",
+        "version": "1.5.4",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vue-flow/minimap/-/minimap-1.5.4.tgz",
+        "integrity": "sha512-l4C+XTAXnRxsRpUdN7cAVFBennC1sVRzq4bDSpVK+ag7tdMczAnhFYGgbLkUw3v3sY6gokyWwMl8CDonp8eB2g=="
+      },
+      {
+        "lock_path": "node_modules/@vue/compiler-core",
+        "version": "3.5.31",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vue/compiler-core/-/compiler-core-3.5.31.tgz",
+        "integrity": "sha512-k/ueL14aNIEy5Onf0OVzR8kiqF/WThgLdFhxwa4e/KF/0qe38IwIdofoSWBTvvxQOesaz6riAFAUaYjoF9fLLQ=="
+      },
+      {
+        "lock_path": "node_modules/@vue/compiler-dom",
+        "version": "3.5.31",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vue/compiler-dom/-/compiler-dom-3.5.31.tgz",
+        "integrity": "sha512-BMY/ozS/xxjYqRFL+tKdRpATJYDTTgWSo0+AJvJNg4ig+Hgb0dOsHPXvloHQ5hmlivUqw1Yt2pPIqp4e0v1GUw=="
+      },
+      {
+        "lock_path": "node_modules/@vue/compiler-sfc",
+        "version": "3.5.31",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vue/compiler-sfc/-/compiler-sfc-3.5.31.tgz",
+        "integrity": "sha512-M8wpPgR9UJ8MiRGjppvx9uWJfLV7A/T+/rL8s/y3QG3u0c2/YZgff3d6SuimKRIhcYnWg5fTfDMlz2E6seUW8Q=="
+      },
+      {
+        "lock_path": "node_modules/@vue/compiler-ssr",
+        "version": "3.5.31",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vue/compiler-ssr/-/compiler-ssr-3.5.31.tgz",
+        "integrity": "sha512-h0xIMxrt/LHOvJKMri+vdYT92BrK3HFLtDqq9Pr/lVVfE4IyKZKvWf0vJFW10Yr6nX02OR4MkJwI0c1HDa1hog=="
+      },
+      {
+        "lock_path": "node_modules/@vue/devtools-api",
+        "version": "7.7.9",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vue/devtools-api/-/devtools-api-7.7.9.tgz",
+        "integrity": "sha512-kIE8wvwlcZ6TJTbNeU2HQNtaxLx3a84aotTITUuL/4bzfPxzajGBOoqjMhwZJ8L9qFYDU/lAYMEEm11dnZOD6g=="
+      },
+      {
+        "lock_path": "node_modules/@vue/devtools-kit",
+        "version": "7.7.9",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vue/devtools-kit/-/devtools-kit-7.7.9.tgz",
+        "integrity": "sha512-PyQ6odHSgiDVd4hnTP+aDk2X4gl2HmLDfiyEnn3/oV+ckFDuswRs4IbBT7vacMuGdwY/XemxBoh302ctbsptuA=="
+      },
+      {
+        "lock_path": "node_modules/@vue/devtools-shared",
+        "version": "7.7.9",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vue/devtools-shared/-/devtools-shared-7.7.9.tgz",
+        "integrity": "sha512-iWAb0v2WYf0QWmxCGy0seZNDPdO3Sp5+u78ORnyeonS6MT4PC7VPrryX2BpMJrwlDeaZ6BD4vP4XKjK0SZqaeA=="
+      },
+      {
+        "lock_path": "node_modules/@vue/language-core",
+        "version": "3.2.6",
+        "license": "MIT",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vue/language-core/-/language-core-3.2.6.tgz",
+        "integrity": "sha512-xYYYX3/aVup576tP/23sEUpgiEnujrENaoNRbaozC1/MA9I6EGFQRJb4xrt/MmUCAGlxTKL2RmT8JLTPqagCkg=="
+      },
+      {
+        "lock_path": "node_modules/@vue/reactivity",
+        "version": "3.5.31",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vue/reactivity/-/reactivity-3.5.31.tgz",
+        "integrity": "sha512-DtKXxk9E/KuVvt8VxWu+6Luc9I9ETNcqR1T1oW1gf02nXaZ1kuAx58oVu7uX9XxJR0iJCro6fqBLw9oSBELo5g=="
+      },
+      {
+        "lock_path": "node_modules/@vue/runtime-core",
+        "version": "3.5.31",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vue/runtime-core/-/runtime-core-3.5.31.tgz",
+        "integrity": "sha512-AZPmIHXEAyhpkmN7aWlqjSfYynmkWlluDNPHMCZKFHH+lLtxP/30UJmoVhXmbDoP1Ng0jG0fyY2zCj1PnSSA6Q=="
+      },
+      {
+        "lock_path": "node_modules/@vue/runtime-dom",
+        "version": "3.5.31",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vue/runtime-dom/-/runtime-dom-3.5.31.tgz",
+        "integrity": "sha512-xQJsNRmGPeDCJq/u813tyonNgWBFjzfVkBwDREdEWndBnGdHLHgkwNBQxLtg4zDrzKTEcnikUy1UUNecb3lJ6g=="
+      },
+      {
+        "lock_path": "node_modules/@vue/server-renderer",
+        "version": "3.5.31",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vue/server-renderer/-/server-renderer-3.5.31.tgz",
+        "integrity": "sha512-GJuwRvMcdZX/CriUnyIIOGkx3rMV3H6sOu0JhdKbduaeCji6zb60iOGMY7tFoN24NfsUYoFBhshZtGxGpxO4iA=="
+      },
+      {
+        "lock_path": "node_modules/@vue/shared",
+        "version": "3.5.31",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vue/shared/-/shared-3.5.31.tgz",
+        "integrity": "sha512-nBxuiuS9Lj5bPkPbWogPUnjxxWpkRniX7e5UBQDWl6Fsf4roq9wwV+cR7ezQ4zXswNvPIlsdj1slcLB7XCsRAw=="
+      },
+      {
+        "lock_path": "node_modules/@vue/tsconfig",
+        "version": "0.9.1",
+        "license": "MIT",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vue/tsconfig/-/tsconfig-0.9.1.tgz",
+        "integrity": "sha512-buvjm+9NzLCJL29KY1j1991YYJ5e6275OiK+G4jtmfIb+z4POywbdm0wXusT9adVWqe0xqg70TbI7+mRx4uU9w=="
+      },
+      {
+        "lock_path": "node_modules/@vueuse/core",
+        "version": "14.2.1",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vueuse/core/-/core-14.2.1.tgz",
+        "integrity": "sha512-3vwDzV+GDUNpdegRY6kzpLm4Igptq+GA0QkJ3W61Iv27YWwW/ufSlOfgQIpN6FZRMG0mkaz4gglJRtq5SeJyIQ=="
+      },
+      {
+        "lock_path": "node_modules/@vueuse/metadata",
+        "version": "14.2.1",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vueuse/metadata/-/metadata-14.2.1.tgz",
+        "integrity": "sha512-1ButlVtj5Sb/HDtIy1HFr1VqCP4G6Ypqt5MAo0lCgjokrk2mvQKsK2uuy0vqu/Ks+sHfuHo0B9Y9jn9xKdjZsw=="
+      },
+      {
+        "lock_path": "node_modules/@vueuse/shared",
+        "version": "14.2.1",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vueuse/shared/-/shared-14.2.1.tgz",
+        "integrity": "sha512-shTJncjV9JTI4oVNyF1FQonetYAiTBd+Qj7cY89SWbXSkx7gyhrgtEdF2ZAVWS1S3SHlaROO6F2IesJxQEkZBw=="
+      },
+      {
+        "lock_path": "node_modules/agent-base",
+        "version": "6.0.2",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmjs.org/agent-base/-/agent-base-6.0.2.tgz",
+        "integrity": "sha512-RZNwNclF7+MS/8bDg70amg32dyeZGZxiDuQmZxKLAlQjr3jGyLx+4Kkk58UO7D2QdgFIQCovuSuZESne6RG6XQ=="
+      },
+      {
+        "lock_path": "node_modules/alien-signals",
+        "version": "3.1.2",
+        "license": "MIT",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/alien-signals/-/alien-signals-3.1.2.tgz",
+        "integrity": "sha512-d9dYqZTS90WLiU0I5c6DHj/HcKkF8ZyGN3G5x8wSbslulz70KOxaqCT0hQCo9KOyhVqzqGojvNdJXoTumZOtcw=="
+      },
+      {
+        "lock_path": "node_modules/async-validator",
+        "version": "4.2.5",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/async-validator/-/async-validator-4.2.5.tgz",
+        "integrity": "sha512-7HhHjtERjqlNbZtqNqy2rckN/SpOOlmDliet+lP7k+eKZEjPk3DgyeU9lIXLdeLz0uBbbVp+9Qdow9wJWgwwfg=="
+      },
+      {
+        "lock_path": "node_modules/asynckit",
+        "version": "0.4.0",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/asynckit/-/asynckit-0.4.0.tgz",
+        "integrity": "sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q=="
+      },
+      {
+        "lock_path": "node_modules/axios",
+        "version": "1.17.0",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmjs.org/axios/-/axios-1.17.0.tgz",
+        "integrity": "sha512-J8SwNxprqqpbfenehxWYXE7CW+wM1BB4w3+N+g+/Wx40xM4rsLrfPmHHxSWIxJLYDgSY/HqlFPIYb2/S3rxafw=="
+      },
+      {
+        "lock_path": "node_modules/birpc",
+        "version": "2.9.0",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/birpc/-/birpc-2.9.0.tgz",
+        "integrity": "sha512-KrayHS5pBi69Xi9JmvoqrIgYGDkD6mcSe/i6YKi3w5kekCLzrX4+nawcXqrj2tIp50Kw/mT/s3p+GVK0A0sKxw=="
+      },
+      {
+        "lock_path": "node_modules/call-bind-apply-helpers",
+        "version": "1.0.2",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/call-bind-apply-helpers/-/call-bind-apply-helpers-1.0.2.tgz",
+        "integrity": "sha512-Sp1ablJ0ivDkSzjcaJdxEunN5/XvksFJ2sMBFfq6x0ryhQV/2b/KwFe21cMpmHtPOSij8K99/wSfoEuTObmuMQ=="
+      },
+      {
+        "lock_path": "node_modules/combined-stream",
+        "version": "1.0.8",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/combined-stream/-/combined-stream-1.0.8.tgz",
+        "integrity": "sha512-FQN4MRfuJeHf7cBbBMJFXhKSDq+2kAArBlmRBvcvFE5BB1HZKXtSFASDhdlz9zOYwxh8lDdnvmMOe/+5cdoEdg=="
+      },
+      {
+        "lock_path": "node_modules/copy-anything",
+        "version": "4.0.5",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/copy-anything/-/copy-anything-4.0.5.tgz",
+        "integrity": "sha512-7Vv6asjS4gMOuILabD3l739tsaxFQmC+a7pLZm02zyvs8p977bL3zEgq3yDk5rn9B0PbYgIv++jmHcuUab4RhA=="
+      },
+      {
+        "lock_path": "node_modules/css-render",
+        "version": "0.15.14",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/css-render/-/css-render-0.15.14.tgz",
+        "integrity": "sha512-9nF4PdUle+5ta4W5SyZdLCCmFd37uVimSjg1evcTqKJCyvCEEj12WKzOSBNak6r4im4J4iYXKH1OWpUV5LBYFg=="
+      },
+      {
+        "lock_path": "node_modules/css-render/node_modules/csstype",
+        "version": "3.0.11",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/csstype/-/csstype-3.0.11.tgz",
+        "integrity": "sha512-sa6P2wJ+CAbgyy4KFssIb/JNMLxFvKF1pCYCSXS8ZMuqZnMsrxqI2E5sPyoTpxoPU/gVZMzr2zjOfg8GIZOMsw=="
+      },
+      {
+        "lock_path": "node_modules/csstype",
+        "version": "3.2.3",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/csstype/-/csstype-3.2.3.tgz",
+        "integrity": "sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ=="
+      },
+      {
+        "lock_path": "node_modules/d3-color",
+        "version": "3.1.0",
+        "license": "ISC",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/d3-color/-/d3-color-3.1.0.tgz",
+        "integrity": "sha512-zg/chbXyeBtMQ1LbD/WSoW2DpC3I0mpmPdW+ynRTj/x2DAWYrIY7qeZIHidozwV24m4iavr15lNwIwLxRmOxhA=="
+      },
+      {
+        "lock_path": "node_modules/d3-dispatch",
+        "version": "3.0.1",
+        "license": "ISC",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/d3-dispatch/-/d3-dispatch-3.0.1.tgz",
+        "integrity": "sha512-rzUyPU/S7rwUflMyLc1ETDeBj0NRuHKKAcvukozwhshr6g6c5d8zh4c2gQjY2bZ0dXeGLWc1PF174P2tVvKhfg=="
+      },
+      {
+        "lock_path": "node_modules/d3-drag",
+        "version": "3.0.0",
+        "license": "ISC",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/d3-drag/-/d3-drag-3.0.0.tgz",
+        "integrity": "sha512-pWbUJLdETVA8lQNJecMxoXfH6x+mO2UQo8rSmZ+QqxcbyA3hfeprFgIT//HW2nlHChWeIIMwS2Fq+gEARkhTkg=="
+      },
+      {
+        "lock_path": "node_modules/d3-ease",
+        "version": "3.0.1",
+        "license": "BSD-3-Clause",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/d3-ease/-/d3-ease-3.0.1.tgz",
+        "integrity": "sha512-wR/XK3D3XcLIZwpbvQwQ5fK+8Ykds1ip7A2Txe0yxncXSdq1L9skcG7blcedkOX+ZcgxGAmLX1FrRGbADwzi0w=="
+      },
+      {
+        "lock_path": "node_modules/d3-interpolate",
+        "version": "3.0.1",
+        "license": "ISC",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/d3-interpolate/-/d3-interpolate-3.0.1.tgz",
+        "integrity": "sha512-3bYs1rOD33uo8aqJfKP3JWPAibgw8Zm2+L9vBKEHJ2Rg+viTR7o5Mmv5mZcieN+FRYaAOWX5SJATX6k1PWz72g=="
+      },
+      {
+        "lock_path": "node_modules/d3-selection",
+        "version": "3.0.0",
+        "license": "ISC",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/d3-selection/-/d3-selection-3.0.0.tgz",
+        "integrity": "sha512-fmTRWbNMmsmWq6xJV8D19U/gw/bwrHfNXxrIN+HfZgnzqTHp9jOmKMhsTUjXOJnZOdZY9Q28y4yebKzqDKlxlQ=="
+      },
+      {
+        "lock_path": "node_modules/d3-timer",
+        "version": "3.0.1",
+        "license": "ISC",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/d3-timer/-/d3-timer-3.0.1.tgz",
+        "integrity": "sha512-ndfJ/JxxMd3nw31uyKoY2naivF+r29V+Lc0svZxe1JvvIRmi8hUsrMvdOwgS1o6uBHmiz91geQ0ylPP0aj1VUA=="
+      },
+      {
+        "lock_path": "node_modules/d3-transition",
+        "version": "3.0.1",
+        "license": "ISC",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/d3-transition/-/d3-transition-3.0.1.tgz",
+        "integrity": "sha512-ApKvfjsSR6tg06xrL434C0WydLr7JewBB3V+/39RMHsaXTOG0zmt/OAXeng5M5LBm0ojmxJrpomQVZ1aPvBL4w=="
+      },
+      {
+        "lock_path": "node_modules/d3-zoom",
+        "version": "3.0.0",
+        "license": "ISC",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/d3-zoom/-/d3-zoom-3.0.0.tgz",
+        "integrity": "sha512-b8AmV3kfQaqWAuacbPuNbL6vahnOJflOhexLzMMNLga62+/nh0JzvJ0aO/5a5MVgUFGS7Hu1P9P03o3fJkDCyw=="
+      },
+      {
+        "lock_path": "node_modules/date-fns",
+        "version": "4.1.0",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/date-fns/-/date-fns-4.1.0.tgz",
+        "integrity": "sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg=="
+      },
+      {
+        "lock_path": "node_modules/date-fns-tz",
+        "version": "3.2.0",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/date-fns-tz/-/date-fns-tz-3.2.0.tgz",
+        "integrity": "sha512-sg8HqoTEulcbbbVXeg84u5UnlsQa8GS5QXMqjjYIhS4abEVVKIUwe0/l/UhrZdKaL/W5eWZNlbTeEIiOXTcsBQ=="
+      },
+      {
+        "lock_path": "node_modules/dayjs",
+        "version": "1.11.20",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/dayjs/-/dayjs-1.11.20.tgz",
+        "integrity": "sha512-YbwwqR/uYpeoP4pu043q+LTDLFBLApUP6VxRihdfNTqu4ubqMlGDLd6ErXhEgsyvY0K6nCs7nggYumAN+9uEuQ=="
+      },
+      {
+        "lock_path": "node_modules/debug",
+        "version": "4.4.3",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmjs.org/debug/-/debug-4.4.3.tgz",
+        "integrity": "sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA=="
+      },
+      {
+        "lock_path": "node_modules/delayed-stream",
+        "version": "1.0.0",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/delayed-stream/-/delayed-stream-1.0.0.tgz",
+        "integrity": "sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ=="
+      },
+      {
+        "lock_path": "node_modules/detect-libc",
+        "version": "2.1.2",
+        "license": "Apache-2.0",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/detect-libc/-/detect-libc-2.1.2.tgz",
+        "integrity": "sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ=="
+      },
+      {
+        "lock_path": "node_modules/dompurify",
+        "version": "3.4.8",
+        "license": "(MPL-2.0 OR Apache-2.0)",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmjs.org/dompurify/-/dompurify-3.4.8.tgz",
+        "integrity": "sha512-yb1cEmaOum7wFvOCSQxyfgVlv5D47Rc30iZWoMpbDIWTnJ6grDDQyu2KFJzB2k7u0pMuJcQ1zphH//fFnw2tjQ=="
+      },
+      {
+        "lock_path": "node_modules/dunder-proto",
+        "version": "1.0.1",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/dunder-proto/-/dunder-proto-1.0.1.tgz",
+        "integrity": "sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A=="
+      },
+      {
+        "lock_path": "node_modules/echarts",
+        "version": "6.0.0",
+        "license": "Apache-2.0",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/echarts/-/echarts-6.0.0.tgz",
+        "integrity": "sha512-Tte/grDQRiETQP4xz3iZWSvoHrkCQtwqd6hs+mifXcjrCuo2iKWbajFObuLJVBlDIJlOzgQPd1hsaKt/3+OMkQ=="
+      },
+      {
+        "lock_path": "node_modules/echarts/node_modules/tslib",
+        "version": "2.3.0",
+        "license": "0BSD",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/tslib/-/tslib-2.3.0.tgz",
+        "integrity": "sha512-N82ooyxVNm6h1riLCoyS9e3fuJ3AMG2zIZs2Gd1ATcSFjSA23Q0fzjjZeh0jbJvWVDZ0cJT8yaNNaaXHzueNjg=="
+      },
+      {
+        "lock_path": "node_modules/entities",
+        "version": "7.0.1",
+        "license": "BSD-2-Clause",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/entities/-/entities-7.0.1.tgz",
+        "integrity": "sha512-TWrgLOFUQTH994YUyl1yT4uyavY5nNB5muff+RtWaqNVCAK408b5ZnnbNAUEWLTCpum9w6arT70i1XdQ4UeOPA=="
+      },
+      {
+        "lock_path": "node_modules/es-define-property",
+        "version": "1.0.1",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/es-define-property/-/es-define-property-1.0.1.tgz",
+        "integrity": "sha512-e3nRfgfUZ4rNGL232gUgX06QNyyez04KdjFrF+LTRoOXmrOgFKDg4BCdsjW8EnT69eqdYGmRpJwiPVYNrCaW3g=="
+      },
+      {
+        "lock_path": "node_modules/es-errors",
+        "version": "1.3.0",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/es-errors/-/es-errors-1.3.0.tgz",
+        "integrity": "sha512-Zf5H2Kxt2xjTvbJvP2ZWLEICxA6j+hAmMzIlypy4xcBg1vKVnx89Wy0GbS+kf5cwCVFFzdCFh2XSCFNULS6csw=="
+      },
+      {
+        "lock_path": "node_modules/es-object-atoms",
+        "version": "1.1.1",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/es-object-atoms/-/es-object-atoms-1.1.1.tgz",
+        "integrity": "sha512-FGgH2h8zKNim9ljj7dankFPcICIK9Cp5bm+c2gQSYePhpaG5+esrLODihIorn+Pe6FGJzWhXQotPv73jTaldXA=="
+      },
+      {
+        "lock_path": "node_modules/es-set-tostringtag",
+        "version": "2.1.0",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/es-set-tostringtag/-/es-set-tostringtag-2.1.0.tgz",
+        "integrity": "sha512-j6vWzfrGVfyXxge+O0x5sh6cvxAog0a/4Rdd2K36zCMV5eJ+/+tOAngRO8cODMNWbVRdVlmGZQL2YS3yR8bIUA=="
+      },
+      {
+        "lock_path": "node_modules/estree-walker",
+        "version": "2.0.2",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/estree-walker/-/estree-walker-2.0.2.tgz",
+        "integrity": "sha512-Rfkk/Mp/DL7JVje3u18FxFujQlTNR2q6QfMSMB7AvCBx91NGj/ba3kCfza0f6dVDbw7YlRf/nDrn7pQrCCyQ/w=="
+      },
+      {
+        "lock_path": "node_modules/evtd",
+        "version": "0.2.4",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/evtd/-/evtd-0.2.4.tgz",
+        "integrity": "sha512-qaeGN5bx63s/AXgQo8gj6fBkxge+OoLddLniox5qtLAEY5HSnuSlISXVPxnSae1dWblvTh4/HoMIB+mbMsvZzw=="
+      },
+      {
+        "lock_path": "node_modules/fdir",
+        "version": "6.5.0",
+        "license": "MIT",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmjs.org/fdir/-/fdir-6.5.0.tgz",
+        "integrity": "sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg=="
+      },
+      {
+        "lock_path": "node_modules/follow-redirects",
+        "version": "1.16.0",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmjs.org/follow-redirects/-/follow-redirects-1.16.0.tgz",
+        "integrity": "sha512-y5rN/uOsadFT/JfYwhxRS5R7Qce+g3zG97+JrtFZlC9klX/W5hD7iiLzScI4nZqUS7DNUdhPgw4xI8W2LuXlUw=="
+      },
+      {
+        "lock_path": "node_modules/form-data",
+        "version": "4.0.5",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/form-data/-/form-data-4.0.5.tgz",
+        "integrity": "sha512-8RipRLol37bNs2bhoV67fiTEvdTrbMUYcFTiy3+wuuOnUog2QBHCZWXDRijWQfAkhBj2Uf5UnVaiWwA5vdd82w=="
+      },
+      {
+        "lock_path": "node_modules/fsevents",
+        "version": "2.3.3",
+        "license": "MIT",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmmirror.com/fsevents/-/fsevents-2.3.3.tgz",
+        "integrity": "sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw=="
+      },
+      {
+        "lock_path": "node_modules/function-bind",
+        "version": "1.1.2",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/function-bind/-/function-bind-1.1.2.tgz",
+        "integrity": "sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA=="
+      },
+      {
+        "lock_path": "node_modules/get-intrinsic",
+        "version": "1.3.0",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/get-intrinsic/-/get-intrinsic-1.3.0.tgz",
+        "integrity": "sha512-9fSjSaos/fRIVIp+xSJlE6lfwhES7LNtKaCBIamHsjr2na1BiABJPo0mOjjz8GJDURarmCPGqaiVg5mfjb98CQ=="
+      },
+      {
+        "lock_path": "node_modules/get-proto",
+        "version": "1.0.1",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/get-proto/-/get-proto-1.0.1.tgz",
+        "integrity": "sha512-sTSfBjoXBp89JvIKIefqw7U2CCebsc74kiY6awiGogKtoSGbgjYE/G/+l9sF3MWFPNc9IcoOC4ODfKHfxFmp0g=="
+      },
+      {
+        "lock_path": "node_modules/gopd",
+        "version": "1.2.0",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/gopd/-/gopd-1.2.0.tgz",
+        "integrity": "sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg=="
+      },
+      {
+        "lock_path": "node_modules/has-symbols",
+        "version": "1.1.0",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/has-symbols/-/has-symbols-1.1.0.tgz",
+        "integrity": "sha512-1cDNdwJ2Jaohmb3sg4OmKaMBwuC48sYni5HUw2DvsC8LjGTLK9h+eb1X6RyuOHe4hT0ULCW68iomhjUoKUqlPQ=="
+      },
+      {
+        "lock_path": "node_modules/has-tostringtag",
+        "version": "1.0.2",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/has-tostringtag/-/has-tostringtag-1.0.2.tgz",
+        "integrity": "sha512-NqADB8VjPFLM2V0VvHUewwwsw0ZWBaIdgo+ieHtK3hasLz4qeCRjYcqfB6AQrBggRKppKF8L52/VqdVsO47Dlw=="
+      },
+      {
+        "lock_path": "node_modules/hasown",
+        "version": "2.0.2",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/hasown/-/hasown-2.0.2.tgz",
+        "integrity": "sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ=="
+      },
+      {
+        "lock_path": "node_modules/highlight.js",
+        "version": "11.11.1",
+        "license": "BSD-3-Clause",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/highlight.js/-/highlight.js-11.11.1.tgz",
+        "integrity": "sha512-Xwwo44whKBVCYoliBQwaPvtd/2tYFkRQtXDWj1nackaV2JPXx3L0+Jvd8/qCJ2p+ML0/XVkJ2q+Mr+UVdpJK5w=="
+      },
+      {
+        "lock_path": "node_modules/hookable",
+        "version": "5.5.3",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/hookable/-/hookable-5.5.3.tgz",
+        "integrity": "sha512-Yc+BQe8SvoXH1643Qez1zqLRmbA5rCL+sSmk6TVos0LWVfNIB7PGncdlId77WzLGSIB5KaWgTaNTs2lNVEI6VQ=="
+      },
+      {
+        "lock_path": "node_modules/https-proxy-agent",
+        "version": "5.0.1",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmjs.org/https-proxy-agent/-/https-proxy-agent-5.0.1.tgz",
+        "integrity": "sha512-dFcAjpTQFgoLMzC2VwU+C/CbS7uRL0lWmxDITmqm7C+7F0Odmj6s9l6alZc6AELXhrnggM2CeWSXHGOdX2YtwA=="
+      },
+      {
+        "lock_path": "node_modules/is-what",
+        "version": "5.5.0",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/is-what/-/is-what-5.5.0.tgz",
+        "integrity": "sha512-oG7cgbmg5kLYae2N5IVd3jm2s+vldjxJzK1pcu9LfpGuQ93MQSzo0okvRna+7y5ifrD+20FE8FvjusyGaz14fw=="
+      },
+      {
+        "lock_path": "node_modules/lightningcss",
+        "version": "1.32.0",
+        "license": "MPL-2.0",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/lightningcss/-/lightningcss-1.32.0.tgz",
+        "integrity": "sha512-NXYBzinNrblfraPGyrbPoD19C1h9lfI/1mzgWYvXUTe414Gz/X1FD2XBZSZM7rRTrMA8JL3OtAaGifrIKhQ5yQ=="
+      },
+      {
+        "lock_path": "node_modules/lightningcss-android-arm64",
+        "version": "1.32.0",
+        "license": "MPL-2.0",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmmirror.com/lightningcss-android-arm64/-/lightningcss-android-arm64-1.32.0.tgz",
+        "integrity": "sha512-YK7/ClTt4kAK0vo6w3X+Pnm0D2cf2vPHbhOXdoNti1Ga0al1P4TBZhwjATvjNwLEBCnKvjJc2jQgHXH0NEwlAg=="
+      },
+      {
+        "lock_path": "node_modules/lightningcss-darwin-arm64",
+        "version": "1.32.0",
+        "license": "MPL-2.0",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmmirror.com/lightningcss-darwin-arm64/-/lightningcss-darwin-arm64-1.32.0.tgz",
+        "integrity": "sha512-RzeG9Ju5bag2Bv1/lwlVJvBE3q6TtXskdZLLCyfg5pt+HLz9BqlICO7LZM7VHNTTn/5PRhHFBSjk5lc4cmscPQ=="
+      },
+      {
+        "lock_path": "node_modules/lightningcss-darwin-x64",
+        "version": "1.32.0",
+        "license": "MPL-2.0",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmmirror.com/lightningcss-darwin-x64/-/lightningcss-darwin-x64-1.32.0.tgz",
+        "integrity": "sha512-U+QsBp2m/s2wqpUYT/6wnlagdZbtZdndSmut/NJqlCcMLTWp5muCrID+K5UJ6jqD2BFshejCYXniPDbNh73V8w=="
+      },
+      {
+        "lock_path": "node_modules/lightningcss-freebsd-x64",
+        "version": "1.32.0",
+        "license": "MPL-2.0",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmmirror.com/lightningcss-freebsd-x64/-/lightningcss-freebsd-x64-1.32.0.tgz",
+        "integrity": "sha512-JCTigedEksZk3tHTTthnMdVfGf61Fky8Ji2E4YjUTEQX14xiy/lTzXnu1vwiZe3bYe0q+SpsSH/CTeDXK6WHig=="
+      },
+      {
+        "lock_path": "node_modules/lightningcss-linux-arm-gnueabihf",
+        "version": "1.32.0",
+        "license": "MPL-2.0",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmmirror.com/lightningcss-linux-arm-gnueabihf/-/lightningcss-linux-arm-gnueabihf-1.32.0.tgz",
+        "integrity": "sha512-x6rnnpRa2GL0zQOkt6rts3YDPzduLpWvwAF6EMhXFVZXD4tPrBkEFqzGowzCsIWsPjqSK+tyNEODUBXeeVHSkw=="
+      },
+      {
+        "lock_path": "node_modules/lightningcss-linux-arm64-gnu",
+        "version": "1.32.0",
+        "license": "MPL-2.0",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmmirror.com/lightningcss-linux-arm64-gnu/-/lightningcss-linux-arm64-gnu-1.32.0.tgz",
+        "integrity": "sha512-0nnMyoyOLRJXfbMOilaSRcLH3Jw5z9HDNGfT/gwCPgaDjnx0i8w7vBzFLFR1f6CMLKF8gVbebmkUN3fa/kQJpQ=="
+      },
+      {
+        "lock_path": "node_modules/lightningcss-linux-arm64-musl",
+        "version": "1.32.0",
+        "license": "MPL-2.0",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmmirror.com/lightningcss-linux-arm64-musl/-/lightningcss-linux-arm64-musl-1.32.0.tgz",
+        "integrity": "sha512-UpQkoenr4UJEzgVIYpI80lDFvRmPVg6oqboNHfoH4CQIfNA+HOrZ7Mo7KZP02dC6LjghPQJeBsvXhJod/wnIBg=="
+      },
+      {
+        "lock_path": "node_modules/lightningcss-linux-x64-gnu",
+        "version": "1.32.0",
+        "license": "MPL-2.0",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmmirror.com/lightningcss-linux-x64-gnu/-/lightningcss-linux-x64-gnu-1.32.0.tgz",
+        "integrity": "sha512-V7Qr52IhZmdKPVr+Vtw8o+WLsQJYCTd8loIfpDaMRWGUZfBOYEJeyJIkqGIDMZPwPx24pUMfwSxxI8phr/MbOA=="
+      },
+      {
+        "lock_path": "node_modules/lightningcss-linux-x64-musl",
+        "version": "1.32.0",
+        "license": "MPL-2.0",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmmirror.com/lightningcss-linux-x64-musl/-/lightningcss-linux-x64-musl-1.32.0.tgz",
+        "integrity": "sha512-bYcLp+Vb0awsiXg/80uCRezCYHNg1/l3mt0gzHnWV9XP1W5sKa5/TCdGWaR/zBM2PeF/HbsQv/j2URNOiVuxWg=="
+      },
+      {
+        "lock_path": "node_modules/lightningcss-win32-arm64-msvc",
+        "version": "1.32.0",
+        "license": "MPL-2.0",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmmirror.com/lightningcss-win32-arm64-msvc/-/lightningcss-win32-arm64-msvc-1.32.0.tgz",
+        "integrity": "sha512-8SbC8BR40pS6baCM8sbtYDSwEVQd4JlFTOlaD3gWGHfThTcABnNDBda6eTZeqbofalIJhFx0qKzgHJmcPTnGdw=="
+      },
+      {
+        "lock_path": "node_modules/lightningcss-win32-x64-msvc",
+        "version": "1.32.0",
+        "license": "MPL-2.0",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmmirror.com/lightningcss-win32-x64-msvc/-/lightningcss-win32-x64-msvc-1.32.0.tgz",
+        "integrity": "sha512-Amq9B/SoZYdDi1kFrojnoqPLxYhQ4Wo5XiL8EVJrVsB8ARoC1PWW6VGtT0WKCemjy8aC+louJnjS7U18x3b06Q=="
+      },
+      {
+        "lock_path": "node_modules/lodash",
+        "version": "4.18.1",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.18.1.tgz",
+        "integrity": "sha512-dMInicTPVE8d1e5otfwmmjlxkZoUpiVLwyeTdUsi/Caj/gfzzblBcCE5sRHV/AsjuCmxWrte2TNGSYuCeCq+0Q=="
+      },
+      {
+        "lock_path": "node_modules/lodash-es",
+        "version": "4.18.1",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmjs.org/lodash-es/-/lodash-es-4.18.1.tgz",
+        "integrity": "sha512-J8xewKD/Gk22OZbhpOVSwcs60zhd95ESDwezOFuA3/099925PdHJ7OFHNTGtajL3AlZkykD32HykiMo+BIBI8A=="
+      },
+      {
+        "lock_path": "node_modules/magic-string",
+        "version": "0.30.21",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/magic-string/-/magic-string-0.30.21.tgz",
+        "integrity": "sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ=="
+      },
+      {
+        "lock_path": "node_modules/marked",
+        "version": "17.0.5",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/marked/-/marked-17.0.5.tgz",
+        "integrity": "sha512-6hLvc0/JEbRjRgzI6wnT2P1XuM1/RrrDEX0kPt0N7jGm1133g6X7DlxFasUIx+72aKAr904GTxhSLDrd5DIlZg=="
+      },
+      {
+        "lock_path": "node_modules/math-intrinsics",
+        "version": "1.1.0",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/math-intrinsics/-/math-intrinsics-1.1.0.tgz",
+        "integrity": "sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g=="
+      },
+      {
+        "lock_path": "node_modules/mime-db",
+        "version": "1.52.0",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/mime-db/-/mime-db-1.52.0.tgz",
+        "integrity": "sha512-sPU4uV7dYlvtWJxwwxHD0PuihVNiE7TyAbQ5SWxDCB9mUYvOgroQOwYQQOKPJ8CIbE+1ETVlOoK1UC2nU3gYvg=="
+      },
+      {
+        "lock_path": "node_modules/mime-types",
+        "version": "2.1.35",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/mime-types/-/mime-types-2.1.35.tgz",
+        "integrity": "sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw=="
+      },
+      {
+        "lock_path": "node_modules/mitt",
+        "version": "3.0.1",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/mitt/-/mitt-3.0.1.tgz",
+        "integrity": "sha512-vKivATfr97l2/QBCYAkXYDbrIWPM2IIKEl7YPhjCvKlG3kE2gm+uBo6nEXK3M5/Ffh/FLpKExzOQ3JJoJGFKBw=="
+      },
+      {
+        "lock_path": "node_modules/ms",
+        "version": "2.1.3",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmjs.org/ms/-/ms-2.1.3.tgz",
+        "integrity": "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA=="
+      },
+      {
+        "lock_path": "node_modules/muggle-string",
+        "version": "0.4.1",
+        "license": "MIT",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/muggle-string/-/muggle-string-0.4.1.tgz",
+        "integrity": "sha512-VNTrAak/KhO2i8dqqnqnAHOa3cYBwXEZe9h+D5h/1ZqFSTEFHdM65lR7RoIqq3tBBYavsOXV84NoHXZ0AkPyqQ=="
+      },
+      {
+        "lock_path": "node_modules/naive-ui",
+        "version": "2.44.1",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/naive-ui/-/naive-ui-2.44.1.tgz",
+        "integrity": "sha512-reo8Esw0p58liZwbUutC7meW24Xbn3EwNv91zReWKm2W4JPu+zfgJRn/F7aO0BFmvN+h2brA2M5lRvYqLq4kuA=="
+      },
+      {
+        "lock_path": "node_modules/nanoid",
+        "version": "3.3.12",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmjs.org/nanoid/-/nanoid-3.3.12.tgz",
+        "integrity": "sha512-ZB9RH/39qpq5Vu6Y+NmUaFhQR6pp+M2Xt76XBnEwDaGcVAqhlvxrl3B2bKS5D3NH3QR76v3aSrKaF/Kiy7lEtQ=="
+      },
+      {
+        "lock_path": "node_modules/path-browserify",
+        "version": "1.0.1",
+        "license": "MIT",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/path-browserify/-/path-browserify-1.0.1.tgz",
+        "integrity": "sha512-b7uo2UCUOYZcnF/3ID0lulOJi/bafxa1xPe7ZPsammBSpjSWQkjNxlt635YGS2MiR9GjvuXCtz2emr3jbsz98g=="
+      },
+      {
+        "lock_path": "node_modules/perfect-debounce",
+        "version": "1.0.0",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/perfect-debounce/-/perfect-debounce-1.0.0.tgz",
+        "integrity": "sha512-xCy9V055GLEqoFaHoC1SoLIaLmWctgCUaBaWxDZ7/Zx4CTyX7cJQLJOok/orfjZAh9kEYpjJa4d0KcJmCbctZA=="
+      },
+      {
+        "lock_path": "node_modules/picocolors",
+        "version": "1.1.1",
+        "license": "ISC",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/picocolors/-/picocolors-1.1.1.tgz",
+        "integrity": "sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA=="
+      },
+      {
+        "lock_path": "node_modules/picomatch",
+        "version": "4.0.4",
+        "license": "MIT",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/picomatch/-/picomatch-4.0.4.tgz",
+        "integrity": "sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A=="
+      },
+      {
+        "lock_path": "node_modules/pinia",
+        "version": "3.0.4",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/pinia/-/pinia-3.0.4.tgz",
+        "integrity": "sha512-l7pqLUFTI/+ESXn6k3nu30ZIzW5E2WZF/LaHJEpoq6ElcLD+wduZoB2kBN19du6K/4FDpPMazY2wJr+IndBtQw=="
+      },
+      {
+        "lock_path": "node_modules/postcss",
+        "version": "8.5.15",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmjs.org/postcss/-/postcss-8.5.15.tgz",
+        "integrity": "sha512-FfR8sjd4em2T6fb3I2MwAJU7HWVMr9zba+enmQeeWFfCbm+UOC/0X4DS8XtpUTMwWMGbjKYP7xjfNekzyGmB3A=="
+      },
+      {
+        "lock_path": "node_modules/proxy-from-env",
+        "version": "2.1.0",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/proxy-from-env/-/proxy-from-env-2.1.0.tgz",
+        "integrity": "sha512-cJ+oHTW1VAEa8cJslgmUZrc+sjRKgAKl3Zyse6+PV38hZe/V6Z14TbCuXcan9F9ghlz4QrFr2c92TNF82UkYHA=="
+      },
+      {
+        "lock_path": "node_modules/rfdc",
+        "version": "1.4.1",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/rfdc/-/rfdc-1.4.1.tgz",
+        "integrity": "sha512-q1b3N5QkRUWUl7iyylaaj3kOpIT0N2i9MqIEQXP73GVsN9cw3fdx8X63cEmWhJGi2PPCF23Ijp7ktmd39rawIA=="
+      },
+      {
+        "lock_path": "node_modules/rolldown",
+        "version": "1.0.3",
+        "license": "MIT",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmjs.org/rolldown/-/rolldown-1.0.3.tgz",
+        "integrity": "sha512-i00lAJ2ks1BYr7rjNjKC7BcqAS7nVfiT3QX1SI5aY+AFHblCmaUf9OE9dbdzDvW6dJxbi2ZCZiy9v3CcwOiX3g=="
+      },
+      {
+        "lock_path": "node_modules/rolldown/node_modules/@rolldown/pluginutils",
+        "version": "1.0.1",
+        "license": "MIT",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmjs.org/@rolldown/pluginutils/-/pluginutils-1.0.1.tgz",
+        "integrity": "sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw=="
+      },
+      {
+        "lock_path": "node_modules/seemly",
+        "version": "0.3.10",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/seemly/-/seemly-0.3.10.tgz",
+        "integrity": "sha512-2+SMxtG1PcsL0uyhkumlOU6Qo9TAQ/WyH7tthnPIOQB05/12jz9naq6GZ6iZ6ApVsO3rr2gsnTf3++OV63kE1Q=="
+      },
+      {
+        "lock_path": "node_modules/source-map-js",
+        "version": "1.2.1",
+        "license": "BSD-3-Clause",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/source-map-js/-/source-map-js-1.2.1.tgz",
+        "integrity": "sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA=="
+      },
+      {
+        "lock_path": "node_modules/speakingurl",
+        "version": "14.0.1",
+        "license": "BSD-3-Clause",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/speakingurl/-/speakingurl-14.0.1.tgz",
+        "integrity": "sha512-1POYv7uv2gXoyGFpBCmpDVSNV74IfsWlDW216UPjbWufNf+bSU6GdbDsxdcxtfwb4xlI3yxzOTKClUosxARYrQ=="
+      },
+      {
+        "lock_path": "node_modules/superjson",
+        "version": "2.2.6",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/superjson/-/superjson-2.2.6.tgz",
+        "integrity": "sha512-H+ue8Zo4vJmV2nRjpx86P35lzwDT3nItnIsocgumgr0hHMQ+ZGq5vrERg9kJBo5AWGmxZDhzDo+WVIJqkB0cGA=="
+      },
+      {
+        "lock_path": "node_modules/tinyglobby",
+        "version": "0.2.17",
+        "license": "MIT",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmjs.org/tinyglobby/-/tinyglobby-0.2.17.tgz",
+        "integrity": "sha512-wXR/dYpcqKmfWpEdZjiKJOwCNFndD0DMnrW/cYjVGttEkBfVgcLFHoNrlj47mjOVic9yyNu65alsgF4NQyTa2g=="
+      },
+      {
+        "lock_path": "node_modules/treemate",
+        "version": "0.3.11",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/treemate/-/treemate-0.3.11.tgz",
+        "integrity": "sha512-M8RGFoKtZ8dF+iwJfAJTOH/SM4KluKOKRJpjCMhI8bG3qB74zrFoArKZ62ll0Fr3mqkMJiQOmWYkdYgDeITYQg=="
+      },
+      {
+        "lock_path": "node_modules/tslib",
+        "version": "2.8.1",
+        "license": "0BSD",
+        "dev": true,
+        "optional": true,
+        "resolved": "https://registry.npmjs.org/tslib/-/tslib-2.8.1.tgz",
+        "integrity": "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w=="
+      },
+      {
+        "lock_path": "node_modules/typescript",
+        "version": "5.9.3",
+        "license": "Apache-2.0",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/typescript/-/typescript-5.9.3.tgz",
+        "integrity": "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="
+      },
+      {
+        "lock_path": "node_modules/undici-types",
+        "version": "7.16.0",
+        "license": "MIT",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/undici-types/-/undici-types-7.16.0.tgz",
+        "integrity": "sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw=="
+      },
+      {
+        "lock_path": "node_modules/vdirs",
+        "version": "0.1.8",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/vdirs/-/vdirs-0.1.8.tgz",
+        "integrity": "sha512-H9V1zGRLQZg9b+GdMk8MXDN2Lva0zx72MPahDKc30v+DtwKjfyOSXWRIX4t2mhDubM1H09gPhWeth/BJWPHGUw=="
+      },
+      {
+        "lock_path": "node_modules/vite",
+        "version": "8.0.16",
+        "license": "MIT",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmjs.org/vite/-/vite-8.0.16.tgz",
+        "integrity": "sha512-h9bXPmJichP5fLmVQo3PyaGSDE2n3aPuomeAlVRm0JLmt4rY6zmPKd59HYI4LNW8oTK7tlTsuC7l/m7awx9Jcw=="
+      },
+      {
+        "lock_path": "node_modules/vooks",
+        "version": "0.2.12",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/vooks/-/vooks-0.2.12.tgz",
+        "integrity": "sha512-iox0I3RZzxtKlcgYaStQYKEzWWGAduMmq+jS7OrNdQo1FgGfPMubGL3uGHOU9n97NIvfFDBGnpSvkWyb/NSn/Q=="
+      },
+      {
+        "lock_path": "node_modules/vscode-uri",
+        "version": "3.1.0",
+        "license": "MIT",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/vscode-uri/-/vscode-uri-3.1.0.tgz",
+        "integrity": "sha512-/BpdSx+yCQGnCvecbyXdxHDkuk55/G3xwnC0GqY4gmQ3j+A+g8kzzgB4Nk/SINjqn6+waqw3EgbVF2QKExkRxQ=="
+      },
+      {
+        "lock_path": "node_modules/vue",
+        "version": "3.5.31",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/vue/-/vue-3.5.31.tgz",
+        "integrity": "sha512-iV/sU9SzOlmA/0tygSmjkEN6Jbs3nPoIPFhCMLD2STrjgOU8DX7ZtzMhg4ahVwf5Rp9KoFzcXeB1ZrVbLBp5/Q=="
+      },
+      {
+        "lock_path": "node_modules/vue-echarts",
+        "version": "8.0.1",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/vue-echarts/-/vue-echarts-8.0.1.tgz",
+        "integrity": "sha512-23rJTFLu1OUEGRWjJGmdGt8fP+8+ja1gVgzMYPIPaHWpXegcO1viIAaeu2H4QHESlVeHzUAHIxKXGrwjsyXAaA=="
+      },
+      {
+        "lock_path": "node_modules/vue-router",
+        "version": "4.6.4",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/vue-router/-/vue-router-4.6.4.tgz",
+        "integrity": "sha512-Hz9q5sa33Yhduglwz6g9skT8OBPii+4bFn88w6J+J4MfEo4KRRpmiNG/hHHkdbRFlLBOqxN8y8gf2Fb0MTUgVg=="
+      },
+      {
+        "lock_path": "node_modules/vue-router/node_modules/@vue/devtools-api",
+        "version": "6.6.4",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/@vue/devtools-api/-/devtools-api-6.6.4.tgz",
+        "integrity": "sha512-sGhTPMuXqZ1rVOk32RylztWkfXTRhuS7vgAKv0zjqk8gbsHkJ7xfFf+jbySxt7tWObEJwyKaHMikV/WGDiQm8g=="
+      },
+      {
+        "lock_path": "node_modules/vue-tsc",
+        "version": "3.2.6",
+        "license": "MIT",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/vue-tsc/-/vue-tsc-3.2.6.tgz",
+        "integrity": "sha512-gYW/kWI0XrwGzd0PKc7tVB/qpdeAkIZLNZb10/InizkQjHjnT8weZ/vBarZoj4kHKbUTZT/bAVgoOr8x4NsQ/Q=="
+      },
+      {
+        "lock_path": "node_modules/vueuc",
+        "version": "0.4.65",
+        "license": "MIT",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/vueuc/-/vueuc-0.4.65.tgz",
+        "integrity": "sha512-lXuMl+8gsBmruudfxnMF9HW4be8rFziylXFu1VHVNbLVhRTXXV4njvpRuJapD/8q+oFEMSfQMH16E/85VoWRyQ=="
+      },
+      {
+        "lock_path": "node_modules/yaml",
+        "version": "2.9.0",
+        "license": "ISC",
+        "dev": true,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/yaml/-/yaml-2.9.0.tgz",
+        "integrity": "sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA=="
+      },
+      {
+        "lock_path": "node_modules/zrender",
+        "version": "6.0.0",
+        "license": "BSD-3-Clause",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/zrender/-/zrender-6.0.0.tgz",
+        "integrity": "sha512-41dFXEEXuJpNecuUQq6JlbybmnHaqqpGlbH1yxnA5V9MMP4SbohSVZsJIwz+zdjQXSSlR1Vc34EgH1zxyTDvhg=="
+      },
+      {
+        "lock_path": "node_modules/zrender/node_modules/tslib",
+        "version": "2.3.0",
+        "license": "0BSD",
+        "dev": false,
+        "optional": false,
+        "resolved": "https://registry.npmmirror.com/tslib/-/tslib-2.3.0.tgz",
+        "integrity": "sha512-N82ooyxVNm6h1riLCoyS9e3fuJ3AMG2zIZs2Gd1ATcSFjSA23Q0fzjjZeh0jbJvWVDZ0cJT8yaNNaaXHzueNjg=="
+      }
+    ]
+  }
+}

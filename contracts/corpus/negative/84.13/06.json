@@ -1,0 +1,24 @@
+{
+  "group_id": "84.13-06",
+  "negative": [
+    {
+      "case_id": "checkpoint-different-snapshot",
+      "expected_error_code": 1014,
+      "kind": "checkpoint_binding"
+    },
+    {
+      "case_id": "stale-attempt-lease",
+      "expected_error_code": 1002,
+      "kind": "lease_fencing"
+    },
+    {
+      "case_id": "terminal-attempt-resume",
+      "expected_error_code": 1010,
+      "kind": "state_transition"
+    }
+  ],
+  "positive": [
+    "checkpoint"
+  ],
+  "title": "Attempt cancel/complete race, fresh resume and checkpoint"
+}

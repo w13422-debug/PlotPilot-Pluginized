@@ -1,0 +1,24 @@
+{
+  "group_id": "84.13-08",
+  "negative": [
+    {
+      "case_id": "concurrent-install-base-changed",
+      "expected_error_code": 1010,
+      "kind": "cas"
+    },
+    {
+      "case_id": "rollback-second-attempt",
+      "expected_error_code": 1010,
+      "kind": "rollback_once"
+    },
+    {
+      "case_id": "invalid-settings-validator",
+      "expected_error_code": 1006,
+      "kind": "settings_invalid"
+    }
+  ],
+  "positive": [
+    "plugin-lifecycle-transition"
+  ],
+  "title": "Install base CAS, crash points, rollback once and safe mode"
+}

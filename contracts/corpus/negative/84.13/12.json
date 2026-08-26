@@ -1,0 +1,25 @@
+{
+  "group_id": "84.13-12",
+  "negative": [
+    {
+      "case_id": "skipped-participated",
+      "expected_error_code": 1011,
+      "kind": "attribution"
+    },
+    {
+      "case_id": "model-claim-without-evidence",
+      "expected_error_code": 1011,
+      "kind": "attribution"
+    },
+    {
+      "case_id": "tampered-patch",
+      "expected_error_code": 1011,
+      "kind": "receipt_hash"
+    }
+  ],
+  "positive": [
+    "skill-run-receipt",
+    "skill-chain-result"
+  ],
+  "title": "Skill executed/failed/skipped/model claim/verified patch"
+}

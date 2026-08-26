@@ -1,0 +1,2549 @@
+{
+  "schema": "plotpilot-browser-smoke/v1",
+  "status": "passed",
+  "started_at": "2026-08-26T07:54:49.085Z",
+  "finished_at": "2026-08-26T07:55:13.881Z",
+  "root": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized",
+  "urls": {
+    "webui": "http://127.0.0.1:3000",
+    "api": "http://127.0.0.1:8005"
+  },
+  "service_commands": [
+    "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m uvicorn interfaces.main:app --host 127.0.0.1 --port 8005 --log-level warning",
+    "C:\\Program Files\\nodejs\\node.exe C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\frontend\\node_modules\\vite\\bin\\vite.js --host 127.0.0.1 --port 3000 --strictPort"
+  ],
+  "runtime": {
+    "node": "v24.18.0",
+    "python_command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "playwright_version": "1.62.1",
+    "playwright_module": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\node_modules\\playwright\\index.mjs",
+    "chromium_executable": "C:\\Users\\Administrator\\.agent-browser\\browsers\\chrome-152.0.7977.54\\chrome.exe",
+    "headless": false
+  },
+  "temporary_data_root": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\plotpilot-m0-browser-gxEA9k",
+  "fixture": {
+    "id": "m0-browser-1787730908430",
+    "title": "M0 浏览基线",
+    "create_response": 201,
+    "chapter_ensure_response": 200
+  },
+  "constraints": {
+    "generation_pipeline_invoked": false,
+    "non_empty_chapter_body_saved": false,
+    "temporary_data_removed_after_run": true
+  },
+  "data_evidence": {
+    "database_exists": true,
+    "chapter_count": 1,
+    "non_empty_chapter_count": 0
+  },
+  "flows": [
+    {
+      "id": "home-empty",
+      "started_at": "2026-08-26T07:54:53.873Z",
+      "url": "http://127.0.0.1:3000/",
+      "assertions": [
+        "Home heading is visible",
+        "empty library state is visible"
+      ],
+      "finished_at": "2026-08-26T07:55:06.889Z",
+      "screenshot": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\01-home-empty.png",
+      "api_trace": [
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:54:53.944Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/config.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:54:53.991Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/config.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:54:53.991Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/endpoints.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:54:54.121Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/endpoints.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:54:54.124Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/aiInvocation.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:54:54.125Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/aiInvocation.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:05.800Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/novel.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:05.879Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/stats.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:05.879Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/novel.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:05.996Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/stats.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:05.998Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/llmControl.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:05.998Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/settings.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:06.024Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/settings.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:06.025Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/llmControl.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:06.092Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/stats/global",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:06.092Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:06.092Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:06.598Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:06.599Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels",
+          "status": 307,
+          "content_type": null
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:06.600Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:8005/api/v1/novels/",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:06.603Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/stats/global",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:06.617Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:8005/api/v1/novels/",
+          "status": 200,
+          "content_type": "application/json"
+        }
+      ]
+    },
+    {
+      "id": "home-create-surface",
+      "started_at": "2026-08-26T07:55:07.661Z",
+      "url": "http://127.0.0.1:3000/",
+      "assertions": [
+        "premise input is focusable",
+        "create card remains on Home route"
+      ],
+      "finished_at": "2026-08-26T07:55:07.965Z",
+      "screenshot": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\02-home-create-surface.png",
+      "api_trace": []
+    },
+    {
+      "id": "home-advanced-surface",
+      "started_at": "2026-08-26T07:55:08.039Z",
+      "url": "http://127.0.0.1:3000/",
+      "assertions": [
+        "advanced settings toggle opens",
+        "custom chapter count and word count are visible"
+      ],
+      "finished_at": "2026-08-26T07:55:08.339Z",
+      "screenshot": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\03-home-advanced-surface.png",
+      "api_trace": []
+    },
+    {
+      "id": "home-populated-list",
+      "started_at": "2026-08-26T07:55:08.463Z",
+      "url": "http://127.0.0.1:3000/",
+      "assertions": [
+        "created fixture is rendered as a book card",
+        "book count is 1"
+      ],
+      "finished_at": "2026-08-26T07:55:09.243Z",
+      "screenshot": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\04-home-populated-list.png",
+      "api_trace": [
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:08.538Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/config.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:08.551Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/config.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:08.555Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/endpoints.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:08.570Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/endpoints.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:08.577Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/aiInvocation.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:08.577Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/aiInvocation.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:08.722Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/novel.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:08.733Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/novel.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:08.735Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/stats.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:08.766Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/stats.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:08.769Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/llmControl.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:08.769Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/settings.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:08.776Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/llmControl.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:08.776Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/settings.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:08.848Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/stats/global",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:08.848Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:08.848Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:08.866Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/stats/global",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:08.866Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:08.867Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels",
+          "status": 307,
+          "content_type": null
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:08.867Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:8005/api/v1/novels/",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:08.892Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:8005/api/v1/novels/",
+          "status": 200,
+          "content_type": "application/json"
+        }
+      ]
+    },
+    {
+      "id": "workbench-shell",
+      "started_at": "2026-08-26T07:55:09.382Z",
+      "url": "http://127.0.0.1:3000/book/m0-browser-1787730908430/workbench",
+      "assertions": [
+        "Workbench route loads",
+        "existing product title is retained",
+        "reference group is visible"
+      ],
+      "finished_at": "2026-08-26T07:55:10.742Z",
+      "screenshot": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\05-workbench-shell.png",
+      "api_trace": [
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:09.461Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/config.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:09.471Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/config.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:09.474Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/endpoints.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:09.487Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/endpoints.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:09.496Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/aiInvocation.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:09.499Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/aiInvocation.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:09.618Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/stats.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:09.618Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/novel.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:09.971Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/chapter.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:09.973Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/stats.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:09.983Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/novel.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:09.984Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/workflow.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:09.985Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/llmControl.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:09.985Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/tools.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:10.003Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/settings.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.062Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/chapter.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.070Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/tools.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.098Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/llmControl.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.098Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/workflow.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:10.104Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/autopilot.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:10.104Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/planning.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.119Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/settings.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:10.119Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/structure.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.148Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/autopilot.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:10.148Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/http.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.149Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/planning.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.149Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/structure.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.150Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/http.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:10.243Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:10.243Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/statistics",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:10.243Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/structure",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:10.244Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:10.244Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:10.256Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/knowledge.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:10.256Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/bible.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.262Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.279Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/statistics",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:10.279Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.290Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/structure",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:10.290Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
+          "resource_type": "fetch",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.331Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.360Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.486Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.495Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/knowledge.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.495Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/bible.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:10.501Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:10.651Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:10.651Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/knowledge",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:10.651Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:10.673Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/dag.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.678Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/dag.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:10.696Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
+          "resource_type": "fetch",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.696Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.712Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.712Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/knowledge",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.713Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.713Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.719Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:10.744Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
+          "resource_type": "fetch",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:10.779Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
+          "status": 200,
+          "content_type": "application/json"
+        }
+      ]
+    },
+    {
+      "id": "workbench-chapter-tree",
+      "started_at": "2026-08-26T07:55:11.043Z",
+      "url": "http://127.0.0.1:3000/book/m0-browser-1787730908430/workbench",
+      "assertions": [
+        "empty chapter is selectable",
+        "chapter editor is visible",
+        "editor remains empty"
+      ],
+      "chapter_body_length": "",
+      "finished_at": "2026-08-26T07:55:11.379Z",
+      "screenshot": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\06-workbench-chapter-tree.png",
+      "api_trace": [
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:11.070Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters/1",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:11.118Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters/1",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:11.118Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
+          "resource_type": "fetch",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:11.118Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters/1/guardrail-snapshot",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:11.118Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/planning/novels/m0-browser-1787730908430/structure",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:11.121Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:11.124Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters/1/guardrail-snapshot",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:11.131Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/planning/novels/m0-browser-1787730908430/structure",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:11.131Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/knowledge",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:11.136Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/knowledge",
+          "status": 200,
+          "content_type": "application/json"
+        }
+      ]
+    },
+    {
+      "id": "workbench-writing-support",
+      "started_at": "2026-08-26T07:55:11.762Z",
+      "url": "http://127.0.0.1:3000/book/m0-browser-1787730908430/workbench",
+      "assertions": [
+        "writing support group switches without generation",
+        "narrative brief tab is available"
+      ],
+      "finished_at": "2026-08-26T07:55:12.127Z",
+      "screenshot": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\07-workbench-writing-support.png",
+      "api_trace": [
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:11.852Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/narrativeEngine.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:11.853Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/foreshadow.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:11.853Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/engineCore.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:11.871Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/foreshadow.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:11.873Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/narrativeEngine.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:11.873Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/engineCore.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:11.896Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/narrative-engine/story-evolution",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:11.896Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/foreshadow-ledger?status=pending",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:11.896Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/character-psyches",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:11.896Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:11.921Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/character-psyches",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:11.922Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/narrative-engine/story-evolution",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:11.923Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:11.939Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/foreshadow-ledger?status=pending",
+          "status": 200,
+          "content_type": "application/json"
+        }
+      ]
+    },
+    {
+      "id": "workbench-reference-panel",
+      "started_at": "2026-08-26T07:55:12.171Z",
+      "url": "http://127.0.0.1:3000/book/m0-browser-1787730908430/workbench",
+      "assertions": [
+        "reference group switches",
+        "worldbuilding tab is available"
+      ],
+      "finished_at": "2026-08-26T07:55:12.487Z",
+      "screenshot": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\08-workbench-reference-panel.png",
+      "api_trace": [
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:12.260Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/worldbuilding.ts",
+          "resource_type": "script",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:12.266Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/src/api/worldbuilding.ts",
+          "status": 200,
+          "content_type": "text/javascript"
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:12.288Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/worldbuilding",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:12.347Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/worldbuilding",
+          "status": 200,
+          "content_type": "application/json"
+        }
+      ]
+    },
+    {
+      "id": "workbench-export-menu",
+      "started_at": "2026-08-26T07:55:12.575Z",
+      "url": "http://127.0.0.1:3000/book/m0-browser-1787730908430/workbench",
+      "assertions": [
+        "export menu exposes EPUB/PDF/DOCX/Markdown",
+        "markdown export metadata is observable",
+        "no download is triggered"
+      ],
+      "export_observation": {
+        "status": 200,
+        "content_type": "text/markdown; charset=utf-8",
+        "content_disposition": "attachment; filename=M0_%E6%B5%8F%E8%A7%88%E5%9F%BA%E7%BA%BF.md; filename*=UTF-8''M0_%E6%B5%8F%E8%A7%88%E5%9F%BA%E7%BA%BF.md",
+        "charset": "utf-8",
+        "byte_length": 126,
+        "utf8_bom": false,
+        "filename_encoded": "M0_%E6%B5%8F%E8%A7%88%E5%9F%BA%E7%BA%BF.md",
+        "filename_utf8": "M0_%E6%B5%8F%E8%A7%88%E5%9F%BA%E7%BA%BF.md",
+        "sequence": [
+          "# M0 浏览基线",
+          "",
+          "**作者**: P0",
+          "",
+          "## 简介",
+          "",
+          "M0 临时浏览器基线；不生成正文。",
+          "",
+          "## M0 空白章",
+          "",
+          "（无正文）",
+          ""
+        ],
+        "chapter_body_saved": false
+      },
+      "finished_at": "2026-08-26T07:55:12.987Z",
+      "screenshot": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\09-workbench-export-menu.png",
+      "api_trace": [
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:12.709Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/export/novel/m0-browser-1787730908430?format=markdown",
+          "resource_type": "fetch",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:12.720Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/export/novel/m0-browser-1787730908430?format=markdown",
+          "status": 200,
+          "content_type": "text/markdown; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "id": "return-home",
+      "started_at": "2026-08-26T07:55:13.039Z",
+      "url": "http://127.0.0.1:3000/",
+      "assertions": [
+        "Workbench back action returns to Home",
+        "Home surface remains available"
+      ],
+      "finished_at": "2026-08-26T07:55:13.676Z",
+      "screenshot": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\10-return-home.png",
+      "api_trace": [
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:13.328Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/stats/global",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:13.328Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:13.328Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:13.350Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/stats/global",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:13.351Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/novels",
+          "status": 307,
+          "content_type": null
+        },
+        {
+          "kind": "request",
+          "at": "2026-08-26T07:55:13.351Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:8005/api/v1/novels/",
+          "resource_type": "xhr",
+          "has_post_data": false
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:13.351Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
+          "status": 200,
+          "content_type": "application/json"
+        },
+        {
+          "kind": "response",
+          "at": "2026-08-26T07:55:13.367Z",
+          "method": "GET",
+          "url": "http://127.0.0.1:8005/api/v1/novels/",
+          "status": 200,
+          "content_type": "application/json"
+        }
+      ]
+    }
+  ],
+  "api_trace": [
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:54:53.944Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/config.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:54:53.991Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/config.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:54:53.991Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/endpoints.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:54:54.121Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/endpoints.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:54:54.124Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/aiInvocation.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:54:54.125Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/aiInvocation.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:05.800Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/novel.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:05.879Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/stats.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:05.879Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/novel.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:05.996Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/stats.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:05.998Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/llmControl.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:05.998Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/settings.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:06.024Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/settings.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:06.025Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/llmControl.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:06.092Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/stats/global",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:06.092Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:06.092Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:06.598Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:06.599Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels",
+      "status": 307,
+      "content_type": null
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:06.600Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:8005/api/v1/novels/",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:06.603Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/stats/global",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:06.617Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:8005/api/v1/novels/",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:08.441Z",
+      "method": "POST",
+      "url": "http://127.0.0.1:3000/api/v1/novels/",
+      "resource_type": "fetch",
+      "has_post_data": true
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:08.462Z",
+      "method": "POST",
+      "url": "http://127.0.0.1:3000/api/v1/novels/",
+      "status": 201,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:08.538Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/config.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:08.551Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/config.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:08.555Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/endpoints.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:08.570Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/endpoints.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:08.577Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/aiInvocation.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:08.577Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/aiInvocation.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:08.722Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/novel.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:08.733Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/novel.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:08.735Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/stats.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:08.766Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/stats.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:08.769Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/llmControl.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:08.769Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/settings.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:08.776Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/llmControl.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:08.776Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/settings.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:08.848Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/stats/global",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:08.848Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:08.848Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:08.866Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/stats/global",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:08.866Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:08.867Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels",
+      "status": 307,
+      "content_type": null
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:08.867Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:8005/api/v1/novels/",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:08.892Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:8005/api/v1/novels/",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:09.356Z",
+      "method": "POST",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters/1/ensure",
+      "resource_type": "fetch",
+      "has_post_data": true
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:09.381Z",
+      "method": "POST",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters/1/ensure",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:09.461Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/config.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:09.471Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/config.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:09.474Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/endpoints.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:09.487Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/endpoints.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:09.496Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/aiInvocation.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:09.499Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/aiInvocation.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:09.618Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/stats.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:09.618Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/novel.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:09.971Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/chapter.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:09.973Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/stats.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:09.983Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/novel.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:09.984Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/workflow.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:09.985Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/llmControl.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:09.985Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/tools.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:10.003Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/settings.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.062Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/chapter.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.070Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/tools.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.098Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/llmControl.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.098Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/workflow.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:10.104Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/autopilot.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:10.104Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/planning.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.119Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/settings.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:10.119Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/structure.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.148Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/autopilot.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:10.148Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/http.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.149Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/planning.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.149Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/structure.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.150Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/http.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:10.243Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:10.243Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/statistics",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:10.243Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/structure",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:10.244Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:10.244Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:10.256Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/knowledge.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:10.256Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/bible.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.262Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.279Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/statistics",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:10.279Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.290Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/structure",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:10.290Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
+      "resource_type": "fetch",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.331Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.360Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.486Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.495Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/knowledge.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.495Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/bible.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:10.501Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:10.651Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:10.651Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/knowledge",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:10.651Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:10.673Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/dag.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.678Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/dag.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:10.696Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
+      "resource_type": "fetch",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.696Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.712Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.712Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/knowledge",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.713Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.713Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.719Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:10.744Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
+      "resource_type": "fetch",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:10.779Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:11.070Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters/1",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:11.118Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters/1",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:11.118Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
+      "resource_type": "fetch",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:11.118Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters/1/guardrail-snapshot",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:11.118Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/planning/novels/m0-browser-1787730908430/structure",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:11.121Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:11.124Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters/1/guardrail-snapshot",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:11.131Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/planning/novels/m0-browser-1787730908430/structure",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:11.131Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/knowledge",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:11.136Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/knowledge",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:11.852Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/narrativeEngine.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:11.853Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/foreshadow.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:11.853Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/engineCore.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:11.871Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/foreshadow.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:11.873Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/narrativeEngine.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:11.873Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/engineCore.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:11.896Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/narrative-engine/story-evolution",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:11.896Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/foreshadow-ledger?status=pending",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:11.896Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/character-psyches",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:11.896Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:11.921Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/character-psyches",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:11.922Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/narrative-engine/story-evolution",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:11.923Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:11.939Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/foreshadow-ledger?status=pending",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:12.260Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/worldbuilding.ts",
+      "resource_type": "script",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:12.266Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/src/api/worldbuilding.ts",
+      "status": 200,
+      "content_type": "text/javascript"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:12.288Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/worldbuilding",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:12.347Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/worldbuilding",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:12.709Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/export/novel/m0-browser-1787730908430?format=markdown",
+      "resource_type": "fetch",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:12.720Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/export/novel/m0-browser-1787730908430?format=markdown",
+      "status": 200,
+      "content_type": "text/markdown; charset=utf-8"
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:13.328Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/stats/global",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:13.328Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:13.328Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:13.350Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/stats/global",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:13.351Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/novels",
+      "status": 307,
+      "content_type": null
+    },
+    {
+      "kind": "request",
+      "at": "2026-08-26T07:55:13.351Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:8005/api/v1/novels/",
+      "resource_type": "xhr",
+      "has_post_data": false
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:13.351Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "kind": "response",
+      "at": "2026-08-26T07:55:13.367Z",
+      "method": "GET",
+      "url": "http://127.0.0.1:8005/api/v1/novels/",
+      "status": 200,
+      "content_type": "application/json"
+    }
+  ],
+  "forbidden_generation_calls": [],
+  "console_errors": [
+    {
+      "type": "warning",
+      "text": "[API] Tauri IPC 调用失败: TypeError: Cannot read properties of undefined (reading 'invoke')\n    at invoke (http://127.0.0.1:3000/node_modules/.vite/deps/@tauri-apps_api_core.js?v=8b8c90e2:208:36)\n    at initApiClient (http://127.0.0.1:3000/src/api/config.ts:170:23)\n    at async bootstrap (http://127.0.0.1:3000/src/main.ts:20:3)",
+      "at": "2026-08-26T07:55:05.675Z"
+    },
+    {
+      "type": "warning",
+      "text": "[API] Tauri IPC 调用失败: TypeError: Cannot read properties of undefined (reading 'invoke')\n    at invoke (http://127.0.0.1:3000/node_modules/.vite/deps/@tauri-apps_api_core.js?v=8b8c90e2:208:36)\n    at initApiClient (http://127.0.0.1:3000/src/api/config.ts:170:23)\n    at async bootstrap (http://127.0.0.1:3000/src/main.ts:20:3)",
+      "at": "2026-08-26T07:55:08.616Z"
+    },
+    {
+      "type": "warning",
+      "text": "[API] Tauri IPC 调用失败: TypeError: Cannot read properties of undefined (reading 'invoke')\n    at invoke (http://127.0.0.1:3000/node_modules/.vite/deps/@tauri-apps_api_core.js?v=8b8c90e2:208:36)\n    at initApiClient (http://127.0.0.1:3000/src/api/config.ts:170:23)\n    at async bootstrap (http://127.0.0.1:3000/src/main.ts:20:3)",
+      "at": "2026-08-26T07:55:09.542Z"
+    }
+  ],
+  "page_errors": [],
+  "export_observation": {
+    "status": 200,
+    "content_type": "text/markdown; charset=utf-8",
+    "content_disposition": "attachment; filename=M0_%E6%B5%8F%E8%A7%88%E5%9F%BA%E7%BA%BF.md; filename*=UTF-8''M0_%E6%B5%8F%E8%A7%88%E5%9F%BA%E7%BA%BF.md",
+    "charset": "utf-8",
+    "byte_length": 126,
+    "utf8_bom": false,
+    "filename_encoded": "M0_%E6%B5%8F%E8%A7%88%E5%9F%BA%E7%BA%BF.md",
+    "filename_utf8": "M0_%E6%B5%8F%E8%A7%88%E5%9F%BA%E7%BA%BF.md",
+    "sequence": [
+      "# M0 浏览基线",
+      "",
+      "**作者**: P0",
+      "",
+      "## 简介",
+      "",
+      "M0 临时浏览器基线；不生成正文。",
+      "",
+      "## M0 空白章",
+      "",
+      "（无正文）",
+      ""
+    ],
+    "chapter_body_saved": false
+  }
+}

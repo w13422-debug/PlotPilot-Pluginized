@@ -1,0 +1,175 @@
+{
+  "browser_smoke": {
+    "command": "node tools/integration/browser_smoke.mjs",
+    "evidence": {
+      "bytes": 81182,
+      "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
+      "sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3"
+    },
+    "execution": "recorded_prior_run_not_repeated",
+    "exit_code": 0,
+    "id": "browser-smoke-headful",
+    "status": "passed"
+  },
+  "captured_at": "2026-08-26T08:38:08Z",
+  "commands": [
+    {
+      "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe tools/integration/generate_contract_manifest.py --check",
+      "exit_code": 0,
+      "id": "contract-manifest-check",
+      "status": "passed",
+      "stderr": {
+        "bytes": 0,
+        "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\contract-manifest-check.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 48,
+        "first_line": "contract manifest is deterministic (122 files)",
+        "last_line": "contract manifest is deterministic (122 files)",
+        "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\contract-manifest-check.stdout.txt",
+        "sha256": "1b5c6f54e25347d08aea3db44498921f7ec4c9cc9edf10170b6cab480cb7a255"
+      }
+    },
+    {
+      "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe tools/integration/verify_contracts.py --all",
+      "exit_code": 0,
+      "id": "python-contracts-all",
+      "status": "passed",
+      "stderr": {
+        "bytes": 0,
+        "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\python-contracts-all.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 17483,
+        "first_line": "{",
+        "last_line": "}",
+        "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\python-contracts-all.stdout.txt",
+        "sha256": "00c77e93d2496b25083f903899d8549321839f04152480f3c017633e792bd4f4"
+      }
+    },
+    {
+      "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m pytest tests/contract tests/acceptance -q",
+      "exit_code": 0,
+      "id": "pytest-contract-acceptance",
+      "status": "passed",
+      "stderr": {
+        "bytes": 0,
+        "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\pytest-contract-acceptance.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 1337,
+        "first_line": "============================= test session starts =============================",
+        "last_line": "======================== 10 passed, 1 warning in 2.52s ========================",
+        "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\pytest-contract-acceptance.stdout.txt",
+        "sha256": "af8eb5677d2b6b38dd085f2e4cbe405415c759efd40efecae234d2cb3396f021"
+      }
+    },
+    {
+      "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe tools/integration/verify_cross_language_goldens.py",
+      "exit_code": 0,
+      "id": "cross-language-goldens",
+      "status": "passed",
+      "stderr": {
+        "bytes": 0,
+        "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\cross-language-goldens.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 1322,
+        "first_line": "{",
+        "last_line": "}",
+        "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\cross-language-goldens.stdout.txt",
+        "sha256": "731b8bfc7340cfc09230a6d0bf750d77f02c2b07ff982d8e381565ff74a17b40"
+      }
+    },
+    {
+      "command": "C:\\Program Files\\nodejs\\node.EXE tools/integration/verify_contracts.mjs --all",
+      "exit_code": 0,
+      "id": "node-contracts-all",
+      "status": "passed",
+      "stderr": {
+        "bytes": 0,
+        "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\node-contracts-all.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 777,
+        "first_line": "{",
+        "last_line": "}",
+        "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\node-contracts-all.stdout.txt",
+        "sha256": "1bf8d65828fc2bee704423689d247b73b53b811d958d1106d0654c905c96008c"
+      }
+    },
+    {
+      "command": "C:\\Users\\Administrator\\AppData\\Roaming\\npm\\pnpm.CMD --dir frontend exec vue-tsc -b",
+      "exit_code": 0,
+      "id": "frontend-typecheck",
+      "status": "passed",
+      "stderr": {
+        "bytes": 0,
+        "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\frontend-typecheck.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 0,
+        "first_line": "",
+        "last_line": "",
+        "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\frontend-typecheck.stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe tools/integration/validate_m0_delivery.py --json",
+      "exit_code": 0,
+      "id": "delivery-record-check",
+      "status": "passed",
+      "stderr": {
+        "bytes": 0,
+        "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\delivery-record-check.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 431,
+        "first_line": "{",
+        "last_line": "}",
+        "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\delivery-record-check.stdout.txt",
+        "sha256": "41c4c614cf5a1d87485faec1988981eec453a47995aadb3d6757446a0a8cf439"
+      }
+    },
+    {
+      "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe tools/integration/validate_merge_gate.py --json",
+      "exit_code": 0,
+      "id": "merge-gate",
+      "status": "passed",
+      "stderr": {
+        "bytes": 0,
+        "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\merge-gate.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 15306,
+        "first_line": "{",
+        "last_line": "}",
+        "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\merge-gate.stdout.txt",
+        "sha256": "d6fcaf9d630a5325e120cf8cd7851e4157db69099bec844c235f744d169c55be"
+      }
+    }
+  ],
+  "constraints": {
+    "desktop_build": false,
+    "external_network_in_contract_tests": false,
+    "live_provider": false,
+    "pyinstaller": false,
+    "tauri_build": false
+  },
+  "git": {
+    "branch": "codex/ppa-00-integration",
+    "head": "1c481237b6fa32ef5f85d7f8da4cb16f366cd4f0"
+  },
+  "root": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized",
+  "schema": "plotpilot-integration-test-ledger/v1",
+  "status": "passed"
+}

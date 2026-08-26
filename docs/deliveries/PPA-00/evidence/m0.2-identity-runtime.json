@@ -1,0 +1,83 @@
+{
+  "baseline": {
+    "bootstrap_evidence": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p0-monorepo-bootstrap.json",
+    "bootstrap_evidence_sha256": "c2df32d5634c273b71340d629158cb3fe1c076b0c2e3ebb94f21f5944852ad37",
+    "branch": "codex/ppa-00-integration",
+    "commit": "1c481237b6fa32ef5f85d7f8da4cb16f366cd4f0",
+    "tree": "743a4b1096b556a9704ee47ba0c24f0dc96c6b78"
+  },
+  "browser_boundary": {
+    "browser_smoke": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
+    "desktop_build": false,
+    "headful": true,
+    "installer_build": false,
+    "pyinstaller": false,
+    "route": "Vite browser route only",
+    "source_and_library_separated": "PLOTPILOT_PROD_DATA_DIR is an explicit runtime data root; source remains in this worktree.",
+    "tauri_build": false
+  },
+  "captured_branch": "codex/ppa-00-integration",
+  "captured_head": "1c481237b6fa32ef5f85d7f8da4cb16f366cd4f0",
+  "donor": {
+    "all_files_match_in_external_manifest": true,
+    "backup_manifest": "C:\\Users\\Administrator\\Desktop\\PlotPilot-Pluginized-preconstruction-backup-20260826\\donor-backup-manifest.json",
+    "backup_manifest_sha256": "38d20f48cbedfaf9eb536c86c01bd7216d93d8b5c4c78ed8206dd42012d11027",
+    "expected_product_commit": "1c481237b6fa32ef5f85d7f8da4cb16f366cd4f0",
+    "head": "cbd260ba7b5fe35e53f528937c4a240fb67ea2dc",
+    "root": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-update-v4.6.0",
+    "status_unchanged_in_external_manifest": true
+  },
+  "formal_design": {
+    "path": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized正式设计规划-2026-08-25-v1.md",
+    "sha256": "e70f450b75cfa753148cf620d13855d0073f7d61294e7599ea9cc98f3e612b7b",
+    "version": "v1.2"
+  },
+  "frontend_route": {
+    "browser_scripts_present": [
+      "dev",
+      "build",
+      "preview"
+    ],
+    "desktop_script_names_absent": [
+      "tauri",
+      "tauri:dev",
+      "tauri:build"
+    ],
+    "scripts": {
+      "build": "vue-tsc -b && vite build",
+      "check:shared-config": "node scripts/sync-builtin-taxonomy.mjs --check",
+      "dev": "vite",
+      "preview": "vite preview",
+      "sync:taxonomy": "node scripts/sync-builtin-taxonomy.mjs"
+    }
+  },
+  "git_controls": {
+    "donor_local_push": "DISABLED",
+    "p1_p6_creation_gate": "closed"
+  },
+  "matrix_projection": {
+    "construction_authorized": false,
+    "gate": "M0-OPEN",
+    "schema": "plotpilot-seven-project-matrix/v1"
+  },
+  "project_matrix": {
+    "p0_write_set_hash": "076541384c643d879e8552737f94a9ce2ed9134dba3e0d448f2c4a0b58297656",
+    "path": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized七项目任务书-2026-08-26\\project-matrix.json",
+    "sha256": "076541384c643d879e8552737f94a9ce2ed9134dba3e0d448f2c4a0b58297656"
+  },
+  "runtime": {
+    "license_ledger": {
+      "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\license-ledger.json",
+      "sha256": "4232d50524dfa17e780bbf2c05c3416f49c7e7e59aee520f5baa4dd1a5d5224d"
+    },
+    "lock": {
+      "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\runtime-toolchain-lock.json",
+      "sha256": "4a22e1d06b7b39fc82fe52b7df23a0b94bcf8c65a687f35dfc248e22e1048a30"
+    },
+    "node_version": "24.18.0",
+    "package_manager": null,
+    "python_version": "3.12.10"
+  },
+  "schema": "p0-identity-runtime-evidence/v1",
+  "status": "verified"
+}

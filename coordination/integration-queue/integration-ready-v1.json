@@ -1,0 +1,26 @@
+{
+  "schema": "integration-ready/v1",
+  "status": "template",
+  "submission_id": null,
+  "project_id": null,
+  "source_branch": null,
+  "base_sha": null,
+  "head_sha": null,
+  "contract_manifest_sha256": null,
+  "changed_paths": [],
+  "write_set_proof": {
+    "matrix_path": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized七项目任务书-2026-08-26\\project-matrix.json",
+    "p0_write_set_match": false,
+    "out_of_set_paths": []
+  },
+  "contract_delta_ids": [],
+  "dependency_delta_ids": [],
+  "validation": [],
+  "artifacts": [],
+  "review": {
+    "reviewer": null,
+    "finding_ids": [],
+    "closure_artifact": null
+  },
+  "ready": false
+}

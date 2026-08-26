@@ -1,0 +1,522 @@
+{
+  "corpus": {
+    "compatibility_invalid": 3,
+    "history": "raw-bytes-preserved",
+    "path_invalid": 13,
+    "path_valid": 3
+  },
+  "goldens": {
+    "backup_hash": "cb26bba0a85711962d2d6f44115b2c186bd9db0aa3514b58dcecc9c0083fbaf8",
+    "package_hash": "987e80013fe0cddd463eb8976fd75b62dbabef4f8e0e321ae6ad82a54f09b068",
+    "request_key": "5e346b6254626cb314a0d4040a64e8a9797c0a890537ce07e9920a911a525e61",
+    "skill_package_hash": "5cf3df6acea3c792ee36fa3c0c5757f87c8219aba88cfc568bd4a67738983b7f",
+    "snapshot_hash": "5a7e60677a5ced4803c96f7b7db657409051ba8f3f5b18aa8ac28978e2b4a1d2"
+  },
+  "manifest": {
+    "files": 122,
+    "generator_check": "contract manifest is deterministic (122 files)",
+    "negative_groups": 14,
+    "schemas": 48
+  },
+  "negative": {
+    "84.13-01": 2,
+    "84.13-02": 3,
+    "84.13-03": 1,
+    "84.13-04": 1,
+    "84.13-05": 1,
+    "84.13-06": 1,
+    "84.13-07": 1,
+    "84.13-08": 1,
+    "84.13-09": 1,
+    "84.13-10": 1,
+    "84.13-11": 1,
+    "84.13-12": 1,
+    "84.13-13": 1,
+    "84.13-14": 1
+  },
+  "negative_cases": {
+    "case_count": 39,
+    "group_count": 14,
+    "groups": {
+      "84.13-01": {
+        "case_count": 2,
+        "cases": [
+          {
+            "case_id": "skill-order-permutation",
+            "outcome": "snapshot_hash_changes",
+            "passed": true
+          },
+          {
+            "case_id": "package-crlf",
+            "outcome": "package_hash_changes",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive_fixture_ids": [
+          "package-golden",
+          "skill-golden",
+          "run-snapshot-golden"
+        ],
+        "title": "JCS set/ordered permutation and package/request/Skill golden"
+      },
+      "84.13-02": {
+        "case_count": 3,
+        "cases": [
+          {
+            "case_id": "artifact-with-candidate-item",
+            "evidence": "1011: result bundle item profile does not match contract",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "candidate-target-outside-write-set",
+            "evidence": "1011: candidate target is not present in write_set",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "candidate-parent-cycle",
+            "evidence": "1011: candidate parent cycle detected",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive_fixture_ids": [
+          "result-bundle"
+        ],
+        "title": "Result profile and Candidate target/mutation/base/write-set/parent"
+      },
+      "84.13-03": {
+        "case_count": 2,
+        "cases": [
+          {
+            "case_id": "broker-different-input-same-key",
+            "evidence": "1008: operation key reused with a different payload",
+            "observed_error_code": 1008,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "cancel-after-child-terminal",
+            "evidence": "1010: terminal provider run cannot be cancelled",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive_fixture_ids": [
+          "broker-invocation"
+        ],
+        "title": "Broker ACK-loss, child cancel and receipt propagation"
+      },
+      "84.13-04": {
+        "case_count": 2,
+        "cases": [
+          {
+            "case_id": "unsupported-data-format",
+            "evidence": "1012: no interpreter for unsupported-format/v1",
+            "observed_error_code": 1012,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "snapshot-parameters-not-in-assets",
+            "evidence": "1011: request_key mismatch: expected 5e346b6254626cb314a0d4040a64e8a9797c0a890537ce07e9920a911a525e61, got 9f8903a166816aeb842135884668ca91e22209e03fdc691fb61ffdab968dc7d6",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive_fixture_ids": [
+          "run-snapshot"
+        ],
+        "title": "Data format/interpreter/Plan/Snapshot mismatch"
+      },
+      "84.13-05": {
+        "case_count": 3,
+        "cases": [
+          {
+            "case_id": "same-key-different-payload",
+            "evidence": "1008: operation key reused with a different payload",
+            "observed_error_code": 1008,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "upload-offset-ahead",
+            "evidence": "1005: upload chunk is outside total size",
+            "observed_error_code": 1005,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "upload-final-hash-mismatch",
+            "evidence": "1005: final upload hash or size mismatch",
+            "observed_error_code": 1005,
+            "outcome": "rejected",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive_fixture_ids": [
+          "rpc-upload"
+        ],
+        "title": "Operation key and chunk upload ACK-loss"
+      },
+      "84.13-06": {
+        "case_count": 3,
+        "cases": [
+          {
+            "case_id": "checkpoint-different-snapshot",
+            "evidence": "1014: checkpoint belongs to another RunSnapshot",
+            "observed_error_code": 1014,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "stale-attempt-lease",
+            "evidence": "1002: RPC lease epoch is stale",
+            "observed_error_code": 1002,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "terminal-attempt-resume",
+            "evidence": "1010: terminal provider run cannot be resumed",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive_fixture_ids": [
+          "checkpoint"
+        ],
+        "title": "Attempt cancel/complete race, fresh resume and checkpoint"
+      },
+      "84.13-07": {
+        "case_count": 3,
+        "cases": [
+          {
+            "case_id": "bundle-producer-mismatch",
+            "evidence": "1011: result-bundle/v1: 'not-a-sha256' does not match '^[0-9a-f]{64}$' at /producer/release_id",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "succeeded-partial-item",
+            "evidence": "1011: complete result bundle cannot contain partial/failed/skipped items",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "failed-candidate-bundle",
+            "evidence": "1011: complete result bundle cannot contain partial/failed/skipped items",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive_fixture_ids": [
+          "result-bundle",
+          "provenance-receipt"
+        ],
+        "title": "Bundle producer/snapshot/lease/receipt/staging/outcome transaction"
+      },
+      "84.13-08": {
+        "case_count": 3,
+        "cases": [
+          {
+            "case_id": "concurrent-install-base-changed",
+            "evidence": "1010: install CAS base generation changed",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "rollback-second-attempt",
+            "evidence": "1010: rollback is one-shot",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "invalid-settings-validator",
+            "evidence": "1006: settings validator rejected the revision",
+            "observed_error_code": 1006,
+            "outcome": "rejected",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive_fixture_ids": [
+          "plugin-lifecycle-transition"
+        ],
+        "title": "Install base CAS, crash points, rollback once and safe mode"
+      },
+      "84.13-09": {
+        "case_count": 2,
+        "cases": [
+          {
+            "case_id": "pin-while-retiring",
+            "evidence": "1013: release is retiring and cannot receive a new pin",
+            "observed_error_code": 1013,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "retire-with-recoverable-attempt",
+            "evidence": "1013: recoverable Attempt blocks retirement",
+            "observed_error_code": 1013,
+            "outcome": "rejected",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive_fixture_ids": [
+          "release-retirement",
+          "release-pin"
+        ],
+        "title": "Retire/new pin race and post-delete Candidate Publication"
+      },
+      "84.13-10": {
+        "case_count": 3,
+        "cases": [
+          {
+            "case_id": "job-cursor-on-core-stream",
+            "evidence": "1010: core event recovery cannot carry an aggregate job ID",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "cursor-ahead",
+            "evidence": "1010: SSE cursor is ahead of the durable high-water mark",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "gap-without-snapshot",
+            "evidence": "1011: SSE snapshot fields must be all-null or all-present with a gap",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive_fixture_ids": [
+          "core-event",
+          "sse-recovery",
+          "core-snapshot"
+        ],
+        "title": "Aggregate/Core Event and SSE cursor convergence"
+      },
+      "84.13-11": {
+        "case_count": 3,
+        "cases": [
+          {
+            "case_id": "prefix-not-extension",
+            "evidence": "1011: stream prefix moved backwards",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "old-stream-id",
+            "evidence": "1002: stream prefix binding changed",
+            "observed_error_code": 1002,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "duplicate-incomplete-candidate",
+            "evidence": "1010: only one incomplete stream Candidate is allowed per target",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive_fixture_ids": [
+          "stream-prefix"
+        ],
+        "title": "Durable stream prefix and unique incomplete Candidate"
+      },
+      "84.13-12": {
+        "case_count": 3,
+        "cases": [
+          {
+            "case_id": "skipped-participated",
+            "evidence": "1011: skipped Skill step cannot be participated or verified",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "model-claim-without-evidence",
+            "evidence": "1011: model_claimed requires claim evidence",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "tampered-patch",
+            "evidence": "1011: receipt_hash mismatch: expected afdfd520f837e24c66c72863c0d65ba6400dd2f9b972c56a6a310c1a8c1b2ac4, got f5cac81dae1cda6a29149ab7230facf230e22b6e51310ef298bc60502e77a917",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive_fixture_ids": [
+          "skill-run-receipt",
+          "skill-chain-result"
+        ],
+        "title": "Skill executed/failed/skipped/model claim/verified patch"
+      },
+      "84.13-13": {
+        "case_count": 3,
+        "cases": [
+          {
+            "case_id": "unknown-component",
+            "evidence": "1011: plugin-ui-tree/v1: {'children': [], 'component': 'unknown-component', 'event_ids': ['click'], 'key': 'run', 'props': {'disabled': False, 'label': 'Run', 'tone': 'primary'}} is not valid under any of the given schemas at /root",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "stale-intent",
+            "evidence": "1010: stale UI intent rejected as stale_ui_freshness",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "duplicate-intent-different-payload",
+            "evidence": "1008: UI intent ID reused with a different payload",
+            "observed_error_code": 1008,
+            "outcome": "rejected",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive_fixture_ids": [
+          "plugin-ui-tree",
+          "plugin-ui-intent",
+          "plugin-ui-message"
+        ],
+        "title": "UI immutable URL/CSP, stale/duplicate intent and tree whitelist"
+      },
+      "84.13-14": {
+        "case_count": 4,
+        "cases": [
+          {
+            "case_id": "workspace-with-package",
+            "evidence": "1011: bundle_hash mismatch: expected cb26bba0a85711962d2d6f44115b2c186bd9db0aa3514b58dcecc9c0083fbaf8, got 240ee3792d2a6a02a587a0d8f091c3f8ede3bbf98d5990048c838e9af68ad497",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "reserved-device-name",
+            "evidence": "1005: Windows reserved device name is forbidden at CON.txt",
+            "observed_error_code": 1005,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "compatibility-or",
+            "evidence": "1011: compatibility does not match the v1 canonical matrix",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "history-reserialized",
+            "evidence": "1011: v1 history reader changed raw Asset bytes",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive_fixture_ids": [
+          "backup-golden",
+          "compatibility-valid",
+          "history-v1"
+        ],
+        "title": "Backup modes, restore, compatibility/history and Windows paths"
+      }
+    }
+  },
+  "positive": {
+    "fixtures": 35,
+    "semantic": 9
+  },
+  "rpc_methods": {
+    "error_codes": {
+      "1001": "incompatible_generation",
+      "1002": "stale_lease",
+      "1003": "cancelled",
+      "1004": "deadline_exceeded",
+      "1005": "asset_error",
+      "1006": "settings_invalid",
+      "1007": "migration_failed",
+      "1008": "duplicate_request",
+      "1009": "uncertain_external_effect",
+      "1010": "invalid_transition",
+      "1011": "result_contract_mismatch",
+      "1012": "data_interpreter_unavailable",
+      "1013": "release_retiring",
+      "1014": "checkpoint_invalid"
+    },
+    "host": [
+      "host.asset.read/v1",
+      "host.asset.create/v1",
+      "host.asset.upload.status/v1",
+      "host.model.invoke/v1",
+      "host.capability.invoke/v1",
+      "host.capability.poll/v1",
+      "host.capability.cancel/v1",
+      "host.candidate.stage/v1",
+      "host.checkpoint.commit/v1",
+      "host.stream.commit/v1",
+      "host.job.event/v1",
+      "host.job.await_user/v1",
+      "host.job.complete/v1",
+      "host.log/v1",
+      "host.migration.lease.renew/v1",
+      "host.migration.lease.release/v1"
+    ],
+    "worker": [
+      "runtime.handshake",
+      "runtime.health",
+      "runtime.heartbeat",
+      "capability.describe",
+      "settings.validate",
+      "migration.plan",
+      "migration.apply",
+      "migration.verify",
+      "job.start",
+      "job.resume",
+      "job.pause",
+      "job.cancel",
+      "runtime.shutdown"
+    ]
+  },
+  "schemas": {
+    "generator_check": "generated artifacts are deterministic (50 files)",
+    "schemas": 48
+  }
+}

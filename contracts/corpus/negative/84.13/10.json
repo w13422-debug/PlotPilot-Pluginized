@@ -1,0 +1,26 @@
+{
+  "group_id": "84.13-10",
+  "negative": [
+    {
+      "case_id": "job-cursor-on-core-stream",
+      "expected_error_code": 1010,
+      "kind": "cursor_domain"
+    },
+    {
+      "case_id": "cursor-ahead",
+      "expected_error_code": 1010,
+      "kind": "cursor_ahead"
+    },
+    {
+      "case_id": "gap-without-snapshot",
+      "expected_error_code": 1011,
+      "kind": "snapshot_pair"
+    }
+  ],
+  "positive": [
+    "core-event",
+    "sse-recovery",
+    "core-snapshot"
+  ],
+  "title": "Aggregate/Core Event and SSE cursor convergence"
+}

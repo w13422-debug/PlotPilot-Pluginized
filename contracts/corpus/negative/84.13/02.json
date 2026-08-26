@@ -1,0 +1,24 @@
+{
+  "group_id": "84.13-02",
+  "negative": [
+    {
+      "case_id": "artifact-with-candidate-item",
+      "expected_error_code": 1011,
+      "kind": "profile_mismatch"
+    },
+    {
+      "case_id": "candidate-target-outside-write-set",
+      "expected_error_code": 1011,
+      "kind": "candidate_semantic"
+    },
+    {
+      "case_id": "candidate-parent-cycle",
+      "expected_error_code": 1011,
+      "kind": "parent_cycle"
+    }
+  ],
+  "positive": [
+    "result-bundle"
+  ],
+  "title": "Result profile and Candidate target/mutation/base/write-set/parent"
+}

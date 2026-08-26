@@ -1,0 +1,33 @@
+{
+  "schema": "plotpilot-runtime-toolchain-lock/v1",
+  "python": {
+    "version": "3.12.10",
+    "source": ".python-version",
+    "requirements": {
+      "file": "requirements.txt",
+      "policy": "M0 runtime uses the exact Python interpreter above; dependency versions are captured in the verification environment and license ledger."
+    }
+  },
+  "node": {
+    "version": "24.18.0",
+    "source": ".node-version"
+  },
+  "package_manager": {
+    "name": "pnpm",
+    "version": "11.7.0",
+    "source": "package.json#packageManager"
+  },
+  "browser": {
+    "automation": "playwright",
+    "version": "1.62.1",
+    "browser": "chromium",
+    "channel": "bundled Chromium",
+    "headless": false,
+    "scope": "M0.6 Home/Workbench local smoke only"
+  },
+  "constraints": [
+    "Automatic contract tests must not use a live provider or external network.",
+    "Browser smoke uses a fresh temporary data root and browser context.",
+    "No desktop, EXE, installer, PyInstaller or Tauri build route is part of M0."
+  ]
+}

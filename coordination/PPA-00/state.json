@@ -1,0 +1,285 @@
+{
+  "agents": [
+    {
+      "agent_id": "01a03c92-4856-7dc3-9ea2-7fa600e45164",
+      "owner": "Terra/Epicurus",
+      "scope": "read-only §13.4 §20 §84 coverage audit",
+      "status": "not_found",
+      "task_id": "PPA-M0-SPEC-READ-01",
+      "write_set": []
+    },
+    {
+      "agent_id": "01a03c92-494b-70a3-beb9-0cebbcbcf95a",
+      "owner": "Terra/Nash",
+      "scope": "read-only Home/Workbench ten-flow browser evidence audit",
+      "status": "not_found",
+      "task_id": "PPA-M0-PARITY-READ-01",
+      "write_set": []
+    },
+    {
+      "agent_id": "01a03d38-f280-7ce0-8a16-d6db2af4ec99",
+      "owner": "Sol/Bohr",
+      "scope": "fresh read-only M0-OPEN release review; delegated task unavailable at wait",
+      "status": "not_found",
+      "task_id": "PPA-M0-FRESH-REVIEW-01",
+      "write_set": []
+    }
+  ],
+  "base_sha": "1c481237b6fa32ef5f85d7f8da4cb16f366cd4f0",
+  "branch": "codex/ppa-00-integration",
+  "completed": [
+    "M0.1 donor protection evidence and external manifest/hash recheck passed",
+    "M0.2 repository identity, exact runtime/toolchain lock, license ledger and browser-only boundary passed",
+    "M0.3 composition root, typed ports, unified errors/diagnostics and existing Home/Workbench composition passed",
+    "M0.4 §13.4/§20/§84 and §84.13 contract materialization passed: 48 schemas, 14 groups, 39 negative cases, four goldens",
+    "M0.5 Python/TypeScript SDK/verifier, deterministic fake Provider and typed UI/HTTP/SSE fixtures passed",
+    "M0.6 ten PlotPilot main-flow baseline records, screenshots, API trace and safety-limited browser smoke passed",
+    "M0.7 collaboration templates, integration queue, merge gate, checkpoint and tracked P0 state passed",
+    "fresh read-only structured review passed with zero findings; delegated Sol attempt recorded as unavailable"
+  ],
+  "contract_delta": [],
+  "deliverables": [
+    {
+      "bytes": 3307,
+      "path": "AGENTS.md",
+      "sha256": "ddc87cfb693c0e470d587870810fd710dc5ae3aa4330efce96999d73cb920b44"
+    },
+    {
+      "bytes": 4314,
+      "path": "backend/plotpilot_plugin_sdk/fake_provider.py",
+      "sha256": "bb0bcc8376f3977b2539d6079f182cdfacc94783018a39e015bf7f6a93c0ef9c"
+    },
+    {
+      "bytes": 4629,
+      "path": "backend/plotpilot_plugin_sdk/fixtures.py",
+      "sha256": "94b6c6b2cf048825b3b78578f0c81eee7b8bc81c4d540af7940951a8832ef86b"
+    },
+    {
+      "bytes": 3782,
+      "path": "backend/plotpilot_plugin_sdk/ports.py",
+      "sha256": "8db2a7c5ce4422c0fbd4185b59729c75597713c27cc2e5f038da2aff5fe318cc"
+    },
+    {
+      "bytes": 33624,
+      "path": "backend/plotpilot_plugin_sdk/verifier.py",
+      "sha256": "a45604c292ec6622b74ea02172e4704147d41bfe98477e0a8c4ea1abfcc40e10"
+    },
+    {
+      "bytes": 43915,
+      "path": "contracts/manifest-v1.json",
+      "sha256": "c8be12b5e0389a3c67d71b0c2e9b00964b67543aa78fb982cb5d952273b929d0"
+    },
+    {
+      "bytes": 1933,
+      "path": "coordination/integration-queue/README.md",
+      "sha256": "0edfb56b2eed34d6fd22660bfbe5b68b01dbcd89bc553c693e49764b88221027"
+    },
+    {
+      "bytes": 438,
+      "path": "coordination/integration-queue/contract-delta-v1.json",
+      "sha256": "030f07f734f7b791d1c1fd91feef00fcdb8a2ae67ebf8704e76d70ac80ffbcad"
+    },
+    {
+      "bytes": 405,
+      "path": "coordination/integration-queue/dependency-delta-v1.json",
+      "sha256": "6cf5c74128aa95251fc368d9f5bfa0b64e1d0668e93ab996d7f3e84064d1e9da"
+    },
+    {
+      "bytes": 672,
+      "path": "coordination/integration-queue/integration-ready-v1.json",
+      "sha256": "bd251803699eab9d7c365ebfaf8c64405015822d92ec4347e1195529aca3f003"
+    },
+    {
+      "bytes": 360,
+      "path": "coordination/integration-queue/queue-state-v1.json",
+      "sha256": "cd21f1e9292aaa3ae35020ccaa40e4223c3b144a890b45323a05d2bc13011017"
+    },
+    {
+      "bytes": 2199,
+      "path": "docs/contracts/README.md",
+      "sha256": "0af6ec0f48c22702a88e00a9bb724795ac529e28e7a89fecb154d971d253cde3"
+    },
+    {
+      "bytes": 6481,
+      "path": "docs/contracts/method-matrix.md",
+      "sha256": "fea85558b1e621df6dc2af0c97ebf3f8b7950f480e88f93739d19efe4fbf12ae"
+    },
+    {
+      "bytes": 3376,
+      "path": "docs/contracts/negative-golden.md",
+      "sha256": "1169c49821733fb6d4f37ae371bd554e4d49b3e2f4baefebcadf7aa5d4a45265"
+    },
+    {
+      "bytes": 7871,
+      "path": "docs/contracts/schema-map.md",
+      "sha256": "53d0eab3b69df9ec934dcde8f0fbfd8dc19c5bba877c6d8ac1537cdda3c2aeef"
+    },
+    {
+      "bytes": 4164,
+      "path": "docs/contracts/surface.md",
+      "sha256": "ea1b22d60544c3cd53be2c99343d331445dcd4cc5a5506caf4451aaa58ebd9e6"
+    },
+    {
+      "bytes": 40689,
+      "path": "docs/deliveries/PPA-00/contract-golden-manifest.json",
+      "sha256": "c9bf177afd5224fca42654725710119b609451456e012e6551b708af99afa88a"
+    },
+    {
+      "bytes": 10171,
+      "path": "docs/deliveries/PPA-00/evidence/fresh-readonly-review.json",
+      "sha256": "cf92dd4084a94e36cbd31ce31cfc0312209ac49b6b618f9e7244996f093458be"
+    },
+    {
+      "bytes": 3642,
+      "path": "docs/deliveries/PPA-00/evidence/m0.2-identity-runtime.json",
+      "sha256": "4d7d10247858d5ecbbfe5b219179fce6fff9b47ca104af77c0d3e31203f412af"
+    },
+    {
+      "bytes": 8394,
+      "path": "docs/deliveries/PPA-00/integration-test-ledger.json",
+      "sha256": "286ee7d7d38fd5e5bfbdb6d4914d9c516f9522fa35020dd3f6d6f2d5df1f2880"
+    },
+    {
+      "bytes": 87160,
+      "path": "docs/deliveries/PPA-00/license-ledger.json",
+      "sha256": "4232d50524dfa17e780bbf2c05c3416f49c7e7e59aee520f5baa4dd1a5d5224d"
+    },
+    {
+      "bytes": 8476,
+      "path": "docs/deliveries/PPA-00/m0-open-manifest.json",
+      "sha256": "085ec9e0d75d9458e9014a759a0c044735764740003e778e660d23decf26f8f5"
+    },
+    {
+      "bytes": 14549,
+      "path": "docs/deliveries/PPA-00/m0.1-donor-protection.json",
+      "sha256": "d4f663a6da60a12e8fdfd3ff62f71229e32c48e796ab2f2213bfb7ed313b0c9c"
+    },
+    {
+      "bytes": 116536,
+      "path": "docs/deliveries/PPA-00/parity-ledger.json",
+      "sha256": "87bc58039aef861367ba32f89f60ad8144af3704d840cc21057f2a3705a9199f"
+    },
+    {
+      "bytes": 1016,
+      "path": "docs/deliveries/PPA-00/runtime-toolchain-lock.json",
+      "sha256": "4a22e1d06b7b39fc82fe52b7df23a0b94bcf8c65a687f35dfc248e22e1048a30"
+    },
+    {
+      "bytes": 2476,
+      "path": "frontend/src/contracts/rpc.ts",
+      "sha256": "19241d06901f052284303647b7538c0295d21ddb378bea7761490482d4049693"
+    },
+    {
+      "bytes": 7169,
+      "path": "frontend/src/contracts/types.ts",
+      "sha256": "c5871e08f512a97bfa14b6ff2b485805b692c0aadbc1766fe1cc3adf287d0157"
+    },
+    {
+      "bytes": 9765,
+      "path": "frontend/src/contracts/verifier.ts",
+      "sha256": "090b570651d33ed69e3a08abf0c3daa813a6b382bd432bec6202c462471c181b"
+    },
+    {
+      "bytes": 12074,
+      "path": "tools/integration/fresh_m0_review.py",
+      "sha256": "45ae590b538d8a39deb88bec8097dcd515b78697580cb6294997eb652fef1e52"
+    }
+  ],
+  "dependency_delta": [],
+  "design": {
+    "sha256": "e70f450b75cfa753148cf620d13855d0073f7d61294e7599ea9cc98f3e612b7b",
+    "version": "v1.2"
+  },
+  "finalization": {
+    "commit_ref": "M0-OPEN",
+    "rule": "create and verify exact tag after this final state write; no tracked file edits after tag",
+    "tag": "M0-OPEN"
+  },
+  "gate": "P1-P6 creation is forbidden until M0-OPEN is committed and tagged.",
+  "in_progress": null,
+  "known_blockers": [],
+  "milestones": {
+    "M0.1": "passed",
+    "M0.2": "passed",
+    "M0.3": "passed",
+    "M0.4": "passed",
+    "M0.5": "passed",
+    "M0.6": "passed",
+    "M0.7": "passed"
+  },
+  "next_steps": [
+    "M0-OPEN commit/tag 将作为本状态之后唯一的 Git 发布操作完成；禁止在 tag 后修改已验收文件",
+    "下游 P1-P6 仅在精确 M0-OPEN commit/tag 验证后按各自授权启动"
+  ],
+  "prohibitions": [
+    "P1-P6 branch/worktree/project creation before M0-OPEN",
+    "donor mutation or donor cleanup/reset/checkout",
+    "business implementation directory mutation",
+    "desktop/EXE/installer build or PyInstaller/Tauri build",
+    "contract reinterpretation without Contract Delta"
+  ],
+  "project_id": "P0",
+  "project_name": "PPA-00-Integration",
+  "reuse_decision": {
+    "decision": "do not copy unrelated tool; use standard Git/PowerShell and current PlotPilot structure",
+    "evidence": "C:\\Program Files\\ruanjian\\gongju\\scripts\\select-tool.ps1",
+    "result": "stack_match=0; no suitable Active tool"
+  },
+  "review": {
+    "evidence": {
+      "bytes": 10171,
+      "path": "docs/deliveries/PPA-00/evidence/fresh-readonly-review.json",
+      "sha256": "cf92dd4084a94e36cbd31ce31cfc0312209ac49b6b618f9e7244996f093458be"
+    },
+    "findings": [],
+    "review_task_id": "PPA-M0-FRESH-REVIEW-01",
+    "reviewer": "P0 main control fallback; delegated Sol reviewer returned not_found",
+    "scope": "current files, content-addressed records, deterministic verifiers, write-set/creation gate; no product or donor mutation",
+    "status": "passed_pre_commit"
+  },
+  "schema": "ppa-project-state/v1",
+  "status": "complete",
+  "target": "M0-OPEN",
+  "task_id": "PPA-M0-01",
+  "updated_at": "2026-08-26T08:52:05Z",
+  "validation_runs": [
+    {
+      "command": "node tools/integration/browser_smoke.mjs",
+      "evidence": "docs/deliveries/PPA-00/evidence/browser-smoke.json",
+      "exit_code": 0,
+      "result": "10 flows, 10 screenshots, 146 API trace entries, 0 page errors, 0 generation calls, 0 non-empty chapter bodies",
+      "status": "passed"
+    },
+    {
+      "command": "python tools/integration/capture_m0_test_ledger.py",
+      "evidence": "docs/deliveries/PPA-00/integration-test-ledger.json",
+      "exit_code": 0,
+      "result": "8 bounded commands captured; browser smoke recorded as prior headful evidence",
+      "status": "passed"
+    },
+    {
+      "command": "python tools/integration/validate_m0_delivery.py --json",
+      "evidence": "docs/deliveries/PPA-00/m0-open-manifest.json",
+      "exit_code": 0,
+      "result": "48 schemas, 14 negative groups/39 cases, 10 flows, 27 features, 10 screenshots, 146 API traces",
+      "status": "passed"
+    },
+    {
+      "command": "python tools/integration/validate_merge_gate.py --json",
+      "evidence": "docs/deliveries/PPA-00/evidence/raw/merge-gate.stdout.txt",
+      "exit_code": 0,
+      "result": "out_of_set_paths=[], donor-local push DISABLED, P1-P6 absent",
+      "status": "passed"
+    },
+    {
+      "command": "python tools/integration/fresh_m0_review.py",
+      "evidence": "docs/deliveries/PPA-00/evidence/fresh-readonly-review.json",
+      "exit_code": 0,
+      "result": "passed_pre_commit; Python/Node verifiers and delivery/merge validators exit 0; record hashes match; zero findings; tag intentionally absent until final close",
+      "status": "passed"
+    }
+  ],
+  "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized",
+  "write_set_hash": "076541384c643d879e8552737f94a9ce2ed9134dba3e0d448f2c4a0b58297656",
+  "write_set_source": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized七项目任务书-2026-08-26\\project-matrix.json"
+}
