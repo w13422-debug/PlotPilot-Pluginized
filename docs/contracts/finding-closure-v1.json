@@ -1,0 +1,710 @@
+{
+  "finding_count": 25,
+  "findings": [
+    {
+      "corpus_groups": [
+        "84.13-01"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "snapshot-set-permutation",
+        "skill-order-permutation"
+      ],
+      "finding_id": "PPV11-FINAL-001",
+      "normative_section": "§84.1/§84.4",
+      "schema_refs": [
+        "run-snapshot-v1",
+        "skill-manifest-v1"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier_refs": [
+        "snapshot_hash",
+        "verify_skill_identity"
+      ]
+    },
+    {
+      "corpus_groups": [
+        "84.13-02"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "result-profile-mismatch",
+        "candidate-target-outside-write-set"
+      ],
+      "finding_id": "PPV11-FINAL-002",
+      "normative_section": "§22/§84.5",
+      "schema_refs": [
+        "result-bundle-v1",
+        "candidate-item-v1"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_verifier_remediation.py::test_result_profile_workspace_duplicate_ids_and_candidate_write_binding"
+      ],
+      "verifier_refs": [
+        "verify_result_bundle",
+        "_verify_candidate_item"
+      ]
+    },
+    {
+      "corpus_groups": [
+        "84.13-03"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "broker-ack-loss",
+        "child-cancel-propagation",
+        "receipt-propagation-mismatch"
+      ],
+      "finding_id": "PPV11-FINAL-003",
+      "normative_section": "§21.3/§84.12",
+      "schema_refs": [
+        "broker-invocation-v1",
+        "broker-child-record-v1"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_rpc_and_sdk.py::test_operation_ledger_replays_exact_frame_and_rejects_payload_drift"
+      ],
+      "verifier_refs": [
+        "OperationLedger",
+        "derive_child_cancel_key"
+      ]
+    },
+    {
+      "corpus_groups": [
+        "84.13-03",
+        "84.13-04"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "unsupported-data-format",
+        "snapshot-parameters-not-in-assets"
+      ],
+      "finding_id": "PPV11-FINAL-004",
+      "normative_section": "§11.2/§17/§84.2/§84.4",
+      "schema_refs": [
+        "plugin-data-bundle-v1",
+        "run-snapshot-v1"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_verifier_remediation.py::test_data_bundle_hash_unicode_collision_and_skill_manifest_exact_bytes",
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier_refs": [
+        "verify_data_bundle",
+        "verify_snapshot"
+      ]
+    },
+    {
+      "corpus_groups": [
+        "84.13-12"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "unknown-component",
+        "unknown-prop",
+        "unknown-event",
+        "stale-intent"
+      ],
+      "finding_id": "PPV11-FINAL-005",
+      "normative_section": "§34.1/§84.10",
+      "schema_refs": [
+        "plugin-ui-tree-v1",
+        "plugin-ui-message-v1",
+        "plugin-ui-intent-v1"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier_refs": [
+        "PluginUIHostFixture",
+        "verify_ui_security"
+      ]
+    },
+    {
+      "corpus_groups": [
+        "84.13-05",
+        "84.13-06"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "attempt-cancel-complete-race",
+        "checkpoint-backward",
+        "checkpoint-different-snapshot"
+      ],
+      "finding_id": "PPV11-FINAL-006",
+      "normative_section": "§25–§29/§84.12",
+      "schema_refs": [
+        "job-snapshot-v1",
+        "checkpoint-v1"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_verifier_remediation.py::test_checkpoint_heartbeat_rpc_capability_and_ui_refs_are_bound",
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier_refs": [
+        "verify_job_snapshot",
+        "verify_checkpoint"
+      ]
+    },
+    {
+      "corpus_groups": [
+        "84.13-04"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "operation-ack-loss",
+        "upload-first-retry",
+        "upload-middle-retry",
+        "upload-final-retry",
+        "upload-status-recovery",
+        "same-key-different-payload"
+      ],
+      "finding_id": "PPV11-FINAL-007",
+      "normative_section": "§20.5/§84.3",
+      "schema_refs": [
+        "rpc-request-v1",
+        "rpc-success-v1"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_rpc_and_sdk.py::test_chunk_upload_covers_final_hash_and_status_recovery",
+        "tests/contract/test_rpc_and_sdk.py::test_operation_ledger_replays_exact_frame_and_rejects_payload_drift"
+      ],
+      "verifier_refs": [
+        "OperationLedger",
+        "ChunkUploadLedger",
+        "validate_rpc_response"
+      ]
+    },
+    {
+      "corpus_groups": [
+        "84.13-06"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "bundle-producer-mismatch",
+        "bundle-receipt-mismatch",
+        "outcome-transaction-mismatch"
+      ],
+      "finding_id": "PPV11-FINAL-008",
+      "normative_section": "§22/§84.5",
+      "schema_refs": [
+        "result-bundle-v1",
+        "provenance-receipt-v1"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_verifier_remediation.py::test_all_self_hash_positive_fixtures_are_strict_and_tamper_negative"
+      ],
+      "verifier_refs": [
+        "verify_result_bundle",
+        "verify_provenance_receipt"
+      ]
+    },
+    {
+      "corpus_groups": [
+        "84.13-05",
+        "84.13-06"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "shadow-lease-stale",
+        "stale-attempt-lease"
+      ],
+      "finding_id": "PPV11-FINAL-009",
+      "normative_section": "§20.3/§27.1/§84.3",
+      "schema_refs": [
+        "rpc-request-v1",
+        "checkpoint-v1",
+        "stream-prefix-v1"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_verifier_remediation.py::test_checkpoint_heartbeat_rpc_capability_and_ui_refs_are_bound"
+      ],
+      "verifier_refs": [
+        "validate_rpc_request",
+        "verify_checkpoint",
+        "verify_stream_prefix"
+      ]
+    },
+    {
+      "corpus_groups": [
+        "84.13-01"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "snapshot-set-permutation"
+      ],
+      "finding_id": "PPV11-FINAL-010",
+      "normative_section": "§27/§84.4",
+      "schema_refs": [
+        "run-snapshot-v1"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_goldens.py::test_design_goldens_recompute_exactly"
+      ],
+      "verifier_refs": [
+        "request_key",
+        "request_key_bytes"
+      ]
+    },
+    {
+      "corpus_groups": [
+        "84.13-09"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "aggregate-event-crash",
+        "job-cursor-on-core-stream",
+        "cursor-ahead",
+        "gap-without-snapshot",
+        "event-snapshot-convergence"
+      ],
+      "finding_id": "PPV11-FINAL-011",
+      "normative_section": "§23/§84.6/§84.12",
+      "schema_refs": [
+        "core-event-v1",
+        "plugin-job-event-v1",
+        "sse-recovery-v1"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier_refs": [
+        "verify_sse_recovery",
+        "verify_event_cursor_domain"
+      ]
+    },
+    {
+      "corpus_groups": [
+        "84.13-03",
+        "84.13-06"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "plan-snapshot-mismatch",
+        "bundle-snapshot-mismatch"
+      ],
+      "finding_id": "PPV11-FINAL-012",
+      "normative_section": "§17/§84.7",
+      "schema_refs": [
+        "plugin-plan-v1",
+        "plugin-generation-v1",
+        "settings-revision-v1"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier_refs": [
+        "verify_plan",
+        "verify_generation_binding"
+      ]
+    },
+    {
+      "corpus_groups": [
+        "84.13-12"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "immutable-worker-url",
+        "worker-csp-tamper",
+        "navigation-watchdog"
+      ],
+      "finding_id": "PPV11-FINAL-013",
+      "normative_section": "§34.1/§84.10",
+      "schema_refs": [
+        "plugin-ui-init-v1",
+        "plugin-ui-message-v1"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier_refs": [
+        "verify_ui_security",
+        "verify_navigation_watchdog"
+      ]
+    },
+    {
+      "corpus_groups": [
+        "84.13-13"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "backup-mode-package",
+        "backup-manifest-tamper",
+        "crash-staging",
+        "restore-new-root",
+        "projection-rebuild"
+      ],
+      "finding_id": "PPV11-FINAL-014",
+      "normative_section": "§51–§52/§84.9",
+      "schema_refs": [
+        "backup-bundle-v1",
+        "restore-report-v1"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier_refs": [
+        "verify_backup",
+        "verify_restore_report"
+      ]
+    },
+    {
+      "corpus_groups": [
+        "84.13-14"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "compatibility-or",
+        "history-reserialized"
+      ],
+      "finding_id": "PPV11-FINAL-015",
+      "normative_section": "§13.3/§84.8",
+      "schema_refs": [
+        "compatibility-v1"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier_refs": [
+        "verify_compatibility",
+        "verify_history_bytes"
+      ]
+    },
+    {
+      "corpus_groups": [
+        "84.13-05",
+        "84.13-10"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "checkpoint-backward",
+        "terminal-hydration"
+      ],
+      "finding_id": "PPV11-FINAL-016",
+      "normative_section": "§27.2/§28/§84.6",
+      "schema_refs": [
+        "checkpoint-v1",
+        "stream-prefix-v1"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_verifier_remediation.py::test_checkpoint_heartbeat_rpc_capability_and_ui_refs_are_bound",
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier_refs": [
+        "verify_checkpoint",
+        "verify_stream_prefix"
+      ]
+    },
+    {
+      "corpus_groups": [
+        "84.13-14"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "reserved-device-name",
+        "ads-path",
+        "trailing-dot-space",
+        "unicode-casefold-collision"
+      ],
+      "finding_id": "PPV11-FINAL-017",
+      "normative_section": "§13.3/§84.8",
+      "schema_refs": [
+        "path corpus"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_verifier_remediation.py::test_data_bundle_hash_unicode_collision_and_skill_manifest_exact_bytes"
+      ],
+      "verifier_refs": [
+        "normalize_relative_path",
+        "unicode_nfc_casefold"
+      ]
+    },
+    {
+      "corpus_groups": [
+        "84.13-01",
+        "84.13-11"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "skill-order-permutation",
+        "tampered-patch"
+      ],
+      "finding_id": "PPV11-FINAL-018",
+      "normative_section": "§33/§84.11",
+      "schema_refs": [
+        "skill-manifest-v1",
+        "skill-run-receipt-v1",
+        "skill-chain-result-v1"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_verifier_remediation.py::test_all_self_hash_positive_fixtures_are_strict_and_tamper_negative",
+        "tests/contract/test_verifier_remediation.py::test_skill_chain_ref_pairing_and_bundleless_failed_receipt"
+      ],
+      "verifier_refs": [
+        "verify_skill_identity",
+        "verify_skill_receipt",
+        "verify_skill_chain"
+      ]
+    },
+    {
+      "corpus_groups": [
+        "84.13-02"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "candidate-target-outside-write-set",
+        "candidate-base-mismatch",
+        "candidate-cross-workspace-source"
+      ],
+      "finding_id": "PPV11-PASS2-NEW-001",
+      "normative_section": "§8.7–§8.8/§22/§84.5",
+      "schema_refs": [
+        "candidate-item-v1",
+        "result-bundle-v1"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_verifier_remediation.py::test_result_profile_workspace_duplicate_ids_and_candidate_write_binding"
+      ],
+      "verifier_refs": [
+        "verify_result_bundle",
+        "_verify_candidate_item"
+      ]
+    },
+    {
+      "corpus_groups": [
+        "84.13-07"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "concurrent-install-base-changed",
+        "install-crash-matrix",
+        "safe-mode-exit"
+      ],
+      "finding_id": "PPV11-PASS2-NEW-002",
+      "normative_section": "§14–§15/§84.7",
+      "schema_refs": [
+        "plugin-lifecycle-transition-v1",
+        "settings-migration-manifest-v1"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier_refs": [
+        "verify_install_transaction",
+        "verify_lifecycle_crash_matrix"
+      ]
+    },
+    {
+      "corpus_groups": [
+        "84.13-07"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "invalid-settings-validator",
+        "settings-binding-mismatch"
+      ],
+      "finding_id": "PPV11-PASS2-NEW-003",
+      "normative_section": "§14/§24/§84.7",
+      "schema_refs": [
+        "settings-revision-v1",
+        "settings-validation-receipt-v1",
+        "settings-migration-manifest-v1"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier_refs": [
+        "verify_settings_validation_receipt",
+        "verify_settings_migration"
+      ]
+    },
+    {
+      "corpus_groups": [
+        "84.13-08"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "pin-while-retiring",
+        "retire-with-recoverable-attempt",
+        "package-delete-publication"
+      ],
+      "finding_id": "PPV11-PASS2-NEW-004",
+      "normative_section": "§16/§24/§84.7",
+      "schema_refs": [
+        "release-retirement-v1",
+        "release-pin-v1",
+        "candidate-item-v1"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier_refs": [
+        "verify_retirement_barrier",
+        "verify_publication_after_package_delete"
+      ]
+    },
+    {
+      "corpus_groups": [
+        "84.13-09"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "aggregate-event-crash",
+        "event-snapshot-convergence",
+        "core-job-cursor-mix"
+      ],
+      "finding_id": "PPV11-PASS2-NEW-005",
+      "normative_section": "§23/§84.6",
+      "schema_refs": [
+        "core-event-v1",
+        "job-event-page-v1",
+        "sse-recovery-v1"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier_refs": [
+        "verify_event_cursor_domain",
+        "verify_sse_recovery"
+      ]
+    },
+    {
+      "corpus_groups": [
+        "84.13-10"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "raw-stream-over-ack",
+        "cancel-crash-race",
+        "duplicate-incomplete-candidate",
+        "terminal-hydration"
+      ],
+      "finding_id": "PPV11-PASS2-NEW-006",
+      "normative_section": "§29.2/§84.6",
+      "schema_refs": [
+        "stream-prefix-v1",
+        "candidate-item-v1",
+        "job-snapshot-v1"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier_refs": [
+        "verify_stream_prefix",
+        "verify_result_bundle",
+        "verify_job_snapshot"
+      ]
+    },
+    {
+      "corpus_groups": [
+        "84.13-11"
+      ],
+      "evidence_refs": [
+        "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      ],
+      "executable_case_ids": [
+        "skipped-participated",
+        "model-claim-without-evidence",
+        "verified-patch-without-proof",
+        "tampered-patch"
+      ],
+      "finding_id": "PPV11-PASS2-NEW-007",
+      "normative_section": "§33/§84.11",
+      "schema_refs": [
+        "skill-run-receipt-v1",
+        "skill-chain-result-v1"
+      ],
+      "status": "closed",
+      "test_refs": [
+        "tests/contract/test_verifier_remediation.py::test_skill_chain_ref_pairing_and_bundleless_failed_receipt"
+      ],
+      "verifier_refs": [
+        "verify_skill_receipt",
+        "verify_skill_chain"
+      ]
+    }
+  ],
+  "ids_exactly_once": true,
+  "inventory_rule": "The 25 IDs listed by §84.14 must occur exactly once; every row names a schema, verifier, executable test, §84.13 corpus group, executable case and evidence artifact.",
+  "schema": "plotpilot-finding-closure/v1",
+  "source": {
+    "formal_design_sha256": "e70f450b75cfa753148cf620d13855d0073f7d61294e7599ea9cc98f3e612b7b",
+    "formal_design_version": "v1.2",
+    "normative_section": "§84.14"
+  },
+  "status": "closed"
+}

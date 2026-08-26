@@ -152,12 +152,15 @@
     "coordination/integration-queue/integration-ready-v1.json",
     "coordination/integration-queue/queue-state-v1.json",
     "docs/contracts/README.md",
+    "docs/contracts/finding-closure-v1.json",
     "docs/contracts/method-matrix.md",
     "docs/contracts/negative-golden.md",
     "docs/contracts/schema-map.md",
     "docs/contracts/surface.md",
     "docs/deliveries/PPA-00/contract-golden-manifest.json",
     "docs/deliveries/PPA-00/evidence/browser-smoke.json",
+    "docs/deliveries/PPA-00/evidence/finding-closure.json",
+    "docs/deliveries/PPA-00/evidence/fresh-readonly-review.json",
     "docs/deliveries/PPA-00/evidence/m0.2-identity-runtime.json",
     "docs/deliveries/PPA-00/evidence/raw/contract-manifest-check.stderr.txt",
     "docs/deliveries/PPA-00/evidence/raw/contract-manifest-check.stdout.txt",
@@ -165,6 +168,16 @@
     "docs/deliveries/PPA-00/evidence/raw/cross-language-goldens.stdout.txt",
     "docs/deliveries/PPA-00/evidence/raw/delivery-record-check.stderr.txt",
     "docs/deliveries/PPA-00/evidence/raw/delivery-record-check.stdout.txt",
+    "docs/deliveries/PPA-00/evidence/raw/fresh-review-cross-language-goldens.stderr.txt",
+    "docs/deliveries/PPA-00/evidence/raw/fresh-review-cross-language-goldens.stdout.txt",
+    "docs/deliveries/PPA-00/evidence/raw/fresh-review-delivery-record-check.stderr.txt",
+    "docs/deliveries/PPA-00/evidence/raw/fresh-review-delivery-record-check.stdout.txt",
+    "docs/deliveries/PPA-00/evidence/raw/fresh-review-merge-gate.stderr.txt",
+    "docs/deliveries/PPA-00/evidence/raw/fresh-review-merge-gate.stdout.txt",
+    "docs/deliveries/PPA-00/evidence/raw/fresh-review-node-contracts-all.stderr.txt",
+    "docs/deliveries/PPA-00/evidence/raw/fresh-review-node-contracts-all.stdout.txt",
+    "docs/deliveries/PPA-00/evidence/raw/fresh-review-python-contracts-all.stderr.txt",
+    "docs/deliveries/PPA-00/evidence/raw/fresh-review-python-contracts-all.stdout.txt",
     "docs/deliveries/PPA-00/evidence/raw/frontend-typecheck.stderr.txt",
     "docs/deliveries/PPA-00/evidence/raw/frontend-typecheck.stdout.txt",
     "docs/deliveries/PPA-00/evidence/raw/merge-gate.stderr.txt",
@@ -180,16 +193,26 @@
     "docs/deliveries/PPA-00/m0-open-manifest.json",
     "docs/deliveries/PPA-00/m0.1-donor-protection.json",
     "docs/deliveries/PPA-00/parity-ledger.json",
+    "docs/deliveries/PPA-00/parity/screenshots/01-home-create-surface.png",
     "docs/deliveries/PPA-00/parity/screenshots/01-home-empty.png",
     "docs/deliveries/PPA-00/parity/screenshots/02-home-create-surface.png",
+    "docs/deliveries/PPA-00/parity/screenshots/02-wizard-generation.png",
     "docs/deliveries/PPA-00/parity/screenshots/03-home-advanced-surface.png",
+    "docs/deliveries/PPA-00/parity/screenshots/03-workbench-shell.png",
     "docs/deliveries/PPA-00/parity/screenshots/04-home-populated-list.png",
+    "docs/deliveries/PPA-00/parity/screenshots/04-sse-disconnect-recovery.png",
+    "docs/deliveries/PPA-00/parity/screenshots/05-workbench-chapter-tree.png",
     "docs/deliveries/PPA-00/parity/screenshots/05-workbench-shell.png",
+    "docs/deliveries/PPA-00/parity/screenshots/06-chapter-edit-save.png",
     "docs/deliveries/PPA-00/parity/screenshots/06-workbench-chapter-tree.png",
+    "docs/deliveries/PPA-00/parity/screenshots/07-generation-pause-cancel.png",
     "docs/deliveries/PPA-00/parity/screenshots/07-workbench-writing-support.png",
     "docs/deliveries/PPA-00/parity/screenshots/08-workbench-reference-panel.png",
+    "docs/deliveries/PPA-00/parity/screenshots/08-workbench-writing-support.png",
+    "docs/deliveries/PPA-00/parity/screenshots/09-checkpoint-recovery.png",
     "docs/deliveries/PPA-00/parity/screenshots/09-workbench-export-menu.png",
     "docs/deliveries/PPA-00/parity/screenshots/10-return-home.png",
+    "docs/deliveries/PPA-00/parity/screenshots/10-workbench-export-menu.png",
     "docs/deliveries/PPA-00/runtime-toolchain-lock.json",
     "frontend/package.json",
     "frontend/src/contracts/canonical.ts",
@@ -200,12 +223,18 @@
     "pnpm-lock.yaml",
     "pnpm-workspace.yaml",
     "tests/acceptance/test_contract_manifest.py",
+    "tests/acceptance/test_merge_gate_remediation.py",
     "tests/contract/test_84_13.py",
+    "tests/contract/test_cross_language_runtime.py",
+    "tests/contract/test_finding_closure.py",
     "tests/contract/test_goldens.py",
     "tests/contract/test_rpc_and_sdk.py",
     "tests/contract/test_schema_meta.py",
+    "tests/contract/test_verifier_remediation.py",
     "tools/integration/browser_smoke.mjs",
+    "tools/integration/browser_smoke_provider.py",
     "tools/integration/capture_m0_test_ledger.py",
+    "tools/integration/fresh_m0_review.py",
     "tools/integration/generate_contract_manifest.py",
     "tools/integration/generate_contract_schemas.py",
     "tools/integration/generate_corpus.py",
@@ -224,6 +253,8 @@
     {
       "branch": "codex/ppa-01-core",
       "branch_exists": false,
+      "first_party_plugin_roots": [],
+      "first_party_plugin_roots_exists": [],
       "first_party_plugins": [],
       "project_id": "P1",
       "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-01-Core",
@@ -232,6 +263,10 @@
     {
       "branch": "codex/ppa-02-plugin-platform",
       "branch_exists": false,
+      "first_party_plugin_roots": [
+        "first-party-plugins/prompt-skill-runtime"
+      ],
+      "first_party_plugin_roots_exists": [],
       "first_party_plugins": [
         "com.plotpilot.prompt-skill-runtime"
       ],
@@ -242,6 +277,10 @@
     {
       "branch": "codex/ppa-03-execution",
       "branch_exists": false,
+      "first_party_plugin_roots": [
+        "first-party-plugins/provider-openai-compatible"
+      ],
+      "first_party_plugin_roots_exists": [],
       "first_party_plugins": [
         "com.plotpilot.provider.openai-compatible"
       ],
@@ -252,6 +291,8 @@
     {
       "branch": "codex/ppa-04-webui",
       "branch_exists": false,
+      "first_party_plugin_roots": [],
+      "first_party_plugin_roots_exists": [],
       "first_party_plugins": [],
       "project_id": "P4",
       "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-04-WebUI",
@@ -260,6 +301,11 @@
     {
       "branch": "codex/ppa-05-planning",
       "branch_exists": false,
+      "first_party_plugin_roots": [
+        "first-party-plugins/project-planner",
+        "first-party-plugins/story-state"
+      ],
+      "first_party_plugin_roots_exists": [],
       "first_party_plugins": [
         "com.plotpilot.project-planner",
         "com.plotpilot.story-state"
@@ -271,6 +317,13 @@
     {
       "branch": "codex/ppa-06-writing",
       "branch_exists": false,
+      "first_party_plugin_roots": [
+        "first-party-plugins/autopilot",
+        "first-party-plugins/chapter-workflow",
+        "first-party-plugins/export-suite",
+        "first-party-plugins/quality-suite"
+      ],
+      "first_party_plugin_roots_exists": [],
       "first_party_plugins": [
         "com.plotpilot.chapter-workflow",
         "com.plotpilot.autopilot",
@@ -283,7 +336,7 @@
     }
   ],
   "donor_local_push": "DISABLED",
-  "head": "1c481237b6fa32ef5f85d7f8da4cb16f366cd4f0",
+  "head": "786986a02219973a69a0d1c1114191149924d7f7",
   "out_of_set_paths": [],
   "p0_write_set": [
     "contracts/**",

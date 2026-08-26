@@ -10,10 +10,13 @@ import argparse
 import copy
 import hashlib
 import json
+import os
+import re
 import subprocess
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Iterable, Mapping
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -27,8 +30,15 @@ from plotpilot_plugin_sdk.canonical import canonical_bytes, sha256_hex  # noqa: 
 from plotpilot_plugin_sdk.errors import ContractError, ContractValidationError, ErrorCode  # noqa: E402
 from plotpilot_plugin_sdk.fake_provider import FakeProvider  # noqa: E402
 from plotpilot_plugin_sdk.fixtures import PluginUIHostFixture  # noqa: E402
-from plotpilot_plugin_sdk.package import normalize_relative_path, package_hash  # noqa: E402
-from plotpilot_plugin_sdk.rpc import ChunkUploadLedger, OperationLedger, build_meta, build_notification, build_request  # noqa: E402
+from plotpilot_plugin_sdk.package import build_files_sha256, normalize_relative_path, package_hash  # noqa: E402
+from plotpilot_plugin_sdk.rpc import (  # noqa: E402
+    ChunkUploadLedger,
+    OperationLedger,
+    build_meta,
+    build_notification,
+    build_request,
+    enforce_lease,
+)
 from plotpilot_plugin_sdk.verifier import (  # noqa: E402
     EXPECTED_ERROR_CODES,
     EXPECTED_HOST_METHODS,
@@ -38,14 +48,19 @@ from plotpilot_plugin_sdk.verifier import (  # noqa: E402
     load_strict_json,
     request_key_bytes,
     validate_rpc_request,
+    validate_rpc_response,
+    validate_rpc_result,
     verify_backup,
     verify_checkpoint,
+    verify_capability_descriptor,
     verify_compatibility,
     verify_core_snapshot,
     verify_data_bundle,
     verify_manifest,
     verify_package_identity,
+    verify_package_manifest,
     verify_plan,
+    verify_provenance_receipt,
     verify_result_bundle,
     verify_restore_report,
     verify_skill_chain,
@@ -54,6 +69,8 @@ from plotpilot_plugin_sdk.verifier import (  # noqa: E402
     verify_snapshot,
     verify_sse_recovery,
     verify_stream_prefix,
+    verify_settings_validation_receipt,
+    verify_job_snapshot,
     verify_history_bytes,
     snapshot_hash,
 )
@@ -63,6 +80,509 @@ EXAMPLES_DIR = ROOT / "contracts" / "examples"
 FIXTURES_DIR = EXAMPLES_DIR / "fixtures"
 GOLDEN_DIR = ROOT / "contracts" / "golden"
 CORPUS_DIR = ROOT / "contracts" / "corpus"
+
+
+# These small deterministic models are intentionally local to the contract
+# gate.  They model the durable boundaries described by §84.13 without
+# pretending to be the product's database or UI implementation.  Every crash
+# probe first mutates a stateful transaction and then attempts the operation
+# that must be fenced; therefore a probe can only pass when the model reaches
+# the unsafe state through the transition under test.
+@dataclass
+class InstallTransactionModel:
+    current_generation_id: str = "generation-current"
+    lkg_generation_id: str | None = "generation-lkg"
+    state: str = "selected"
+    base_generation_id: str | None = None
+    target_generation_id: str | None = None
+    package_store_status: str = "absent"
+    settings_valid: bool = False
+    projection_ready: bool = False
+    safe_mode: bool = False
+    reconciliation_required: bool = False
+    reconciled: bool = False
+    rollback_attempt: int = 0
+    rollback_token: str | None = None
+    crash_point: str | None = None
+    history: list[str] = field(default_factory=list)
+
+    _PHASES = (
+        "staged",
+        "package_published",
+        "env_prepared",
+        "shadow_prepared",
+        "migrated",
+        "settings_validated",
+        "qualified",
+        "pending_apply",
+        "current_committed",
+        "lkg_pending",
+        "lkg_promoted",
+    )
+
+    def _fail(self, code: ErrorCode, message: str) -> None:
+        raise ContractError(code, message)
+
+    def begin(self, base_generation_id: str, target_generation_id: str = "generation-next") -> None:
+        if self.state != "selected":
+            self._fail(ErrorCode.INVALID_TRANSITION, "install transition is not selectable")
+        if base_generation_id != self.current_generation_id:
+            self._fail(ErrorCode.INVALID_TRANSITION, "install CAS base generation changed")
+        self.base_generation_id = base_generation_id
+        self.target_generation_id = target_generation_id
+        self.state = "staged"
+        self.package_store_status = "staged"
+        self.history.append(self.state)
+
+    def advance(self, phase: str) -> None:
+        if phase not in self._PHASES:
+            raise ValueError(f"unknown install phase: {phase}")
+        expected_index = self._PHASES.index(self.state) + 1 if self.state in self._PHASES else 0
+        if self._PHASES.index(phase) != expected_index:
+            self._fail(ErrorCode.INVALID_TRANSITION, f"install phase {self.state}->{phase} is not durable order")
+        self.state = phase
+        if phase == "package_published":
+            self.package_store_status = "published"
+        if phase == "settings_validated":
+            self.settings_valid = True
+        if phase in {"qualified", "pending_apply", "current_committed", "lkg_pending", "lkg_promoted"}:
+            self.projection_ready = True
+        self.history.append(phase)
+
+    def _mark_crashed(self, point: str) -> None:
+        self.crash_point = point
+        self.safe_mode = True
+        self.reconciliation_required = True
+        self.reconciled = False
+        self.state = "safe_mode"
+        self.history.append(f"crash:{point}")
+
+    def install_until_crash(self, base_generation_id: str, point: str) -> None:
+        points = {
+            "before_prepare": None,
+            "after_staging": "staged",
+            "after_activate": "current_committed",
+            "after_settings": "settings_validated",
+            "after_projection": "qualified",
+        }
+        if point not in points:
+            raise ValueError(f"unknown install crash point: {point}")
+        if point == "before_prepare":
+            if base_generation_id != self.current_generation_id:
+                self._fail(ErrorCode.INVALID_TRANSITION, "install CAS base generation changed")
+            self._mark_crashed(point)
+            return
+        self.begin(base_generation_id)
+        desired = points[point]
+        assert desired is not None
+        # ``begin`` durably reaches ``staged``.  Advance through the desired
+        # phase (inclusive); replaying ``staged`` would be an invalid second
+        # transition and would make the crash probe test the fixture setup
+        # rather than the requested durable boundary.
+        for phase in self._PHASES[1:]:
+            self.advance(phase)
+            if phase == desired:
+                break
+        self._mark_crashed(point)
+
+    def reconcile(self) -> None:
+        if not self.safe_mode or not self.reconciliation_required:
+            self._fail(ErrorCode.INVALID_TRANSITION, "install has no safe-mode transaction to reconcile")
+        # Startup reconciliation never activates a partially installed
+        # generation.  It restores the durable current/LKG pointers and arms
+        # a single rollback token when a transition had reached activation.
+        self.rollback_token = self.rollback_token or f"rollback:{self.crash_point}"
+        self.rollback_attempt = min(self.rollback_attempt, 1)
+        self.reconciliation_required = False
+        self.reconciled = True
+        self.state = "rollback_armed"
+        self.history.append("reconciled")
+
+    def exit_safe_mode(self) -> None:
+        if not self.safe_mode:
+            self._fail(ErrorCode.INVALID_TRANSITION, "install is not in safe mode")
+        if self.reconciliation_required or not self.reconciled:
+            self._fail(ErrorCode.INVALID_TRANSITION, "safe-mode exit requires reconciliation")
+        self.safe_mode = False
+        self.state = "rolled_back"
+        self.history.append("safe_mode_exited")
+
+    def rollback_once(self) -> None:
+        if not self.safe_mode or not self.reconciled or self.rollback_token is None:
+            self._fail(ErrorCode.INVALID_TRANSITION, "rollback requires a reconciled safe-mode transition")
+        if self.rollback_attempt >= 1:
+            self._fail(ErrorCode.INVALID_TRANSITION, "rollback is one-shot")
+        self.rollback_attempt = 1
+        self.current_generation_id = self.base_generation_id or self.current_generation_id
+        self.state = "rolled_back"
+        self.history.append("rollback")
+
+    def validate_settings(self, receipt: Mapping[str, Any], settings_revision: Mapping[str, Any]) -> None:
+        verify_settings_validation_receipt(receipt)
+        assert_valid("settings-revision/v1", settings_revision)
+        if receipt["settings_revision_id"] != settings_revision["settings_revision_id"]:
+            self._fail(ErrorCode.RESULT_CONTRACT_MISMATCH, "settings validation receipt is not bound to the revision")
+        if receipt["plugin_release_id"] != settings_revision["plugin_release_id"]:
+            self._fail(ErrorCode.RESULT_CONTRACT_MISMATCH, "settings validation receipt is not bound to the release")
+        if not receipt["valid"]:
+            self._fail(ErrorCode.SETTINGS_INVALID, "settings validator rejected the revision")
+        self.settings_valid = True
+
+
+@dataclass
+class PublicationModel:
+    release_id: str
+    state: str = "installed"
+    package_present: bool = True
+    retire_epoch: int = 1
+    active_pins: int = 0
+    recoverable_attempts: int = 0
+    retained_receipts: set[str] = field(default_factory=set)
+    published_candidates: set[str] = field(default_factory=set)
+
+    def pin(self) -> None:
+        if self.state != "installed":
+            raise ContractError(ErrorCode.RELEASE_RETIRING, "release is retiring and cannot receive a new pin")
+        self.active_pins += 1
+
+    def add_recoverable_attempt(self) -> None:
+        self.recoverable_attempts += 1
+
+    def retire(self) -> None:
+        if self.state != "installed":
+            raise ContractError(ErrorCode.RELEASE_RETIRING, "release is already retiring")
+        if self.active_pins or self.recoverable_attempts:
+            raise ContractError(ErrorCode.RELEASE_RETIRING, "recoverable references block retirement")
+        self.state = "retiring"
+        self.retire_epoch += 1
+
+    def retain_provenance(self, receipt: Mapping[str, Any]) -> None:
+        verify_provenance_receipt(receipt)
+        if receipt["release_id"] != self.release_id:
+            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "retained provenance belongs to another release")
+        self.retained_receipts.add(receipt["receipt_id"])
+
+    def delete_package(self) -> None:
+        if self.state not in {"retiring", "retired"} or self.active_pins or self.recoverable_attempts:
+            raise ContractError(ErrorCode.RELEASE_RETIRING, "release still has executable references")
+        self.package_present = False
+        self.state = "retired"
+
+    def publish(self, bundle: Mapping[str, Any], receipt: Mapping[str, Any], *, snapshot: Mapping[str, Any]) -> None:
+        verify_result_bundle(
+            bundle,
+            snapshot_workspace_id=snapshot["workspace_id"],
+            snapshot_hash_value=snapshot["snapshot_hash"],
+        )
+        verify_provenance_receipt(receipt)
+        if bundle["provenance_receipt_id"] != receipt["receipt_id"]:
+            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "publication bundle did not propagate its provenance receipt")
+        if not self.package_present and receipt["receipt_id"] not in self.retained_receipts:
+            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "publication requires retained provenance after package deletion")
+        if receipt["release_id"] != self.release_id:
+            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "publication provenance release does not match")
+        self.published_candidates.update(item["item_id"] for item in bundle["items"])
+
+
+@dataclass
+class CoreEventTransactionModel:
+    aggregate_id: str
+    durable_revision: int = 0
+    aggregate_revision: int = 0
+    durable_event_seq: int = 0
+    pending_event: Mapping[str, Any] | None = None
+    crash_point: str | None = None
+    broadcasts: list[Mapping[str, Any]] = field(default_factory=list)
+
+    def append(self, event: Mapping[str, Any], *, crash_point: str | None = None) -> None:
+        assert_valid("core-event/v1", event)
+        if event["aggregate_id"] != self.aggregate_id:
+            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "Core Event aggregate is not bound")
+        if event["aggregate_revision"] != self.durable_revision + 1 or event["core_event_seq"] != self.durable_event_seq + 1:
+            raise ContractError(ErrorCode.INVALID_TRANSITION, "Core Event revision is not the next durable revision")
+        self.pending_event = copy.deepcopy(dict(event))
+        self.crash_point = crash_point
+        next_revision = self.durable_revision + 1
+        if crash_point == "event-crash-after-write":
+            # Simulate the aggregate page being written before the Event row;
+            # the transaction remains uncommitted and must not be broadcast.
+            self.aggregate_revision = next_revision
+            return
+        if crash_point == "aggregate-event-crash":
+            return
+        if crash_point is not None:
+            raise ValueError(f"unknown Core Event crash point: {crash_point}")
+        self.aggregate_revision = next_revision
+        self.durable_revision = next_revision
+        self.durable_event_seq = int(event["core_event_seq"])
+        self.pending_event = None
+        self.broadcasts.append(copy.deepcopy(dict(event)))
+
+    def publish_sse(self) -> None:
+        if self.pending_event is not None or self.aggregate_revision != self.durable_revision:
+            raise ContractError(ErrorCode.INVALID_TRANSITION, "Core Event transaction is not durably committed")
+        if not self.broadcasts:
+            raise ContractError(ErrorCode.INVALID_TRANSITION, "Core Event has no committed broadcast")
+
+    def recover(self) -> None:
+        if self.pending_event is None and self.aggregate_revision == self.durable_revision:
+            return
+        self.aggregate_revision = self.durable_revision
+        self.pending_event = None
+        self.crash_point = None
+
+
+@dataclass
+class TerminalHydrationModel:
+    snapshot: Mapping[str, Any]
+    job_snapshot: Mapping[str, Any]
+    durable_bundle: Mapping[str, Any] | None = None
+    terminal_snapshot: Mapping[str, Any] | None = None
+
+    def commit(self, bundle: Mapping[str, Any]) -> None:
+        verify_result_bundle(
+            bundle,
+            snapshot_workspace_id=self.snapshot["workspace_id"],
+            snapshot_hash_value=self.snapshot["snapshot_hash"],
+        )
+        terminal = copy.deepcopy(dict(self.job_snapshot))
+        terminal["job_state"] = "succeeded"
+        terminal["job_revision"] = int(terminal["job_revision"]) + 1
+        terminal["candidate_ids"] = [item["item_id"] for item in bundle["items"]]
+        terminal["steps"] = [
+            {**step, "state": "succeeded", "revision": int(step["revision"]) + 1}
+            for step in terminal["steps"]
+        ]
+        terminal["attempts"] = [
+            {**attempt, "state": "succeeded"}
+            for attempt in terminal["attempts"]
+        ]
+        terminal["snapshot_hash"] = hash_without_field(terminal, "snapshot_hash", "job-snapshot/v1")
+        verify_job_snapshot(terminal)
+        self.terminal_snapshot = terminal
+        self.durable_bundle = copy.deepcopy(dict(bundle))
+
+    def hydrate(self) -> dict[str, Any]:
+        if self.durable_bundle is None or self.terminal_snapshot is None:
+            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "terminal view has no durable bundle or snapshot")
+        verify_job_snapshot(self.terminal_snapshot)
+        verify_result_bundle(
+            self.durable_bundle,
+            snapshot_workspace_id=self.snapshot["workspace_id"],
+            snapshot_hash_value=self.snapshot["snapshot_hash"],
+        )
+        if self.terminal_snapshot["job_state"] not in {"succeeded", "partial", "failed", "cancelled"}:
+            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "terminal hydration did not reconstruct terminal state")
+        return copy.deepcopy(dict(self.durable_bundle))
+
+
+@dataclass
+class RestoreTransactionModel:
+    source_root_id: str
+    target_root_id: str
+    state: str = "selected"
+    projection_markers: tuple[tuple[str, str], ...] = ()
+    rebuilt_projections: set[tuple[str, str]] = field(default_factory=set)
+    recovery_required: bool = False
+
+    def stage(self, backup: Mapping[str, Any], *, crash_at: str | None = None) -> None:
+        verify_backup(backup)
+        if self.source_root_id == self.target_root_id:
+            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "restore staging must use a distinct target root")
+        self.state = "staged"
+        self.projection_markers = tuple(
+            (entry["plugin_id"], entry["release_id"])
+            for entry in backup["projection_rebuild_required"]
+        )
+        stages = ("manifest_verified", "snapshot_verified", "assets_verified", "plugins_resolved")
+        for stage in stages:
+            if crash_at == stage:
+                self.state = "staging"
+                self.recovery_required = True
+                return
+            self.state = stage
+        self.state = "restore_ready"
+
+    def rebuild_projections(self) -> None:
+        if self.state not in {"plugins_resolved", "restore_ready"}:
+            raise ContractError(ErrorCode.INVALID_TRANSITION, "projection rebuild requires verified restore staging")
+        self.rebuilt_projections.update(self.projection_markers)
+        if self.state == "plugins_resolved":
+            self.state = "restore_ready"
+
+    def switch(self) -> None:
+        if self.recovery_required or self.state != "restore_ready":
+            raise ContractError(ErrorCode.INVALID_TRANSITION, "restore staging requires recovery before switching")
+        if set(self.projection_markers) != self.rebuilt_projections:
+            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "restore omitted required projection rebuild")
+        self.state = "switched"
+
+
+@dataclass
+class WorkerRuntimeModel:
+    worker_url: str
+    csp: str
+    navigation_limit: int = 3
+    navigation_count: int = 0
+    stopped: bool = False
+
+    STRICT_CSP = "default-src 'none'; connect-src 'none'; script-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'none'"
+
+    def receive(self, worker_url: str, csp: str) -> None:
+        if worker_url != self.worker_url:
+            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "worker URL is immutable for a generation")
+        if csp != self.csp:
+            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "worker CSP is immutable")
+
+    def navigate(self) -> int:
+        if self.stopped:
+            raise ContractError(ErrorCode.INVALID_TRANSITION, "navigation watchdog already stopped the worker")
+        self.navigation_count += 1
+        if self.navigation_count > self.navigation_limit:
+            self.stopped = True
+            raise ContractError(ErrorCode.INVALID_TRANSITION, "UI navigation watchdog stopped a render loop")
+        return self.navigation_count
+
+
+ExecutableCase = Callable[[], Any]
+ExecutableCaseFactory = Callable[[Mapping[str, Any]], ExecutableCase]
+
+# The registry is an extension seam for future §84.13 corpus groups.  The
+# checked-in legacy cases remain local to verify_negative_cases because they
+# need its fixture context; callers may register additional executable cases
+# without changing this verifier or the formal corpus schema.
+EXECUTABLE_CASE_REGISTRY: dict[str, ExecutableCase] = {}
+EXECUTABLE_KIND_REGISTRY: dict[str, ExecutableCaseFactory] = {}
+
+
+def register_executable_case(case_id: str, action: ExecutableCase, *, replace: bool = False) -> None:
+    """Register a callable for a corpus ``case_id``.
+
+    Registration is deliberately process-local: it does not mutate the
+    corpus, fixtures or any generated manifest.  ``replace=True`` is explicit
+    so a downstream expanded corpus cannot silently shadow an existing case.
+    """
+    if not isinstance(case_id, str) or not case_id.strip():
+        raise ValueError("executable case_id must be a non-empty string")
+    if not callable(action):
+        raise TypeError(f"executable case {case_id!r} must be callable")
+    if case_id in EXECUTABLE_CASE_REGISTRY and not replace:
+        raise ValueError(f"executable case already registered: {case_id}")
+    EXECUTABLE_CASE_REGISTRY[case_id] = action
+
+
+def register_executable_kind(kind: str, factory: ExecutableCaseFactory, *, replace: bool = False) -> None:
+    """Register a reusable factory for an expanded corpus ``kind``.
+
+    A corpus entry is intentionally identified by both ``case_id`` and
+    ``kind``.  Downstream corpus expansions can therefore add a new case ID
+    while reusing an existing executable assertion, without this gate having
+    to grow another fixed case-ID allow-list.
+    """
+    if not isinstance(kind, str) or not kind.strip():
+        raise ValueError("executable case kind must be a non-empty string")
+    if not callable(factory):
+        raise TypeError(f"executable case kind {kind!r} must be callable")
+    if kind in EXECUTABLE_KIND_REGISTRY and not replace:
+        raise ValueError(f"executable case kind already registered: {kind}")
+    EXECUTABLE_KIND_REGISTRY[kind] = factory
+
+
+def _corpus_group_sort_key(group_id: str) -> tuple[int, int]:
+    match = re.fullmatch(r"84\.13-(\d+)", group_id)
+    if match is None:
+        raise AssertionError(f"invalid expanded §84.13 group id: {group_id!r}")
+    return (int(match.group(1)), len(match.group(1)))
+
+
+def validate_executable_case_registry(
+    registry: Mapping[str, ExecutableCase] | None = None,
+    *,
+    corpus_groups: Iterable[Mapping[str, Any]] | None = None,
+) -> dict[str, int]:
+    """Validate the executable-case seam against any current corpus expansion.
+
+    No fixed list of old case IDs is used.  When ``corpus_groups`` is given,
+    every negative entry must resolve to a callable and a case cannot appear
+    in two groups.  The return value is suitable for gate evidence.
+    """
+    selected = dict(EXECUTABLE_CASE_REGISTRY if registry is None else registry)
+    for case_id, action in selected.items():
+        if not isinstance(case_id, str) or not case_id.strip() or not callable(action):
+            raise AssertionError(f"invalid executable case registry entry: {case_id!r}")
+    if corpus_groups is None:
+        return {"registered_cases": len(selected), "corpus_groups": 0, "corpus_cases": 0}
+    seen_groups: set[str] = set()
+    seen_cases: set[str] = set()
+    group_count = 0
+    case_count = 0
+    for group in corpus_groups:
+        group_id = group.get("group_id")
+        if not isinstance(group_id, str) or group_id in seen_groups:
+            raise AssertionError(f"duplicate/invalid executable corpus group: {group_id!r}")
+        _corpus_group_sort_key(group_id)
+        seen_groups.add(group_id)
+        group_count += 1
+        negative = group.get("negative")
+        if not isinstance(negative, list) or not negative:
+            raise AssertionError(f"{group_id} must contain negative cases")
+        for case in negative:
+            case_id = case.get("case_id") if isinstance(case, Mapping) else None
+            if not isinstance(case_id, str) or case_id not in selected:
+                raise AssertionError(f"no executable mapping for {case_id!r} in {group_id}")
+            if case_id in seen_cases:
+                raise AssertionError(f"negative case is assigned to multiple groups: {case_id}")
+            seen_cases.add(case_id)
+            case_count += 1
+    return {"registered_cases": len(selected), "corpus_groups": group_count, "corpus_cases": case_count}
+
+
+def build_executable_case_registry(
+    corpus_groups: Iterable[Mapping[str, Any]],
+    *,
+    registry: Mapping[str, ExecutableCase] | None = None,
+    kind_registry: Mapping[str, ExecutableCaseFactory] | None = None,
+) -> dict[str, ExecutableCase]:
+    """Resolve corpus entries to executable actions through ID or kind.
+
+    Explicit case-ID registrations always win.  Missing IDs are filled from
+    the reusable kind factories.  This is the extension seam used by the
+    expanded §84.13 corpus and is deliberately independent of the current
+    fourteen group names.
+    """
+    selected = dict(EXECUTABLE_CASE_REGISTRY if registry is None else registry)
+    factories = dict(EXECUTABLE_KIND_REGISTRY if kind_registry is None else kind_registry)
+    for group in corpus_groups:
+        negative = group.get("negative")
+        if not isinstance(negative, list):
+            continue
+        for case in negative:
+            if not isinstance(case, Mapping):
+                continue
+            case_id = case.get("case_id")
+            if not isinstance(case_id, str) or case_id in selected:
+                continue
+            kind = case.get("kind")
+            factory = factories.get(kind) if isinstance(kind, str) else None
+            if factory is None:
+                continue
+            action = factory(case)
+            if not callable(action):
+                raise TypeError(f"executable case factory {kind!r} did not return a callable")
+            selected[case_id] = action
+    return selected
+
+
+def _regenerated_self_hash(filename: str, field: str, prefix: str) -> dict[str, Any]:
+    """Load a self-hashed positive fixture without repairing its digest.
+
+    ``field`` and ``prefix`` are retained in the helper signature so callers
+    state the exact v1 formula next to the fixture.  The verifier itself must
+    see the checked-in digest; silently regenerating it would turn a tampered
+    positive fixture into a false positive.
+    """
+    del field, prefix
+    return load_strict_json(FIXTURES_DIR / filename)
 
 
 def _expect_failure(function: Callable[[], Any], code: int | ErrorCode | None = None) -> None:
@@ -81,7 +601,14 @@ def _expect_failure(function: Callable[[], Any], code: int | ErrorCode | None = 
 
 def verify_schemas() -> dict[str, Any]:
     generator = ROOT / "tools" / "integration" / "generate_contract_schemas.py"
-    check = subprocess.run([sys.executable, str(generator), "--check"], cwd=ROOT, capture_output=True, text=True)
+    check = subprocess.run(
+        [sys.executable, str(generator), "--check"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
     if check.returncode:
         raise AssertionError(check.stdout + check.stderr)
     paths = sorted(SCHEMA_DIR.glob("*.schema.json"))
@@ -112,7 +639,14 @@ def verify_schemas() -> dict[str, Any]:
 def verify_contract_manifest() -> dict[str, Any]:
     """Verify the checked-in content inventory and its generated hashes."""
     generator = ROOT / "tools" / "integration" / "generate_contract_manifest.py"
-    check = subprocess.run([sys.executable, str(generator), "--check"], cwd=ROOT, capture_output=True, text=True)
+    check = subprocess.run(
+        [sys.executable, str(generator), "--check"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
     if check.returncode:
         raise AssertionError(check.stdout + check.stderr)
     manifest_path = ROOT / "contracts" / "manifest-v1.json"
@@ -229,6 +763,16 @@ FIXTURE_CONTRACTS = {
 }
 
 
+STRICT_SELF_HASH_FIXTURE_SPECS = (
+    ("plugin-data-bundle.json", "bundle_hash", "plugin-data-bundle/v1", verify_data_bundle),
+    ("core-snapshot.json", "snapshot_hash", "core-snapshot/v1", verify_core_snapshot),
+    ("job-snapshot.json", "snapshot_hash", "job-snapshot/v1", verify_job_snapshot),
+    ("checkpoint.json", "checkpoint_hash", "checkpoint/v1", verify_checkpoint),
+    ("settings-validation-receipt.json", "receipt_hash", "settings-validation-receipt/v1", verify_settings_validation_receipt),
+    ("provenance-receipt.json", "receipt_hash", "provenance-receipt/v1", verify_provenance_receipt),
+)
+
+
 def verify_positive_fixtures() -> dict[str, Any]:
     for filename, contract_id in FIXTURE_CONTRACTS.items():
         assert_valid(contract_id, load_strict_json(FIXTURES_DIR / filename))
@@ -239,10 +783,13 @@ def verify_positive_fixtures() -> dict[str, Any]:
 
     verify_manifest(load_strict_json(FIXTURES_DIR / "plugin-manifest-code.json"))
     verify_manifest(load_strict_json(FIXTURES_DIR / "plugin-manifest-data.json"))
-    verify_data_bundle(load_strict_json(FIXTURES_DIR / "plugin-data-bundle.json"))
     verify_plan(load_strict_json(FIXTURES_DIR / "plugin-plan.json"))
-    verify_core_snapshot(load_strict_json(FIXTURES_DIR / "core-snapshot.json")) if False else None
+    for filename, field, prefix, verifier in STRICT_SELF_HASH_FIXTURE_SPECS:
+        verifier(_regenerated_self_hash(filename, field, prefix))
+    verify_stream_prefix(load_strict_json(FIXTURES_DIR / "stream-prefix.json"))
+    verify_capability_descriptor(load_strict_json(FIXTURES_DIR / "capability-provider.json"))
     verify_restore_report(load_strict_json(FIXTURES_DIR / "restore-report.json"))
+    verify_backup(load_strict_json(GOLDEN_DIR / "backup" / "backup.json"))
 
     snapshot = load_strict_json(GOLDEN_DIR / "run-snapshot" / "snapshot.json")
     verify_result_bundle(
@@ -254,7 +801,7 @@ def verify_positive_fixtures() -> dict[str, Any]:
     chain = load_strict_json(FIXTURES_DIR / "skill-chain-result.json")
     verify_skill_receipt(receipt)
     verify_skill_chain(chain, [receipt])
-    return {"fixtures": len(FIXTURE_CONTRACTS) + 4, "semantic": 9}
+    return {"fixtures": len(FIXTURE_CONTRACTS) + 4, "semantic": 17, "self_hashes": 9}
 
 
 def verify_corpus() -> dict[str, Any]:
@@ -277,117 +824,9 @@ def verify_corpus() -> dict[str, Any]:
 
 
 def verify_negative_groups() -> dict[str, Any]:
-    """Execute one or more real assertions for every §84.13 group."""
-    snapshot = load_strict_json(GOLDEN_DIR / "run-snapshot" / "snapshot.json")
-    bundle = load_strict_json(EXAMPLES_DIR / "result-bundle.json")
-    candidate = bundle["items"][0]
-    groups: dict[str, int] = {}
-    corpus_groups: list[dict[str, Any]] = []
-    for path in sorted((CORPUS_DIR / "negative" / "84.13").glob("*.json")):
-        value = load_strict_json(path)
-        if not isinstance(value.get("group_id"), str) or not value["group_id"].startswith("84.13-"):
-            raise AssertionError(f"invalid §84.13 group metadata: {path.name}")
-        cases = value.get("negative")
-        positives = value.get("positive")
-        if not isinstance(cases, list) or not cases or not isinstance(positives, list) or not positives:
-            raise AssertionError(f"§84.13 group must have positive and negative fixtures: {path.name}")
-        for case in cases:
-            if not isinstance(case, dict) or not isinstance(case.get("case_id"), str) or not isinstance(case.get("kind"), str):
-                raise AssertionError(f"malformed §84.13 case in {path.name}")
-        corpus_groups.append(value)
-        groups[value["group_id"]] = len(cases)
-    if [item["group_id"] for item in corpus_groups] != [f"84.13-{index:02d}" for index in range(1, 15)]:
-        raise AssertionError("§84.13 corpus must contain exactly groups 01..14")
-
-    swapped = copy.deepcopy(snapshot)
-    swapped["skill_releases"].reverse()
-    swapped["snapshot_hash"] = snapshot["snapshot_hash"]
-    _expect_failure(lambda: verify_snapshot(swapped))
-    groups["84.13-01"] = max(groups["84.13-01"], 2)
-
-    bad_candidate = copy.deepcopy(candidate)
-    bad_candidate["target"]["entity_id"] = "other-doc"
-    _expect_failure(lambda: verify_result_bundle({**bundle, "items": [bad_candidate]}, snapshot_workspace_id="ws-1", snapshot_hash_value=snapshot["snapshot_hash"]), ErrorCode.RESULT_CONTRACT_MISMATCH)
-    cycle_a = copy.deepcopy(candidate)
-    cycle_b = copy.deepcopy(candidate)
-    cycle_a["item_id"], cycle_b["item_id"] = "a", "b"
-    cycle_a["parent_candidate_ids"], cycle_b["parent_candidate_ids"] = ["b"], ["a"]
-    _expect_failure(lambda: verify_result_bundle({**bundle, "items": [cycle_a, cycle_b]}, snapshot_workspace_id="ws-1", snapshot_hash_value=snapshot["snapshot_hash"]), ErrorCode.RESULT_CONTRACT_MISMATCH)
-    groups["84.13-02"] = max(groups["84.13-02"], 2)
-
-    ledger = OperationLedger()
-    ledger.apply("attempt-1", "host.capability.invoke/v1", "op-1", {"x": 1}, lambda: {"accepted": True})
-    _expect_failure(lambda: ledger.apply("attempt-1", "host.capability.invoke/v1", "op-1", {"x": 2}, lambda: {"accepted": True}), ErrorCode.DUPLICATE_REQUEST)
-    groups["84.13-03"] = 1
-
-    missing_asset = copy.deepcopy(snapshot)
-    missing_asset["parameters_asset_id"] = "missing"
-    _expect_failure(lambda: verify_snapshot(missing_asset))
-    groups["84.13-04"] = 1
-
-    upload = ChunkUploadLedger()
-    content = b"x"
-    h = hashlib.sha256(content).hexdigest()
-    upload.create(operation_key="u-1", upload_id="up-1", offset=0, total_size=1, expected_hash=h, chunk_hash=h, base64_chunk="eA==", final=True)
-    _expect_failure(lambda: upload.create(operation_key="u-1", upload_id="up-1", offset=0, total_size=1, expected_hash=h, chunk_hash=h, base64_chunk="eA==", final=False), ErrorCode.DUPLICATE_REQUEST)
-    groups["84.13-05"] = 1
-
-    meta = build_meta("attempt", generation_id="g-1", plugin_release_id="a" * 64, deadline_at="2026-08-26T00:00:00Z", job_id="j-1", step_id="s-1", attempt_id="a-1", lease_epoch=1)
-    request = build_request("host.job.event/v1", {"operation_key": "op-1", "event_type": "plugin.x.y", "payload_asset_id": None, "local_seq": 1}, meta, request_id="123e4567-e89b-12d3-a456-426614174000")
-    _expect_failure(lambda: validate_rpc_request(request, expected_lease_epoch=2), ErrorCode.STALE_LEASE)
-    groups["84.13-06"] = 1
-
-    partial = copy.deepcopy(bundle)
-    partial["partial"] = True
-    _expect_failure(lambda: verify_result_bundle(partial, snapshot_workspace_id="ws-1", snapshot_hash_value=snapshot["snapshot_hash"]))
-    groups["84.13-07"] = 1
-
-    # Lifecycle/retirement negative cases are represented as closed fixtures;
-    # the M0 semantic gate verifies their durable field combinations here.
-    lifecycle = load_strict_json(FIXTURES_DIR / "plugin-lifecycle-transition.json")
-    if lifecycle["rollback_attempt"] != 0 or lifecycle["rollback_token"] is not None:
-        raise AssertionError("fixture lifecycle baseline is not rollback-clean")
-    groups["84.13-08"] = 1
-    retirement = load_strict_json(FIXTURES_DIR / "release-retirement.json")
-    if retirement["state"] != "installed" or retirement["retire_epoch"] != 1:
-        raise AssertionError("fixture retirement baseline is not installed")
-    groups["84.13-09"] = 1
-
-    sse = load_strict_json(FIXTURES_DIR / "sse-recovery.json")
-    bad_sse = {**sse, "gap": True}
-    _expect_failure(lambda: verify_sse_recovery(bad_sse))
-    groups["84.13-10"] = 1
-
-    provider = FakeProvider()
-    run = provider.start("invoke-1", "hello", chunks=("a", "b"))
-    first = next(provider.raw_stream(run.run_id))
-    provider.acknowledge(run.run_id, first.seq)
-    _expect_failure(lambda: provider.acknowledge(run.run_id, 3))
-    groups["84.13-11"] = 1
-
-    receipt = load_strict_json(FIXTURES_DIR / "skill-run-receipt.json")
-    bad_receipt = copy.deepcopy(receipt)
-    bad_receipt["model_claimed"] = True
-    _expect_failure(lambda: verify_skill_receipt(bad_receipt))
-    groups["84.13-12"] = 1
-
-    ui = PluginUIHostFixture("generation-1", "a" * 64, "ws-1", None, None)
-    tree = load_strict_json(FIXTURES_DIR / "plugin-ui-tree.json")
-    ui.install_tree(tree)
-    intent = load_strict_json(FIXTURES_DIR / "plugin-ui-intent.json")
-    stale = copy.deepcopy(intent)
-    stale["freshness"]["generation_id"] = "old-generation"
-    ack = ui.dispatch_intent(stale)
-    if ack["accepted"]:
-        raise AssertionError("stale UI intent was accepted")
-    groups["84.13-13"] = 1
-
-    backup = load_strict_json(GOLDEN_DIR / "backup" / "backup.json")
-    bad_backup = copy.deepcopy(backup)
-    bad_backup["files"].append({"path": "plugin/pkg.whl", "size": 1, "sha256": "c" * 64, "role": "package"})
-    _expect_failure(lambda: verify_backup(bad_backup))
-    groups["84.13-14"] = 1
-    return groups
+    """Run the complete executable corpus and return exact per-group counts."""
+    result = verify_negative_cases()
+    return {group_id: group["case_count"] for group_id, group in result["groups"].items()}
 
 
 def _run_negative_case(case_id: str, expected_code: int | None, action: Callable[[], Any]) -> dict[str, Any]:
@@ -413,26 +852,92 @@ def _run_negative_case(case_id: str, expected_code: int | None, action: Callable
     return {"case_id": case_id, "passed": True, "outcome": outcome or "asserted"}
 
 
-def verify_negative_cases() -> dict[str, Any]:
-    """Execute every individual §84.13 corpus case, not just one per group."""
-    snapshot = load_strict_json(GOLDEN_DIR / "run-snapshot" / "snapshot.json")
-    bundle = load_strict_json(EXAMPLES_DIR / "result-bundle.json")
-    candidate = bundle["items"][0]
-    checkpoint = load_strict_json(FIXTURES_DIR / "checkpoint.json")
-    prefix = load_strict_json(FIXTURES_DIR / "stream-prefix.json")
-    receipt = load_strict_json(FIXTURES_DIR / "skill-run-receipt.json")
-    history = load_strict_json(CORPUS_DIR / "history" / "v1-raw.json")
-    cases: dict[str, Callable[[], Any]] = {}
+def _expanded_kind_handlers(
+    snapshot: Mapping[str, Any],
+    bundle: Mapping[str, Any],
+    candidate: Mapping[str, Any],
+    checkpoint: Mapping[str, Any],
+    prefix: Mapping[str, Any],
+    receipt: Mapping[str, Any],
+    history: Mapping[str, Any],
+) -> dict[str, ExecutableCaseFactory]:
+    """Return reusable executable probes for the expanded §84.13 kinds.
 
-    # 84.13-01 — ordered Skill arrays change the digest; package bytes do too.
+    The factories are keyed by the corpus assertion ``kind`` rather than by
+    the current case IDs.  Each action still exercises a real SDK verifier,
+    ledger or fixture whenever the public contract has one; the few lifecycle
+    probes which are only state-machine assertions use the same stable error
+    code and field binding as the contract tests.
+    """
+    snapshot_value = copy.deepcopy(dict(snapshot))
+    bundle_value = copy.deepcopy(dict(bundle))
+    candidate_value = copy.deepcopy(dict(candidate))
+    receipt_value = copy.deepcopy(dict(receipt))
+    provenance_value = load_strict_json(FIXTURES_DIR / "provenance-receipt.json")
+
+    def valid_bundle() -> str:
+        verify_result_bundle(
+            bundle_value,
+            snapshot_workspace_id=snapshot_value["workspace_id"],
+            snapshot_hash_value=snapshot_value["snapshot_hash"],
+        )
+        return "result_bundle_verified"
+
+    def jcs_set_permutation() -> str:
+        swapped = copy.deepcopy(snapshot_value)
+        for field in ("input_revisions", "plugin_releases", "plugin_settings_revisions", "asset_hashes"):
+            swapped[field].reverse()
+        verify_snapshot(swapped)
+        return "set_like_permutation_accepted"
+
     def skill_order_permutation() -> str:
-        swapped = copy.deepcopy(snapshot)
+        swapped = copy.deepcopy(snapshot_value)
         swapped["skill_releases"].reverse()
-        if snapshot_hash(swapped) == snapshot["snapshot_hash"]:
-            raise AssertionError("Skill order permutation did not change snapshot hash")
-        return "snapshot_hash_changes"
+        if snapshot_hash(swapped) == snapshot_value["snapshot_hash"]:
+            raise AssertionError("ordered Skill permutation did not change snapshot hash")
+        return "ordered_hash_changed"
 
-    def package_crlf() -> str:
+    def package_golden_recompute() -> str:
+        package_dir = GOLDEN_DIR / "package"
+        files = {
+            "plugin.json": (package_dir / "plugin.json").read_bytes(),
+            "data/rules.json": (package_dir / "data" / "rules.json").read_bytes(),
+        }
+        expected = load_strict_json(package_dir / "expected.json")
+        verify_package_identity(
+            files,
+            "com.plotpilot.golden.echo",
+            "1.0.0",
+            expected["package_hash"],
+            expected["release_id"],
+            expected_files_sha256=(package_dir / "files.sha256").read_bytes(),
+        )
+        return "package_golden_verified"
+
+    def run_snapshot_golden_recompute() -> str:
+        verify_snapshot(snapshot_value)
+        if snapshot_hash(snapshot_value) != snapshot_value["snapshot_hash"]:
+            raise AssertionError("RunSnapshot self-hash changed during recomputation")
+        return "run_snapshot_golden_verified"
+
+    def skill_golden_recompute() -> str:
+        skill_dir = GOLDEN_DIR / "skill"
+        files = {
+            "skill.json": (skill_dir / "skill.json").read_bytes(),
+            "prompt.txt": (skill_dir / "prompt.txt").read_bytes(),
+        }
+        expected = load_strict_json(skill_dir / "expected.json")
+        verify_skill_identity(
+            files,
+            "com.plotpilot.skill.golden",
+            "1.0.0",
+            expected["skill_package_hash"],
+            expected["skill_release_id"],
+            expected_files_sha256=(skill_dir / "files.sha256").read_bytes(),
+        )
+        return "skill_golden_verified"
+
+    def package_bytes_change() -> str:
         package_dir = GOLDEN_DIR / "package"
         files = {
             "plugin.json": (package_dir / "plugin.json").read_bytes().replace(b"\n", b"\r\n"),
@@ -441,235 +946,475 @@ def verify_negative_cases() -> dict[str, Any]:
         expected = load_strict_json(package_dir / "expected.json")["package_hash"]
         if package_hash(files) == expected:
             raise AssertionError("CRLF package bytes did not change package hash")
-        return "package_hash_changes"
+        return "package_hash_changed"
 
-    cases["skill-order-permutation"] = skill_order_permutation
-    cases["package-crlf"] = package_crlf
-
-    # 84.13-02 — result profiles, Candidate target/write-set and parent graph.
-    def artifact_with_candidate_item() -> None:
-        bad = copy.deepcopy(bundle)
+    def result_profile_mismatch() -> None:
+        bad = copy.deepcopy(bundle_value)
         bad["contract_id"] = "artifact-bundle/v1"
         bad["bundle_type"] = "artifact"
-        verify_result_bundle(bad, snapshot_workspace_id="ws-1", snapshot_hash_value=snapshot["snapshot_hash"])
+        verify_result_bundle(bad, snapshot_workspace_id=snapshot_value["workspace_id"], snapshot_hash_value=snapshot_value["snapshot_hash"])
 
-    def candidate_target_outside_write_set() -> None:
-        bad = copy.deepcopy(candidate)
+    def result_item_schema_mismatch() -> None:
+        bad = copy.deepcopy(bundle_value)
+        bad["items"][0]["schema"] = "artifact-item/v1"
+        verify_result_bundle(bad, snapshot_workspace_id=snapshot_value["workspace_id"], snapshot_hash_value=snapshot_value["snapshot_hash"])
+
+    def candidate_target_write_set() -> None:
+        bad = copy.deepcopy(candidate_value)
         bad["target"]["entity_id"] = "other-doc"
-        verify_result_bundle({**bundle, "items": [bad]}, snapshot_workspace_id="ws-1", snapshot_hash_value=snapshot["snapshot_hash"])
+        verify_result_bundle({**bundle_value, "items": [bad]}, snapshot_workspace_id=snapshot_value["workspace_id"], snapshot_hash_value=snapshot_value["snapshot_hash"])
 
-    def candidate_parent_cycle() -> None:
-        first = copy.deepcopy(candidate)
-        second = copy.deepcopy(candidate)
+    def candidate_mutation() -> None:
+        bad = copy.deepcopy(candidate_value)
+        bad["item_kind"] = "node_structure"
+        verify_result_bundle({**bundle_value, "items": [bad]}, snapshot_workspace_id=snapshot_value["workspace_id"], snapshot_hash_value=snapshot_value["snapshot_hash"])
+
+    def candidate_base() -> None:
+        bad = copy.deepcopy(candidate_value)
+        bad["base"]["revision_id"] = "revision-other"
+        verify_result_bundle({**bundle_value, "items": [bad]}, snapshot_workspace_id=snapshot_value["workspace_id"], snapshot_hash_value=snapshot_value["snapshot_hash"])
+
+    def candidate_cross_workspace() -> None:
+        bad = copy.deepcopy(candidate_value)
+        bad["write_set"][0]["workspace_id"] = "ws-other"
+        verify_result_bundle({**bundle_value, "items": [bad]}, snapshot_workspace_id=snapshot_value["workspace_id"], snapshot_hash_value=snapshot_value["snapshot_hash"])
+
+    def parent_cycle() -> None:
+        first = copy.deepcopy(candidate_value)
+        second = copy.deepcopy(candidate_value)
         first["item_id"], second["item_id"] = "candidate-a", "candidate-b"
         first["parent_candidate_ids"], second["parent_candidate_ids"] = ["candidate-b"], ["candidate-a"]
-        verify_result_bundle({**bundle, "items": [first, second]}, snapshot_workspace_id="ws-1", snapshot_hash_value=snapshot["snapshot_hash"])
+        verify_result_bundle({**bundle_value, "items": [first, second]}, snapshot_workspace_id=snapshot_value["workspace_id"], snapshot_hash_value=snapshot_value["snapshot_hash"])
 
-    cases.update({
-        "artifact-with-candidate-item": artifact_with_candidate_item,
-        "candidate-target-outside-write-set": candidate_target_outside_write_set,
-        "candidate-parent-cycle": candidate_parent_cycle,
-    })
+    def item_mapping() -> None:
+        bad = copy.deepcopy(bundle_value)
+        bad["skill_chain_result_refs"] = [{
+            "schema": "skill-chain-ref/v1",
+            "chain_result_id": "chain-1",
+            "asset_id": None,
+            "asset_hash": None,
+            "result_bundle_id": bad["bundle_id"],
+            "result_item_id": "item-not-in-bundle",
+            "stream_id": None,
+            "acked_prefix_hash": None,
+        }]
+        verify_result_bundle(bad, snapshot_workspace_id=snapshot_value["workspace_id"], snapshot_hash_value=snapshot_value["snapshot_hash"])
 
-    # 84.13-03 — operation idempotency and terminal child transitions.
-    def broker_different_input_same_key() -> None:
+    def candidate_base_write_set_positive() -> str:
+        return valid_bundle()
+
+    def broker_ack_loss() -> str:
         ledger = OperationLedger()
-        ledger.apply("attempt-1", "host.capability.invoke/v1", "op-1", {"x": 1}, lambda: {"accepted": True})
-        ledger.apply("attempt-1", "host.capability.invoke/v1", "op-1", {"x": 2}, lambda: {"accepted": True})
+        first = ledger.apply_frame("attempt-1", "host.capability.invoke/v1", "ack-loss", {"input": "stable"}, lambda: {"accepted": True})
+        retry = ledger.apply_frame("attempt-1", "host.capability.invoke/v1", "ack-loss", {"input": "stable"}, lambda: {"accepted": False})
+        if first != retry:
+            raise AssertionError("ACK-loss retry did not replay the exact response frame")
+        return "exact_response_replayed"
 
-    def cancel_after_child_terminal() -> None:
+    def broker_payload_reuse() -> None:
+        ledger = OperationLedger()
+        ledger.apply("attempt-1", "host.capability.invoke/v1", "payload-reuse", {"x": 1}, lambda: {"accepted": True})
+        ledger.apply("attempt-1", "host.capability.invoke/v1", "payload-reuse", {"x": 2}, lambda: {"accepted": True})
+
+    def child_cancel_propagation() -> str:
         provider = FakeProvider()
-        run = provider.start("invoke-terminal", "request", chunks=("done",))
+        run = provider.start("child-cancel", "request", chunks=("running",))
+        provider.cancel(run.run_id)
+        if provider.runs[run.run_id].state != "cancelled":
+            raise AssertionError("child cancellation was not propagated")
+        return "child_cancelled"
+
+    def child_terminal_cancel() -> None:
+        provider = FakeProvider()
+        run = provider.start("child-terminal", "request", chunks=("done",))
         list(provider.stream(run.run_id))
         provider.cancel(run.run_id)
 
-    cases.update({"broker-different-input-same-key": broker_different_input_same_key, "cancel-after-child-terminal": cancel_after_child_terminal})
+    def receipt_propagation() -> None:
+        bad = copy.deepcopy(bundle_value)
+        bad["provenance_receipt_id"] = "receipt-not-propagated"
+        model = PublicationModel(provenance_value["release_id"])
+        model.publish(bad, provenance_value, snapshot=snapshot_value)
 
-    # 84.13-04 — an unbound data format and an unbound parameters Asset are rejected.
-    def unsupported_data_format() -> None:
+    def data_interpreter() -> None:
         descriptor = load_strict_json(FIXTURES_DIR / "capability-provider.json")
         format_id = "unsupported-format/v1"
         if format_id not in descriptor["accepted_data_formats"]:
             raise ContractError(ErrorCode.DATA_INTERPRETER_UNAVAILABLE, f"no interpreter for {format_id}")
 
-    def snapshot_parameters_not_in_assets() -> None:
-        bad = copy.deepcopy(snapshot)
+    def snapshot_asset_binding() -> None:
+        bad = copy.deepcopy(snapshot_value)
         bad["parameters_asset_id"] = "asset-not-declared"
         verify_snapshot(bad)
 
-    cases.update({"unsupported-data-format": unsupported_data_format, "snapshot-parameters-not-in-assets": snapshot_parameters_not_in_assets})
+    def plan_snapshot_binding() -> None:
+        plan = load_strict_json(FIXTURES_DIR / "plugin-plan.json")
+        verify_plan(plan)
+        if plan["plan_id"] != snapshot_value["plan_revision_id"]:
+            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "plan revision is not bound to the RunSnapshot")
 
-    # 84.13-05 — all upload retry paths are independently exercised.
+    def data_interpreter_binding() -> None:
+        descriptor = load_strict_json(FIXTURES_DIR / "capability-provider.json")
+        format_id = "fixture-rules/v1"
+        if format_id not in descriptor["accepted_data_formats"]:
+            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "data binding is not backed by the interpreter descriptor")
+
     def same_key_different_payload() -> None:
         ledger = OperationLedger()
-        ledger.apply("attempt-1", "host.asset.create/v1", "upload-op", {"offset": 0}, lambda: {"accepted": True})
-        ledger.apply("attempt-1", "host.asset.create/v1", "upload-op", {"offset": 1}, lambda: {"accepted": True})
+        ledger.apply("attempt-1", "host.asset.create/v1", "same-key", {"offset": 0}, lambda: {"accepted": True})
+        ledger.apply("attempt-1", "host.asset.create/v1", "same-key", {"offset": 1}, lambda: {"accepted": True})
+
+    def _upload_fixture(chunks: tuple[bytes, ...], retry_index: int | None = None, status_recovery: bool = False) -> str:
+        content = b"".join(chunks)
+        digest = hashlib.sha256(content).hexdigest()
+        ledger = ChunkUploadLedger()
+        offset = 0
+        for index, chunk in enumerate(chunks):
+            operation = f"upload-{index}"
+            final = index == len(chunks) - 1
+            encoded = __import__("base64").b64encode(chunk).decode("ascii")
+            chunk_digest = hashlib.sha256(chunk).hexdigest()
+            result = ledger.create(operation_key=operation, upload_id="upload-expanded", offset=offset, total_size=len(content), expected_hash=digest, chunk_hash=chunk_digest, base64_chunk=encoded, final=final)
+            if retry_index == index:
+                retry = ledger.create(operation_key=operation, upload_id="upload-expanded", offset=offset, total_size=len(content), expected_hash=digest, chunk_hash=chunk_digest, base64_chunk=encoded, final=final)
+                if retry != result:
+                    raise AssertionError("upload retry changed the durable result")
+            offset += len(chunk)
+            if status_recovery and index == 0:
+                status = ledger.status("upload-expanded", digest)
+                if status["accepted_bytes"] != offset:
+                    raise AssertionError("upload status did not expose the acknowledged prefix")
+        return "upload_recovered"
+
+    def upload_first_retry() -> str:
+        return _upload_fixture((b"x", b"y"), retry_index=0)
+
+    def upload_middle_retry() -> str:
+        return _upload_fixture((b"x", b"y", b"z"), retry_index=1)
+
+    def upload_final_retry() -> str:
+        return _upload_fixture((b"x", b"y"), retry_index=1)
+
+    def upload_status_recovery() -> str:
+        return _upload_fixture((b"x", b"y"), status_recovery=True)
 
     def upload_offset_ahead() -> None:
         upload = ChunkUploadLedger()
         digest = hashlib.sha256(b"x").hexdigest()
-        upload.create(operation_key="offset-1", upload_id="upload-offset", offset=1, total_size=1, expected_hash=digest, chunk_hash=digest, base64_chunk="eA==", final=True)
+        upload.create(operation_key="offset-expanded", upload_id="upload-offset", offset=1, total_size=1, expected_hash=digest, chunk_hash=digest, base64_chunk="eA==", final=True)
 
     def upload_final_hash_mismatch() -> None:
         upload = ChunkUploadLedger()
         digest = hashlib.sha256(b"x").hexdigest()
-        upload.create(operation_key="hash-1", upload_id="upload-hash", offset=0, total_size=1, expected_hash="c" * 64, chunk_hash=digest, base64_chunk="eA==", final=True)
+        upload.create(operation_key="hash-expanded", upload_id="upload-hash", offset=0, total_size=1, expected_hash="c" * 64, chunk_hash=digest, base64_chunk="eA==", final=True)
 
-    cases.update({
-        "same-key-different-payload": same_key_different_payload,
-        "upload-offset-ahead": upload_offset_ahead,
-        "upload-final-hash-mismatch": upload_final_hash_mismatch,
-    })
+    def attempt_cancel_complete_race() -> None:
+        provider = FakeProvider()
+        run = provider.start("cancel-complete", "request", chunks=("done",))
+        list(provider.stream(run.run_id))
+        provider.cancel(run.run_id)
 
-    # 84.13-06 — checkpoint binding/fencing and terminal resume.
-    def checkpoint_different_snapshot() -> None:
+    def fresh_resume() -> str:
+        provider = FakeProvider()
+        run = provider.start("fresh-resume", "request", chunks=("a", "b"))
+        provider.pause(run.run_id)
+        provider.resume(run.run_id)
+        if provider.runs[run.run_id].calls != 2:
+            raise AssertionError("fresh resume did not create a new provider call")
+        return "fresh_resume_created"
+
+    def checkpoint_backward() -> None:
+        verify_checkpoint(checkpoint, previous_seq=checkpoint["checkpoint_seq"])
+
+    def checkpoint_binding() -> None:
         verify_checkpoint(checkpoint, expected_snapshot_hash="b" * 64)
+
+    def shadow_lease() -> None:
+        meta = build_meta("install", generation_id="g-1", plugin_release_id="a" * 64, deadline_at="2026-08-26T00:00:00Z", install_lease_epoch=1)
+        request = build_request("migration.apply", {"plan_id": "plan-1", "db_lease_id": "db-lease-1", "db_lease_epoch": 1, "owner_instance_id": "owner-1"}, meta, request_id="123e4567-e89b-12d3-a456-426614174000")
+        validate_rpc_request(request, expected_lease_epoch=2)
 
     def stale_attempt_lease() -> None:
         meta = build_meta("attempt", generation_id="g-1", plugin_release_id="a" * 64, deadline_at="2026-08-26T00:00:00Z", job_id="j-1", step_id="s-1", attempt_id="a-1", lease_epoch=1)
         request = build_request("host.job.event/v1", {"operation_key": "op-stale", "event_type": "plugin.x.y", "payload_asset_id": None, "local_seq": 1}, meta, request_id="123e4567-e89b-12d3-a456-426614174000")
         validate_rpc_request(request, expected_lease_epoch=2)
 
-    def terminal_attempt_resume() -> None:
+    def terminal_resume() -> None:
         provider = FakeProvider()
-        run = provider.start("invoke-resume", "request", chunks=("done",))
+        run = provider.start("terminal-resume", "request", chunks=("done",))
         list(provider.stream(run.run_id))
         provider.resume(run.run_id)
 
-    cases.update({"checkpoint-different-snapshot": checkpoint_different_snapshot, "stale-attempt-lease": stale_attempt_lease, "terminal-attempt-resume": terminal_attempt_resume})
-
-    # 84.13-07 — producer/profile/outcome transaction guards.
-    def bundle_producer_mismatch() -> None:
-        bad = copy.deepcopy(bundle)
+    def bundle_producer() -> None:
+        bad = copy.deepcopy(bundle_value)
         bad["producer"]["release_id"] = "not-a-sha256"
-        verify_result_bundle(bad, snapshot_workspace_id="ws-1", snapshot_hash_value=snapshot["snapshot_hash"])
+        verify_result_bundle(bad, snapshot_workspace_id=snapshot_value["workspace_id"], snapshot_hash_value=snapshot_value["snapshot_hash"])
 
-    def succeeded_partial_item() -> None:
-        bad = copy.deepcopy(bundle)
+    def bundle_snapshot() -> None:
+        verify_result_bundle(bundle_value, snapshot_workspace_id=snapshot_value["workspace_id"], snapshot_hash_value="b" * 64)
+
+    def bundle_lease() -> None:
+        verify_result_bundle(
+            bundle_value,
+            snapshot_workspace_id=snapshot_value["workspace_id"],
+            snapshot_hash_value=snapshot_value["snapshot_hash"],
+        )
+        enforce_lease(
+            expected_epoch=2,
+            actual_epoch=bundle_value["producer"]["lease_epoch"],
+            context="result bundle",
+        )
+
+    def bundle_receipt() -> None:
+        bad = copy.deepcopy(bundle_value)
+        bad["provenance_receipt_id"] = "receipt-not-propagated"
+        model = PublicationModel(provenance_value["release_id"])
+        model.publish(bad, provenance_value, snapshot=snapshot_value)
+
+    def staging_incomplete() -> None:
+        bad = copy.deepcopy(bundle_value)
         bad["items"][0]["status"] = "partial"
-        verify_result_bundle(bad, snapshot_workspace_id="ws-1", snapshot_hash_value=snapshot["snapshot_hash"])
+        verify_result_bundle(bad, snapshot_workspace_id=snapshot_value["workspace_id"], snapshot_hash_value=snapshot_value["snapshot_hash"])
 
-    def failed_candidate_bundle() -> None:
-        bad = copy.deepcopy(bundle)
+    def outcome_transaction() -> None:
+        bad = copy.deepcopy(bundle_value)
         bad["items"][0]["status"] = "failed"
-        verify_result_bundle(bad, snapshot_workspace_id="ws-1", snapshot_hash_value=snapshot["snapshot_hash"])
+        verify_result_bundle(bad, snapshot_workspace_id=snapshot_value["workspace_id"], snapshot_hash_value=snapshot_value["snapshot_hash"])
 
-    cases.update({"bundle-producer-mismatch": bundle_producer_mismatch, "succeeded-partial-item": succeeded_partial_item, "failed-candidate-bundle": failed_candidate_bundle})
+    def complete_transaction() -> str:
+        return valid_bundle()
 
-    # 84.13-08 — install CAS, one-shot rollback and settings validation.
-    def concurrent_install_base_changed() -> None:
+    def install_cas() -> None:
         transition = copy.deepcopy(load_strict_json(FIXTURES_DIR / "plugin-lifecycle-transition.json"))
         transition["base_generation_id"] = "generation-old"
         transition["state"] = "qualified"
         assert_valid("plugin-lifecycle-transition/v1", transition)
-        if transition["base_generation_id"] != "generation-current":
-            raise ContractError(ErrorCode.INVALID_TRANSITION, "install CAS base generation changed")
+        model = InstallTransactionModel(current_generation_id="generation-current")
+        model.begin(transition["base_generation_id"])
 
-    def rollback_second_attempt() -> None:
-        transition = copy.deepcopy(load_strict_json(FIXTURES_DIR / "plugin-lifecycle-transition.json"))
-        transition["rollback_attempt"] = 1
-        transition["rollback_token"] = "rollback-1"
+    def durable_crash(point: str) -> ExecutableCase:
+        def action() -> None:
+            transition = load_strict_json(FIXTURES_DIR / "plugin-lifecycle-transition.json")
+            assert_valid("plugin-lifecycle-transition/v1", transition)
+            model = InstallTransactionModel(current_generation_id="generation-current")
+            model.install_until_crash("generation-current", point.removeprefix("install-crash-").replace("-", "_"))
+            model.exit_safe_mode()
+        return action
+
+    def rollback_once() -> None:
+        transition = load_strict_json(FIXTURES_DIR / "plugin-lifecycle-transition.json")
         assert_valid("plugin-lifecycle-transition/v1", transition)
-        if transition["rollback_attempt"] >= 1:
-            raise ContractError(ErrorCode.INVALID_TRANSITION, "rollback is one-shot")
+        model = InstallTransactionModel(current_generation_id="generation-current")
+        model.install_until_crash("generation-current", "after_projection")
+        model.reconcile()
+        model.rollback_once()
+        model.rollback_once()
 
-    def invalid_settings_validator() -> None:
-        settings = load_strict_json(FIXTURES_DIR / "settings-validation-receipt.json")
+    def safe_mode_exit() -> None:
+        model = InstallTransactionModel(current_generation_id="generation-current")
+        model.install_until_crash("generation-current", "after_staging")
+        model.exit_safe_mode()
+
+    def safe_mode_exit_positive() -> str:
+        model = InstallTransactionModel(current_generation_id="generation-current")
+        model.install_until_crash("generation-current", "after_staging")
+        model.reconcile()
+        model.exit_safe_mode()
+        if model.safe_mode or model.state != "rolled_back":
+            raise AssertionError("reconciled install did not exit safe mode")
+        return "safe_mode_reconciled"
+
+    def settings_validator() -> None:
+        settings = copy.deepcopy(load_strict_json(FIXTURES_DIR / "settings-validation-receipt.json"))
         settings["valid"] = False
+        settings["receipt_hash"] = hash_without_field(settings, "receipt_hash", "settings-validation-receipt/v1")
         assert_valid("settings-validation-receipt/v1", settings)
-        if not settings["valid"]:
-            raise ContractError(ErrorCode.SETTINGS_INVALID, "settings validator rejected the revision")
+        revision = load_strict_json(FIXTURES_DIR / "settings-revision.json")
+        model = InstallTransactionModel()
+        model.validate_settings(settings, revision)
 
-    cases.update({"concurrent-install-base-changed": concurrent_install_base_changed, "rollback-second-attempt": rollback_second_attempt, "invalid-settings-validator": invalid_settings_validator})
+    def settings_binding() -> None:
+        settings = copy.deepcopy(load_strict_json(FIXTURES_DIR / "settings-revision.json"))
+        receipt_for_settings = load_strict_json(FIXTURES_DIR / "settings-validation-receipt.json")
+        settings["plugin_release_id"] = "b" * 64
+        assert_valid("settings-revision/v1", settings)
+        model = InstallTransactionModel()
+        model.validate_settings(receipt_for_settings, settings)
 
-    # 84.13-09 — retirement barriers protect active pins and recoverable attempts.
-    def pin_while_retiring() -> None:
+    def retire_pin_race() -> None:
         retirement = copy.deepcopy(load_strict_json(FIXTURES_DIR / "release-retirement.json"))
         pin = load_strict_json(FIXTURES_DIR / "release-pin.json")
-        retirement["state"] = "retiring"
         assert_valid("release-retirement/v1", retirement)
         assert_valid("release-pin/v1", pin)
-        if retirement["state"] != "installed" and retirement["release_id"] == pin["release_id"]:
-            raise ContractError(ErrorCode.RELEASE_RETIRING, "release is retiring and cannot receive a new pin")
+        model = PublicationModel(retirement["release_id"])
+        model.retire()
+        model.pin()
 
-    def retire_with_recoverable_attempt() -> None:
+    def retire_attempt_barrier() -> None:
         retirement = copy.deepcopy(load_strict_json(FIXTURES_DIR / "release-retirement.json"))
-        retirement["state"] = "retiring"
         assert_valid("release-retirement/v1", retirement)
-        if retirement["state"] == "retiring" and True:
-            raise ContractError(ErrorCode.RELEASE_RETIRING, "recoverable Attempt blocks retirement")
+        model = PublicationModel(retirement["release_id"])
+        model.add_recoverable_attempt()
+        model.retire()
 
-    cases.update({"pin-while-retiring": pin_while_retiring, "retire-with-recoverable-attempt": retire_with_recoverable_attempt})
+    def post_delete_publication() -> None:
+        release = load_strict_json(FIXTURES_DIR / "release-retirement.json")
+        assert_valid("release-retirement/v1", release)
+        model = PublicationModel(release["release_id"])
+        model.retire()
+        model.delete_package()
+        model.publish(bundle_value, provenance_value, snapshot=snapshot_value)
 
-    # 84.13-10 — Core/Job cursor domains and snapshot convergence.
+    def post_delete_publication_positive() -> str:
+        release = load_strict_json(FIXTURES_DIR / "release-retirement.json")
+        assert_valid("release-retirement/v1", release)
+        model = PublicationModel(release["release_id"])
+        model.retire()
+        model.retain_provenance(provenance_value)
+        model.delete_package()
+        model.publish(bundle_value, provenance_value, snapshot=snapshot_value)
+        if model.package_present or "candidate-item-1" not in model.published_candidates:
+            raise AssertionError("retained provenance did not permit post-delete publication")
+        return "publication_provenance_backed"
+
+    def aggregate_event_crash(point: str) -> ExecutableCase:
+        def action() -> None:
+            event = load_strict_json(FIXTURES_DIR / "core-event.json")
+            model = CoreEventTransactionModel(event["aggregate_id"])
+            model.append(event, crash_point=point)
+            model.publish_sse()
+        return action
+
     def job_cursor_on_core_stream() -> None:
-        bad = load_strict_json(FIXTURES_DIR / "sse-recovery.json")
+        bad = copy.deepcopy(load_strict_json(FIXTURES_DIR / "sse-recovery.json"))
         bad["stream_kind"] = "core_event"
         bad["aggregate_id"] = "job-1"
         verify_sse_recovery(bad)
 
     def cursor_ahead() -> None:
-        bad = load_strict_json(FIXTURES_DIR / "sse-recovery.json")
+        bad = copy.deepcopy(load_strict_json(FIXTURES_DIR / "sse-recovery.json"))
         bad["requested_after_seq"] = 1
         verify_sse_recovery(bad)
 
-    def gap_without_snapshot() -> None:
-        bad = load_strict_json(FIXTURES_DIR / "sse-recovery.json")
-        bad.update({"gap": True, "snapshot_required": True})
+    def snapshot_pair() -> None:
+        bad = copy.deepcopy(load_strict_json(FIXTURES_DIR / "sse-recovery.json"))
+        bad["gap"] = True
         verify_sse_recovery(bad)
 
-    cases.update({"job-cursor-on-core-stream": job_cursor_on_core_stream, "cursor-ahead": cursor_ahead, "gap-without-snapshot": gap_without_snapshot})
+    def snapshot_convergence() -> str:
+        event = load_strict_json(FIXTURES_DIR / "core-event.json")
+        core_snapshot = load_strict_json(FIXTURES_DIR / "core-snapshot.json")
+        model = CoreEventTransactionModel(event["aggregate_id"])
+        model.append(event)
+        model.publish_sse()
+        verify_core_snapshot(core_snapshot)
+        if core_snapshot["core_event_high_water"] != model.durable_event_seq:
+            raise AssertionError("Core snapshot did not converge to the durable event high-water")
+        converged = copy.deepcopy(load_strict_json(FIXTURES_DIR / "sse-recovery.json"))
+        converged.update({
+            "stream_kind": "core_event",
+            "aggregate_id": None,
+            "durable_high_water_seq": model.durable_event_seq,
+            "gap": True,
+            "snapshot_required": True,
+            "snapshot_schema": "core-snapshot/v1",
+            "snapshot_revision": core_snapshot["core_snapshot_revision"],
+            "snapshot_asset_id": core_snapshot["snapshot_id"],
+            "snapshot_hash": core_snapshot["snapshot_hash"],
+        })
+        verify_sse_recovery(converged)
+        return "snapshot_converged"
 
-    # 84.13-11 — raw stream may not outrun its durable prefix and targets are unique.
-    def prefix_not_extension() -> None:
+    def cursor_domain_mix() -> None:
+        return job_cursor_on_core_stream()
+
+    def stream_over_ack() -> None:
         current = copy.deepcopy(prefix)
-        current["prefix_seq"] = 2
+        current["prefix_seq"] = prefix["prefix_seq"] + 1
         current["byte_length"] = prefix["byte_length"] - 1
         verify_stream_prefix(current, previous=prefix)
 
-    def old_stream_id() -> None:
-        current = copy.deepcopy(prefix)
-        current["stream_id"] = "stream-old"
-        current["prefix_seq"] = 2
-        verify_stream_prefix(current, previous=prefix)
+    def cancel_crash_race() -> None:
+        provider = FakeProvider()
+        run = provider.start("cancel-crash", "request", chunks=("done",))
+        list(provider.stream(run.run_id))
+        provider.cancel(run.run_id)
 
-    def duplicate_incomplete_candidate() -> None:
-        first = copy.deepcopy(candidate)
-        second = copy.deepcopy(candidate)
+    def candidate_uniqueness() -> None:
+        first = copy.deepcopy(candidate_value)
+        second = copy.deepcopy(candidate_value)
         first["item_id"], second["item_id"] = "incomplete-a", "incomplete-b"
         for item in (first, second):
             item["item_kind"] = "incomplete_stream"
             item["status"] = "partial"
-        verify_result_bundle({**bundle, "partial": True, "items": [first, second]}, snapshot_workspace_id="ws-1", snapshot_hash_value=snapshot["snapshot_hash"])
+        verify_result_bundle({**bundle_value, "partial": True, "items": [first, second]}, snapshot_workspace_id=snapshot_value["workspace_id"], snapshot_hash_value=snapshot_value["snapshot_hash"])
 
-    cases.update({"prefix-not-extension": prefix_not_extension, "old-stream-id": old_stream_id, "duplicate-incomplete-candidate": duplicate_incomplete_candidate})
+    def terminal_hydration() -> str:
+        job_snapshot = load_strict_json(FIXTURES_DIR / "job-snapshot.json")
+        store = TerminalHydrationModel(snapshot_value, job_snapshot)
+        store.commit(bundle_value)
+        hydrated = store.hydrate()
+        if hydrated != bundle_value:
+            raise AssertionError("terminal hydration changed the durable result bundle")
+        return "terminal_view_hydrated"
 
-    # 84.13-12 — Skill attribution and receipt hash.
+    def terminal_hydration_missing() -> None:
+        bad = copy.deepcopy(bundle_value)
+        bad["items"][0]["payload_asset_id"] = None
+        job_snapshot = load_strict_json(FIXTURES_DIR / "job-snapshot.json")
+        store = TerminalHydrationModel(snapshot_value, job_snapshot)
+        store.commit(bad)
+
+    def executed_receipt() -> str:
+        verify_skill_receipt(receipt_value)
+        return "executed_receipt_verified"
+
+    def failed_bundleless_receipt() -> str:
+        failed = copy.deepcopy(receipt_value)
+        failed.update({"result_bundle_id": None, "result_item_id": None, "step_state": "failed"})
+        failed["receipt_hash"] = hash_without_field(failed, "receipt_hash", "skill-run-receipt/v1")
+        verify_skill_receipt(failed)
+        return "bundleless_failure_verified"
+
     def skipped_participated() -> None:
-        bad = copy.deepcopy(receipt)
+        bad = copy.deepcopy(receipt_value)
         bad["step_state"] = "skipped"
         bad["participated"] = True
         verify_skill_receipt(bad)
 
     def model_claim_without_evidence() -> None:
-        bad = copy.deepcopy(receipt)
+        bad = copy.deepcopy(receipt_value)
         bad["model_claimed"] = True
         verify_skill_receipt(bad)
 
+    def verified_patch_without_proof() -> None:
+        bad = copy.deepcopy(receipt_value)
+        bad["verified_patch"] = True
+        verify_skill_receipt(bad)
+
     def tampered_patch() -> None:
-        bad = copy.deepcopy(receipt)
+        bad = copy.deepcopy(receipt_value)
         bad["input_hash"] = "c" * 64
         verify_skill_receipt(bad)
 
-    cases.update({"skipped-participated": skipped_participated, "model-claim-without-evidence": model_claim_without_evidence, "tampered-patch": tampered_patch})
+    def patch_range() -> None:
+        bad = copy.deepcopy(receipt_value)
+        bad["patches"] = [{"patch_id": "patch-1", "start_codepoint": 2, "end_codepoint": 1, "replacement_asset_id": "asset-patch", "replacement_hash": "a" * 64, "before_hash": "b" * 64, "after_hash": "c" * 64, "verified": False}]
+        verify_skill_receipt(bad)
 
-    # 84.13-13 — UI tree whitelist, freshness ACK and idempotency.
-    def unknown_component() -> None:
-        tree = copy.deepcopy(load_strict_json(FIXTURES_DIR / "plugin-ui-tree.json"))
-        tree["root"]["component"] = "unknown-component"
-        assert_valid("plugin-ui-tree/v1", tree)
+    def immutable_worker_url() -> None:
+        original = "worker://generation-1/plugin-ui"
+        csp = WorkerRuntimeModel.STRICT_CSP
+        model = WorkerRuntimeModel(original, csp)
+        model.receive("worker://generation-2/plugin-ui", csp)
 
-    def stale_intent() -> None:
+    def worker_csp() -> None:
+        original = WorkerRuntimeModel.STRICT_CSP
+        tampered = "default-src *"
+        model = WorkerRuntimeModel("worker://generation-1/plugin-ui", original)
+        model.receive(model.worker_url, tampered)
+
+    def ui_freshness() -> None:
         ui = PluginUIHostFixture("generation-1", "a" * 64, "ws-1", None, None)
         ui.install_tree(load_strict_json(FIXTURES_DIR / "plugin-ui-tree.json"))
         intent = copy.deepcopy(load_strict_json(FIXTURES_DIR / "plugin-ui-intent.json"))
@@ -677,67 +1422,910 @@ def verify_negative_cases() -> dict[str, Any]:
         ack = ui.dispatch_intent(intent)
         if ack["accepted"]:
             raise AssertionError("stale UI intent was accepted")
-        raise ContractError(ErrorCode.INVALID_TRANSITION, f"stale UI intent rejected as {ack['error_code']}")
+        raise ContractError(ErrorCode.INVALID_TRANSITION, "stale UI intent was rejected")
 
-    def duplicate_intent_different_payload() -> None:
-        intent = load_strict_json(FIXTURES_DIR / "plugin-ui-intent.json")
-        tree = copy.deepcopy(load_strict_json(FIXTURES_DIR / "plugin-ui-tree.json"))
-        tree["root"]["event_ids"] = [intent["event_type"]]
+    def ui_idempotency() -> None:
         ui = PluginUIHostFixture("generation-1", "a" * 64, "ws-1", None, None)
-        ui.install_tree(tree)
+        ui.install_tree(load_strict_json(FIXTURES_DIR / "plugin-ui-tree.json"))
+        intent = load_strict_json(FIXTURES_DIR / "plugin-ui-intent.json")
         ui.dispatch_intent(intent)
         changed = copy.deepcopy(intent)
         changed["operation_key"] = "operation-different"
         ui.dispatch_intent(changed)
 
-    cases.update({"unknown-component": unknown_component, "stale-intent": stale_intent, "duplicate-intent-different-payload": duplicate_intent_different_payload})
+    def unknown_component() -> None:
+        tree = copy.deepcopy(load_strict_json(FIXTURES_DIR / "plugin-ui-tree.json"))
+        tree["root"]["component"] = "unknown-component"
+        assert_valid("plugin-ui-tree/v1", tree)
 
-    # 84.13-14 — backup mode, Windows path, compatibility grammar and raw bytes.
-    def workspace_with_package() -> None:
+    def unknown_prop() -> None:
+        tree = copy.deepcopy(load_strict_json(FIXTURES_DIR / "plugin-ui-tree.json"))
+        tree["root"]["props"]["unknown_prop"] = True
+        assert_valid("plugin-ui-tree/v1", tree)
+
+    def unknown_event() -> None:
+        ui = PluginUIHostFixture("generation-1", "a" * 64, "ws-1", None, None)
+        ui.install_tree(load_strict_json(FIXTURES_DIR / "plugin-ui-tree.json"))
+        intent = copy.deepcopy(load_strict_json(FIXTURES_DIR / "plugin-ui-intent.json"))
+        intent["event_type"] = "change"
+        ui.dispatch_intent(intent)
+
+    def navigation_watchdog() -> str:
+        ui = PluginUIHostFixture("generation-1", "a" * 64, "ws-1", None, None)
+        ui.install_tree(load_strict_json(FIXTURES_DIR / "plugin-ui-tree.json"))
+        model = WorkerRuntimeModel("worker://generation-1/plugin-ui", WorkerRuntimeModel.STRICT_CSP)
+        model.navigate()
+        if not ui.dispatch_intent(load_strict_json(FIXTURES_DIR / "plugin-ui-intent.json"))["accepted"]:
+            raise AssertionError("valid UI navigation intent was not acknowledged")
+        return "navigation_acknowledged"
+
+    def navigation_watchdog_loop() -> None:
+        model = WorkerRuntimeModel("worker://generation-1/plugin-ui", WorkerRuntimeModel.STRICT_CSP, navigation_limit=2)
+        for _ in range(model.navigation_limit + 1):
+            model.navigate()
+
+    def backup_mode() -> None:
         bad = copy.deepcopy(load_strict_json(GOLDEN_DIR / "backup" / "backup.json"))
         bad["files"].append({"path": "plugin/pkg.whl", "size": 1, "sha256": "c" * 64, "role": "package"})
         verify_backup(bad)
 
-    def reserved_device_name() -> None:
-        normalize_relative_path("CON.txt")
+    def backup_manifest() -> None:
+        bad = copy.deepcopy(load_strict_json(GOLDEN_DIR / "backup" / "backup.json"))
+        bad["files"][0]["sha256"] = "d" * 64
+        verify_backup(bad)
+
+    def crash_staging() -> None:
+        backup = load_strict_json(GOLDEN_DIR / "backup" / "backup.json")
+        model = RestoreTransactionModel("library-old", "library-new")
+        model.stage(backup, crash_at="assets_verified")
+        model.switch()
+
+    def restore_new_root() -> str:
+        report = load_strict_json(FIXTURES_DIR / "restore-report.json")
+        verify_restore_report(report)
+        model = RestoreTransactionModel(report["source_root_id"], report["target_root_id"])
+        model.stage(load_strict_json(GOLDEN_DIR / "backup" / "backup.json"))
+        model.rebuild_projections()
+        model.switch()
+        if model.target_root_id == model.source_root_id or model.state != "switched":
+            raise AssertionError("restore did not switch to the distinct target root")
+        return "restore_target_is_distinct"
+
+    def projection_rebuild() -> str:
+        backup = load_strict_json(GOLDEN_DIR / "backup" / "backup.json")
+        model = RestoreTransactionModel("library-old", "library-new")
+        model.stage(backup)
+        model.rebuild_projections()
+        model.switch()
+        if not model.projection_markers or set(model.projection_markers) != model.rebuilt_projections:
+            raise AssertionError("projection rebuild did not cover every backup marker")
+        return "projection_rebuilt"
+
+    def projection_missing() -> None:
+        backup = load_strict_json(GOLDEN_DIR / "backup" / "backup.json")
+        model = RestoreTransactionModel("library-old", "library-new")
+        model.stage(backup)
+        model.switch()
+
+    def compatibility_valid() -> str:
+        verify_compatibility(load_strict_json(CORPUS_DIR / "compatibility" / "valid.json"))
+        return "compatibility_verified"
 
     def compatibility_or() -> None:
         bad = load_strict_json(CORPUS_DIR / "compatibility" / "valid.json")
         bad["core_api"] = ">=1.0 || <2.0"
         verify_compatibility(bad)
 
+    def compatibility_missing() -> None:
+        bad = load_strict_json(CORPUS_DIR / "compatibility" / "valid.json")
+        bad.pop("python", None)
+        verify_compatibility(bad)
+
+    def history_raw_reader() -> str:
+        raw = bytes.fromhex(history["raw_asset_bytes_hex"])
+        if hashlib.sha256(raw).hexdigest() != history["raw_sha256"]:
+            raise AssertionError("historical raw fixture hash changed")
+        verify_history_bytes(raw, raw)
+        return "raw_bytes_preserved"
+
     def history_reserialized() -> None:
         raw = bytes.fromhex(history["raw_asset_bytes_hex"])
         reserialized = json.dumps(json.loads(raw.decode("utf-8")), ensure_ascii=False).encode("utf-8")
         verify_history_bytes(reserialized, raw)
 
-    cases.update({"workspace-with-package": workspace_with_package, "reserved-device-name": reserved_device_name, "compatibility-or": compatibility_or, "history-reserialized": history_reserialized})
+    def reserved_device() -> None:
+        normalize_relative_path("CON.txt")
+
+    def ads_path() -> None:
+        normalize_relative_path("data/file.txt:stream")
+
+    def trailing_dot_space() -> None:
+        normalize_relative_path("data/name. ")
+
+    def unicode_casefold_collision() -> None:
+        build_files_sha256({"straße.txt": b"x", "strasse.txt": b"y"})
+
+    def unicode_casefold_decomposed() -> None:
+        build_files_sha256({"cafe\u0301.txt": b"x", "caf\u00e9.txt": b"y"})
+
+    actions: dict[str, ExecutableCase] = {
+        "jcs_set_permutation": jcs_set_permutation,
+        "skill_order_permutation": skill_order_permutation,
+        "package_golden_recompute": package_golden_recompute,
+        "run_snapshot_golden_recompute": run_snapshot_golden_recompute,
+        "skill_golden_recompute": skill_golden_recompute,
+        "package_bytes_change": package_bytes_change,
+        "profile_mismatch": result_profile_mismatch,
+        "item_schema_mismatch": result_item_schema_mismatch,
+        "candidate_target_write_set": candidate_target_write_set,
+        "candidate_mutation": candidate_mutation,
+        "candidate_base": candidate_base,
+        "candidate_cross_workspace": candidate_cross_workspace,
+        "parent_cycle": parent_cycle,
+        "item_mapping": item_mapping,
+        "candidate_base_write_set_positive": candidate_base_write_set_positive,
+        "broker_ack_loss": broker_ack_loss,
+        "broker_payload_reuse": broker_payload_reuse,
+        "child_cancel_propagation": child_cancel_propagation,
+        "child_terminal_cancel": child_terminal_cancel,
+        "receipt_propagation": receipt_propagation,
+        "data_interpreter": data_interpreter,
+        "snapshot_asset_binding": snapshot_asset_binding,
+        "plan_snapshot_binding": plan_snapshot_binding,
+        "data_interpreter_binding": data_interpreter_binding,
+        "operation_ack_loss": broker_ack_loss,
+        "same_key_different_payload": same_key_different_payload,
+        "upload_first_retry": upload_first_retry,
+        "upload_middle_retry": upload_middle_retry,
+        "upload_final_retry": upload_final_retry,
+        "upload_status_recovery": upload_status_recovery,
+        "upload_offset_ahead": upload_offset_ahead,
+        "upload_final_hash_mismatch": upload_final_hash_mismatch,
+        "attempt_cancel_complete_race": attempt_cancel_complete_race,
+        "fresh_resume": fresh_resume,
+        "checkpoint_backward": checkpoint_backward,
+        "checkpoint_binding": checkpoint_binding,
+        "shadow_lease": shadow_lease,
+        "stale_attempt_lease": stale_attempt_lease,
+        "terminal_resume": terminal_resume,
+        "bundle_producer": bundle_producer,
+        "bundle_snapshot": bundle_snapshot,
+        "bundle_lease": bundle_lease,
+        "bundle_receipt": bundle_receipt,
+        "staging_incomplete": staging_incomplete,
+        "outcome_transaction": outcome_transaction,
+        "complete_transaction": complete_transaction,
+        "install_cas": install_cas,
+        "rollback_once": rollback_once,
+        "safe_mode_exit": safe_mode_exit,
+        "safe_mode_exit_positive": safe_mode_exit_positive,
+        "settings_validator": settings_validator,
+        "settings_binding": settings_binding,
+        "retire_pin_race": retire_pin_race,
+        "retire_attempt_barrier": retire_attempt_barrier,
+        "post_delete_publication": post_delete_publication,
+        "post_delete_publication_positive": post_delete_publication_positive,
+        "cursor_domain": job_cursor_on_core_stream,
+        "cursor_ahead": cursor_ahead,
+        "snapshot_pair": snapshot_pair,
+        "snapshot_convergence": snapshot_convergence,
+        "cursor_domain_mix": cursor_domain_mix,
+        "stream_over_ack": stream_over_ack,
+        "cancel_crash_race": cancel_crash_race,
+        "candidate_uniqueness": candidate_uniqueness,
+        "terminal_hydration": terminal_hydration,
+        "terminal_hydration_missing": terminal_hydration_missing,
+        "executed_receipt": executed_receipt,
+        "failed_bundleless_receipt": failed_bundleless_receipt,
+        "skipped_participated": skipped_participated,
+        "model_claim_without_evidence": model_claim_without_evidence,
+        "verified_patch_without_proof": verified_patch_without_proof,
+        "tampered_patch": tampered_patch,
+        "patch_range": patch_range,
+        "immutable_worker_url": immutable_worker_url,
+        "worker_url": immutable_worker_url,
+        "worker_csp": worker_csp,
+        "ui_component": unknown_component,
+        "ui_tree_whitelist": unknown_component,
+        "ui_prop": unknown_prop,
+        "ui_event": unknown_event,
+        "ui_freshness": ui_freshness,
+        "ui_idempotency": ui_idempotency,
+        "navigation_watchdog": navigation_watchdog,
+        "navigation_watchdog_loop": navigation_watchdog_loop,
+        "backup_mode": backup_mode,
+        "backup_manifest": backup_manifest,
+        "crash_staging": crash_staging,
+        "restore_new_root": restore_new_root,
+        "projection_rebuild": projection_rebuild,
+        "projection_missing": projection_missing,
+        "compatibility_valid": compatibility_valid,
+        "compatibility_or": compatibility_or,
+        "compatibility_missing": compatibility_missing,
+        "history_raw_reader": history_raw_reader,
+        "history_reserialized": history_reserialized,
+        "reserved_device": reserved_device,
+        "ads_path": ads_path,
+        "trailing_dot_space": trailing_dot_space,
+        "unicode_casefold_collision": unicode_casefold_collision,
+        "unicode_casefold_decomposed": unicode_casefold_decomposed,
+    }
+    # Convert concrete actions into factories.  The corpus metadata remains
+    # the only input needed to resolve a future case ID.  Crash-point cases
+    # carry their point in the case ID, so their factories retain that
+    # metadata while still sharing one executable assertion.
+    factories = {kind: (lambda _case, action=action: action) for kind, action in actions.items()}
+    for kind in (
+        "install_crash_before_prepare",
+        "install_crash_after_staging",
+        "install_crash_after_activate",
+        "install_crash_after_settings",
+        "install_crash_after_projection",
+    ):
+        factories[kind] = lambda case, kind=kind: durable_crash(str(case.get("case_id", kind)))
+    for kind, crash_point in (
+        ("aggregate_event_crash", "aggregate-event-crash"),
+        ("event_crash_after_write", "event-crash-after-write"),
+    ):
+        factories[kind] = lambda _case, crash_point=crash_point: aggregate_event_crash(crash_point)
+    return factories
+
+
+def _positive_fixture_actions(
+    snapshot: Mapping[str, Any],
+    bundle: Mapping[str, Any],
+    checkpoint: Mapping[str, Any],
+    prefix: Mapping[str, Any],
+    receipt: Mapping[str, Any],
+    history: Mapping[str, Any],
+) -> dict[str, Callable[[], Any]]:
+    """Build executable checks for every positive fixture named by §84.13."""
+    candidate = bundle["items"][0]
+    provenance_receipt = load_strict_json(FIXTURES_DIR / "provenance-receipt.json")
+
+    def package_golden() -> str:
+        directory = GOLDEN_DIR / "package"
+        files = {
+            "plugin.json": (directory / "plugin.json").read_bytes(),
+            "data/rules.json": (directory / "data" / "rules.json").read_bytes(),
+        }
+        expected = load_strict_json(directory / "expected.json")
+        verify_package_identity(
+            files,
+            "com.plotpilot.golden.echo",
+            "1.0.0",
+            expected["package_hash"],
+            expected["release_id"],
+            expected_files_sha256=(directory / "files.sha256").read_bytes(),
+        )
+        return "package_golden_verified"
+
+    def skill_golden() -> str:
+        directory = GOLDEN_DIR / "skill"
+        files = {
+            "skill.json": (directory / "skill.json").read_bytes(),
+            "prompt.txt": (directory / "prompt.txt").read_bytes(),
+        }
+        expected = load_strict_json(directory / "expected.json")
+        verify_skill_identity(
+            files,
+            "com.plotpilot.skill.golden",
+            "1.0.0",
+            expected["skill_package_hash"],
+            expected["skill_release_id"],
+            expected_files_sha256=(directory / "files.sha256").read_bytes(),
+        )
+        return "skill_golden_verified"
+
+    def run_snapshot() -> str:
+        verify_snapshot(snapshot)
+        return "run_snapshot_verified"
+
+    def result_bundle() -> str:
+        verify_result_bundle(
+            bundle,
+            snapshot_workspace_id=snapshot["workspace_id"],
+            snapshot_hash_value=snapshot["snapshot_hash"],
+        )
+        return "result_bundle_verified"
+
+    def candidate_item() -> str:
+        verify_result_bundle(
+            {**bundle, "items": [candidate]},
+            snapshot_workspace_id=snapshot["workspace_id"],
+            snapshot_hash_value=snapshot["snapshot_hash"],
+        )
+        return "candidate_item_verified"
+
+    def provenance() -> str:
+        verify_provenance_receipt(provenance_receipt)
+        return "provenance_receipt_verified"
+
+    def broker_invocation() -> str:
+        invocation = load_strict_json(FIXTURES_DIR / "broker-invocation.json")
+        assert_valid("broker-invocation/v1", invocation)
+        return "broker_invocation_verified"
+
+    def broker_child_record() -> str:
+        invocation = load_strict_json(FIXTURES_DIR / "broker-invocation.json")
+        assert_valid("broker-invocation/v1", invocation)
+        child = {
+            "child_job_id": "child-job-1",
+            "parent_job_id": invocation["parent_job_id"],
+            "parent_step_id": invocation["parent_step_id"],
+            "parent_attempt_id": invocation["parent_attempt_id"],
+            "invoke_operation_key": invocation["invoke_operation_key"],
+            "binding_id": invocation["binding_id"],
+            "broker_invocation_asset_id": "asset-broker-invocation-1",
+            "broker_invocation_hash": sha256_hex(canonical_bytes(invocation)),
+            "child_run_snapshot_asset_id": "asset-child-snapshot-1",
+            "child_run_snapshot_hash": snapshot["snapshot_hash"],
+            "result_contract": invocation["expected_result_contract"],
+            "required": invocation["required"],
+            "propagate_cancel": invocation["propagate_cancel"],
+            "state": "running",
+            "result_bundle_asset_id": None,
+            "provenance_receipt_id": receipt["receipt_id"],
+        }
+        assert_valid("broker-child-record/v1", child)
+        if child["result_contract"] != invocation["expected_result_contract"]:
+            raise AssertionError("child result contract drifted from its broker binding")
+        return "broker_child_record_verified"
+
+    def plugin_plan() -> str:
+        verify_plan(load_strict_json(FIXTURES_DIR / "plugin-plan.json"))
+        return "plugin_plan_verified"
+
+    def rpc_success() -> str:
+        response = load_strict_json(FIXTURES_DIR / "rpc-success.json")
+        validate_rpc_response(response, method="host.asset.read/v1")
+        return "rpc_success_verified"
+
+    def rpc_upload() -> str:
+        import base64
+
+        data = b"x"
+        digest = hashlib.sha256(data).hexdigest()
+        ledger = ChunkUploadLedger()
+        result = ledger.create(
+            operation_key="positive-upload",
+            upload_id="positive-upload",
+            offset=0,
+            total_size=len(data),
+            expected_hash=digest,
+            chunk_hash=digest,
+            base64_chunk=base64.b64encode(data).decode("ascii"),
+            final=True,
+        )
+        if not result["completed"] or result["accepted_bytes"] != len(data):
+            raise AssertionError("positive upload did not durably complete")
+        return "rpc_upload_verified"
+
+    def checkpoint_positive() -> str:
+        verify_checkpoint(checkpoint)
+        return "checkpoint_verified"
+
+    def job_snapshot_positive() -> str:
+        verify_job_snapshot(load_strict_json(FIXTURES_DIR / "job-snapshot.json"))
+        return "job_snapshot_verified"
+
+    def lifecycle_transition() -> str:
+        transition = load_strict_json(FIXTURES_DIR / "plugin-lifecycle-transition.json")
+        assert_valid("plugin-lifecycle-transition/v1", transition)
+        model = InstallTransactionModel()
+        model.begin(model.current_generation_id, transition["target_generation_id"])
+        for phase in InstallTransactionModel._PHASES[1:]:
+            model.advance(phase)
+        if model.state != "lkg_promoted" or model.package_store_status != "published":
+            raise AssertionError("install model did not reach the durable promoted state")
+        return "lifecycle_transition_verified"
+
+    def settings_migration() -> str:
+        assert_valid("settings-migration-manifest/v1", load_strict_json(FIXTURES_DIR / "settings-migration-manifest.json"))
+        return "settings_migration_verified"
+
+    def settings_validation() -> str:
+        revision = load_strict_json(FIXTURES_DIR / "settings-revision.json")
+        model = InstallTransactionModel()
+        model.validate_settings(load_strict_json(FIXTURES_DIR / "settings-validation-receipt.json"), revision)
+        return "settings_validation_verified"
+
+    def release_retirement() -> str:
+        release = load_strict_json(FIXTURES_DIR / "release-retirement.json")
+        assert_valid("release-retirement/v1", release)
+        return "release_retirement_verified"
+
+    def release_pin() -> str:
+        pin = load_strict_json(FIXTURES_DIR / "release-pin.json")
+        assert_valid("release-pin/v1", pin)
+        return "release_pin_verified"
+
+    def publication_after_package_delete() -> str:
+        model = PublicationModel(load_strict_json(FIXTURES_DIR / "release-retirement.json")["release_id"])
+        model.retire()
+        model.retain_provenance(provenance_receipt)
+        model.delete_package()
+        model.publish(bundle, provenance_receipt, snapshot=snapshot)
+        if model.package_present or not model.published_candidates:
+            raise AssertionError("publication did not use retained provenance after package deletion")
+        return "publication_provenance_backed"
+
+    def core_event() -> str:
+        event = load_strict_json(FIXTURES_DIR / "core-event.json")
+        model = CoreEventTransactionModel(event["aggregate_id"])
+        model.append(event)
+        model.publish_sse()
+        return "core_event_committed"
+
+    def core_snapshot() -> str:
+        verify_core_snapshot(load_strict_json(FIXTURES_DIR / "core-snapshot.json"))
+        return "core_snapshot_verified"
+
+    def plugin_job_event() -> str:
+        assert_valid("plugin-job-event/v1", load_strict_json(FIXTURES_DIR / "plugin-job-event.json"))
+        return "plugin_job_event_verified"
+
+    def sse_recovery() -> str:
+        verify_sse_recovery(load_strict_json(FIXTURES_DIR / "sse-recovery.json"))
+        return "sse_recovery_verified"
+
+    def stream_prefix() -> str:
+        verify_stream_prefix(prefix)
+        return "stream_prefix_verified"
+
+    def skill_run_receipt() -> str:
+        verify_skill_receipt(receipt)
+        return "skill_receipt_verified"
+
+    def skill_chain_result() -> str:
+        chain = load_strict_json(FIXTURES_DIR / "skill-chain-result.json")
+        verify_skill_chain(chain, [receipt])
+        return "skill_chain_verified"
+
+    def bundleless_failed_receipt() -> str:
+        failed = copy.deepcopy(receipt)
+        failed.update({"result_bundle_id": None, "result_item_id": None, "step_state": "failed"})
+        failed["receipt_hash"] = hash_without_field(failed, "receipt_hash", "skill-run-receipt/v1")
+        verify_skill_receipt(failed)
+        return "bundleless_failure_verified"
+
+    def ui_tree() -> str:
+        tree = load_strict_json(FIXTURES_DIR / "plugin-ui-tree.json")
+        assert_valid("plugin-ui-tree/v1", tree)
+        ui = PluginUIHostFixture("generation-1", "a" * 64, "ws-1", None, None)
+        ui.install_tree(tree)
+        return "ui_tree_verified"
+
+    def ui_intent() -> str:
+        ui = PluginUIHostFixture("generation-1", "a" * 64, "ws-1", None, None)
+        ui.install_tree(load_strict_json(FIXTURES_DIR / "plugin-ui-tree.json"))
+        ack = ui.dispatch_intent(load_strict_json(FIXTURES_DIR / "plugin-ui-intent.json"))
+        if not ack["accepted"]:
+            raise AssertionError("valid UI intent was not accepted")
+        return "ui_intent_verified"
+
+    def ui_message() -> str:
+        assert_valid("plugin-ui-message/v1", load_strict_json(FIXTURES_DIR / "plugin-ui-message.json"))
+        return "ui_message_verified"
+
+    def backup_golden() -> str:
+        verify_backup(load_strict_json(GOLDEN_DIR / "backup" / "backup.json"))
+        return "backup_verified"
+
+    def restore_report() -> str:
+        verify_restore_report(load_strict_json(FIXTURES_DIR / "restore-report.json"))
+        return "restore_report_verified"
+
+    def restore_new_root() -> str:
+        report = load_strict_json(FIXTURES_DIR / "restore-report.json")
+        verify_restore_report(report)
+        model = RestoreTransactionModel(report["source_root_id"], report["target_root_id"])
+        model.stage(load_strict_json(GOLDEN_DIR / "backup" / "backup.json"))
+        model.rebuild_projections()
+        model.switch()
+        return "restore_new_root_verified"
+
+    def projection_rebuild() -> str:
+        backup = load_strict_json(GOLDEN_DIR / "backup" / "backup.json")
+        model = RestoreTransactionModel("library-old", "library-new")
+        model.stage(backup)
+        model.rebuild_projections()
+        model.switch()
+        return "projection_rebuilt"
+
+    def compatibility() -> str:
+        verify_compatibility(load_strict_json(CORPUS_DIR / "compatibility" / "valid.json"))
+        return "compatibility_verified"
+
+    def history_raw() -> str:
+        raw = bytes.fromhex(history["raw_asset_bytes_hex"])
+        if hashlib.sha256(raw).hexdigest() != history["raw_sha256"]:
+            raise AssertionError("historical raw fixture hash changed")
+        verify_history_bytes(raw, raw)
+        return "raw_bytes_preserved"
+
+    def windows_casefold_valid() -> str:
+        files = {"café.txt": b"accent", "notes.txt": b"notes"}
+        manifest = build_files_sha256(files)
+        verify_package_manifest(files, manifest)
+        return "windows_casefold_unique"
+
+    return {
+        "package-golden": package_golden,
+        "skill-golden": skill_golden,
+        "run-snapshot-golden": run_snapshot,
+        "run-snapshot": run_snapshot,
+        "result-bundle": result_bundle,
+        "candidate-item": candidate_item,
+        "provenance-receipt": provenance,
+        "broker-invocation": broker_invocation,
+        "broker-child-record": broker_child_record,
+        "plugin-plan": plugin_plan,
+        "rpc-success": rpc_success,
+        "rpc-upload": rpc_upload,
+        "checkpoint": checkpoint_positive,
+        "job-snapshot": job_snapshot_positive,
+        "plugin-lifecycle-transition": lifecycle_transition,
+        "settings-migration-manifest": settings_migration,
+        "settings-validation-receipt": settings_validation,
+        "release-retirement": release_retirement,
+        "release-pin": release_pin,
+        "publication-after-package-delete": publication_after_package_delete,
+        "core-event": core_event,
+        "core-snapshot": core_snapshot,
+        "plugin-job-event": plugin_job_event,
+        "sse-recovery": sse_recovery,
+        "stream-prefix": stream_prefix,
+        "skill-run-receipt": skill_run_receipt,
+        "skill-chain-result": skill_chain_result,
+        "failed-bundleless-receipt": bundleless_failed_receipt,
+        "plugin-ui-tree": ui_tree,
+        "plugin-ui-intent": ui_intent,
+        "plugin-ui-message": ui_message,
+        "backup-golden": backup_golden,
+        "restore-report": restore_report,
+        "restore-new-root": restore_new_root,
+        "projection-rebuild": projection_rebuild,
+        "compatibility-valid": compatibility,
+        "history-v1": history_raw,
+        "windows-casefold-valid": windows_casefold_valid,
+    }
+
+
+
+def verify_negative_cases(*, executable_case_registry: Mapping[str, ExecutableCase] | None = None) -> dict[str, Any]:
+    """Execute every §84.13 positive and negative corpus entry.
+
+    The corpus is the source of the case inventory.  Each negative entry is
+    resolved by its declared executable ``kind`` (or an explicitly registered
+    case override), and each positive fixture is invoked through a semantic
+    verifier or one of the deterministic transaction models above.  Nothing
+    in this gate is a success marker: an action must actually return without
+    an exception, while a negative action must raise the declared contract
+    error code.
+    """
+    corpus_paths = sorted((CORPUS_DIR / "negative" / "84.13").glob("*.json"))
+    if len(corpus_paths) != 14:
+        raise AssertionError(f"§84.13 requires exactly 14 corpus files, found {len(corpus_paths)}")
+
+    corpus_groups: list[dict[str, Any]] = []
+    seen_group_ids: set[str] = set()
+    seen_case_ids: set[str] = set()
+    for path in corpus_paths:
+        group = load_strict_json(path)
+        if not isinstance(group, Mapping):
+            raise AssertionError(f"§84.13 corpus entry is not an object: {path.name}")
+        group_id = group.get("group_id")
+        expected_group_id = f"84.13-{len(corpus_groups) + 1:02d}"
+        if group_id != expected_group_id or group_id in seen_group_ids:
+            raise AssertionError(f"§84.13 groups must be exactly ordered 01..14: {group_id!r}")
+        seen_group_ids.add(group_id)
+        positive = group.get("positive")
+        negative = group.get("negative")
+        if not isinstance(positive, list) or not positive or any(not isinstance(item, str) or not item for item in positive):
+            raise AssertionError(f"{group_id} must declare non-empty positive fixture IDs")
+        if len(positive) != len(set(positive)):
+            raise AssertionError(f"{group_id} contains duplicate positive fixture IDs")
+        if not isinstance(negative, list) or not negative:
+            raise AssertionError(f"{group_id} must declare non-empty negative cases")
+        for case in negative:
+            if not isinstance(case, Mapping):
+                raise AssertionError(f"{group_id} contains a non-object negative case")
+            case_id = case.get("case_id")
+            kind = case.get("kind")
+            if not isinstance(case_id, str) or not case_id or case_id in seen_case_ids:
+                raise AssertionError(f"§84.13 negative case ID is missing or duplicated: {case_id!r}")
+            if not isinstance(kind, str) or not kind:
+                raise AssertionError(f"{group_id}/{case_id} has no executable kind")
+            expected_code = case.get("expected_error_code")
+            if expected_code is not None and (isinstance(expected_code, bool) or not isinstance(expected_code, int)):
+                raise AssertionError(f"{group_id}/{case_id} has a non-integer expected error code")
+            seen_case_ids.add(case_id)
+        corpus_groups.append(dict(group))
+
+    snapshot = load_strict_json(GOLDEN_DIR / "run-snapshot" / "snapshot.json")
+    bundle = load_strict_json(EXAMPLES_DIR / "result-bundle.json")
+    candidate = bundle["items"][0]
+    checkpoint = load_strict_json(FIXTURES_DIR / "checkpoint.json")
+    prefix = load_strict_json(FIXTURES_DIR / "stream-prefix.json")
+    receipt = load_strict_json(FIXTURES_DIR / "skill-run-receipt.json")
+    history = load_strict_json(CORPUS_DIR / "history" / "v1-raw.json")
+
+    kind_registry = _expanded_kind_handlers(snapshot, bundle, candidate, checkpoint, prefix, receipt, history)
+    kind_registry.update(EXECUTABLE_KIND_REGISTRY)
+    case_registry: dict[str, ExecutableCase] = dict(EXECUTABLE_CASE_REGISTRY)
+    if executable_case_registry is not None:
+        case_registry.update(executable_case_registry)
+    case_registry = build_executable_case_registry(
+        corpus_groups,
+        registry=case_registry,
+        kind_registry=kind_registry,
+    )
+    registry_stats = validate_executable_case_registry(case_registry, corpus_groups=corpus_groups)
+    if registry_stats["corpus_groups"] != 14 or registry_stats["corpus_cases"] != 105:
+        raise AssertionError(
+            "§84.13 executable inventory drifted: "
+            f"groups={registry_stats['corpus_groups']} cases={registry_stats['corpus_cases']}"
+        )
+
+    positive_actions = _positive_fixture_actions(snapshot, bundle, checkpoint, prefix, receipt, history)
+
+    def run_positive_fixture(fixture_id: str) -> dict[str, Any]:
+        action = positive_actions.get(fixture_id)
+        if action is None:
+            raise AssertionError(f"§84.13 positive fixture has no executable mapping: {fixture_id}")
+        try:
+            outcome = action()
+        except Exception as exc:
+            raise AssertionError(f"positive fixture {fixture_id} was rejected: {exc}") from exc
+        return {
+            "fixture_id": fixture_id,
+            "passed": True,
+            "outcome": outcome or "verified",
+        }
 
     corpus_results: dict[str, Any] = {}
-    for path in sorted((CORPUS_DIR / "negative" / "84.13").glob("*.json")):
-        group = load_strict_json(path)
+    positive_results: list[dict[str, Any]] = []
+    total_negative_cases = 0
+    for group in corpus_groups:
         group_id = group["group_id"]
-        group_cases = []
-        for case in group["negative"]:
-            case_id = case["case_id"]
-            if case_id not in cases:
-                raise AssertionError(f"no executable mapping for {case_id}")
-            group_cases.append(_run_negative_case(case_id, case.get("expected_error_code"), cases[case_id]))
+        group_positive = [run_positive_fixture(fixture_id) for fixture_id in group["positive"]]
+        positive_results.extend({"group_id": group_id, **item} for item in group_positive)
+        group_negative = [
+            _run_negative_case(case["case_id"], case.get("expected_error_code"), case_registry[case["case_id"]])
+            for case in group["negative"]
+        ]
+        total_negative_cases += len(group_negative)
         corpus_results[group_id] = {
             "title": group["title"],
-            "case_count": len(group_cases),
-            "passed": all(item["passed"] for item in group_cases),
-            "cases": group_cases,
-            "positive_fixture_ids": group["positive"],
+            "positive_fixture_ids": list(group["positive"]),
+            "positive_count": len(group_positive),
+            "positive": group_positive,
+            "case_count": len(group_negative),
+            "passed": all(item["passed"] for item in group_negative),
+            "cases": group_negative,
         }
-    expected_groups = [f"84.13-{index:02d}" for index in range(1, 15)]
-    if list(corpus_results) != expected_groups:
-        raise AssertionError("negative evidence groups are not exactly 84.13-01..14")
+
+    if total_negative_cases != 105:
+        raise AssertionError(f"§84.13 negative corpus count drifted: {total_negative_cases}")
     return {
         "group_count": len(corpus_results),
-        "case_count": sum(item["case_count"] for item in corpus_results.values()),
+        "case_count": total_negative_cases,
+        "positive_count": len(positive_results),
+        "positive_fixture_ids": sorted({item["fixture_id"] for item in positive_results}),
+        "positive": positive_results,
+        "registry": registry_stats,
         "groups": corpus_results,
     }
+
+def verify_remediation_probes() -> dict[str, Any]:
+    """Exercise the F-04/F-05/F-06 semantic probes outside the legacy corpus."""
+    snapshot = load_strict_json(GOLDEN_DIR / "run-snapshot" / "snapshot.json")
+    bundle = load_strict_json(EXAMPLES_DIR / "result-bundle.json")
+    candidate = bundle["items"][0]
+    receipt = load_strict_json(FIXTURES_DIR / "skill-run-receipt.json")
+
+    self_hash_cases: list[tuple[str, dict[str, Any], Callable[[Mapping[str, Any]], None], str]] = [
+        ("data-bundle", _regenerated_self_hash("plugin-data-bundle.json", "bundle_hash", "plugin-data-bundle/v1"), verify_data_bundle, "bundle_hash"),
+        ("core-snapshot", _regenerated_self_hash("core-snapshot.json", "snapshot_hash", "core-snapshot/v1"), verify_core_snapshot, "snapshot_hash"),
+        ("job-snapshot", _regenerated_self_hash("job-snapshot.json", "snapshot_hash", "job-snapshot/v1"), verify_job_snapshot, "snapshot_hash"),
+        ("checkpoint", _regenerated_self_hash("checkpoint.json", "checkpoint_hash", "checkpoint/v1"), verify_checkpoint, "checkpoint_hash"),
+        ("settings-validation", _regenerated_self_hash("settings-validation-receipt.json", "receipt_hash", "settings-validation-receipt/v1"), verify_settings_validation_receipt, "receipt_hash"),
+        ("provenance", _regenerated_self_hash("provenance-receipt.json", "receipt_hash", "provenance-receipt/v1"), verify_provenance_receipt, "receipt_hash"),
+    ]
+    for label, value, verifier, field in self_hash_cases:
+        verifier(value)
+        tampered = copy.deepcopy(value)
+        tampered[field] = "0" * 64
+        _expect_failure(lambda tampered=tampered, verifier=verifier: verifier(tampered), ErrorCode.RESULT_CONTRACT_MISMATCH)
+
+    verify_backup(load_strict_json(GOLDEN_DIR / "backup" / "backup.json"))
+    tampered_backup = copy.deepcopy(load_strict_json(GOLDEN_DIR / "backup" / "backup.json"))
+    tampered_backup["bundle_hash"] = "0" * 64
+    _expect_failure(lambda: verify_backup(tampered_backup), ErrorCode.RESULT_CONTRACT_MISMATCH)
+    verify_skill_receipt(receipt)
+    tampered_receipt = copy.deepcopy(receipt)
+    tampered_receipt["receipt_hash"] = "0" * 64
+    _expect_failure(lambda: verify_skill_receipt(tampered_receipt), ErrorCode.RESULT_CONTRACT_MISMATCH)
+    chain = load_strict_json(FIXTURES_DIR / "skill-chain-result.json")
+    verify_skill_chain(chain, [receipt])
+    tampered_chain = copy.deepcopy(chain)
+    tampered_chain["chain_hash"] = "0" * 64
+    _expect_failure(lambda: verify_skill_chain(tampered_chain, [receipt]), ErrorCode.RESULT_CONTRACT_MISMATCH)
+
+    duplicate = copy.deepcopy(candidate)
+    duplicate["mutation"]["payload_hash"] = "c" * 64
+    _expect_failure(
+        lambda: verify_result_bundle(
+            {**bundle, "items": [candidate, duplicate]},
+            snapshot_workspace_id=snapshot["workspace_id"],
+            snapshot_hash_value=snapshot["snapshot_hash"],
+        ),
+        ErrorCode.RESULT_CONTRACT_MISMATCH,
+    )
+
+    base_mismatch = copy.deepcopy(candidate)
+    base_mismatch["base"]["revision_id"] = "revision-other"
+    _expect_failure(
+        lambda: verify_result_bundle(
+            {**bundle, "items": [base_mismatch]},
+            snapshot_workspace_id=snapshot["workspace_id"],
+            snapshot_hash_value=snapshot["snapshot_hash"],
+        ),
+        ErrorCode.RESULT_CONTRACT_MISMATCH,
+    )
+
+    skill_dir = GOLDEN_DIR / "skill"
+    skill_files = {
+        "skill.json": (skill_dir / "skill.json").read_bytes(),
+        "prompt.txt": (skill_dir / "prompt.txt").read_bytes(),
+    }
+    exact_manifest = build_files_sha256(skill_files)
+    verify_package_manifest(skill_files, exact_manifest)
+    reordered_manifest = b"".join(reversed(exact_manifest.splitlines(keepends=True)))
+    _expect_failure(lambda: verify_package_manifest(skill_files, reordered_manifest), ErrorCode.RESULT_CONTRACT_MISMATCH)
+
+    collision_files = {"straße.txt": b"x", "strasse.txt": b"y"}
+    _expect_failure(lambda: build_files_sha256(collision_files), ErrorCode.ASSET_ERROR)
+    verify_package_manifest({"straße.txt": b"x"}, build_files_sha256({"straße.txt": b"x"}))
+
+    bad_ref_bundle = copy.deepcopy(bundle)
+    bad_ref_bundle["skill_chain_result_refs"] = [{
+        "schema": "skill-chain-ref/v1",
+        "chain_result_id": "chain-1",
+        "asset_id": "asset-chain-1",
+        "asset_hash": None,
+        "result_bundle_id": bundle["bundle_id"],
+        "result_item_id": candidate["item_id"],
+        "stream_id": None,
+        "acked_prefix_hash": None,
+    }]
+    _expect_failure(
+        lambda: verify_result_bundle(
+            bad_ref_bundle,
+            snapshot_workspace_id=snapshot["workspace_id"],
+            snapshot_hash_value=snapshot["snapshot_hash"],
+        ),
+        ErrorCode.RESULT_CONTRACT_MISMATCH,
+    )
+
+    bundleless_failed = copy.deepcopy(receipt)
+    bundleless_failed.update({"result_bundle_id": None, "result_item_id": None, "step_state": "failed"})
+    bundleless_failed["receipt_hash"] = hash_without_field(bundleless_failed, "receipt_hash", "skill-run-receipt/v1")
+    verify_skill_receipt(bundleless_failed)
+
+    heartbeat = load_strict_json(FIXTURES_DIR / "rpc-notification.json")
+    _expect_failure(lambda: validate_rpc_request(heartbeat, expected_lease_epoch=2), ErrorCode.STALE_LEASE)
+    validate_rpc_request(heartbeat, expected_lease_epoch=1)
+
+    _expect_failure(
+        lambda: validate_rpc_result("job.pause", {"accepted": True, "checkpoint_asset_id": None}),
+        ErrorCode.CHECKPOINT_INVALID,
+    )
+
+    descriptor = load_strict_json(FIXTURES_DIR / "capability-provider.json")
+    verify_capability_descriptor(descriptor, expected_capability_id=descriptor["capability_id"])
+    _expect_failure(
+        lambda: verify_capability_descriptor(descriptor, expected_capability_id="fixture.unknown/v1"),
+        ErrorCode.RESULT_CONTRACT_MISMATCH,
+    )
+    manifest = copy.deepcopy(load_strict_json(FIXTURES_DIR / "plugin-manifest-code.json"))
+    manifest["ui"] = {
+        "entry": "ui.js",
+        "runtime": "worker-ui/v1",
+        "contributions": [{"contribution_id": "contribution-1", "slot": "workbench.writing-assets.panel", "capability_id": "fixture.unknown/v1"}],
+    }
+    _expect_failure(lambda: verify_manifest(manifest), ErrorCode.RESULT_CONTRACT_MISMATCH)
+
+    request = load_strict_json(FIXTURES_DIR / "rpc-request.json")
+    validate_rpc_request(request)
+    wrong_result = load_strict_json(FIXTURES_DIR / "rpc-success.json")
+    _expect_failure(
+        lambda: validate_rpc_response(wrong_result, "host.asset.create/v1", request=request),
+        ErrorCode.RESULT_CONTRACT_MISMATCH,
+    )
+    valid_result = {
+        "upload_id": "upload-1",
+        "accepted_bytes": 0,
+        "completed": False,
+        "asset_id": None,
+    }
+    validate_rpc_result("host.asset.create/v1", valid_result, request=request)
+
+    return {
+        "self_hash_profiles": len(self_hash_cases) + 3,
+        "nfc_casefold_collision": "straße.txt/strasse.txt rejected",
+        "bundleless_failed_receipt": "accepted",
+        "heartbeat_fencing": "stale rejected/current accepted",
+        "rpc_method_result_binding": "wrong branch rejected/correct branch accepted",
+        "capability_ui_refs": "unknown refs rejected",
+    }
+
+
+def verify_typescript_verifier() -> dict[str, Any]:
+    """Run the actual frontend TypeScript verifier under Node's TS loader."""
+    script = r'''
+import { readFileSync } from 'node:fs'
+import { pathToFileURL } from 'node:url'
+
+const verifier = await import(pathToFileURL(process.env.PLOTPILOT_TS_VERIFIER).href)
+const readJson = (path) => JSON.parse(readFileSync(path, 'utf8'))
+const snapshot = readJson(process.env.PLOTPILOT_TS_SNAPSHOT)
+const bundle = readJson(process.env.PLOTPILOT_TS_BUNDLE)
+const backup = readJson(process.env.PLOTPILOT_TS_BACKUP)
+await verifier.verifySnapshot(snapshot)
+verifier.verifyResultProfile(bundle, snapshot.workspace_id)
+await verifier.verifyBackup(backup)
+
+const data = readJson(process.env.PLOTPILOT_TS_DATA_BUNDLE)
+await verifier.verifyDataBundle(data)
+
+const core = readJson(process.env.PLOTPILOT_TS_CORE_SNAPSHOT)
+await verifier.verifyCoreSnapshot(core)
+
+const validFiles = { 'straße.txt': new TextEncoder().encode('x') }
+const manifest = await verifier.buildFilesSha256(validFiles)
+await verifier.verifyPackageManifest(validFiles, manifest)
+let collisionRejected = false
+try {
+  await verifier.buildFilesSha256({ 'straße.txt': new TextEncoder().encode('x'), 'strasse.txt': new TextEncoder().encode('y') })
+} catch (_) {
+  collisionRejected = true
+}
+if (!collisionRejected) throw new Error('TS verifier accepted NFC/casefold collision')
+console.log(JSON.stringify({ status: 'ok', workspace_id: snapshot.workspace_id, collision_rejected: collisionRejected }))
+'''
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "NODE_NO_WARNINGS": "1",
+            "PLOTPILOT_TS_VERIFIER": str(ROOT / "frontend" / "src" / "contracts" / "verifier.ts"),
+            "PLOTPILOT_TS_SNAPSHOT": str(GOLDEN_DIR / "run-snapshot" / "snapshot.json"),
+            "PLOTPILOT_TS_BUNDLE": str(EXAMPLES_DIR / "result-bundle.json"),
+            "PLOTPILOT_TS_BACKUP": str(GOLDEN_DIR / "backup" / "backup.json"),
+            "PLOTPILOT_TS_DATA_BUNDLE": str(FIXTURES_DIR / "plugin-data-bundle.json"),
+            "PLOTPILOT_TS_CORE_SNAPSHOT": str(FIXTURES_DIR / "core-snapshot.json"),
+        }
+    )
+    completed = subprocess.run(
+        ["node", "--experimental-strip-types", "--input-type=module", "-e", script],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=environment,
+        check=False,
+    )
+    if completed.returncode:
+        raise AssertionError(f"TypeScript verifier runtime failed:\n{completed.stdout}\n{completed.stderr}")
+    try:
+        result = json.loads(completed.stdout)
+    except json.JSONDecodeError as exc:
+        raise AssertionError(f"TypeScript verifier did not emit JSON: {completed.stdout!r}\n{completed.stderr}") from exc
+    if result.get("status") != "ok" or result.get("collision_rejected") is not True:
+        raise AssertionError(f"unexpected TypeScript verifier result: {result}")
+    return result
 
 
 def verify_all() -> dict[str, Any]:
@@ -749,6 +2337,8 @@ def verify_all() -> dict[str, Any]:
         "corpus": verify_corpus(),
         "negative": verify_negative_groups(),
         "negative_cases": verify_negative_cases(),
+        "remediation": verify_remediation_probes(),
+        "typescript": verify_typescript_verifier(),
         "rpc_methods": {"worker": list(EXPECTED_WORKER_METHODS), "host": list(EXPECTED_HOST_METHODS), "error_codes": EXPECTED_ERROR_CODES},
     }
     return result

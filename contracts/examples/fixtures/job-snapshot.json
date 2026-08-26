@@ -15,7 +15,7 @@
   "job_revision": 1,
   "job_state": "queued",
   "schema": "job-snapshot/v1",
-  "snapshot_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "snapshot_hash": "5f39a79c766268bee0be25a5c2bf534c87d213fe231e597dac72f5b0bd0f041f",
   "steps": [
     {
       "revision": 1,

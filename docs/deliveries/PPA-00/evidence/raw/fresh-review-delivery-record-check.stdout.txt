@@ -1,10 +1,99 @@
 {
   "base_sha": "1c481237b6fa32ef5f85d7f8da4cb16f366cd4f0",
   "branch": "codex/ppa-00-integration",
-  "browser_api_trace_entries": 146,
+  "browser_api_trace_entries": 463,
   "contract_schemas": 48,
+  "creation_gate": {
+    "closed": true,
+    "projects": [
+      {
+        "branch": "codex/ppa-01-core",
+        "branch_exists": false,
+        "first_party_plugin_roots": [],
+        "first_party_plugin_roots_exists": [],
+        "first_party_plugins": [],
+        "project_id": "P1",
+        "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-01-Core",
+        "worktree_exists": false
+      },
+      {
+        "branch": "codex/ppa-02-plugin-platform",
+        "branch_exists": false,
+        "first_party_plugin_roots": [
+          "first-party-plugins/prompt-skill-runtime"
+        ],
+        "first_party_plugin_roots_exists": [],
+        "first_party_plugins": [
+          "com.plotpilot.prompt-skill-runtime"
+        ],
+        "project_id": "P2",
+        "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-02-Plugin-Platform",
+        "worktree_exists": false
+      },
+      {
+        "branch": "codex/ppa-03-execution",
+        "branch_exists": false,
+        "first_party_plugin_roots": [
+          "first-party-plugins/provider-openai-compatible"
+        ],
+        "first_party_plugin_roots_exists": [],
+        "first_party_plugins": [
+          "com.plotpilot.provider.openai-compatible"
+        ],
+        "project_id": "P3",
+        "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-03-Execution",
+        "worktree_exists": false
+      },
+      {
+        "branch": "codex/ppa-04-webui",
+        "branch_exists": false,
+        "first_party_plugin_roots": [],
+        "first_party_plugin_roots_exists": [],
+        "first_party_plugins": [],
+        "project_id": "P4",
+        "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-04-WebUI",
+        "worktree_exists": false
+      },
+      {
+        "branch": "codex/ppa-05-planning",
+        "branch_exists": false,
+        "first_party_plugin_roots": [
+          "first-party-plugins/project-planner",
+          "first-party-plugins/story-state"
+        ],
+        "first_party_plugin_roots_exists": [],
+        "first_party_plugins": [
+          "com.plotpilot.project-planner",
+          "com.plotpilot.story-state"
+        ],
+        "project_id": "P5",
+        "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-05-Planning",
+        "worktree_exists": false
+      },
+      {
+        "branch": "codex/ppa-06-writing",
+        "branch_exists": false,
+        "first_party_plugin_roots": [
+          "first-party-plugins/autopilot",
+          "first-party-plugins/chapter-workflow",
+          "first-party-plugins/export-suite",
+          "first-party-plugins/quality-suite"
+        ],
+        "first_party_plugin_roots_exists": [],
+        "first_party_plugins": [
+          "com.plotpilot.chapter-workflow",
+          "com.plotpilot.autopilot",
+          "com.plotpilot.quality-suite",
+          "com.plotpilot.export-suite"
+        ],
+        "project_id": "P6",
+        "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-06-Writing",
+        "worktree_exists": false
+      }
+    ]
+  },
   "donor_local_push": "DISABLED",
-  "negative_cases": 39,
+  "negative_cases": 105,
   "negative_groups": 14,
   "p1_p6_creation_gate": "closed",
   "parity_features": 27,

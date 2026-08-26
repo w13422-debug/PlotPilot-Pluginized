@@ -13,11 +13,11 @@
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "stdout": {
-        "bytes": 17483,
+        "bytes": 51835,
         "first_line": "{",
         "last_line": "}",
         "path": "docs/deliveries/PPA-00/evidence/raw/fresh-review-python-contracts-all.stdout.txt",
-        "sha256": "00c77e93d2496b25083f903899d8549321839f04152480f3c017633e792bd4f4"
+        "sha256": "31192c381756c91f63256bcbe1585b35941e0ba609858923c04a0fbee080b6c5"
       }
     },
     {
@@ -67,11 +67,11 @@
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "stdout": {
-        "bytes": 431,
+        "bytes": 3800,
         "first_line": "{",
         "last_line": "}",
         "path": "docs/deliveries/PPA-00/evidence/raw/fresh-review-delivery-record-check.stdout.txt",
-        "sha256": "41c4c614cf5a1d87485faec1988981eec453a47995aadb3d6757446a0a8cf439"
+        "sha256": "c39b7a9fb069cc52b6b624b64a8a0400d3feccc8a6d38a646c5ec10db158b15f"
       }
     },
     {
@@ -85,11 +85,11 @@
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "stdout": {
-        "bytes": 16290,
+        "bytes": 18364,
         "first_line": "{",
         "last_line": "}",
         "path": "docs/deliveries/PPA-00/evidence/raw/fresh-review-merge-gate.stdout.txt",
-        "sha256": "fdd8c60deb7db2ff2c0be9e326864e05d9e47c741a695ce02ae9cb3fc898dc35"
+        "sha256": "f09f29d8413646e075e80389f1a0b057430555293429ea66a2c86aec570e46f0"
       }
     }
   ],
@@ -163,7 +163,7 @@
   },
   "mode": "fresh_read_only_structured_review",
   "observations": {
-    "browser_api_trace_entries": 146,
+    "browser_api_trace_entries": 463,
     "contract_record_hashes_match": true,
     "contract_schemas": 48,
     "m0_gates": {
@@ -176,21 +176,23 @@
       "M0.7": "passed"
     },
     "m0_ledger_hash_matches": true,
-    "negative_cases": 39,
+    "negative_cases": 105,
     "negative_groups": 14,
     "parity_features": 27,
     "parity_main_flows": 10,
     "screenshots": 10,
     "state_json_valid": true,
     "stub_marker_hits": [],
-    "tag_present_at_review": false
+    "tag_present_at_review": true
   },
-  "observed_head": "1c481237b6fa32ef5f85d7f8da4cb16f366cd4f0",
+  "observed_head": "786986a02219973a69a0d1c1114191149924d7f7",
   "p1_p6_gate": {
     "creation_gate": [
       {
         "branch": "codex/ppa-01-core",
         "branch_exists": false,
+        "first_party_plugin_roots": [],
+        "first_party_plugin_roots_exists": [],
         "first_party_plugins": [],
         "project_id": "P1",
         "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-01-Core",
@@ -199,6 +201,10 @@
       {
         "branch": "codex/ppa-02-plugin-platform",
         "branch_exists": false,
+        "first_party_plugin_roots": [
+          "first-party-plugins/prompt-skill-runtime"
+        ],
+        "first_party_plugin_roots_exists": [],
         "first_party_plugins": [
           "com.plotpilot.prompt-skill-runtime"
         ],
@@ -209,6 +215,10 @@
       {
         "branch": "codex/ppa-03-execution",
         "branch_exists": false,
+        "first_party_plugin_roots": [
+          "first-party-plugins/provider-openai-compatible"
+        ],
+        "first_party_plugin_roots_exists": [],
         "first_party_plugins": [
           "com.plotpilot.provider.openai-compatible"
         ],
@@ -219,6 +229,8 @@
       {
         "branch": "codex/ppa-04-webui",
         "branch_exists": false,
+        "first_party_plugin_roots": [],
+        "first_party_plugin_roots_exists": [],
         "first_party_plugins": [],
         "project_id": "P4",
         "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-04-WebUI",
@@ -227,6 +239,11 @@
       {
         "branch": "codex/ppa-05-planning",
         "branch_exists": false,
+        "first_party_plugin_roots": [
+          "first-party-plugins/project-planner",
+          "first-party-plugins/story-state"
+        ],
+        "first_party_plugin_roots_exists": [],
         "first_party_plugins": [
           "com.plotpilot.project-planner",
           "com.plotpilot.story-state"
@@ -238,6 +255,13 @@
       {
         "branch": "codex/ppa-06-writing",
         "branch_exists": false,
+        "first_party_plugin_roots": [
+          "first-party-plugins/autopilot",
+          "first-party-plugins/chapter-workflow",
+          "first-party-plugins/export-suite",
+          "first-party-plugins/quality-suite"
+        ],
+        "first_party_plugin_roots_exists": [],
         "first_party_plugins": [
           "com.plotpilot.chapter-workflow",
           "com.plotpilot.autopilot",
@@ -252,14 +276,14 @@
     "passed": true,
     "tag_expected_after_commit": true
   },
-  "review_task_id": "PPA-M0-FRESH-REVIEW-01",
-  "reviewed_at": "2026-08-26T08:51:46Z",
+  "review_task_id": "PPA-M0-FRESH-REVIEW-R2",
+  "reviewed_at": "2026-08-26T17:31:54Z",
   "reviewer": "P0 main control fallback (delegated Sol reviewer returned not_found)",
   "root": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized",
   "schema": "plotpilot-m0-fresh-readonly-review/v1",
   "verdict": "passed_pre_commit",
   "write_set_check": {
-    "changed_paths_count": 229,
+    "changed_paths_count": 246,
     "out_of_set_paths": [],
     "passed": true
   }

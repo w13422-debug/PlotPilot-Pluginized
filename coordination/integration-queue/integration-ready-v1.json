@@ -10,6 +10,8 @@
   "changed_paths": [],
   "write_set_proof": {
     "matrix_path": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized七项目任务书-2026-08-26\\project-matrix.json",
+    "project_id": null,
+    "project_write_set_match": false,
     "p0_write_set_match": false,
     "out_of_set_paths": []
   },

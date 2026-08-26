@@ -1,21 +1,19 @@
 ============================= test session starts =============================
-platform win32 -- Python 3.12.10, pytest-9.1.1, pluggy-1.6.0
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
 rootdir: C:\Users\Administrator\Desktop\写作资料汇总\PlotPilot-Pluginized
-configfile: pytest.ini (WARNING: ignoring pytest config in pyproject.toml!)
-plugins: anyio-4.14.2
-collected 10 items
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 23 items
 
-tests\contract\test_84_13.py .                                           [ 10%]
-tests\contract\test_goldens.py ..                                        [ 30%]
-tests\contract\test_rpc_and_sdk.py ....                                  [ 70%]
-tests\contract\test_schema_meta.py ..                                    [ 90%]
-tests\acceptance\test_contract_manifest.py .                             [100%]
+tests\contract\test_84_13.py .                                           [  4%]
+tests\contract\test_cross_language_runtime.py ..                         [ 13%]
+tests\contract\test_finding_closure.py .                                 [ 17%]
+tests\contract\test_goldens.py ..                                        [ 26%]
+tests\contract\test_rpc_and_sdk.py ....                                  [ 43%]
+tests\contract\test_schema_meta.py ..                                    [ 52%]
+tests\contract\test_verifier_remediation.py .....                        [ 73%]
+tests\acceptance\test_contract_manifest.py .                             [ 78%]
+tests\acceptance\test_merge_gate_remediation.py .....                    [100%]
 
-============================== warnings summary ===============================
-..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\config\__init__.py:1464
-  C:\Users\Administrator\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\config\__init__.py:1464: PytestConfigWarning: Unknown config option: asyncio_mode
-  
-    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
-
--- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-======================== 10 passed, 1 warning in 2.52s ========================
+============================= 23 passed in 7.33s ==============================

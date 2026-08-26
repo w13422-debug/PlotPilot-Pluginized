@@ -25,6 +25,7 @@ RAW = DELIVERY / "evidence" / "raw"
 REVIEW_PATH = DELIVERY / "evidence" / "fresh-readonly-review.json"
 BASE_SHA = "1c481237b6fa32ef5f85d7f8da4cb16f366cd4f0"
 BRANCH = "codex/ppa-00-integration"
+RELEASE_LABEL = "M0-OPEN-R2"
 
 
 def sha256_bytes(value: bytes) -> str:
@@ -116,6 +117,25 @@ def check_records(records: list[dict[str, Any]], label: str) -> list[dict[str, A
     return failures
 
 
+def content_addressed_records(value: Any) -> list[dict[str, Any]]:
+    """Collect every evidence record carrying a path/bytes/hash triple."""
+
+    records: list[dict[str, Any]] = []
+
+    def walk(node: Any) -> None:
+        if isinstance(node, dict):
+            if isinstance(node.get("path"), str) and "bytes" in node and "sha256" in node:
+                records.append(node)
+            for child in node.values():
+                walk(child)
+        elif isinstance(node, list):
+            for child in node:
+                walk(child)
+
+    walk(value)
+    return records
+
+
 def main() -> int:
     python = sys.executable
     commands = [
@@ -130,6 +150,8 @@ def main() -> int:
     contract = read_json(DELIVERY / "contract-golden-manifest.json")
     parity = read_json(DELIVERY / "parity-ledger.json")
     browser = read_json(DELIVERY / "evidence" / "browser-smoke.json")
+    closure = read_json(ROOT / "docs" / "contracts" / "finding-closure-v1.json")
+    closure_evidence = read_json(DELIVERY / "evidence" / "finding-closure.json")
     state = read_json(ROOT / "coordination" / "PPA-00" / "state.json")
     merge = json.loads(next(item["_stdout"] for item in results if item["id"] == "merge-gate"))
 
@@ -142,6 +164,7 @@ def main() -> int:
     ):
         record_failures.extend(check_records(contract["artifacts"][key], label))
     record_failures.extend(check_records(parity["evidence_run"]["screenshot_files"], "screenshot"))
+    record_failures.extend(check_records(content_addressed_records(closure_evidence), "finding-closure"))
 
     failures: list[str] = []
     if state.get("schema") != "ppa-project-state/v1":
@@ -156,7 +179,7 @@ def main() -> int:
         failures.append("M0 contract manifest hash mismatch")
     if m0["verification"]["parity_ledger"]["sha256"] != sha256_file(DELIVERY / "parity-ledger.json"):
         failures.append("M0 parity ledger hash mismatch")
-    if m0.get("status") != "open" or m0.get("commit_ref") != "M0-OPEN" or m0.get("tag") != "M0-OPEN":
+    if m0.get("status") != "open" or m0.get("commit_ref") != RELEASE_LABEL or m0.get("tag") != RELEASE_LABEL:
         failures.append("M0 symbolic identity drift")
     if set(m0.get("gates", {})) != {f"M0.{index}" for index in range(1, 8)}:
         failures.append("M0 gate set drift")
@@ -164,7 +187,7 @@ def main() -> int:
         failures.append("M0 gate not passed")
     if contract.get("inventory") != {
         "combination_example_count": 4,
-        "negative_case_count": 39,
+        "negative_case_count": 105,
         "negative_group_count": 14,
         "positive_fixture_count": 35,
         "schema_count": 48,
@@ -174,12 +197,25 @@ def main() -> int:
         failures.append("parity inventory drift")
     if (
         len(browser.get("flows", [])) != 10
-        or len(browser.get("api_trace", [])) != 146
+        or len(browser.get("api_trace", [])) <= 0
         or browser.get("page_errors")
         or browser.get("forbidden_generation_calls")
-        or browser["constraints"].get("non_empty_chapter_body_saved")
+        or browser.get("unexpected_external_calls")
+        or browser.get("constraints", {}).get("non_empty_chapter_body_saved") is not True
+        or browser.get("constraints", {}).get("fake_provider_used") is not True
+        or browser.get("constraints", {}).get("real_provider_used") is not False
+        or browser.get("constraints", {}).get("external_network_used") is not False
+        or browser.get("constraints", {}).get("sse_disconnect_recovery") is not True
     ):
         failures.append("browser safety/evidence drift")
+    if closure.get("schema") != "plotpilot-finding-closure/v1" or closure.get("status") != "closed" or closure.get("finding_count") != 25 or closure.get("ids_exactly_once") is not True:
+        failures.append("finding closure inventory drift")
+    closure_index = closure_evidence.get("closure_index")
+    closure_path = ROOT / "docs" / "contracts" / "finding-closure-v1.json"
+    if not isinstance(closure_index, dict) or closure_index.get("path") != "docs/contracts/finding-closure-v1.json":
+        failures.append("finding closure evidence binding drift")
+    elif closure_index.get("sha256") != sha256_file(closure_path) or closure_index.get("bytes") != closure_path.stat().st_size:
+        failures.append("finding closure content address drift")
     if merge.get("out_of_set_paths") or not merge.get("p1_p6_absent") or merge.get("donor_local_push") != "DISABLED":
         failures.append("write-set or creation gate drift")
 
@@ -210,7 +246,7 @@ def main() -> int:
     ).returncode == 0
     review = {
         "schema": "plotpilot-m0-fresh-readonly-review/v1",
-        "review_task_id": "PPA-M0-FRESH-REVIEW-01",
+        "review_task_id": "PPA-M0-FRESH-REVIEW-R2",
         "reviewer": "P0 main control fallback (delegated Sol reviewer returned not_found)",
         "mode": "fresh_read_only_structured_review",
         "reviewed_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),

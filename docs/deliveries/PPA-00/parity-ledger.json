@@ -1,46 +1,33 @@
 {
   "evidence_run": {
-    "api_trace_entries": 146,
-    "console_warning_count": 3,
+    "api_trace_entries": 463,
+    "console_warning_count": 28,
     "constraints": {
-      "generation_pipeline_invoked": false,
-      "non_empty_chapter_body_saved": false,
-      "temporary_data_removed_after_run": true
+      "export_download_captured": true,
+      "external_network_used": false,
+      "fake_provider_used": true,
+      "generation_pipeline_invoked": true,
+      "non_empty_chapter_body_saved": true,
+      "real_provider_used": false,
+      "sse_disconnect_recovery": true,
+      "sse_recovery_exercised": true,
+      "temporary_data_removed_after_run": true,
+      "ui_download_captured": true
     },
     "data_evidence": {
-      "chapter_count": 1,
+      "chapter_count": 5,
       "database_exists": true,
-      "non_empty_chapter_count": 0
+      "non_empty_chapter_count": 1
     },
     "export_observation": {
-      "byte_length": 126,
-      "chapter_body_saved": false,
-      "charset": "utf-8",
-      "content_disposition": "attachment; filename=M0_%E6%B5%8F%E8%A7%88%E5%9F%BA%E7%BA%BF.md; filename*=UTF-8''M0_%E6%B5%8F%E8%A7%88%E5%9F%BA%E7%BA%BF.md",
-      "content_type": "text/markdown; charset=utf-8",
-      "filename_encoded": "M0_%E6%B5%8F%E8%A7%88%E5%9F%BA%E7%BA%BF.md",
-      "filename_utf8": "M0_%E6%B5%8F%E8%A7%88%E5%9F%BA%E7%BA%BF.md",
-      "sequence": [
-        "# M0 浏览基线",
-        "",
-        "**作者**: P0",
-        "",
-        "## 简介",
-        "",
-        "M0 临时浏览器基线；不生成正文。",
-        "",
-        "## M0 空白章",
-        "",
-        "（无正文）",
-        ""
-      ],
+      "byte_length": 2051,
+      "captured_by": "page.waitForEvent(download)",
       "status": 200,
-      "utf8_bom": false
+      "suggested_filename": "novel-novel-1787764638828.markdown"
     },
     "fixture": {
-      "chapter_ensure_response": 200,
-      "create_response": 201,
-      "id": "m0-browser-1787730908430",
+      "create_status": 201,
+      "id": "novel-1787764638828",
       "title": "M0 浏览基线"
     },
     "flow_count": 10,
@@ -53,64 +40,65 @@
       "node": "v24.18.0",
       "playwright_module": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\node_modules\\playwright\\index.mjs",
       "playwright_version": "1.62.1",
-      "python_command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe"
+      "python_command": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-update-v4.6.0\\.venv\\Scripts\\python.exe"
     },
     "screenshot_count": 10,
     "screenshot_dir": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots",
     "screenshot_files": [
       {
-        "bytes": 239015,
-        "path": "docs/deliveries/PPA-00/parity/screenshots/01-home-empty.png",
-        "sha256": "6d23128c8231e9b27828c1743ee20b8c6af082670cf31e1b89056cfa06d5d106"
+        "bytes": 157653,
+        "path": "docs/deliveries/PPA-00/parity/screenshots/01-home-create-surface.png",
+        "sha256": "3774987656a44f2ec1354a4fb85bfb99a6f115ba7ee698785acf8df802d497bb"
       },
       {
-        "bytes": 239630,
-        "path": "docs/deliveries/PPA-00/parity/screenshots/02-home-create-surface.png",
-        "sha256": "87d8ddf175e43e85c256b0b9c6bc0990668f67556353aa92eb95229a1a32c940"
+        "bytes": 68932,
+        "path": "docs/deliveries/PPA-00/parity/screenshots/02-wizard-generation.png",
+        "sha256": "64c1d86a289b2cbb6a80e30fb1e22b8552d12e6e1255fd31376edef383930f33"
       },
       {
-        "bytes": 233545,
-        "path": "docs/deliveries/PPA-00/parity/screenshots/03-home-advanced-surface.png",
-        "sha256": "41a0f4d09ace89b795e5b22663a27d20f3dc0e3f6f53d0766b2ba334daadf757"
+        "bytes": 176544,
+        "path": "docs/deliveries/PPA-00/parity/screenshots/03-workbench-shell.png",
+        "sha256": "16c6711d0b2b6ee9113fb7acead2e64bb4840ad6a8aa260e08cfb33b8279df4b"
       },
       {
-        "bytes": 305880,
-        "path": "docs/deliveries/PPA-00/parity/screenshots/04-home-populated-list.png",
-        "sha256": "eea8b7a7575d01a7e551078676b4ec017ccfd6dd601a963230701b65a10aac69"
+        "bytes": 220393,
+        "path": "docs/deliveries/PPA-00/parity/screenshots/04-sse-disconnect-recovery.png",
+        "sha256": "49ed0c06299c40ff119bad43a1eefcd252a148f77165a63b9b89f4f4d98e4644"
       },
       {
-        "bytes": 162321,
-        "path": "docs/deliveries/PPA-00/parity/screenshots/05-workbench-shell.png",
-        "sha256": "34a1cbb6f756f0333446ed1bb5eb92d46add641caf0d9317511af9ea3c6f0aa8"
+        "bytes": 192124,
+        "path": "docs/deliveries/PPA-00/parity/screenshots/05-workbench-chapter-tree.png",
+        "sha256": "457365c6f7ff0a9777adfc71850286ab85ee84c8140b79c0e8db4ac7fe767b5d"
       },
       {
-        "bytes": 136038,
-        "path": "docs/deliveries/PPA-00/parity/screenshots/06-workbench-chapter-tree.png",
-        "sha256": "88e51583d336d07d87d024ac3ae0c015a23d561ed8ab54596e60f220e4588b6e"
+        "bytes": 56958,
+        "path": "docs/deliveries/PPA-00/parity/screenshots/06-chapter-edit-save.png",
+        "sha256": "af04c42314947b2762c7f4b9fee7e2e8f974bfe4947453aa33c17fbecd1e3d0f"
       },
       {
-        "bytes": 118800,
-        "path": "docs/deliveries/PPA-00/parity/screenshots/07-workbench-writing-support.png",
-        "sha256": "4912342970767da97c64b05889eaade471aed2b8a8692d762e9bb2175d579e38"
+        "bytes": 229467,
+        "path": "docs/deliveries/PPA-00/parity/screenshots/07-generation-pause-cancel.png",
+        "sha256": "9608f704dcdd1f40bdd4bcbe1f6c21ce4c39ad21bf728285878d30496f5aff7e"
       },
       {
-        "bytes": 143193,
-        "path": "docs/deliveries/PPA-00/parity/screenshots/08-workbench-reference-panel.png",
-        "sha256": "e723ff7d5a1e2fd0ac0197d5aec0fcc4a62a6ce203fd959e9c2f01d5314625e2"
+        "bytes": 183163,
+        "path": "docs/deliveries/PPA-00/parity/screenshots/08-workbench-writing-support.png",
+        "sha256": "bacd13b6a6b4db8ec2cb3ba917f610f283953a70e5b642c788ddf1883f1348bb"
       },
       {
-        "bytes": 133368,
-        "path": "docs/deliveries/PPA-00/parity/screenshots/09-workbench-export-menu.png",
-        "sha256": "f82163f0a14b8146df2a8bd957d1b4d102a66b6a562d3779ecbbd9c05dbd62ee"
+        "bytes": 233905,
+        "path": "docs/deliveries/PPA-00/parity/screenshots/09-checkpoint-recovery.png",
+        "sha256": "b47be81c77edd5005f2f27f4cb2028fc41649c46e0030b5e2252837fb7167eab"
       },
       {
-        "bytes": 324740,
-        "path": "docs/deliveries/PPA-00/parity/screenshots/10-return-home.png",
-        "sha256": "de331fe42841c704dcb5f7cdc5b8c48cae0f4dd5bf0b9a0d896b479450e2ea75"
+        "bytes": 233217,
+        "path": "docs/deliveries/PPA-00/parity/screenshots/10-workbench-export-menu.png",
+        "sha256": "5367cc1caaf9e92b28bf63db2df9b88b1d0e12f822109d65dd933791dfdee60e"
       }
     ],
-    "sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+    "sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
     "status": "passed",
+    "unexpected_external_calls": [],
     "urls": {
       "api": "http://127.0.0.1:8005",
       "webui": "http://127.0.0.1:3000"
@@ -124,41 +112,55 @@
       "baseline_evidence": {
         "api_request_urls": [
           "http://127.0.0.1:3000/api/stats/global",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
           "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
           "http://127.0.0.1:3000/api/v1/novels",
-          "http://127.0.0.1:3000/src/api/aiInvocation.ts",
-          "http://127.0.0.1:3000/src/api/config.ts",
-          "http://127.0.0.1:3000/src/api/endpoints.ts",
-          "http://127.0.0.1:3000/src/api/llmControl.ts",
-          "http://127.0.0.1:3000/src/api/novel.ts",
-          "http://127.0.0.1:3000/src/api/settings.ts",
-          "http://127.0.0.1:3000/src/api/stats.ts",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/setup/plot-outline",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/worldbuilding",
           "http://127.0.0.1:8005/api/v1/novels/"
         ],
-        "api_trace_entries": 22,
-        "behavior_assertions": [
-          "premise input is focusable",
-          "create card remains on Home route",
-          "created fixture is rendered as a book card",
-          "book count is 1"
-        ],
+        "api_trace_entries": 18,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
-        "flow_ids": [
-          "home-create-surface",
-          "home-populated-list"
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "POST /api/v1/novels/ returned 201 and wizard opened for novel-1787764638828",
+            "expected": "Home UI creates a novel and opens setup wizard",
+            "no_direct_api_action": true
+          }
         ],
-        "screenshot_count": 2,
+        "flow_ids": [
+          "home-create-surface"
+        ],
+        "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 239630,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\02-home-create-surface.png",
-            "sha256": "87d8ddf175e43e85c256b0b9c6bc0990668f67556353aa92eb95229a1a32c940"
+            "bytes": 157653,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\01-home-create-surface.png",
+            "sha256": "3774987656a44f2ec1354a4fb85bfb99a6f115ba7ee698785acf8df802d497bb"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "fill",
+            "target": "Home premise",
+            "value": "non-empty premise"
           },
           {
-            "bytes": 305880,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\04-home-populated-list.png",
-            "sha256": "eea8b7a7575d01a7e551078676b4ec017ccfd6dd601a963230701b65a10aac69"
+            "action": "click",
+            "target": "market major and theme"
+          },
+          {
+            "action": "fill",
+            "target": "advanced settings",
+            "value": "1 chapter / 500 words"
+          },
+          {
+            "action": "click",
+            "target": "建档并进入工作台"
           }
         ]
       },
@@ -170,11 +172,11 @@
       "feature_id": "PP46-LIB-CREATE",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 证据仅冻结当前 PlotPilot 行为观察点；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "M0 仅冻结现有 PlotPilot 入口与真实行为；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P4",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "baseline_observed",
+      "status": "exercised",
       "user_entry_and_precondition": "填入作品信息并创建书目",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -183,23 +185,91 @@
         "M0-BROWSER-01"
       ],
       "baseline_evidence": {
-        "api_request_urls": [],
-        "api_trace_entries": 0,
-        "behavior_assertions": [
-          "advanced settings toggle opens",
-          "custom chapter count and word count are visible"
+        "api_request_urls": [
+          "http://127.0.0.1:3000/api/v1/ai-invocations/4b794753-2d00-4486-96b6-fc1823c8ca9d",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/4b794753-2d00-4486-96b6-fc1823c8ca9d/accept",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/4b794753-2d00-4486-96b6-fc1823c8ca9d/commits",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/4b794753-2d00-4486-96b6-fc1823c8ca9d/resume",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/6df7e994-8975-42fc-b35e-d41187f300c3",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/6df7e994-8975-42fc-b35e-d41187f300c3/accept",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/6df7e994-8975-42fc-b35e-d41187f300c3/commits",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/6df7e994-8975-42fc-b35e-d41187f300c3/resume",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/70bd79ce-76fb-4223-84de-89da9621d80b",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/70bd79ce-76fb-4223-84de-89da9621d80b/accept",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/70bd79ce-76fb-4223-84de-89da9621d80b/commits",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/70bd79ce-76fb-4223-84de-89da9621d80b/resume",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/76cf238f-f6d3-43c6-9bb8-bdc3ef0a88d7",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/76cf238f-f6d3-43c6-9bb8-bdc3ef0a88d7/accept",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/76cf238f-f6d3-43c6-9bb8-bdc3ef0a88d7/commits",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/76cf238f-f6d3-43c6-9bb8-bdc3ef0a88d7/resume",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/generate-stream?stage=characters",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/generate-stream?stage=locations",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/generate-stream?stage=worldbuilding",
+          "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/setup/generate-plot-outline-stream",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/setup/plot-outline",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/structure",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/worldbuilding"
         ],
+        "api_trace_entries": 131,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "worldbuilding, characters, locations and plot outline completed; Workbench opened",
+            "expected": "All wizard stages use real UI SSE and confirmation",
+            "generated_stages": [
+              "worldbuilding",
+              "characters",
+              "locations",
+              "plot_outline"
+            ]
+          }
+        ],
         "flow_ids": [
-          "home-advanced-surface"
+          "wizard-generation"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 233545,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\03-home-advanced-surface.png",
-            "sha256": "41a0f4d09ace89b795e5b22663a27d20f3dc0e3f6f53d0766b2ba334daadf757"
+            "bytes": 68932,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\02-wizard-generation.png",
+            "sha256": "64c1d86a289b2cbb6a80e30fb1e22b8552d12e6e1255fd31376edef383930f33"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "click",
+            "target": "Step 1 开始生成"
+          },
+          {
+            "action": "observe",
+            "target": "worldbuilding SSE done"
+          },
+          {
+            "action": "click",
+            "target": "confirm worldbuilding / characters SSE"
+          },
+          {
+            "action": "click",
+            "target": "confirm characters / locations SSE"
+          },
+          {
+            "action": "click",
+            "target": "confirm locations / plot outline chain"
+          },
+          {
+            "action": "click",
+            "target": "进入工作台"
           }
         ]
       },
@@ -212,11 +282,11 @@
       "feature_id": "PP46-LIB-SETUP",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 smoke 只观察 surface/read paths；未执行持久 mutation、真实 Provider、generation、pause/cancel 或 resume。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "M0 仅冻结现有 PlotPilot 入口与真实行为；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P5",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "surface_observed",
+      "status": "exercised",
       "user_entry_and_precondition": "创建后执行或跳过设定初始化",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -226,68 +296,44 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/stats/global",
-          "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
-          "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
-          "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
-          "http://127.0.0.1:3000/api/v1/novels",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/statistics",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/structure",
-          "http://127.0.0.1:3000/src/api/aiInvocation.ts",
-          "http://127.0.0.1:3000/src/api/autopilot.ts",
-          "http://127.0.0.1:3000/src/api/bible.ts",
-          "http://127.0.0.1:3000/src/api/chapter.ts",
-          "http://127.0.0.1:3000/src/api/config.ts",
-          "http://127.0.0.1:3000/src/api/dag.ts",
-          "http://127.0.0.1:3000/src/api/endpoints.ts",
-          "http://127.0.0.1:3000/src/api/http.ts",
-          "http://127.0.0.1:3000/src/api/knowledge.ts",
-          "http://127.0.0.1:3000/src/api/llmControl.ts",
-          "http://127.0.0.1:3000/src/api/novel.ts",
-          "http://127.0.0.1:3000/src/api/planning.ts",
-          "http://127.0.0.1:3000/src/api/settings.ts",
-          "http://127.0.0.1:3000/src/api/stats.ts",
-          "http://127.0.0.1:3000/src/api/structure.ts",
-          "http://127.0.0.1:3000/src/api/tools.ts",
-          "http://127.0.0.1:3000/src/api/workflow.ts",
-          "http://127.0.0.1:8005/api/v1/novels/"
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/worldbuilding"
         ],
-        "api_trace_entries": 90,
-        "behavior_assertions": [
-          "created fixture is rendered as a book card",
-          "book count is 1",
-          "Workbench route loads",
-          "existing product title is retained",
-          "reference group is visible",
-          "Workbench back action returns to Home",
-          "Home surface remains available"
-        ],
+        "api_trace_entries": 6,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
-        "flow_ids": [
-          "home-populated-list",
-          "workbench-shell",
-          "return-home"
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "title, library link and reference group visible; selecting 作品基础 loaded the reference panel",
+            "expected": "Workbench displays the created product and hydrates a real reference panel"
+          }
         ],
-        "screenshot_count": 3,
+        "flow_ids": [
+          "workbench-shell"
+        ],
+        "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 305880,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\04-home-populated-list.png",
-            "sha256": "eea8b7a7575d01a7e551078676b4ec017ccfd6dd601a963230701b65a10aac69"
+            "bytes": 176544,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\03-workbench-shell.png",
+            "sha256": "16c6711d0b2b6ee9113fb7acead2e64bb4840ad6a8aa260e08cfb33b8279df4b"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "click",
+            "target": "作品基础"
           },
           {
-            "bytes": 162321,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\05-workbench-shell.png",
-            "sha256": "34a1cbb6f756f0333446ed1bb5eb92d46add641caf0d9317511af9ea3c6f0aa8"
+            "action": "click",
+            "target": "世界观"
           },
           {
-            "bytes": 324740,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\10-return-home.png",
-            "sha256": "de331fe42841c704dcb5f7cdc5b8c48cae0f4dd5bf0b9a0d896b479450e2ea75"
+            "action": "observe",
+            "target": "世界观 tab and hydrated reference panel"
           }
         ]
       },
@@ -299,11 +345,11 @@
       "feature_id": "PP46-LIB-OPEN",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 证据仅冻结当前 PlotPilot 行为观察点；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "M0 仅冻结现有 PlotPilot 入口与真实行为；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P4",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "baseline_observed",
+      "status": "exercised",
       "user_entry_and_precondition": "从书库打开作品并进入工作台",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -316,10 +362,12 @@
         "api_trace_entries": 0,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "expected_actual": [],
         "flow_ids": [],
         "screenshot_count": 0,
-        "screenshots": []
+        "screenshots": [],
+        "ui_actions": []
       },
       "core_plugin_ui_dependencies": [
         "P1"
@@ -328,11 +376,11 @@
       "feature_id": "PP46-LIB-DELETE",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 smoke 只观察 surface/read paths；未执行持久 mutation、真实 Provider、generation、pause/cancel 或 resume。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "该功能未被十条 M0 主流程覆盖；由矩阵指定 owner 在后续里程碑提供完整纵切证据。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P4",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "m0_not_exercised",
+      "status": "owner_slice_pending",
       "user_entry_and_precondition": "删除单本书目并更新列表",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -345,10 +393,12 @@
         "api_trace_entries": 0,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "expected_actual": [],
         "flow_ids": [],
         "screenshot_count": 0,
-        "screenshots": []
+        "screenshots": [],
+        "ui_actions": []
       },
       "core_plugin_ui_dependencies": [
         "P1"
@@ -357,11 +407,11 @@
       "feature_id": "PP46-LIB-BATCH-DELETE",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 smoke 只观察 surface/read paths；未执行持久 mutation、真实 Provider、generation、pause/cancel 或 resume。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "该功能未被十条 M0 主流程覆盖；由矩阵指定 owner 在后续里程碑提供完整纵切证据。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P4",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "m0_not_exercised",
+      "status": "owner_slice_pending",
       "user_entry_and_precondition": "选择多本后批量删除",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -371,49 +421,44 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
-          "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
-          "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/statistics",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/structure",
-          "http://127.0.0.1:3000/src/api/aiInvocation.ts",
-          "http://127.0.0.1:3000/src/api/autopilot.ts",
-          "http://127.0.0.1:3000/src/api/bible.ts",
-          "http://127.0.0.1:3000/src/api/chapter.ts",
-          "http://127.0.0.1:3000/src/api/config.ts",
-          "http://127.0.0.1:3000/src/api/dag.ts",
-          "http://127.0.0.1:3000/src/api/endpoints.ts",
-          "http://127.0.0.1:3000/src/api/http.ts",
-          "http://127.0.0.1:3000/src/api/knowledge.ts",
-          "http://127.0.0.1:3000/src/api/llmControl.ts",
-          "http://127.0.0.1:3000/src/api/novel.ts",
-          "http://127.0.0.1:3000/src/api/planning.ts",
-          "http://127.0.0.1:3000/src/api/settings.ts",
-          "http://127.0.0.1:3000/src/api/stats.ts",
-          "http://127.0.0.1:3000/src/api/structure.ts",
-          "http://127.0.0.1:3000/src/api/tools.ts",
-          "http://127.0.0.1:3000/src/api/workflow.ts"
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/worldbuilding"
         ],
-        "api_trace_entries": 60,
-        "behavior_assertions": [
-          "Workbench route loads",
-          "existing product title is retained",
-          "reference group is visible"
-        ],
+        "api_trace_entries": 6,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "title, library link and reference group visible; selecting 作品基础 loaded the reference panel",
+            "expected": "Workbench displays the created product and hydrates a real reference panel"
+          }
+        ],
         "flow_ids": [
           "workbench-shell"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 162321,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\05-workbench-shell.png",
-            "sha256": "34a1cbb6f756f0333446ed1bb5eb92d46add641caf0d9317511af9ea3c6f0aa8"
+            "bytes": 176544,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\03-workbench-shell.png",
+            "sha256": "16c6711d0b2b6ee9113fb7acead2e64bb4840ad6a8aa260e08cfb33b8279df4b"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "click",
+            "target": "作品基础"
+          },
+          {
+            "action": "click",
+            "target": "世界观"
+          },
+          {
+            "action": "observe",
+            "target": "世界观 tab and hydrated reference panel"
           }
         ]
       },
@@ -424,11 +469,11 @@
       "feature_id": "PP46-WB-THREE-PANE",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 证据仅冻结当前 PlotPilot 行为观察点；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "M0 仅冻结现有 PlotPilot 入口与真实行为；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P4",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "baseline_observed",
+      "status": "exercised",
       "user_entry_and_precondition": "章节树—正文—右侧上下文三栏工作台",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -438,29 +483,41 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters/1",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters/1/guardrail-snapshot",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/knowledge",
-          "http://127.0.0.1:3000/api/v1/planning/novels/m0-browser-1787730908430/structure"
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/guardrail-snapshot",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/structure"
         ],
-        "api_trace_entries": 10,
-        "behavior_assertions": [
-          "empty chapter is selectable",
-          "chapter editor is visible",
-          "editor remains empty"
-        ],
+        "api_trace_entries": 12,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "chapter selected and editable workflow surface is visible at http://127.0.0.1:3000/book/novel-1787764638828/workbench",
+            "expected": "Visible Workbench structure selects a chapter"
+          }
+        ],
         "flow_ids": [
           "workbench-chapter-tree"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 136038,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\06-workbench-chapter-tree.png",
-            "sha256": "88e51583d336d07d87d024ac3ae0c015a23d561ed8ab54596e60f220e4588b6e"
+            "bytes": 192124,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\05-workbench-chapter-tree.png",
+            "sha256": "457365c6f7ff0a9777adfc71850286ab85ee84c8140b79c0e8db4ac7fe767b5d"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "click",
+            "target": "visible chapter in tree/flat view"
           }
         ]
       },
@@ -471,11 +528,11 @@
       "feature_id": "PP46-CHAPTER-TREE",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 证据仅冻结当前 PlotPilot 行为观察点；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "M0 仅冻结现有 PlotPilot 入口与真实行为；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P4",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "baseline_observed",
+      "status": "exercised",
       "user_entry_and_precondition": "查看、选择、刷新并按路由定位章节",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -485,29 +542,54 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters/1",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters/1/guardrail-snapshot",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/knowledge",
-          "http://127.0.0.1:3000/api/v1/planning/novels/m0-browser-1787730908430/structure"
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
+          "http://127.0.0.1:3000/api/v1/knowledge-graph/novels/novel-1787764638828/chapters/by-number/1/inference-evidence",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/review",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/structure",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics"
         ],
-        "api_trace_entries": 10,
-        "behavior_assertions": [
-          "empty chapter is selectable",
-          "chapter editor is visible",
-          "editor remains empty"
-        ],
+        "api_trace_entries": 29,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "reload value length 46; exact equality true",
+            "content_length": 46,
+            "exact_equality": true,
+            "expected": "Non-empty edit save persists and reload reads exact content"
+          }
+        ],
         "flow_ids": [
-          "workbench-chapter-tree"
+          "chapter-edit-save"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 136038,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\06-workbench-chapter-tree.png",
-            "sha256": "88e51583d336d07d87d024ac3ae0c015a23d561ed8ab54596e60f220e4588b6e"
+            "bytes": 56958,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\06-chapter-edit-save.png",
+            "sha256": "af04c42314947b2762c7f4b9fee7e2e8f974bfe4947453aa33c17fbecd1e3d0f"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "fill",
+            "target": "Chapter UI content editor",
+            "value": "non-empty body"
+          },
+          {
+            "action": "click",
+            "target": "保存"
+          },
+          {
+            "action": "reload",
+            "target": "Chapter UI"
           }
         ]
       },
@@ -518,11 +600,11 @@
       "feature_id": "PP46-CHAPTER-EDIT-SAVE",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 smoke 只观察 surface/read paths；未执行持久 mutation、真实 Provider、generation、pause/cancel 或 resume。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "M0 仅冻结现有 PlotPilot 入口与真实行为；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P4",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "surface_observed",
+      "status": "exercised",
       "user_entry_and_precondition": "打开章节、编辑并保存正文",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -535,10 +617,12 @@
         "api_trace_entries": 0,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "expected_actual": [],
         "flow_ids": [],
         "screenshot_count": 0,
-        "screenshots": []
+        "screenshots": [],
+        "ui_actions": []
       },
       "core_plugin_ui_dependencies": [
         "P4",
@@ -549,11 +633,11 @@
       "feature_id": "PP46-ACT-CHAPTER-PLAN",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 smoke 只观察 surface/read paths；未执行持久 mutation、真实 Provider、generation、pause/cancel 或 resume。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "该功能未被十条 M0 主流程覆盖；由矩阵指定 owner 在后续里程碑提供完整纵切证据。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P6",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "m0_not_exercised",
+      "status": "owner_slice_pending",
       "user_entry_and_precondition": "从幕发起规划并确认章节规划结果",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -562,60 +646,16 @@
         "M0-BROWSER-01"
       ],
       "baseline_evidence": {
-        "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
-          "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
-          "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/statistics",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/structure",
-          "http://127.0.0.1:3000/src/api/aiInvocation.ts",
-          "http://127.0.0.1:3000/src/api/autopilot.ts",
-          "http://127.0.0.1:3000/src/api/bible.ts",
-          "http://127.0.0.1:3000/src/api/chapter.ts",
-          "http://127.0.0.1:3000/src/api/config.ts",
-          "http://127.0.0.1:3000/src/api/dag.ts",
-          "http://127.0.0.1:3000/src/api/endpoints.ts",
-          "http://127.0.0.1:3000/src/api/http.ts",
-          "http://127.0.0.1:3000/src/api/knowledge.ts",
-          "http://127.0.0.1:3000/src/api/llmControl.ts",
-          "http://127.0.0.1:3000/src/api/novel.ts",
-          "http://127.0.0.1:3000/src/api/planning.ts",
-          "http://127.0.0.1:3000/src/api/settings.ts",
-          "http://127.0.0.1:3000/src/api/stats.ts",
-          "http://127.0.0.1:3000/src/api/structure.ts",
-          "http://127.0.0.1:3000/src/api/tools.ts",
-          "http://127.0.0.1:3000/src/api/workflow.ts"
-        ],
-        "api_trace_entries": 60,
-        "behavior_assertions": [
-          "advanced settings toggle opens",
-          "custom chapter count and word count are visible",
-          "Workbench route loads",
-          "existing product title is retained",
-          "reference group is visible"
-        ],
+        "api_request_urls": [],
+        "api_trace_entries": 0,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
-        "flow_ids": [
-          "home-advanced-surface",
-          "workbench-shell"
-        ],
-        "screenshot_count": 2,
-        "screenshots": [
-          {
-            "bytes": 233545,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\03-home-advanced-surface.png",
-            "sha256": "41a0f4d09ace89b795e5b22663a27d20f3dc0e3f6f53d0766b2ba334daadf757"
-          },
-          {
-            "bytes": 162321,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\05-workbench-shell.png",
-            "sha256": "34a1cbb6f756f0333446ed1bb5eb92d46add641caf0d9317511af9ea3c6f0aa8"
-          }
-        ]
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "expected_actual": [],
+        "flow_ids": [],
+        "screenshot_count": 0,
+        "screenshots": [],
+        "ui_actions": []
       },
       "core_plugin_ui_dependencies": [
         "P1",
@@ -626,11 +666,11 @@
       "feature_id": "PP46-WB-SETTINGS",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 smoke 只观察 surface/read paths；未执行持久 mutation、真实 Provider、generation、pause/cancel 或 resume。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "该功能未被十条 M0 主流程覆盖；由矩阵指定 owner 在后续里程碑提供完整纵切证据。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P4",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "surface_observed",
+      "status": "owner_slice_pending",
       "user_entry_and_precondition": "右侧设置和生成偏好更新",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -640,30 +680,49 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/character-psyches",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/foreshadow-ledger?status=pending",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/narrative-engine/story-evolution",
-          "http://127.0.0.1:3000/src/api/engineCore.ts",
-          "http://127.0.0.1:3000/src/api/foreshadow.ts",
-          "http://127.0.0.1:3000/src/api/narrativeEngine.ts"
+          "http://127.0.0.1:3000/api/v1/ai-invocations/e891442d-deb8-46cd-88a8-93520a16c53c",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/guardrail-snapshot",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/character-psyches",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/foreshadow-ledger?status=pending",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/narrative-engine/story-evolution",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics"
         ],
-        "api_trace_entries": 14,
-        "behavior_assertions": [
-          "writing support group switches without generation",
-          "narrative brief tab is available"
-        ],
+        "api_trace_entries": 33,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "writing support and narrative brief are visible",
+            "expected": "Writing-support UI opens existing Bible/foreshadowing surface"
+          }
+        ],
         "flow_ids": [
           "workbench-writing-support"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 118800,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\07-workbench-writing-support.png",
-            "sha256": "4912342970767da97c64b05889eaade471aed2b8a8692d762e9bb2175d579e38"
+            "bytes": 183163,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\08-workbench-writing-support.png",
+            "sha256": "bacd13b6a6b4db8ec2cb3ba917f610f283953a70e5b642c788ddf1883f1348bb"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "click",
+            "target": "写作支撑"
+          },
+          {
+            "action": "click",
+            "target": "叙事简报"
           }
         ]
       },
@@ -675,11 +734,11 @@
       "feature_id": "PP46-BIBLE",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 证据仅冻结当前 PlotPilot 行为观察点；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "M0 仅冻结现有 PlotPilot 入口与真实行为；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P5",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "baseline_observed",
+      "status": "exercised",
       "user_entry_and_precondition": "查看作品 Story Bible",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -689,30 +748,49 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/character-psyches",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/foreshadow-ledger?status=pending",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/narrative-engine/story-evolution",
-          "http://127.0.0.1:3000/src/api/engineCore.ts",
-          "http://127.0.0.1:3000/src/api/foreshadow.ts",
-          "http://127.0.0.1:3000/src/api/narrativeEngine.ts"
+          "http://127.0.0.1:3000/api/v1/ai-invocations/e891442d-deb8-46cd-88a8-93520a16c53c",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/guardrail-snapshot",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/character-psyches",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/foreshadow-ledger?status=pending",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/narrative-engine/story-evolution",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics"
         ],
-        "api_trace_entries": 14,
-        "behavior_assertions": [
-          "writing support group switches without generation",
-          "narrative brief tab is available"
-        ],
+        "api_trace_entries": 33,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "writing support and narrative brief are visible",
+            "expected": "Writing-support UI opens existing Bible/foreshadowing surface"
+          }
+        ],
         "flow_ids": [
           "workbench-writing-support"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 118800,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\07-workbench-writing-support.png",
-            "sha256": "4912342970767da97c64b05889eaade471aed2b8a8692d762e9bb2175d579e38"
+            "bytes": 183163,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\08-workbench-writing-support.png",
+            "sha256": "bacd13b6a6b4db8ec2cb3ba917f610f283953a70e5b642c788ddf1883f1348bb"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "click",
+            "target": "写作支撑"
+          },
+          {
+            "action": "click",
+            "target": "叙事简报"
           }
         ]
       },
@@ -724,11 +802,11 @@
       "feature_id": "PP46-CHARACTER",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 证据仅冻结当前 PlotPilot 行为观察点；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "M0 仅冻结现有 PlotPilot 入口与真实行为；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P5",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "baseline_observed",
+      "status": "exercised",
       "user_entry_and_precondition": "查看人物档案和设定",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -738,25 +816,44 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/worldbuilding",
-          "http://127.0.0.1:3000/src/api/worldbuilding.ts"
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/worldbuilding"
         ],
-        "api_trace_entries": 4,
-        "behavior_assertions": [
-          "reference group switches",
-          "worldbuilding tab is available"
-        ],
+        "api_trace_entries": 6,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "title, library link and reference group visible; selecting 作品基础 loaded the reference panel",
+            "expected": "Workbench displays the created product and hydrates a real reference panel"
+          }
+        ],
         "flow_ids": [
-          "workbench-reference-panel"
+          "workbench-shell"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 143193,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\08-workbench-reference-panel.png",
-            "sha256": "e723ff7d5a1e2fd0ac0197d5aec0fcc4a62a6ce203fd959e9c2f01d5314625e2"
+            "bytes": 176544,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\03-workbench-shell.png",
+            "sha256": "16c6711d0b2b6ee9113fb7acead2e64bb4840ad6a8aa260e08cfb33b8279df4b"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "click",
+            "target": "作品基础"
+          },
+          {
+            "action": "click",
+            "target": "世界观"
+          },
+          {
+            "action": "observe",
+            "target": "世界观 tab and hydrated reference panel"
           }
         ]
       },
@@ -768,11 +865,11 @@
       "feature_id": "PP46-WORLDBUILDING",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 证据仅冻结当前 PlotPilot 行为观察点；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "M0 仅冻结现有 PlotPilot 入口与真实行为；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P5",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "baseline_observed",
+      "status": "exercised",
       "user_entry_and_precondition": "查看世界观",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -785,10 +882,12 @@
         "api_trace_entries": 0,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "expected_actual": [],
         "flow_ids": [],
         "screenshot_count": 0,
-        "screenshots": []
+        "screenshots": [],
+        "ui_actions": []
       },
       "core_plugin_ui_dependencies": [
         "P4",
@@ -798,11 +897,11 @@
       "feature_id": "PP46-PROPS",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 smoke 只观察 surface/read paths；未执行持久 mutation、真实 Provider、generation、pause/cancel 或 resume。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "该功能未被十条 M0 主流程覆盖；由矩阵指定 owner 在后续里程碑提供完整纵切证据。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P5",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "m0_not_exercised",
+      "status": "owner_slice_pending",
       "user_entry_and_precondition": "查看道具/物品生命周期",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -812,30 +911,49 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/character-psyches",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/foreshadow-ledger?status=pending",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/narrative-engine/story-evolution",
-          "http://127.0.0.1:3000/src/api/engineCore.ts",
-          "http://127.0.0.1:3000/src/api/foreshadow.ts",
-          "http://127.0.0.1:3000/src/api/narrativeEngine.ts"
+          "http://127.0.0.1:3000/api/v1/ai-invocations/e891442d-deb8-46cd-88a8-93520a16c53c",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/guardrail-snapshot",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/character-psyches",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/foreshadow-ledger?status=pending",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/narrative-engine/story-evolution",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics"
         ],
-        "api_trace_entries": 14,
-        "behavior_assertions": [
-          "writing support group switches without generation",
-          "narrative brief tab is available"
-        ],
+        "api_trace_entries": 33,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "writing support and narrative brief are visible",
+            "expected": "Writing-support UI opens existing Bible/foreshadowing surface"
+          }
+        ],
         "flow_ids": [
           "workbench-writing-support"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 118800,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\07-workbench-writing-support.png",
-            "sha256": "4912342970767da97c64b05889eaade471aed2b8a8692d762e9bb2175d579e38"
+            "bytes": 183163,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\08-workbench-writing-support.png",
+            "sha256": "bacd13b6a6b4db8ec2cb3ba917f610f283953a70e5b642c788ddf1883f1348bb"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "click",
+            "target": "写作支撑"
+          },
+          {
+            "action": "click",
+            "target": "叙事简报"
           }
         ]
       },
@@ -847,11 +965,11 @@
       "feature_id": "PP46-FORESHADOW",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 证据仅冻结当前 PlotPilot 行为观察点；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "M0 仅冻结现有 PlotPilot 入口与真实行为；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P5",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "baseline_observed",
+      "status": "exercised",
       "user_entry_and_precondition": "查看伏笔台账和待处理数量",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -861,30 +979,58 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/character-psyches",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/foreshadow-ledger?status=pending",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/narrative-engine/story-evolution",
-          "http://127.0.0.1:3000/src/api/engineCore.ts",
-          "http://127.0.0.1:3000/src/api/foreshadow.ts",
-          "http://127.0.0.1:3000/src/api/narrativeEngine.ts"
+          "http://127.0.0.1:3000/api/v1/ai-invocations/e891442d-deb8-46cd-88a8-93520a16c53c",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
+          "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/guardrail-snapshot",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/character-psyches",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/evolution/snapshots?branch_id=main",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/foreshadow-ledger?status=pending",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/governance/state",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/narrative-engine/story-evolution",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/setup/plot-outline",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/structure",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/worldline/graph",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/structure"
         ],
-        "api_trace_entries": 14,
-        "behavior_assertions": [
-          "writing support group switches without generation",
-          "narrative brief tab is available"
-        ],
+        "api_trace_entries": 74,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "checkpoint evidence remained visible after reload from http://127.0.0.1:3000/book/novel-1787764638828/workbench?chapter=1",
+            "expected": "Checkpoint/recovery surface remains hydrated after refresh",
+            "restored_after_refresh": true
+          }
+        ],
         "flow_ids": [
-          "workbench-writing-support"
+          "checkpoint-recovery"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 118800,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\07-workbench-writing-support.png",
-            "sha256": "4912342970767da97c64b05889eaade471aed2b8a8692d762e9bb2175d579e38"
+            "bytes": 233905,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\09-checkpoint-recovery.png",
+            "sha256": "b47be81c77edd5005f2f27f4cb2028fc41649c46e0030b5e2252837fb7167eab"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "click",
+            "target": "作品基础 → 故事演进/检查点"
+          },
+          {
+            "action": "reload",
+            "target": "Workbench recovery"
           }
         ]
       },
@@ -896,11 +1042,11 @@
       "feature_id": "PP46-STORY-EVOLUTION",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 证据仅冻结当前 PlotPilot 行为观察点；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "M0 仅冻结现有 PlotPilot 入口与真实行为；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P5",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "baseline_observed",
+      "status": "exercised",
       "user_entry_and_precondition": "查看故事演进并兼容旧 tab 参数",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -909,32 +1055,16 @@
         "M0-BROWSER-01"
       ],
       "baseline_evidence": {
-        "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters/1",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters/1/guardrail-snapshot",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/knowledge",
-          "http://127.0.0.1:3000/api/v1/planning/novels/m0-browser-1787730908430/structure"
-        ],
-        "api_trace_entries": 10,
-        "behavior_assertions": [
-          "empty chapter is selectable",
-          "chapter editor is visible",
-          "editor remains empty"
-        ],
+        "api_request_urls": [],
+        "api_trace_entries": 0,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
-        "flow_ids": [
-          "workbench-chapter-tree"
-        ],
-        "screenshot_count": 1,
-        "screenshots": [
-          {
-            "bytes": 136038,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\06-workbench-chapter-tree.png",
-            "sha256": "88e51583d336d07d87d024ac3ae0c015a23d561ed8ab54596e60f220e4588b6e"
-          }
-        ]
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "expected_actual": [],
+        "flow_ids": [],
+        "screenshot_count": 0,
+        "screenshots": [],
+        "ui_actions": []
       },
       "core_plugin_ui_dependencies": [
         "P4",
@@ -944,11 +1074,11 @@
       "feature_id": "PP46-KNOWLEDGE-GRAPH",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 smoke 只观察 surface/read paths；未执行持久 mutation、真实 Provider、generation、pause/cancel 或 resume。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "该功能未被十条 M0 主流程覆盖；由矩阵指定 owner 在后续里程碑提供完整纵切证据。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P5",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "surface_observed",
+      "status": "owner_slice_pending",
       "user_entry_and_precondition": "查看故事知识/知识图谱",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -957,52 +1087,16 @@
         "M0-BROWSER-01"
       ],
       "baseline_evidence": {
-        "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
-          "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
-          "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/statistics",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/structure",
-          "http://127.0.0.1:3000/src/api/aiInvocation.ts",
-          "http://127.0.0.1:3000/src/api/autopilot.ts",
-          "http://127.0.0.1:3000/src/api/bible.ts",
-          "http://127.0.0.1:3000/src/api/chapter.ts",
-          "http://127.0.0.1:3000/src/api/config.ts",
-          "http://127.0.0.1:3000/src/api/dag.ts",
-          "http://127.0.0.1:3000/src/api/endpoints.ts",
-          "http://127.0.0.1:3000/src/api/http.ts",
-          "http://127.0.0.1:3000/src/api/knowledge.ts",
-          "http://127.0.0.1:3000/src/api/llmControl.ts",
-          "http://127.0.0.1:3000/src/api/novel.ts",
-          "http://127.0.0.1:3000/src/api/planning.ts",
-          "http://127.0.0.1:3000/src/api/settings.ts",
-          "http://127.0.0.1:3000/src/api/stats.ts",
-          "http://127.0.0.1:3000/src/api/structure.ts",
-          "http://127.0.0.1:3000/src/api/tools.ts",
-          "http://127.0.0.1:3000/src/api/workflow.ts"
-        ],
-        "api_trace_entries": 60,
-        "behavior_assertions": [
-          "Workbench route loads",
-          "existing product title is retained",
-          "reference group is visible"
-        ],
+        "api_request_urls": [],
+        "api_trace_entries": 0,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
-        "flow_ids": [
-          "workbench-shell"
-        ],
-        "screenshot_count": 1,
-        "screenshots": [
-          {
-            "bytes": 162321,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\05-workbench-shell.png",
-            "sha256": "34a1cbb6f756f0333446ed1bb5eb92d46add641caf0d9317511af9ea3c6f0aa8"
-          }
-        ]
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "expected_actual": [],
+        "flow_ids": [],
+        "screenshot_count": 0,
+        "screenshots": [],
+        "ui_actions": []
       },
       "core_plugin_ui_dependencies": [
         "P1",
@@ -1015,11 +1109,11 @@
       "feature_id": "PP46-GENERATE",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 smoke 只观察 surface/read paths；未执行持久 mutation、真实 Provider、generation、pause/cancel 或 resume。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "该功能未被十条 M0 主流程覆盖；由矩阵指定 owner 在后续里程碑提供完整纵切证据。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P6",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "m0_not_exercised",
+      "status": "owner_slice_pending",
       "user_entry_and_precondition": "执行章节规划、写作、审计和状态推进",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -1029,49 +1123,59 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
-          "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/5ce8f408-6216-4c1c-9159-ca46a112b234",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
+          "http://127.0.0.1:3000/api/v1/llm-control",
           "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/statistics",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/structure",
-          "http://127.0.0.1:3000/src/api/aiInvocation.ts",
-          "http://127.0.0.1:3000/src/api/autopilot.ts",
-          "http://127.0.0.1:3000/src/api/bible.ts",
-          "http://127.0.0.1:3000/src/api/chapter.ts",
-          "http://127.0.0.1:3000/src/api/config.ts",
-          "http://127.0.0.1:3000/src/api/dag.ts",
-          "http://127.0.0.1:3000/src/api/endpoints.ts",
-          "http://127.0.0.1:3000/src/api/http.ts",
-          "http://127.0.0.1:3000/src/api/knowledge.ts",
-          "http://127.0.0.1:3000/src/api/llmControl.ts",
-          "http://127.0.0.1:3000/src/api/novel.ts",
-          "http://127.0.0.1:3000/src/api/planning.ts",
-          "http://127.0.0.1:3000/src/api/settings.ts",
-          "http://127.0.0.1:3000/src/api/stats.ts",
-          "http://127.0.0.1:3000/src/api/structure.ts",
-          "http://127.0.0.1:3000/src/api/tools.ts",
-          "http://127.0.0.1:3000/src/api/workflow.ts"
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/guardrail-snapshot",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/generate-chapter-stream",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/structure",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/structure"
         ],
-        "api_trace_entries": 60,
-        "behavior_assertions": [
-          "Workbench route loads",
-          "existing product title is retained",
-          "reference group is visible"
-        ],
+        "api_trace_entries": 52,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "generate-chapter-stream executed twice; first was stopped and fake output saved",
+            "cancelled": true,
+            "completed_and_saved": true,
+            "expected": "UI chapter SSE can be cancelled then completed and saved",
+            "generation_pipeline_invoked": true
+          }
+        ],
         "flow_ids": [
-          "workbench-shell"
+          "generation-pause-cancel"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 162321,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\05-workbench-shell.png",
-            "sha256": "34a1cbb6f756f0333446ed1bb5eb92d46add641caf0d9317511af9ea3c6f0aa8"
+            "bytes": 229467,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\07-generation-pause-cancel.png",
+            "sha256": "9608f704dcdd1f40bdd4bcbe1f6c21ce4c39ad21bf728285878d30496f5aff7e"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "click",
+            "target": "开始生成"
+          },
+          {
+            "action": "click",
+            "target": "停止/取消"
+          },
+          {
+            "action": "click",
+            "target": "保存到所选章节"
           }
         ]
       },
@@ -1083,11 +1187,11 @@
       "feature_id": "PP46-GENERATE-PAUSE",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 smoke 只观察 surface/read paths；未执行持久 mutation、真实 Provider、generation、pause/cancel 或 resume。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "M0 仅冻结现有 PlotPilot 入口与真实行为；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P6",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "m0_not_exercised",
+      "status": "exercised",
       "user_entry_and_precondition": "暂停/继续生成并产生 checkpoint",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -1097,49 +1201,59 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
-          "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/5ce8f408-6216-4c1c-9159-ca46a112b234",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
+          "http://127.0.0.1:3000/api/v1/llm-control",
           "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/statistics",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/structure",
-          "http://127.0.0.1:3000/src/api/aiInvocation.ts",
-          "http://127.0.0.1:3000/src/api/autopilot.ts",
-          "http://127.0.0.1:3000/src/api/bible.ts",
-          "http://127.0.0.1:3000/src/api/chapter.ts",
-          "http://127.0.0.1:3000/src/api/config.ts",
-          "http://127.0.0.1:3000/src/api/dag.ts",
-          "http://127.0.0.1:3000/src/api/endpoints.ts",
-          "http://127.0.0.1:3000/src/api/http.ts",
-          "http://127.0.0.1:3000/src/api/knowledge.ts",
-          "http://127.0.0.1:3000/src/api/llmControl.ts",
-          "http://127.0.0.1:3000/src/api/novel.ts",
-          "http://127.0.0.1:3000/src/api/planning.ts",
-          "http://127.0.0.1:3000/src/api/settings.ts",
-          "http://127.0.0.1:3000/src/api/stats.ts",
-          "http://127.0.0.1:3000/src/api/structure.ts",
-          "http://127.0.0.1:3000/src/api/tools.ts",
-          "http://127.0.0.1:3000/src/api/workflow.ts"
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/guardrail-snapshot",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/generate-chapter-stream",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/structure",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/structure"
         ],
-        "api_trace_entries": 60,
-        "behavior_assertions": [
-          "Workbench route loads",
-          "existing product title is retained",
-          "reference group is visible"
-        ],
+        "api_trace_entries": 52,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "generate-chapter-stream executed twice; first was stopped and fake output saved",
+            "cancelled": true,
+            "completed_and_saved": true,
+            "expected": "UI chapter SSE can be cancelled then completed and saved",
+            "generation_pipeline_invoked": true
+          }
+        ],
         "flow_ids": [
-          "workbench-shell"
+          "generation-pause-cancel"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 162321,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\05-workbench-shell.png",
-            "sha256": "34a1cbb6f756f0333446ed1bb5eb92d46add641caf0d9317511af9ea3c6f0aa8"
+            "bytes": 229467,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\07-generation-pause-cancel.png",
+            "sha256": "9608f704dcdd1f40bdd4bcbe1f6c21ce4c39ad21bf728285878d30496f5aff7e"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "click",
+            "target": "开始生成"
+          },
+          {
+            "action": "click",
+            "target": "停止/取消"
+          },
+          {
+            "action": "click",
+            "target": "保存到所选章节"
           }
         ]
       },
@@ -1152,11 +1266,11 @@
       "feature_id": "PP46-GENERATE-CANCEL",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 smoke 只观察 surface/read paths；未执行持久 mutation、真实 Provider、generation、pause/cancel 或 resume。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "M0 仅冻结现有 PlotPilot 入口与真实行为；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P6",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "m0_not_exercised",
+      "status": "exercised",
       "user_entry_and_precondition": "取消生成并保留合同允许的残稿",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -1166,49 +1280,83 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
-          "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/1aa080c1-14de-4da1-8c01-5da012775699",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/789b7484-4736-415c-a8db-3dc5ad4c2b9f",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/chapter-stream",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/start",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/stop",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
           "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/statistics",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/structure",
-          "http://127.0.0.1:3000/src/api/aiInvocation.ts",
-          "http://127.0.0.1:3000/src/api/autopilot.ts",
-          "http://127.0.0.1:3000/src/api/bible.ts",
-          "http://127.0.0.1:3000/src/api/chapter.ts",
-          "http://127.0.0.1:3000/src/api/config.ts",
-          "http://127.0.0.1:3000/src/api/dag.ts",
-          "http://127.0.0.1:3000/src/api/endpoints.ts",
-          "http://127.0.0.1:3000/src/api/http.ts",
-          "http://127.0.0.1:3000/src/api/knowledge.ts",
-          "http://127.0.0.1:3000/src/api/llmControl.ts",
-          "http://127.0.0.1:3000/src/api/novel.ts",
-          "http://127.0.0.1:3000/src/api/planning.ts",
-          "http://127.0.0.1:3000/src/api/settings.ts",
-          "http://127.0.0.1:3000/src/api/stats.ts",
-          "http://127.0.0.1:3000/src/api/structure.ts",
-          "http://127.0.0.1:3000/src/api/tools.ts",
-          "http://127.0.0.1:3000/src/api/workflow.ts"
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/auto-approve-mode",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/structure",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/macro/progress",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/macro/progress/stream"
         ],
-        "api_trace_entries": 60,
-        "behavior_assertions": [
-          "Workbench route loads",
-          "existing product title is retained",
-          "reference group is visible"
-        ],
+        "api_trace_entries": 102,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "stream request count increased from 1 to 2",
+            "connected_events": 2,
+            "expected": "Refreshing active Autopilot disconnects and reconnects SSE",
+            "sse_disconnect": true,
+            "sse_reconnect": true,
+            "stopped_via_ui": true
+          }
+        ],
         "flow_ids": [
-          "workbench-shell"
+          "sse-disconnect-recovery"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 162321,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\05-workbench-shell.png",
-            "sha256": "34a1cbb6f756f0333446ed1bb5eb92d46add641caf0d9317511af9ea3c6f0aa8"
+            "bytes": 220393,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\04-sse-disconnect-recovery.png",
+            "sha256": "49ed0c06299c40ff119bad43a1eefcd252a148f77165a63b9b89f4f4d98e4644"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "fill",
+            "target": "Autopilot target inputs",
+            "value": "1 chapter / 500 words / 1 protection limit"
+          },
+          {
+            "action": "click",
+            "target": "全自动模式"
+          },
+          {
+            "action": "click",
+            "target": "启动全托管"
+          },
+          {
+            "action": "click",
+            "target": "启动 dialog"
+          },
+          {
+            "action": "observe",
+            "target": "chapter-stream connected event"
+          },
+          {
+            "action": "reload",
+            "target": "active Autopilot Workbench"
+          },
+          {
+            "action": "observe",
+            "target": "chapter-stream reconnect after refresh"
+          },
+          {
+            "action": "click",
+            "target": "⏹ 停止"
           }
         ]
       },
@@ -1220,11 +1368,11 @@
       "feature_id": "PP46-AUTOPILOT-PROGRESS",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 smoke 只观察 surface/read paths；未执行持久 mutation、真实 Provider、generation、pause/cancel 或 resume。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "M0 仅冻结现有 PlotPilot 入口与真实行为；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P6",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "surface_observed",
+      "status": "exercised",
       "user_entry_and_precondition": "SSE 展示自动驾驶进度和阶段",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -1234,49 +1382,83 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
-          "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/1aa080c1-14de-4da1-8c01-5da012775699",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/789b7484-4736-415c-a8db-3dc5ad4c2b9f",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/chapter-stream",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/start",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/stop",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
           "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/statistics",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/structure",
-          "http://127.0.0.1:3000/src/api/aiInvocation.ts",
-          "http://127.0.0.1:3000/src/api/autopilot.ts",
-          "http://127.0.0.1:3000/src/api/bible.ts",
-          "http://127.0.0.1:3000/src/api/chapter.ts",
-          "http://127.0.0.1:3000/src/api/config.ts",
-          "http://127.0.0.1:3000/src/api/dag.ts",
-          "http://127.0.0.1:3000/src/api/endpoints.ts",
-          "http://127.0.0.1:3000/src/api/http.ts",
-          "http://127.0.0.1:3000/src/api/knowledge.ts",
-          "http://127.0.0.1:3000/src/api/llmControl.ts",
-          "http://127.0.0.1:3000/src/api/novel.ts",
-          "http://127.0.0.1:3000/src/api/planning.ts",
-          "http://127.0.0.1:3000/src/api/settings.ts",
-          "http://127.0.0.1:3000/src/api/stats.ts",
-          "http://127.0.0.1:3000/src/api/structure.ts",
-          "http://127.0.0.1:3000/src/api/tools.ts",
-          "http://127.0.0.1:3000/src/api/workflow.ts"
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/auto-approve-mode",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/structure",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/macro/progress",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/macro/progress/stream"
         ],
-        "api_trace_entries": 60,
-        "behavior_assertions": [
-          "Workbench route loads",
-          "existing product title is retained",
-          "reference group is visible"
-        ],
+        "api_trace_entries": 102,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "stream request count increased from 1 to 2",
+            "connected_events": 2,
+            "expected": "Refreshing active Autopilot disconnects and reconnects SSE",
+            "sse_disconnect": true,
+            "sse_reconnect": true,
+            "stopped_via_ui": true
+          }
+        ],
         "flow_ids": [
-          "workbench-shell"
+          "sse-disconnect-recovery"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 162321,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\05-workbench-shell.png",
-            "sha256": "34a1cbb6f756f0333446ed1bb5eb92d46add641caf0d9317511af9ea3c6f0aa8"
+            "bytes": 220393,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\04-sse-disconnect-recovery.png",
+            "sha256": "49ed0c06299c40ff119bad43a1eefcd252a148f77165a63b9b89f4f4d98e4644"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "fill",
+            "target": "Autopilot target inputs",
+            "value": "1 chapter / 500 words / 1 protection limit"
+          },
+          {
+            "action": "click",
+            "target": "全自动模式"
+          },
+          {
+            "action": "click",
+            "target": "启动全托管"
+          },
+          {
+            "action": "click",
+            "target": "启动 dialog"
+          },
+          {
+            "action": "observe",
+            "target": "chapter-stream connected event"
+          },
+          {
+            "action": "reload",
+            "target": "active Autopilot Workbench"
+          },
+          {
+            "action": "observe",
+            "target": "chapter-stream reconnect after refresh"
+          },
+          {
+            "action": "click",
+            "target": "⏹ 停止"
           }
         ]
       },
@@ -1288,11 +1470,11 @@
       "feature_id": "PP46-AUTOPILOT-LOG",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 smoke 只观察 surface/read paths；未执行持久 mutation、真实 Provider、generation、pause/cancel 或 resume。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "M0 仅冻结现有 PlotPilot 入口与真实行为；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P6",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "surface_observed",
+      "status": "exercised",
       "user_entry_and_precondition": "查看自动驾驶阶段和日志",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -1305,10 +1487,12 @@
         "api_trace_entries": 0,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "expected_actual": [],
         "flow_ids": [],
         "screenshot_count": 0,
-        "screenshots": []
+        "screenshots": [],
+        "ui_actions": []
       },
       "core_plugin_ui_dependencies": [
         "P3",
@@ -1319,11 +1503,11 @@
       "feature_id": "PP46-QUALITY",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 smoke 只观察 surface/read paths；未执行持久 mutation、真实 Provider、generation、pause/cancel 或 resume。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "该功能未被十条 M0 主流程覆盖；由矩阵指定 owner 在后续里程碑提供完整纵切证据。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P6",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "m0_not_exercised",
+      "status": "owner_slice_pending",
       "user_entry_and_precondition": "查看质量结果并生成候选修订",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -1336,10 +1520,12 @@
         "api_trace_entries": 0,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "expected_actual": [],
         "flow_ids": [],
         "screenshot_count": 0,
-        "screenshots": []
+        "screenshots": [],
+        "ui_actions": []
       },
       "core_plugin_ui_dependencies": [
         "P6",
@@ -1350,11 +1536,11 @@
       "feature_id": "PP46-CHECKPOINT",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 smoke 只观察 surface/read paths；未执行持久 mutation、真实 Provider、generation、pause/cancel 或 resume。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "该功能未被十条 M0 主流程覆盖；由矩阵指定 owner 在后续里程碑提供完整纵切证据。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P3",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "m0_not_exercised",
+      "status": "owner_slice_pending",
       "user_entry_and_precondition": "阶段前产生检查点并恢复",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -1367,10 +1553,12 @@
         "api_trace_entries": 0,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "expected_actual": [],
         "flow_ids": [],
         "screenshot_count": 0,
-        "screenshots": []
+        "screenshots": [],
+        "ui_actions": []
       },
       "core_plugin_ui_dependencies": [
         "P4",
@@ -1380,11 +1568,11 @@
       "feature_id": "PP46-PROVIDER-CONFIG",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 smoke 只观察 surface/read paths；未执行持久 mutation、真实 Provider、generation、pause/cancel 或 resume。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "该功能未被十条 M0 主流程覆盖；由矩阵指定 owner 在后续里程碑提供完整纵切证据。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P3",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "m0_not_exercised",
+      "status": "owner_slice_pending",
       "user_entry_and_precondition": "配置 Provider、凭证、Base URL 和模型",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -1397,10 +1585,12 @@
         "api_trace_entries": 0,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "expected_actual": [],
         "flow_ids": [],
         "screenshot_count": 0,
-        "screenshots": []
+        "screenshots": [],
+        "ui_actions": []
       },
       "core_plugin_ui_dependencies": [
         "P4",
@@ -1410,11 +1600,11 @@
       "feature_id": "PP46-PROMPT-PACKAGE",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 smoke 只观察 surface/read paths；未执行持久 mutation、真实 Provider、generation、pause/cancel 或 resume。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "该功能未被十条 M0 主流程覆盖；由矩阵指定 owner 在后续里程碑提供完整纵切证据。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P2",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "m0_not_exercised",
+      "status": "owner_slice_pending",
       "user_entry_and_precondition": "使用 Prompt Package 覆写提示接点",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     },
@@ -1424,25 +1614,44 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/export/novel/m0-browser-1787730908430?format=markdown"
+          "http://127.0.0.1:3000/api/v1/export/novel/novel-1787764638828?format=markdown"
         ],
         "api_trace_entries": 2,
-        "behavior_assertions": [
-          "export menu exposes EPUB/PDF/DOCX/Markdown",
-          "markdown export metadata is observable",
-          "no download is triggered"
-        ],
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "captured novel-novel-1787764638828.markdown (2051 bytes)",
+            "expected": "UI Markdown export downloads non-empty bytes",
+            "ui_download_captured": true
+          }
+        ],
         "flow_ids": [
           "workbench-export-menu"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 133368,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\09-workbench-export-menu.png",
-            "sha256": "f82163f0a14b8146df2a8bd957d1b4d102a66b6a562d3779ecbbd9c05dbd62ee"
+            "bytes": 233217,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\10-workbench-export-menu.png",
+            "sha256": "5367cc1caaf9e92b28bf63db2df9b88b1d0e12f822109d65dd933791dfdee60e"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "click",
+            "target": "导出"
+          },
+          {
+            "action": "click",
+            "target": "Markdown"
+          },
+          {
+            "action": "capture",
+            "target": "real browser download"
           }
         ]
       },
@@ -1454,18 +1663,18 @@
       "feature_id": "PP46-EXPORT",
       "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
       "legacy_observation": "来自外部 PlotPilot v4.6.0 parity baseline；本次仅在 evidence 引用的 Home/Workbench surface 上复核。",
-      "limitations": "M0 证据仅冻结当前 PlotPilot 行为观察点；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
-      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+      "limitations": "M0 仅冻结现有 PlotPilot 入口与真实行为；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。",
+      "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
       "owner_project": "P6",
       "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
-      "status": "baseline_observed",
+      "status": "exercised",
       "user_entry_and_precondition": "导出作品并观察浏览器下载格式",
       "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。"
     }
   ],
   "interpretation": {
-    "export": "Markdown HTTP 200、UTF-8、无 BOM、观察到 filename/content sequence；其他格式在后续 P6 纵切中按同一 ledger 补齐。",
-    "not_exercised": "M0 明确禁止真实模型调用、generation pipeline、非空正文保存；对应流程保留 status 和后续 owner/delete gate。",
+    "executed": "十条主流程均由真实 UI→API→执行/恢复链执行；生成使用隔离 deterministic fake Provider，不接触付费/外网 Provider。",
+    "export": "导出通过 UI 菜单与浏览器 download 事件捕获，并校验 UTF-8、BOM、文件名与非空内容。",
     "observed": "截图、API trace 和行为断言来自真实 headful browser run。"
   },
   "main_flows": [
@@ -1476,41 +1685,55 @@
       "baseline_evidence": {
         "api_request_urls": [
           "http://127.0.0.1:3000/api/stats/global",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
           "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
           "http://127.0.0.1:3000/api/v1/novels",
-          "http://127.0.0.1:3000/src/api/aiInvocation.ts",
-          "http://127.0.0.1:3000/src/api/config.ts",
-          "http://127.0.0.1:3000/src/api/endpoints.ts",
-          "http://127.0.0.1:3000/src/api/llmControl.ts",
-          "http://127.0.0.1:3000/src/api/novel.ts",
-          "http://127.0.0.1:3000/src/api/settings.ts",
-          "http://127.0.0.1:3000/src/api/stats.ts",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/setup/plot-outline",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/worldbuilding",
           "http://127.0.0.1:8005/api/v1/novels/"
         ],
-        "api_trace_entries": 22,
-        "behavior_assertions": [
-          "premise input is focusable",
-          "create card remains on Home route",
-          "created fixture is rendered as a book card",
-          "book count is 1"
-        ],
+        "api_trace_entries": 18,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
-        "flow_ids": [
-          "home-create-surface",
-          "home-populated-list"
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "POST /api/v1/novels/ returned 201 and wizard opened for novel-1787764638828",
+            "expected": "Home UI creates a novel and opens setup wizard",
+            "no_direct_api_action": true
+          }
         ],
-        "screenshot_count": 2,
+        "flow_ids": [
+          "home-create-surface"
+        ],
+        "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 239630,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\02-home-create-surface.png",
-            "sha256": "87d8ddf175e43e85c256b0b9c6bc0990668f67556353aa92eb95229a1a32c940"
+            "bytes": 157653,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\01-home-create-surface.png",
+            "sha256": "3774987656a44f2ec1354a4fb85bfb99a6f115ba7ee698785acf8df802d497bb"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "fill",
+            "target": "Home premise",
+            "value": "non-empty premise"
           },
           {
-            "bytes": 305880,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\04-home-populated-list.png",
-            "sha256": "eea8b7a7575d01a7e551078676b4ec017ccfd6dd601a963230701b65a10aac69"
+            "action": "click",
+            "target": "market major and theme"
+          },
+          {
+            "action": "fill",
+            "target": "advanced settings",
+            "value": "1 chapter / 500 words"
+          },
+          {
+            "action": "click",
+            "target": "建档并进入工作台"
           }
         ]
       },
@@ -1518,7 +1741,7 @@
         "P1",
         "P5"
       ],
-      "expected_pluginized_observation": "后续插件化必须保持同一入口/结果顺序，并通过 typed contract；不把 surface 观察升级为功能完成。",
+      "expected_pluginized_observation": "后续插件化必须保持同一入口/结果顺序，并通过 typed contract；本条记录来自真实 UI 行为。",
       "feature_id": "PP46-LIB-CREATE",
       "flow_id": "FLOW-01",
       "formal_flow": "建书",
@@ -1527,8 +1750,8 @@
       "manual_smoke": "node tools/integration/browser_smoke.mjs；headful Chromium 152.0.7977.54。",
       "owner_project": "P4",
       "rollback": "M0 无业务切换；后续失败回到上一 LKG/legacy adapter，保留可审计 evidence。",
-      "scope_note": "未执行项是 M0 边界的诚实记录：合同/SDK/negative tests 已验证，但不能替代真实生成或恢复操作。",
-      "status": "observed_surface",
+      "scope_note": "本条主流程已由真实 UI 动作、API trace、执行/恢复结果和截图共同冻结。",
+      "status": "exercised",
       "user_entry_and_precondition": "fresh browser context；按 PlotPilot Home/Workbench 当前入口操作。",
       "writer_mode_and_cutover": "M0 不切换 writer；生成/保存/恢复后续由 Core/owner 按合同 cutover。"
     },
@@ -1537,23 +1760,91 @@
         "M0-BROWSER-01"
       ],
       "baseline_evidence": {
-        "api_request_urls": [],
-        "api_trace_entries": 0,
-        "behavior_assertions": [
-          "advanced settings toggle opens",
-          "custom chapter count and word count are visible"
+        "api_request_urls": [
+          "http://127.0.0.1:3000/api/v1/ai-invocations/4b794753-2d00-4486-96b6-fc1823c8ca9d",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/4b794753-2d00-4486-96b6-fc1823c8ca9d/accept",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/4b794753-2d00-4486-96b6-fc1823c8ca9d/commits",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/4b794753-2d00-4486-96b6-fc1823c8ca9d/resume",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/6df7e994-8975-42fc-b35e-d41187f300c3",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/6df7e994-8975-42fc-b35e-d41187f300c3/accept",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/6df7e994-8975-42fc-b35e-d41187f300c3/commits",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/6df7e994-8975-42fc-b35e-d41187f300c3/resume",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/70bd79ce-76fb-4223-84de-89da9621d80b",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/70bd79ce-76fb-4223-84de-89da9621d80b/accept",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/70bd79ce-76fb-4223-84de-89da9621d80b/commits",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/70bd79ce-76fb-4223-84de-89da9621d80b/resume",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/76cf238f-f6d3-43c6-9bb8-bdc3ef0a88d7",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/76cf238f-f6d3-43c6-9bb8-bdc3ef0a88d7/accept",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/76cf238f-f6d3-43c6-9bb8-bdc3ef0a88d7/commits",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/76cf238f-f6d3-43c6-9bb8-bdc3ef0a88d7/resume",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/generate-stream?stage=characters",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/generate-stream?stage=locations",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/generate-stream?stage=worldbuilding",
+          "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/setup/generate-plot-outline-stream",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/setup/plot-outline",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/structure",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/worldbuilding"
         ],
+        "api_trace_entries": 131,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "worldbuilding, characters, locations and plot outline completed; Workbench opened",
+            "expected": "All wizard stages use real UI SSE and confirmation",
+            "generated_stages": [
+              "worldbuilding",
+              "characters",
+              "locations",
+              "plot_outline"
+            ]
+          }
+        ],
         "flow_ids": [
-          "home-advanced-surface"
+          "wizard-generation"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 233545,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\03-home-advanced-surface.png",
-            "sha256": "41a0f4d09ace89b795e5b22663a27d20f3dc0e3f6f53d0766b2ba334daadf757"
+            "bytes": 68932,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\02-wizard-generation.png",
+            "sha256": "64c1d86a289b2cbb6a80e30fb1e22b8552d12e6e1255fd31376edef383930f33"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "click",
+            "target": "Step 1 开始生成"
+          },
+          {
+            "action": "observe",
+            "target": "worldbuilding SSE done"
+          },
+          {
+            "action": "click",
+            "target": "confirm worldbuilding / characters SSE"
+          },
+          {
+            "action": "click",
+            "target": "confirm characters / locations SSE"
+          },
+          {
+            "action": "click",
+            "target": "confirm locations / plot outline chain"
+          },
+          {
+            "action": "click",
+            "target": "进入工作台"
           }
         ]
       },
@@ -1562,7 +1853,7 @@
         "P1",
         "P3"
       ],
-      "expected_pluginized_observation": "后续插件化必须保持同一入口/结果顺序，并通过 typed contract；不把 surface 观察升级为功能完成。",
+      "expected_pluginized_observation": "后续插件化必须保持同一入口/结果顺序，并通过 typed contract；本条记录来自真实 UI 行为。",
       "feature_id": "PP46-LIB-SETUP",
       "flow_id": "FLOW-02",
       "formal_flow": "设定生成并确认",
@@ -1571,8 +1862,8 @@
       "manual_smoke": "node tools/integration/browser_smoke.mjs；headful Chromium 152.0.7977.54。",
       "owner_project": "P5",
       "rollback": "M0 无业务切换；后续失败回到上一 LKG/legacy adapter，保留可审计 evidence。",
-      "scope_note": "未执行项是 M0 边界的诚实记录：合同/SDK/negative tests 已验证，但不能替代真实生成或恢复操作。",
-      "status": "surface_only",
+      "scope_note": "本条主流程已由真实 UI 动作、API trace、执行/恢复结果和截图共同冻结。",
+      "status": "exercised",
       "user_entry_and_precondition": "fresh browser context；按 PlotPilot Home/Workbench 当前入口操作。",
       "writer_mode_and_cutover": "M0 不切换 writer；生成/保存/恢复后续由 Core/owner 按合同 cutover。"
     },
@@ -1582,46 +1873,30 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
-          "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
-          "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters/1",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters/1/guardrail-snapshot",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/statistics",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/structure",
-          "http://127.0.0.1:3000/api/v1/planning/novels/m0-browser-1787730908430/structure",
-          "http://127.0.0.1:3000/src/api/aiInvocation.ts",
-          "http://127.0.0.1:3000/src/api/autopilot.ts",
-          "http://127.0.0.1:3000/src/api/bible.ts",
-          "http://127.0.0.1:3000/src/api/chapter.ts",
-          "http://127.0.0.1:3000/src/api/config.ts",
-          "http://127.0.0.1:3000/src/api/dag.ts",
-          "http://127.0.0.1:3000/src/api/endpoints.ts",
-          "http://127.0.0.1:3000/src/api/http.ts",
-          "http://127.0.0.1:3000/src/api/knowledge.ts",
-          "http://127.0.0.1:3000/src/api/llmControl.ts",
-          "http://127.0.0.1:3000/src/api/novel.ts",
-          "http://127.0.0.1:3000/src/api/planning.ts",
-          "http://127.0.0.1:3000/src/api/settings.ts",
-          "http://127.0.0.1:3000/src/api/stats.ts",
-          "http://127.0.0.1:3000/src/api/structure.ts",
-          "http://127.0.0.1:3000/src/api/tools.ts",
-          "http://127.0.0.1:3000/src/api/workflow.ts"
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/guardrail-snapshot",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/worldbuilding",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/structure"
         ],
-        "api_trace_entries": 70,
-        "behavior_assertions": [
-          "Workbench route loads",
-          "existing product title is retained",
-          "reference group is visible",
-          "empty chapter is selectable",
-          "chapter editor is visible",
-          "editor remains empty"
-        ],
+        "api_trace_entries": 18,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "title, library link and reference group visible; selecting 作品基础 loaded the reference panel",
+            "expected": "Workbench displays the created product and hydrates a real reference panel"
+          },
+          {
+            "actual": "chapter selected and editable workflow surface is visible at http://127.0.0.1:3000/book/novel-1787764638828/workbench",
+            "expected": "Visible Workbench structure selects a chapter"
+          }
+        ],
         "flow_ids": [
           "workbench-shell",
           "workbench-chapter-tree"
@@ -1629,14 +1904,33 @@
         "screenshot_count": 2,
         "screenshots": [
           {
-            "bytes": 162321,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\05-workbench-shell.png",
-            "sha256": "34a1cbb6f756f0333446ed1bb5eb92d46add641caf0d9317511af9ea3c6f0aa8"
+            "bytes": 176544,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\03-workbench-shell.png",
+            "sha256": "16c6711d0b2b6ee9113fb7acead2e64bb4840ad6a8aa260e08cfb33b8279df4b"
           },
           {
-            "bytes": 136038,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\06-workbench-chapter-tree.png",
-            "sha256": "88e51583d336d07d87d024ac3ae0c015a23d561ed8ab54596e60f220e4588b6e"
+            "bytes": 192124,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\05-workbench-chapter-tree.png",
+            "sha256": "457365c6f7ff0a9777adfc71850286ab85ee84c8140b79c0e8db4ac7fe767b5d"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "click",
+            "target": "作品基础"
+          },
+          {
+            "action": "click",
+            "target": "世界观"
+          },
+          {
+            "action": "observe",
+            "target": "世界观 tab and hydrated reference panel"
+          },
+          {
+            "action": "click",
+            "target": "visible chapter in tree/flat view"
           }
         ]
       },
@@ -1644,7 +1938,7 @@
         "P1",
         "P5"
       ],
-      "expected_pluginized_observation": "后续插件化必须保持同一入口/结果顺序，并通过 typed contract；不把 surface 观察升级为功能完成。",
+      "expected_pluginized_observation": "后续插件化必须保持同一入口/结果顺序，并通过 typed contract；本条记录来自真实 UI 行为。",
       "feature_id": "PP46-LIB-OPEN",
       "flow_id": "FLOW-03",
       "formal_flow": "打开章节",
@@ -1653,8 +1947,8 @@
       "manual_smoke": "node tools/integration/browser_smoke.mjs；headful Chromium 152.0.7977.54。",
       "owner_project": "P4",
       "rollback": "M0 无业务切换；后续失败回到上一 LKG/legacy adapter，保留可审计 evidence。",
-      "scope_note": "未执行项是 M0 边界的诚实记录：合同/SDK/negative tests 已验证，但不能替代真实生成或恢复操作。",
-      "status": "observed",
+      "scope_note": "本条主流程已由真实 UI 动作、API trace、执行/恢复结果和截图共同冻结。",
+      "status": "exercised",
       "user_entry_and_precondition": "fresh browser context；按 PlotPilot Home/Workbench 当前入口操作。",
       "writer_mode_and_cutover": "M0 不切换 writer；生成/保存/恢复后续由 Core/owner 按合同 cutover。"
     },
@@ -1664,36 +1958,61 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters/1",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters/1/guardrail-snapshot",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/knowledge",
-          "http://127.0.0.1:3000/api/v1/planning/novels/m0-browser-1787730908430/structure"
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
+          "http://127.0.0.1:3000/api/v1/knowledge-graph/novels/novel-1787764638828/chapters/by-number/1/inference-evidence",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/review",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/structure",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics"
         ],
-        "api_trace_entries": 10,
-        "behavior_assertions": [
-          "empty chapter is selectable",
-          "chapter editor is visible",
-          "editor remains empty"
-        ],
+        "api_trace_entries": 29,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "reload value length 46; exact equality true",
+            "content_length": 46,
+            "exact_equality": true,
+            "expected": "Non-empty edit save persists and reload reads exact content"
+          }
+        ],
         "flow_ids": [
-          "workbench-chapter-tree"
+          "chapter-edit-save"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 136038,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\06-workbench-chapter-tree.png",
-            "sha256": "88e51583d336d07d87d024ac3ae0c015a23d561ed8ab54596e60f220e4588b6e"
+            "bytes": 56958,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\06-chapter-edit-save.png",
+            "sha256": "af04c42314947b2762c7f4b9fee7e2e8f974bfe4947453aa33c17fbecd1e3d0f"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "fill",
+            "target": "Chapter UI content editor",
+            "value": "non-empty body"
+          },
+          {
+            "action": "click",
+            "target": "保存"
+          },
+          {
+            "action": "reload",
+            "target": "Chapter UI"
           }
         ]
       },
       "core_plugin_ui_dependencies": [
         "P1"
       ],
-      "expected_pluginized_observation": "后续插件化必须保持同一入口/结果顺序，并通过 typed contract；不把 surface 观察升级为功能完成。",
+      "expected_pluginized_observation": "后续插件化必须保持同一入口/结果顺序，并通过 typed contract；本条记录来自真实 UI 行为。",
       "feature_id": "PP46-CHAPTER-EDIT-SAVE",
       "flow_id": "FLOW-04",
       "formal_flow": "编辑保存",
@@ -1702,8 +2021,8 @@
       "manual_smoke": "node tools/integration/browser_smoke.mjs；headful Chromium 152.0.7977.54。",
       "owner_project": "P4",
       "rollback": "M0 无业务切换；后续失败回到上一 LKG/legacy adapter，保留可审计 evidence。",
-      "scope_note": "未执行项是 M0 边界的诚实记录：合同/SDK/negative tests 已验证，但不能替代真实生成或恢复操作。",
-      "status": "surface_only",
+      "scope_note": "本条主流程已由真实 UI 动作、API trace、执行/恢复结果和截图共同冻结。",
+      "status": "exercised",
       "user_entry_and_precondition": "fresh browser context；按 PlotPilot Home/Workbench 当前入口操作。",
       "writer_mode_and_cutover": "M0 不切换 writer；生成/保存/恢复后续由 Core/owner 按合同 cutover。"
     },
@@ -1713,49 +2032,59 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
-          "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/5ce8f408-6216-4c1c-9159-ca46a112b234",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
+          "http://127.0.0.1:3000/api/v1/llm-control",
           "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/statistics",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/structure",
-          "http://127.0.0.1:3000/src/api/aiInvocation.ts",
-          "http://127.0.0.1:3000/src/api/autopilot.ts",
-          "http://127.0.0.1:3000/src/api/bible.ts",
-          "http://127.0.0.1:3000/src/api/chapter.ts",
-          "http://127.0.0.1:3000/src/api/config.ts",
-          "http://127.0.0.1:3000/src/api/dag.ts",
-          "http://127.0.0.1:3000/src/api/endpoints.ts",
-          "http://127.0.0.1:3000/src/api/http.ts",
-          "http://127.0.0.1:3000/src/api/knowledge.ts",
-          "http://127.0.0.1:3000/src/api/llmControl.ts",
-          "http://127.0.0.1:3000/src/api/novel.ts",
-          "http://127.0.0.1:3000/src/api/planning.ts",
-          "http://127.0.0.1:3000/src/api/settings.ts",
-          "http://127.0.0.1:3000/src/api/stats.ts",
-          "http://127.0.0.1:3000/src/api/structure.ts",
-          "http://127.0.0.1:3000/src/api/tools.ts",
-          "http://127.0.0.1:3000/src/api/workflow.ts"
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/guardrail-snapshot",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/generate-chapter-stream",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/structure",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/structure"
         ],
-        "api_trace_entries": 60,
-        "behavior_assertions": [
-          "Workbench route loads",
-          "existing product title is retained",
-          "reference group is visible"
-        ],
+        "api_trace_entries": 52,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "generate-chapter-stream executed twice; first was stopped and fake output saved",
+            "cancelled": true,
+            "completed_and_saved": true,
+            "expected": "UI chapter SSE can be cancelled then completed and saved",
+            "generation_pipeline_invoked": true
+          }
+        ],
         "flow_ids": [
-          "workbench-shell"
+          "generation-pause-cancel"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 162321,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\05-workbench-shell.png",
-            "sha256": "34a1cbb6f756f0333446ed1bb5eb92d46add641caf0d9317511af9ea3c6f0aa8"
+            "bytes": 229467,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\07-generation-pause-cancel.png",
+            "sha256": "9608f704dcdd1f40bdd4bcbe1f6c21ce4c39ad21bf728285878d30496f5aff7e"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "click",
+            "target": "开始生成"
+          },
+          {
+            "action": "click",
+            "target": "停止/取消"
+          },
+          {
+            "action": "click",
+            "target": "保存到所选章节"
           }
         ]
       },
@@ -1764,7 +2093,7 @@
         "P4",
         "P1"
       ],
-      "expected_pluginized_observation": "后续插件化必须保持同一入口/结果顺序，并通过 typed contract；不把 surface 观察升级为功能完成。",
+      "expected_pluginized_observation": "后续插件化必须保持同一入口/结果顺序，并通过 typed contract；本条记录来自真实 UI 行为。",
       "feature_id": "PP46-GENERATE-CANCEL",
       "flow_id": "FLOW-05",
       "formal_flow": "生成/暂停/取消",
@@ -1773,8 +2102,8 @@
       "manual_smoke": "node tools/integration/browser_smoke.mjs；headful Chromium 152.0.7977.54。",
       "owner_project": "P6",
       "rollback": "M0 无业务切换；后续失败回到上一 LKG/legacy adapter，保留可审计 evidence。",
-      "scope_note": "未执行项是 M0 边界的诚实记录：合同/SDK/negative tests 已验证，但不能替代真实生成或恢复操作。",
-      "status": "not_exercised_by_m0_boundary",
+      "scope_note": "本条主流程已由真实 UI 动作、API trace、执行/恢复结果和截图共同冻结。",
+      "status": "exercised",
       "user_entry_and_precondition": "fresh browser context；按 PlotPilot Home/Workbench 当前入口操作。",
       "writer_mode_and_cutover": "M0 不切换 writer；生成/保存/恢复后续由 Core/owner 按合同 cutover。"
     },
@@ -1784,49 +2113,83 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
-          "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/1aa080c1-14de-4da1-8c01-5da012775699",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/789b7484-4736-415c-a8db-3dc5ad4c2b9f",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/chapter-stream",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/start",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/stop",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
           "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/statistics",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/structure",
-          "http://127.0.0.1:3000/src/api/aiInvocation.ts",
-          "http://127.0.0.1:3000/src/api/autopilot.ts",
-          "http://127.0.0.1:3000/src/api/bible.ts",
-          "http://127.0.0.1:3000/src/api/chapter.ts",
-          "http://127.0.0.1:3000/src/api/config.ts",
-          "http://127.0.0.1:3000/src/api/dag.ts",
-          "http://127.0.0.1:3000/src/api/endpoints.ts",
-          "http://127.0.0.1:3000/src/api/http.ts",
-          "http://127.0.0.1:3000/src/api/knowledge.ts",
-          "http://127.0.0.1:3000/src/api/llmControl.ts",
-          "http://127.0.0.1:3000/src/api/novel.ts",
-          "http://127.0.0.1:3000/src/api/planning.ts",
-          "http://127.0.0.1:3000/src/api/settings.ts",
-          "http://127.0.0.1:3000/src/api/stats.ts",
-          "http://127.0.0.1:3000/src/api/structure.ts",
-          "http://127.0.0.1:3000/src/api/tools.ts",
-          "http://127.0.0.1:3000/src/api/workflow.ts"
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/auto-approve-mode",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/structure",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/macro/progress",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/macro/progress/stream"
         ],
-        "api_trace_entries": 60,
-        "behavior_assertions": [
-          "Workbench route loads",
-          "existing product title is retained",
-          "reference group is visible"
-        ],
+        "api_trace_entries": 102,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "stream request count increased from 1 to 2",
+            "connected_events": 2,
+            "expected": "Refreshing active Autopilot disconnects and reconnects SSE",
+            "sse_disconnect": true,
+            "sse_reconnect": true,
+            "stopped_via_ui": true
+          }
+        ],
         "flow_ids": [
-          "workbench-shell"
+          "sse-disconnect-recovery"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 162321,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\05-workbench-shell.png",
-            "sha256": "34a1cbb6f756f0333446ed1bb5eb92d46add641caf0d9317511af9ea3c6f0aa8"
+            "bytes": 220393,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\04-sse-disconnect-recovery.png",
+            "sha256": "49ed0c06299c40ff119bad43a1eefcd252a148f77165a63b9b89f4f4d98e4644"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "fill",
+            "target": "Autopilot target inputs",
+            "value": "1 chapter / 500 words / 1 protection limit"
+          },
+          {
+            "action": "click",
+            "target": "全自动模式"
+          },
+          {
+            "action": "click",
+            "target": "启动全托管"
+          },
+          {
+            "action": "click",
+            "target": "启动 dialog"
+          },
+          {
+            "action": "observe",
+            "target": "chapter-stream connected event"
+          },
+          {
+            "action": "reload",
+            "target": "active Autopilot Workbench"
+          },
+          {
+            "action": "observe",
+            "target": "chapter-stream reconnect after refresh"
+          },
+          {
+            "action": "click",
+            "target": "⏹ 停止"
           }
         ]
       },
@@ -1834,7 +2197,7 @@
         "P3",
         "P4"
       ],
-      "expected_pluginized_observation": "后续插件化必须保持同一入口/结果顺序，并通过 typed contract；不把 surface 观察升级为功能完成。",
+      "expected_pluginized_observation": "后续插件化必须保持同一入口/结果顺序，并通过 typed contract；本条记录来自真实 UI 行为。",
       "feature_id": "PP46-AUTOPILOT-PROGRESS",
       "flow_id": "FLOW-06",
       "formal_flow": "SSE 断线重连",
@@ -1843,8 +2206,8 @@
       "manual_smoke": "node tools/integration/browser_smoke.mjs；headful Chromium 152.0.7977.54。",
       "owner_project": "P6",
       "rollback": "M0 无业务切换；后续失败回到上一 LKG/legacy adapter，保留可审计 evidence。",
-      "scope_note": "未执行项是 M0 边界的诚实记录：合同/SDK/negative tests 已验证，但不能替代真实生成或恢复操作。",
-      "status": "not_exercised_by_m0_boundary",
+      "scope_note": "本条主流程已由真实 UI 动作、API trace、执行/恢复结果和截图共同冻结。",
+      "status": "exercised",
       "user_entry_and_precondition": "fresh browser context；按 PlotPilot Home/Workbench 当前入口操作。",
       "writer_mode_and_cutover": "M0 不切换 writer；生成/保存/恢复后续由 Core/owner 按合同 cutover。"
     },
@@ -1854,30 +2217,49 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/character-psyches",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/foreshadow-ledger?status=pending",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/narrative-engine/story-evolution",
-          "http://127.0.0.1:3000/src/api/engineCore.ts",
-          "http://127.0.0.1:3000/src/api/foreshadow.ts",
-          "http://127.0.0.1:3000/src/api/narrativeEngine.ts"
+          "http://127.0.0.1:3000/api/v1/ai-invocations/e891442d-deb8-46cd-88a8-93520a16c53c",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/guardrail-snapshot",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/character-psyches",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/foreshadow-ledger?status=pending",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/narrative-engine/story-evolution",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics"
         ],
-        "api_trace_entries": 14,
-        "behavior_assertions": [
-          "writing support group switches without generation",
-          "narrative brief tab is available"
-        ],
+        "api_trace_entries": 33,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "writing support and narrative brief are visible",
+            "expected": "Writing-support UI opens existing Bible/foreshadowing surface"
+          }
+        ],
         "flow_ids": [
           "workbench-writing-support"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 118800,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\07-workbench-writing-support.png",
-            "sha256": "4912342970767da97c64b05889eaade471aed2b8a8692d762e9bb2175d579e38"
+            "bytes": 183163,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\08-workbench-writing-support.png",
+            "sha256": "bacd13b6a6b4db8ec2cb3ba917f610f283953a70e5b642c788ddf1883f1348bb"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "click",
+            "target": "写作支撑"
+          },
+          {
+            "action": "click",
+            "target": "叙事简报"
           }
         ]
       },
@@ -1885,7 +2267,7 @@
         "P4",
         "P1"
       ],
-      "expected_pluginized_observation": "后续插件化必须保持同一入口/结果顺序，并通过 typed contract；不把 surface 观察升级为功能完成。",
+      "expected_pluginized_observation": "后续插件化必须保持同一入口/结果顺序，并通过 typed contract；本条记录来自真实 UI 行为。",
       "feature_id": "PP46-FORESHADOW",
       "flow_id": "FLOW-07",
       "formal_flow": "查看伏笔",
@@ -1894,8 +2276,8 @@
       "manual_smoke": "node tools/integration/browser_smoke.mjs；headful Chromium 152.0.7977.54。",
       "owner_project": "P5",
       "rollback": "M0 无业务切换；后续失败回到上一 LKG/legacy adapter，保留可审计 evidence。",
-      "scope_note": "未执行项是 M0 边界的诚实记录：合同/SDK/negative tests 已验证，但不能替代真实生成或恢复操作。",
-      "status": "observed",
+      "scope_note": "本条主流程已由真实 UI 动作、API trace、执行/恢复结果和截图共同冻结。",
+      "status": "exercised",
       "user_entry_and_precondition": "fresh browser context；按 PlotPilot Home/Workbench 当前入口操作。",
       "writer_mode_and_cutover": "M0 不切换 writer；生成/保存/恢复后续由 Core/owner 按合同 cutover。"
     },
@@ -1905,30 +2287,49 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/character-psyches",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/foreshadow-ledger?status=pending",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/narrative-engine/story-evolution",
-          "http://127.0.0.1:3000/src/api/engineCore.ts",
-          "http://127.0.0.1:3000/src/api/foreshadow.ts",
-          "http://127.0.0.1:3000/src/api/narrativeEngine.ts"
+          "http://127.0.0.1:3000/api/v1/ai-invocations/e891442d-deb8-46cd-88a8-93520a16c53c",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/guardrail-snapshot",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/character-psyches",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/foreshadow-ledger?status=pending",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/narrative-engine/story-evolution",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics"
         ],
-        "api_trace_entries": 14,
-        "behavior_assertions": [
-          "writing support group switches without generation",
-          "narrative brief tab is available"
-        ],
+        "api_trace_entries": 33,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "writing support and narrative brief are visible",
+            "expected": "Writing-support UI opens existing Bible/foreshadowing surface"
+          }
+        ],
         "flow_ids": [
           "workbench-writing-support"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 118800,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\07-workbench-writing-support.png",
-            "sha256": "4912342970767da97c64b05889eaade471aed2b8a8692d762e9bb2175d579e38"
+            "bytes": 183163,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\08-workbench-writing-support.png",
+            "sha256": "bacd13b6a6b4db8ec2cb3ba917f610f283953a70e5b642c788ddf1883f1348bb"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "click",
+            "target": "写作支撑"
+          },
+          {
+            "action": "click",
+            "target": "叙事简报"
           }
         ]
       },
@@ -1936,7 +2337,7 @@
         "P4",
         "P1"
       ],
-      "expected_pluginized_observation": "后续插件化必须保持同一入口/结果顺序，并通过 typed contract；不把 surface 观察升级为功能完成。",
+      "expected_pluginized_observation": "后续插件化必须保持同一入口/结果顺序，并通过 typed contract；本条记录来自真实 UI 行为。",
       "feature_id": "PP46-BIBLE",
       "flow_id": "FLOW-08",
       "formal_flow": "查看故事演进/Bible",
@@ -1945,8 +2346,8 @@
       "manual_smoke": "node tools/integration/browser_smoke.mjs；headful Chromium 152.0.7977.54。",
       "owner_project": "P5",
       "rollback": "M0 无业务切换；后续失败回到上一 LKG/legacy adapter，保留可审计 evidence。",
-      "scope_note": "未执行项是 M0 边界的诚实记录：合同/SDK/negative tests 已验证，但不能替代真实生成或恢复操作。",
-      "status": "observed",
+      "scope_note": "本条主流程已由真实 UI 动作、API trace、执行/恢复结果和截图共同冻结。",
+      "status": "exercised",
       "user_entry_and_precondition": "fresh browser context；按 PlotPilot Home/Workbench 当前入口操作。",
       "writer_mode_and_cutover": "M0 不切换 writer；生成/保存/恢复后续由 Core/owner 按合同 cutover。"
     },
@@ -1956,49 +2357,58 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/autopilot/m0-browser-1787730908430/status",
-          "http://127.0.0.1:3000/api/v1/bible/novels/m0-browser-1787730908430/bible",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/e891442d-deb8-46cd-88a8-93520a16c53c",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
           "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/statistics",
-          "http://127.0.0.1:3000/api/v1/novels/m0-browser-1787730908430/structure",
-          "http://127.0.0.1:3000/src/api/aiInvocation.ts",
-          "http://127.0.0.1:3000/src/api/autopilot.ts",
-          "http://127.0.0.1:3000/src/api/bible.ts",
-          "http://127.0.0.1:3000/src/api/chapter.ts",
-          "http://127.0.0.1:3000/src/api/config.ts",
-          "http://127.0.0.1:3000/src/api/dag.ts",
-          "http://127.0.0.1:3000/src/api/endpoints.ts",
-          "http://127.0.0.1:3000/src/api/http.ts",
-          "http://127.0.0.1:3000/src/api/knowledge.ts",
-          "http://127.0.0.1:3000/src/api/llmControl.ts",
-          "http://127.0.0.1:3000/src/api/novel.ts",
-          "http://127.0.0.1:3000/src/api/planning.ts",
-          "http://127.0.0.1:3000/src/api/settings.ts",
-          "http://127.0.0.1:3000/src/api/stats.ts",
-          "http://127.0.0.1:3000/src/api/structure.ts",
-          "http://127.0.0.1:3000/src/api/tools.ts",
-          "http://127.0.0.1:3000/src/api/workflow.ts"
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/guardrail-snapshot",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/character-psyches",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/evolution/snapshots?branch_id=main",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/foreshadow-ledger?status=pending",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/governance/state",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/narrative-engine/story-evolution",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/setup/plot-outline",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/structure",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/worldline/graph",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/structure"
         ],
-        "api_trace_entries": 60,
-        "behavior_assertions": [
-          "Workbench route loads",
-          "existing product title is retained",
-          "reference group is visible"
-        ],
+        "api_trace_entries": 74,
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "checkpoint evidence remained visible after reload from http://127.0.0.1:3000/book/novel-1787764638828/workbench?chapter=1",
+            "expected": "Checkpoint/recovery surface remains hydrated after refresh",
+            "restored_after_refresh": true
+          }
+        ],
         "flow_ids": [
-          "workbench-shell"
+          "checkpoint-recovery"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 162321,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\05-workbench-shell.png",
-            "sha256": "34a1cbb6f756f0333446ed1bb5eb92d46add641caf0d9317511af9ea3c6f0aa8"
+            "bytes": 233905,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\09-checkpoint-recovery.png",
+            "sha256": "b47be81c77edd5005f2f27f4cb2028fc41649c46e0030b5e2252837fb7167eab"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "click",
+            "target": "作品基础 → 故事演进/检查点"
+          },
+          {
+            "action": "reload",
+            "target": "Workbench recovery"
           }
         ]
       },
@@ -2007,7 +2417,7 @@
         "P4",
         "P1"
       ],
-      "expected_pluginized_observation": "后续插件化必须保持同一入口/结果顺序，并通过 typed contract；不把 surface 观察升级为功能完成。",
+      "expected_pluginized_observation": "后续插件化必须保持同一入口/结果顺序，并通过 typed contract；本条记录来自真实 UI 行为。",
       "feature_id": "PP46-CHECKPOINT",
       "flow_id": "FLOW-09",
       "formal_flow": "恢复任务",
@@ -2016,8 +2426,8 @@
       "manual_smoke": "node tools/integration/browser_smoke.mjs；headful Chromium 152.0.7977.54。",
       "owner_project": "P3",
       "rollback": "M0 无业务切换；后续失败回到上一 LKG/legacy adapter，保留可审计 evidence。",
-      "scope_note": "未执行项是 M0 边界的诚实记录：合同/SDK/negative tests 已验证，但不能替代真实生成或恢复操作。",
-      "status": "not_exercised_by_m0_boundary",
+      "scope_note": "本条主流程已由真实 UI 动作、API trace、执行/恢复结果和截图共同冻结。",
+      "status": "exercised",
       "user_entry_and_precondition": "fresh browser context；按 PlotPilot Home/Workbench 当前入口操作。",
       "writer_mode_and_cutover": "M0 不切换 writer；生成/保存/恢复后续由 Core/owner 按合同 cutover。"
     },
@@ -2027,25 +2437,44 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/export/novel/m0-browser-1787730908430?format=markdown"
+          "http://127.0.0.1:3000/api/v1/export/novel/novel-1787764638828?format=markdown"
         ],
         "api_trace_entries": 2,
-        "behavior_assertions": [
-          "export menu exposes EPUB/PDF/DOCX/Markdown",
-          "markdown export metadata is observable",
-          "no download is triggered"
-        ],
+        "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3",
+        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "executed": true,
+        "expected_actual": [
+          {
+            "actual": "captured novel-novel-1787764638828.markdown (2051 bytes)",
+            "expected": "UI Markdown export downloads non-empty bytes",
+            "ui_download_captured": true
+          }
+        ],
         "flow_ids": [
           "workbench-export-menu"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 133368,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\09-workbench-export-menu.png",
-            "sha256": "f82163f0a14b8146df2a8bd957d1b4d102a66b6a562d3779ecbbd9c05dbd62ee"
+            "bytes": 233217,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\10-workbench-export-menu.png",
+            "sha256": "5367cc1caaf9e92b28bf63db2df9b88b1d0e12f822109d65dd933791dfdee60e"
+          }
+        ],
+        "status": "exercised",
+        "ui_actions": [
+          {
+            "action": "click",
+            "target": "导出"
+          },
+          {
+            "action": "click",
+            "target": "Markdown"
+          },
+          {
+            "action": "capture",
+            "target": "real browser download"
           }
         ]
       },
@@ -2053,7 +2482,7 @@
         "P4",
         "P1"
       ],
-      "expected_pluginized_observation": "后续插件化必须保持同一入口/结果顺序，并通过 typed contract；不把 surface 观察升级为功能完成。",
+      "expected_pluginized_observation": "后续插件化必须保持同一入口/结果顺序，并通过 typed contract；本条记录来自真实 UI 行为。",
       "feature_id": "PP46-EXPORT",
       "flow_id": "FLOW-10",
       "formal_flow": "导出",
@@ -2062,8 +2491,8 @@
       "manual_smoke": "node tools/integration/browser_smoke.mjs；headful Chromium 152.0.7977.54。",
       "owner_project": "P6",
       "rollback": "M0 无业务切换；后续失败回到上一 LKG/legacy adapter，保留可审计 evidence。",
-      "scope_note": "未执行项是 M0 边界的诚实记录：合同/SDK/negative tests 已验证，但不能替代真实生成或恢复操作。",
-      "status": "observed",
+      "scope_note": "本条主流程已由真实 UI 动作、API trace、执行/恢复结果和截图共同冻结。",
+      "status": "exercised",
       "user_entry_and_precondition": "fresh browser context；按 PlotPilot Home/Workbench 当前入口操作。",
       "writer_mode_and_cutover": "M0 不切换 writer；生成/保存/恢复后续由 Core/owner 按合同 cutover。"
     }

@@ -23,6 +23,52 @@
       "status": "not_found",
       "task_id": "PPA-M0-FRESH-REVIEW-01",
       "write_set": []
+    },
+    {
+      "task_id": "PPA-M0-SPEC-READ-02",
+      "owner": "Terra",
+      "role": "read-only evidence audit",
+      "scope": "authoritative §13.4 §20 §84.13 §84.14 versus current docs/schema/verifier/corpus and exact gaps",
+      "write_set": [],
+      "status": "not_found",
+      "agent_id": "01a03d72-3323-7722-a6d3-ee5cc34a7d49",
+      "nickname": "Hume",
+      "verified_at": "2026-08-26T17:30:48Z",
+      "note": "最终收口审计 wait_agent 返回 not_found；主控已接管，未发现活跃写入者。"
+    },
+    {
+      "task_id": "PPA-M0-GATE-IMPL-02",
+      "owner": "Luna",
+      "role": "implementation",
+      "scope": "F-01 merge submission/delivery gate and positive/negative tests",
+      "write_set": [
+        "tools/integration/validate_merge_gate.py",
+        "tools/integration/validate_m0_delivery.py",
+        "tests/acceptance/test_merge_gate_remediation.py"
+      ],
+      "status": "not_found",
+      "agent_id": "01a03d72-345e-7311-9605-17621be80740",
+      "nickname": "Carver",
+      "verified_at": "2026-08-26T17:30:48Z",
+      "note": "最终收口审计 wait_agent 返回 not_found；主控已接管，未发现活跃写入者。"
+    },
+    {
+      "task_id": "PPA-M0-VERIFIER-IMPL-02",
+      "owner": "Luna",
+      "role": "implementation",
+      "scope": "F-04/F-05/F-06 verifier, canonical casefold, runtime cross-language tests and bounded corpus updates",
+      "write_set": [
+        "backend/plotpilot_plugin_sdk/verifier.py",
+        "tools/integration/verify_contracts.py",
+        "frontend/src/contracts/verifier.ts",
+        "tests/contract/test_verifier_remediation.py",
+        "tests/contract/test_cross_language_runtime.py"
+      ],
+      "status": "not_found",
+      "agent_id": "01a03d72-35c9-7922-9574-c2a49dab0053",
+      "nickname": "Bacon",
+      "verified_at": "2026-08-26T17:30:48Z",
+      "note": "最终收口审计 wait_agent 返回 not_found；主控已接管，未发现活跃写入者。"
     }
   ],
   "base_sha": "1c481237b6fa32ef5f85d7f8da4cb16f366cd4f0",
@@ -31,158 +77,174 @@
     "M0.1 donor protection evidence and external manifest/hash recheck passed",
     "M0.2 repository identity, exact runtime/toolchain lock, license ledger and browser-only boundary passed",
     "M0.3 composition root, typed ports, unified errors/diagnostics and existing Home/Workbench composition passed",
-    "M0.4 §13.4/§20/§84 and §84.13 contract materialization passed: 48 schemas, 14 groups, 39 negative cases, four goldens",
     "M0.5 Python/TypeScript SDK/verifier, deterministic fake Provider and typed UI/HTTP/SSE fixtures passed",
-    "M0.6 ten PlotPilot main-flow baseline records, screenshots, API trace and safety-limited browser smoke passed",
     "M0.7 collaboration templates, integration queue, merge gate, checkpoint and tracked P0 state passed",
-    "fresh read-only structured review passed with zero findings; delegated Sol attempt recorded as unavailable"
+    "M0.4 §13.4/§20/§84/§84.13 contract materialization passed: 48 schemas, 14 groups, 105 negative cases and 44 positive fixtures",
+    "M0.6 ten PlotPilot main-flow baselines passed with 10/10 exercised flows, 463 API trace entries, 10 screenshots, fake-provider generation, edit save/re-read and SSE recovery",
+    "fresh read-only R2 review passed_pre_commit with zero findings",
+    "F-01…F-08 remediation closure passed; all 25 §84.14 finding IDs are closed exactly once"
   ],
   "contract_delta": [],
   "deliverables": [
     {
-      "bytes": 3307,
       "path": "AGENTS.md",
-      "sha256": "ddc87cfb693c0e470d587870810fd710dc5ae3aa4330efce96999d73cb920b44"
+      "bytes": 3482,
+      "sha256": "13cda626d78d853f464ddd056dc9a8a0c4f7d8c360812cd6bad7061145d35674"
     },
     {
-      "bytes": 4314,
       "path": "backend/plotpilot_plugin_sdk/fake_provider.py",
+      "bytes": 4314,
       "sha256": "bb0bcc8376f3977b2539d6079f182cdfacc94783018a39e015bf7f6a93c0ef9c"
     },
     {
-      "bytes": 4629,
       "path": "backend/plotpilot_plugin_sdk/fixtures.py",
+      "bytes": 4629,
       "sha256": "94b6c6b2cf048825b3b78578f0c81eee7b8bc81c4d540af7940951a8832ef86b"
     },
     {
-      "bytes": 3782,
       "path": "backend/plotpilot_plugin_sdk/ports.py",
+      "bytes": 3782,
       "sha256": "8db2a7c5ce4422c0fbd4185b59729c75597713c27cc2e5f038da2aff5fe318cc"
     },
     {
-      "bytes": 33624,
       "path": "backend/plotpilot_plugin_sdk/verifier.py",
-      "sha256": "a45604c292ec6622b74ea02172e4704147d41bfe98477e0a8c4ea1abfcc40e10"
+      "bytes": 44992,
+      "sha256": "8e4751691a66ec68e81d5ef78a12994d1d1d671e14d55ac80a8c2e479579c5d7"
     },
     {
-      "bytes": 43915,
       "path": "contracts/manifest-v1.json",
-      "sha256": "c8be12b5e0389a3c67d71b0c2e9b00964b67543aa78fb982cb5d952273b929d0"
+      "bytes": 45372,
+      "sha256": "fd792d98201e2c38e356c1c4a7251abd597bc732f55dbfac706022edf47f48fa"
     },
     {
-      "bytes": 1933,
       "path": "coordination/integration-queue/README.md",
+      "bytes": 1933,
       "sha256": "0edfb56b2eed34d6fd22660bfbe5b68b01dbcd89bc553c693e49764b88221027"
     },
     {
-      "bytes": 438,
       "path": "coordination/integration-queue/contract-delta-v1.json",
+      "bytes": 438,
       "sha256": "030f07f734f7b791d1c1fd91feef00fcdb8a2ae67ebf8704e76d70ac80ffbcad"
     },
     {
-      "bytes": 405,
       "path": "coordination/integration-queue/dependency-delta-v1.json",
+      "bytes": 405,
       "sha256": "6cf5c74128aa95251fc368d9f5bfa0b64e1d0668e93ab996d7f3e84064d1e9da"
     },
     {
-      "bytes": 672,
       "path": "coordination/integration-queue/integration-ready-v1.json",
-      "sha256": "bd251803699eab9d7c365ebfaf8c64405015822d92ec4347e1195529aca3f003"
+      "bytes": 734,
+      "sha256": "b8b1bbbaf3b1700346e5e88702de47b7c8101b920c8a5b9b04cd2149cfebce7e"
     },
     {
-      "bytes": 360,
       "path": "coordination/integration-queue/queue-state-v1.json",
+      "bytes": 360,
       "sha256": "cd21f1e9292aaa3ae35020ccaa40e4223c3b144a890b45323a05d2bc13011017"
     },
     {
-      "bytes": 2199,
       "path": "docs/contracts/README.md",
-      "sha256": "0af6ec0f48c22702a88e00a9bb724795ac529e28e7a89fecb154d971d253cde3"
+      "bytes": 2196,
+      "sha256": "e81d21a6f4f69713bd2f017dc2624c5f36fb9fe069fef679dfbb43d43b21cf36"
     },
     {
-      "bytes": 6481,
       "path": "docs/contracts/method-matrix.md",
+      "bytes": 6481,
       "sha256": "fea85558b1e621df6dc2af0c97ebf3f8b7950f480e88f93739d19efe4fbf12ae"
     },
     {
-      "bytes": 3376,
       "path": "docs/contracts/negative-golden.md",
-      "sha256": "1169c49821733fb6d4f37ae371bd554e4d49b3e2f4baefebcadf7aa5d4a45265"
+      "bytes": 3379,
+      "sha256": "2fe89b357576c97546e823150970e2710b440779162059f0f96461ecb4ecb8b4"
     },
     {
-      "bytes": 7871,
       "path": "docs/contracts/schema-map.md",
-      "sha256": "53d0eab3b69df9ec934dcde8f0fbfd8dc19c5bba877c6d8ac1537cdda3c2aeef"
+      "bytes": 7896,
+      "sha256": "b0402160160337a7c176dc14603017a0ca180a4de2af4bb971594cf6fa5983f5"
     },
     {
-      "bytes": 4164,
       "path": "docs/contracts/surface.md",
-      "sha256": "ea1b22d60544c3cd53be2c99343d331445dcd4cc5a5506caf4451aaa58ebd9e6"
+      "bytes": 4162,
+      "sha256": "4df7dfb00f539ba2a6be575b628de88243865b8b8ae191b65e93dc1de6837d1c"
     },
     {
-      "bytes": 40689,
       "path": "docs/deliveries/PPA-00/contract-golden-manifest.json",
-      "sha256": "c9bf177afd5224fca42654725710119b609451456e012e6551b708af99afa88a"
+      "bytes": 41661,
+      "sha256": "afe818df1fafbf47561de5427349bf67d0d3fa7f2f254ed25680c25ba0eb0147"
     },
     {
-      "bytes": 10171,
       "path": "docs/deliveries/PPA-00/evidence/fresh-readonly-review.json",
-      "sha256": "cf92dd4084a94e36cbd31ce31cfc0312209ac49b6b618f9e7244996f093458be"
+      "bytes": 11120,
+      "sha256": "1394b4a05ef9e964056f53a290504f13be1102d7c8f60ff939e42a1928b6ac1f"
     },
     {
-      "bytes": 3642,
       "path": "docs/deliveries/PPA-00/evidence/m0.2-identity-runtime.json",
-      "sha256": "4d7d10247858d5ecbbfe5b219179fce6fff9b47ca104af77c0d3e31203f412af"
+      "bytes": 6921,
+      "sha256": "90bfce813b2a18849711cbd31ed74cfc9373d515fd58f30ed659024458a4c0d9"
     },
     {
-      "bytes": 8394,
       "path": "docs/deliveries/PPA-00/integration-test-ledger.json",
-      "sha256": "286ee7d7d38fd5e5bfbdb6d4914d9c516f9522fa35020dd3f6d6f2d5df1f2880"
+      "bytes": 8396,
+      "sha256": "19adf026de0ea80ee90bfe157446f16b7f1310119f6036f3f3831bb036f8b924"
     },
     {
-      "bytes": 87160,
       "path": "docs/deliveries/PPA-00/license-ledger.json",
+      "bytes": 87160,
       "sha256": "4232d50524dfa17e780bbf2c05c3416f49c7e7e59aee520f5baa4dd1a5d5224d"
     },
     {
-      "bytes": 8476,
       "path": "docs/deliveries/PPA-00/m0-open-manifest.json",
-      "sha256": "085ec9e0d75d9458e9014a759a0c044735764740003e778e660d23decf26f8f5"
+      "bytes": 8511,
+      "sha256": "bf74a5782e3a823bbdbb5abcd234dbb04fdc5f2cb67e9d514d999953d9eb349a"
     },
     {
-      "bytes": 14549,
       "path": "docs/deliveries/PPA-00/m0.1-donor-protection.json",
+      "bytes": 14549,
       "sha256": "d4f663a6da60a12e8fdfd3ff62f71229e32c48e796ab2f2213bfb7ed313b0c9c"
     },
     {
-      "bytes": 116536,
       "path": "docs/deliveries/PPA-00/parity-ledger.json",
-      "sha256": "87bc58039aef861367ba32f89f60ad8144af3704d840cc21057f2a3705a9199f"
+      "bytes": 129098,
+      "sha256": "0b3965a34b6a51d09d58d4a5282691cf2caeed759d8084c75821a683f70759c6"
     },
     {
-      "bytes": 1016,
       "path": "docs/deliveries/PPA-00/runtime-toolchain-lock.json",
+      "bytes": 1016,
       "sha256": "4a22e1d06b7b39fc82fe52b7df23a0b94bcf8c65a687f35dfc248e22e1048a30"
     },
     {
-      "bytes": 2476,
       "path": "frontend/src/contracts/rpc.ts",
+      "bytes": 2476,
       "sha256": "19241d06901f052284303647b7538c0295d21ddb378bea7761490482d4049693"
     },
     {
-      "bytes": 7169,
       "path": "frontend/src/contracts/types.ts",
+      "bytes": 7169,
       "sha256": "c5871e08f512a97bfa14b6ff2b485805b692c0aadbc1766fe1cc3adf287d0157"
     },
     {
-      "bytes": 9765,
       "path": "frontend/src/contracts/verifier.ts",
-      "sha256": "090b570651d33ed69e3a08abf0c3daa813a6b382bd432bec6202c462471c181b"
+      "bytes": 49407,
+      "sha256": "2b0b4c777208ebc3819d1131a55c5cd43ed8d6dbf55789ee04e2e47a1ccf9d3a"
     },
     {
-      "bytes": 12074,
       "path": "tools/integration/fresh_m0_review.py",
-      "sha256": "45ae590b538d8a39deb88bec8097dcd515b78697580cb6294997eb652fef1e52"
+      "bytes": 14115,
+      "sha256": "78ff15334c6c0608d757c78fc21562209e82e2dde06e621d01544e75a01b97db"
+    },
+    {
+      "path": "docs/contracts/finding-closure-v1.json",
+      "bytes": 20392,
+      "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/evidence/finding-closure.json",
+      "bytes": 88126,
+      "sha256": "17cd8e5e76ea3c816b91dbcbfef017b0201a7ce65d35664117964f79f3cc3d6b"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/evidence/browser-smoke.json",
+      "bytes": 333714,
+      "sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4"
     }
   ],
   "dependency_delta": [],
@@ -191,13 +253,81 @@
     "version": "v1.2"
   },
   "finalization": {
-    "commit_ref": "M0-OPEN",
-    "rule": "create and verify exact tag after this final state write; no tracked file edits after tag",
-    "tag": "M0-OPEN"
+    "previous_commit_ref": "786986a02219973a69a0d1c1114191149924d7f7",
+    "previous_tag": "M0-OPEN",
+    "target_tag": "M0-OPEN-R2",
+    "rule": "old tag is immutable; create one new commit and one annotated tag only after all findings and gates pass",
+    "previous_tag_peeled": "786986a02219973a69a0d1c1114191149924d7f7",
+    "status": "ready_for_commit_and_tag"
   },
   "gate": "P1-P6 creation is forbidden until M0-OPEN is committed and tagged.",
   "in_progress": null,
-  "known_blockers": [],
+  "known_blockers": [
+    {
+      "id": "F-01",
+      "severity": "BLOCKER",
+      "status": "closed",
+      "scope": "tools/integration/validate_merge_gate.py and delivery creation gate",
+      "acceptance": "project-specific P1-P6 write sets; real commit ancestry/diff/hash/evidence; first-party root; real creation gate; positive/negative submission tests",
+      "closure_evidence": "docs/deliveries/PPA-00/evidence/finding-closure.json"
+    },
+    {
+      "id": "F-02",
+      "severity": "BLOCKER",
+      "status": "closed",
+      "scope": "ten PlotPilot browser flows and evidence",
+      "acceptance": "real UI actions through UI→API→execution/recovery, non-empty edit save/re-read, fake provider generation, SSE disconnect/refresh/recovery, no surface_only/not_exercised",
+      "closure_evidence": "docs/deliveries/PPA-00/evidence/finding-closure.json"
+    },
+    {
+      "id": "F-03",
+      "severity": "BLOCKER",
+      "status": "closed",
+      "scope": "§84.13 docs/manifest/corpus/executable tests",
+      "acceptance": "14 normative groups and every listed assertion aligned across docs/manifest/corpus with failing positive/negative tests",
+      "closure_evidence": "docs/deliveries/PPA-00/evidence/finding-closure.json"
+    },
+    {
+      "id": "F-04",
+      "severity": "BLOCKER",
+      "status": "closed",
+      "scope": "positive fixture self-hashes and semantic verifiers",
+      "acceptance": "regenerate all self-hashes; verify bundle_hash and core snapshot; no disabled verifier branch; tamper negatives fail",
+      "closure_evidence": "docs/deliveries/PPA-00/evidence/finding-closure.json"
+    },
+    {
+      "id": "F-05",
+      "severity": "BLOCKER",
+      "status": "closed",
+      "scope": "frontend/src/contracts/verifier.ts and cross-language gate",
+      "acceptance": "execute real TS verifier; correct result profile workspace; Unicode casefold collision parity; runtime positive/negative tests",
+      "closure_evidence": "docs/deliveries/PPA-00/evidence/finding-closure.json"
+    },
+    {
+      "id": "F-06",
+      "severity": "BLOCKER",
+      "status": "closed",
+      "scope": "Python/schema verifiers and probes",
+      "acceptance": "lease fencing, RPC binding, capability/UI refs, duplicate IDs, candidate base/write-set, exact skill hash order, skill-chain pairing, bundleless failure, checkpoint/heartbeat/capability probes",
+      "closure_evidence": "docs/deliveries/PPA-00/evidence/finding-closure.json"
+    },
+    {
+      "id": "F-07",
+      "severity": "BLOCKER",
+      "status": "closed",
+      "scope": "§84.14 closure index and inventory",
+      "acceptance": "25 IDs closed exactly once with normative/schema/verifier/test/corpus/evidence mapping and executable inventory",
+      "closure_evidence": "docs/deliveries/PPA-00/evidence/finding-closure.json"
+    },
+    {
+      "id": "F-08",
+      "severity": "LOW",
+      "status": "closed",
+      "scope": "pytest asyncio_mode warning",
+      "acceptance": "remove invalid warning or document valid source; no warning suppression",
+      "closure_evidence": "docs/deliveries/PPA-00/evidence/finding-closure.json"
+    }
+  ],
   "milestones": {
     "M0.1": "passed",
     "M0.2": "passed",
@@ -207,10 +337,7 @@
     "M0.6": "passed",
     "M0.7": "passed"
   },
-  "next_steps": [
-    "M0-OPEN commit/tag 将作为本状态之后唯一的 Git 发布操作完成；禁止在 tag 后修改已验收文件",
-    "下游 P1-P6 仅在精确 M0-OPEN commit/tag 验证后按各自授权启动"
-  ],
+  "next_steps": [],
   "prohibitions": [
     "P1-P6 branch/worktree/project creation before M0-OPEN",
     "donor mutation or donor cleanup/reset/checkout",
@@ -226,60 +353,435 @@
     "result": "stack_match=0; no suitable Active tool"
   },
   "review": {
-    "evidence": {
-      "bytes": 10171,
-      "path": "docs/deliveries/PPA-00/evidence/fresh-readonly-review.json",
-      "sha256": "cf92dd4084a94e36cbd31ce31cfc0312209ac49b6b618f9e7244996f093458be"
-    },
+    "status": "passed_pre_commit",
+    "finding_manifest_id": "PPA-00-M0-OPEN-INDEP-RO-20260826-02",
+    "reviewer": "fresh read-only review runner (Sol delegation unavailable; main-control fallback)",
+    "verdict": "passed_pre_commit",
     "findings": [],
-    "review_task_id": "PPA-M0-FRESH-REVIEW-01",
-    "reviewer": "P0 main control fallback; delegated Sol reviewer returned not_found",
-    "scope": "current files, content-addressed records, deterministic verifiers, write-set/creation gate; no product or donor mutation",
-    "status": "passed_pre_commit"
+    "evidence": {
+      "path": "docs/deliveries/PPA-00/evidence/fresh-readonly-review.json",
+      "bytes": 11120,
+      "sha256": "1394b4a05ef9e964056f53a290504f13be1102d7c8f60ff939e42a1928b6ac1f"
+    }
   },
   "schema": "ppa-project-state/v1",
   "status": "complete",
-  "target": "M0-OPEN",
-  "task_id": "PPA-M0-01",
-  "updated_at": "2026-08-26T08:52:05Z",
+  "target": "M0-OPEN-R2",
+  "task_id": "PPA-M0-REMEDIATION-02",
+  "updated_at": "2026-08-26T17:32:37Z",
   "validation_runs": [
     {
-      "command": "node tools/integration/browser_smoke.mjs",
-      "evidence": "docs/deliveries/PPA-00/evidence/browser-smoke.json",
+      "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe tools/integration/generate_contract_manifest.py --check",
       "exit_code": 0,
-      "result": "10 flows, 10 screenshots, 146 API trace entries, 0 page errors, 0 generation calls, 0 non-empty chapter bodies",
-      "status": "passed"
+      "status": "passed",
+      "result": {
+        "stdout_bytes": 48,
+        "stdout_sha256": "1b5c6f54e25347d08aea3db44498921f7ec4c9cc9edf10170b6cab480cb7a255",
+        "stderr_bytes": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "evidence": {
+        "stdout": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\contract-manifest-check.stdout.txt",
+        "stderr": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\contract-manifest-check.stderr.txt"
+      }
+    },
+    {
+      "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe tools/integration/verify_contracts.py --all",
+      "exit_code": 0,
+      "status": "passed",
+      "result": {
+        "stdout_bytes": 51835,
+        "stdout_sha256": "31192c381756c91f63256bcbe1585b35941e0ba609858923c04a0fbee080b6c5",
+        "stderr_bytes": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "evidence": {
+        "stdout": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\python-contracts-all.stdout.txt",
+        "stderr": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\python-contracts-all.stderr.txt"
+      }
+    },
+    {
+      "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m pytest tests/contract tests/acceptance -q",
+      "exit_code": 0,
+      "status": "passed",
+      "result": {
+        "stdout_bytes": 1229,
+        "stdout_sha256": "ae571041a45eac99d7e18765288a2cf3e318f7b43fa66e502a6d534b41b27c22",
+        "stderr_bytes": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "evidence": {
+        "stdout": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\pytest-contract-acceptance.stdout.txt",
+        "stderr": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\pytest-contract-acceptance.stderr.txt"
+      }
+    },
+    {
+      "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe tools/integration/verify_cross_language_goldens.py",
+      "exit_code": 0,
+      "status": "passed",
+      "result": {
+        "stdout_bytes": 1322,
+        "stdout_sha256": "731b8bfc7340cfc09230a6d0bf750d77f02c2b07ff982d8e381565ff74a17b40",
+        "stderr_bytes": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "evidence": {
+        "stdout": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\cross-language-goldens.stdout.txt",
+        "stderr": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\cross-language-goldens.stderr.txt"
+      }
+    },
+    {
+      "command": "C:\\Program Files\\nodejs\\node.EXE tools/integration/verify_contracts.mjs --all",
+      "exit_code": 0,
+      "status": "passed",
+      "result": {
+        "stdout_bytes": 777,
+        "stdout_sha256": "1bf8d65828fc2bee704423689d247b73b53b811d958d1106d0654c905c96008c",
+        "stderr_bytes": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "evidence": {
+        "stdout": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\node-contracts-all.stdout.txt",
+        "stderr": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\node-contracts-all.stderr.txt"
+      }
+    },
+    {
+      "command": "C:\\Users\\Administrator\\AppData\\Roaming\\npm\\pnpm.CMD --dir frontend exec vue-tsc -b",
+      "exit_code": 0,
+      "status": "passed",
+      "result": {
+        "stdout_bytes": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_bytes": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "evidence": {
+        "stdout": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\frontend-typecheck.stdout.txt",
+        "stderr": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\frontend-typecheck.stderr.txt"
+      }
+    },
+    {
+      "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe tools/integration/validate_m0_delivery.py --json",
+      "exit_code": 0,
+      "status": "passed",
+      "result": {
+        "stdout_bytes": 3800,
+        "stdout_sha256": "c39b7a9fb069cc52b6b624b64a8a0400d3feccc8a6d38a646c5ec10db158b15f",
+        "stderr_bytes": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "evidence": {
+        "stdout": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\delivery-record-check.stdout.txt",
+        "stderr": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\delivery-record-check.stderr.txt"
+      }
+    },
+    {
+      "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe tools/integration/validate_merge_gate.py --json",
+      "exit_code": 0,
+      "status": "passed",
+      "result": {
+        "stdout_bytes": 18364,
+        "stdout_sha256": "f09f29d8413646e075e80389f1a0b057430555293429ea66a2c86aec570e46f0",
+        "stderr_bytes": 0,
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "evidence": {
+        "stdout": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\merge-gate.stdout.txt",
+        "stderr": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\merge-gate.stderr.txt"
+      }
+    },
+    {
+      "command": "node tools/integration/browser_smoke.mjs",
+      "runtime": {
+        "node": "v24.18.0",
+        "python_command": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-update-v4.6.0\\.venv\\Scripts\\python.exe",
+        "playwright_version": "1.62.1",
+        "playwright_module": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\node_modules\\playwright\\index.mjs",
+        "chromium_executable": "C:\\Users\\Administrator\\.agent-browser\\browsers\\chrome-152.0.7977.54\\chrome.exe",
+        "headless": false
+      },
+      "exit_code": 0,
+      "status": "passed",
+      "result": {
+        "flows": 10,
+        "exercised_flows": 10,
+        "api_trace_entries": 463,
+        "screenshots": 10,
+        "page_errors": 0,
+        "unexpected_external_calls": 0,
+        "fake_provider_used": true,
+        "generation_pipeline_invoked": true,
+        "non_empty_chapter_body_saved": true,
+        "sse_recovery_exercised": true,
+        "export_download_captured": true
+      },
+      "evidence": {
+        "path": "docs/deliveries/PPA-00/evidence/browser-smoke.json",
+        "bytes": 333714,
+        "sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4"
+      }
     },
     {
       "command": "python tools/integration/capture_m0_test_ledger.py",
-      "evidence": "docs/deliveries/PPA-00/integration-test-ledger.json",
+      "runtime": "system Python 3.12.10 + pytest 8.4.2 + pytest-asyncio 0.26.0",
       "exit_code": 0,
-      "result": "8 bounded commands captured; browser smoke recorded as prior headful evidence",
-      "status": "passed"
+      "status": "passed",
+      "result": {
+        "command_count": 8,
+        "browser_smoke_recorded": true
+      },
+      "evidence": {
+        "path": "docs/deliveries/PPA-00/integration-test-ledger.json",
+        "bytes": 8396,
+        "sha256": "19adf026de0ea80ee90bfe157446f16b7f1310119f6036f3f3831bb036f8b924"
+      }
     },
     {
-      "command": "python tools/integration/validate_m0_delivery.py --json",
-      "evidence": "docs/deliveries/PPA-00/m0-open-manifest.json",
+      "command": "python tools/integration/generate_m0_delivery.py",
+      "runtime": "system Python 3.12.10 with PYTHONIOENCODING=utf-8",
       "exit_code": 0,
-      "result": "48 schemas, 14 negative groups/39 cases, 10 flows, 27 features, 10 screenshots, 146 API traces",
-      "status": "passed"
-    },
-    {
-      "command": "python tools/integration/validate_merge_gate.py --json",
-      "evidence": "docs/deliveries/PPA-00/evidence/raw/merge-gate.stdout.txt",
-      "exit_code": 0,
-      "result": "out_of_set_paths=[], donor-local push DISABLED, P1-P6 absent",
-      "status": "passed"
+      "status": "passed",
+      "result": "contract docs, parity ledger, closure evidence and M0 delivery manifests regenerated",
+      "evidence": [
+        {
+          "path": "docs/deliveries/PPA-00/m0-open-manifest.json",
+          "bytes": 8511,
+          "sha256": "e6e96397669c53b78b936a85bd13bdbd88c599fc480f9180ead1c14fb2d90a9c"
+        },
+        {
+          "path": "docs/deliveries/PPA-00/parity-ledger.json",
+          "bytes": 129098,
+          "sha256": "0b3965a34b6a51d09d58d4a5282691cf2caeed759d8084c75821a683f70759c6"
+        }
+      ]
     },
     {
       "command": "python tools/integration/fresh_m0_review.py",
-      "evidence": "docs/deliveries/PPA-00/evidence/fresh-readonly-review.json",
+      "runtime": "system Python 3.12.10 with PYTHONIOENCODING=utf-8",
       "exit_code": 0,
-      "result": "passed_pre_commit; Python/Node verifiers and delivery/merge validators exit 0; record hashes match; zero findings; tag intentionally absent until final close",
-      "status": "passed"
+      "status": "passed",
+      "result": {
+        "verdict": "passed_pre_commit",
+        "findings": 0,
+        "commands": [
+          [
+            "python-contracts-all",
+            0
+          ],
+          [
+            "cross-language-goldens",
+            0
+          ],
+          [
+            "node-contracts-all",
+            0
+          ],
+          [
+            "delivery-record-check",
+            0
+          ],
+          [
+            "merge-gate",
+            0
+          ]
+        ]
+      },
+      "evidence": {
+        "path": "docs/deliveries/PPA-00/evidence/fresh-readonly-review.json",
+        "bytes": 11120,
+        "sha256": "1394b4a05ef9e964056f53a290504f13be1102d7c8f60ff939e42a1928b6ac1f"
+      }
+    },
+    {
+      "command": "python tools/integration/fresh_m0_review.py (post-manifest-regeneration final)",
+      "runtime": "system Python 3.12.10 with PYTHONIOENCODING=utf-8",
+      "exit_code": 0,
+      "status": "passed",
+      "result": {
+        "verdict": "passed_pre_commit",
+        "findings": 0,
+        "commands": [
+          [
+            "python-contracts-all",
+            0
+          ],
+          [
+            "cross-language-goldens",
+            0
+          ],
+          [
+            "node-contracts-all",
+            0
+          ],
+          [
+            "delivery-record-check",
+            0
+          ],
+          [
+            "merge-gate",
+            0
+          ]
+        ]
+      },
+      "evidence": {
+        "path": "docs/deliveries/PPA-00/evidence/fresh-readonly-review.json",
+        "bytes": 11120,
+        "sha256": "1394b4a05ef9e964056f53a290504f13be1102d7c8f60ff939e42a1928b6ac1f"
+      }
     }
   ],
   "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized",
   "write_set_hash": "076541384c643d879e8552737f94a9ce2ed9134dba3e0d448f2c4a0b58297656",
-  "write_set_source": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized七项目任务书-2026-08-26\\project-matrix.json"
+  "write_set_source": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized七项目任务书-2026-08-26\\project-matrix.json",
+  "remediation": {
+    "task_id": "PPA-M0-REMEDIATION-02",
+    "finding_manifest_id": "PPA-00-M0-OPEN-INDEP-RO-20260826-02",
+    "rejected_commit": "786986a02219973a69a0d1c1114191149924d7f7",
+    "old_tag": "M0-OPEN",
+    "old_tag_peeled": "786986a02219973a69a0d1c1114191149924d7f7",
+    "new_tag": "M0-OPEN-R2",
+    "status": "complete",
+    "findings": [
+      {
+        "id": "F-01",
+        "severity": "BLOCKER",
+        "status": "closed",
+        "scope": "tools/integration/validate_merge_gate.py and delivery creation gate",
+        "acceptance": "project-specific P1-P6 write sets; real commit ancestry/diff/hash/evidence; first-party root; real creation gate; positive/negative submission tests",
+        "closure_evidence": "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      },
+      {
+        "id": "F-02",
+        "severity": "BLOCKER",
+        "status": "closed",
+        "scope": "ten PlotPilot browser flows and evidence",
+        "acceptance": "real UI actions through UI→API→execution/recovery, non-empty edit save/re-read, fake provider generation, SSE disconnect/refresh/recovery, no surface_only/not_exercised",
+        "closure_evidence": "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      },
+      {
+        "id": "F-03",
+        "severity": "BLOCKER",
+        "status": "closed",
+        "scope": "§84.13 docs/manifest/corpus/executable tests",
+        "acceptance": "14 normative groups and every listed assertion aligned across docs/manifest/corpus with failing positive/negative tests",
+        "closure_evidence": "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      },
+      {
+        "id": "F-04",
+        "severity": "BLOCKER",
+        "status": "closed",
+        "scope": "positive fixture self-hashes and semantic verifiers",
+        "acceptance": "regenerate all self-hashes; verify bundle_hash and core snapshot; no disabled verifier branch; tamper negatives fail",
+        "closure_evidence": "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      },
+      {
+        "id": "F-05",
+        "severity": "BLOCKER",
+        "status": "closed",
+        "scope": "frontend/src/contracts/verifier.ts and cross-language gate",
+        "acceptance": "execute real TS verifier; correct result profile workspace; Unicode casefold collision parity; runtime positive/negative tests",
+        "closure_evidence": "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      },
+      {
+        "id": "F-06",
+        "severity": "BLOCKER",
+        "status": "closed",
+        "scope": "Python/schema verifiers and probes",
+        "acceptance": "lease fencing, RPC binding, capability/UI refs, duplicate IDs, candidate base/write-set, exact skill hash order, skill-chain pairing, bundleless failure, checkpoint/heartbeat/capability probes",
+        "closure_evidence": "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      },
+      {
+        "id": "F-07",
+        "severity": "BLOCKER",
+        "status": "closed",
+        "scope": "§84.14 closure index and inventory",
+        "acceptance": "25 IDs closed exactly once with normative/schema/verifier/test/corpus/evidence mapping and executable inventory",
+        "closure_evidence": "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      },
+      {
+        "id": "F-08",
+        "severity": "LOW",
+        "status": "closed",
+        "scope": "pytest asyncio_mode warning",
+        "acceptance": "remove invalid warning or document valid source; no warning suppression",
+        "closure_evidence": "docs/deliveries/PPA-00/evidence/finding-closure.json"
+      }
+    ],
+    "prohibitions": [
+      "不得修改 donor；不得删除/clean/reset/checkout donor。",
+      "不得创建或修改 P1-P6 branch/worktree/project/first-party plugin。",
+      "不得移动、删除、覆盖旧 M0-OPEN。",
+      "不得修改正式设计或 project-matrix；真实合同缺口只能形成 Contract Delta 并停止相关切片。",
+      "不得越过 P0 写集。",
+      "不得运行 PyInstaller、Tauri、桌面、EXE 或安装器构建。"
+    ],
+    "updated_at": "2026-08-26T17:30:48Z",
+    "closure_index": {
+      "path": "docs/contracts/finding-closure-v1.json",
+      "bytes": 20392,
+      "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+    },
+    "closure_evidence": {
+      "path": "docs/deliveries/PPA-00/evidence/finding-closure.json",
+      "bytes": 88126,
+      "sha256": "17cd8e5e76ea3c816b91dbcbfef017b0201a7ce65d35664117964f79f3cc3d6b"
+    }
+  },
+  "release_evidence": {
+    "contract_manifest": {
+      "path": "contracts/manifest-v1.json",
+      "bytes": 45372,
+      "sha256": "fd792d98201e2c38e356c1c4a7251abd597bc732f55dbfac706022edf47f48fa"
+    },
+    "contract_golden_manifest": {
+      "path": "docs/deliveries/PPA-00/contract-golden-manifest.json",
+      "bytes": 41661,
+      "sha256": "afe818df1fafbf47561de5427349bf67d0d3fa7f2f254ed25680c25ba0eb0147"
+    },
+    "finding_closure_index": {
+      "path": "docs/contracts/finding-closure-v1.json",
+      "bytes": 20392,
+      "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+    },
+    "finding_closure_evidence": {
+      "path": "docs/deliveries/PPA-00/evidence/finding-closure.json",
+      "bytes": 88126,
+      "sha256": "17cd8e5e76ea3c816b91dbcbfef017b0201a7ce65d35664117964f79f3cc3d6b"
+    },
+    "browser_smoke": {
+      "path": "docs/deliveries/PPA-00/evidence/browser-smoke.json",
+      "bytes": 333714,
+      "sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4"
+    },
+    "integration_test_ledger": {
+      "path": "docs/deliveries/PPA-00/integration-test-ledger.json",
+      "bytes": 8396,
+      "sha256": "19adf026de0ea80ee90bfe157446f16b7f1310119f6036f3f3831bb036f8b924"
+    },
+    "parity_ledger": {
+      "path": "docs/deliveries/PPA-00/parity-ledger.json",
+      "bytes": 129098,
+      "sha256": "0b3965a34b6a51d09d58d4a5282691cf2caeed759d8084c75821a683f70759c6"
+    },
+    "m0_open_manifest": {
+      "path": "docs/deliveries/PPA-00/m0-open-manifest.json",
+      "bytes": 8511,
+      "sha256": "bf74a5782e3a823bbdbb5abcd234dbb04fdc5f2cb67e9d514d999953d9eb349a"
+    },
+    "fresh_readonly_review": {
+      "path": "docs/deliveries/PPA-00/evidence/fresh-readonly-review.json",
+      "bytes": 11120,
+      "sha256": "1394b4a05ef9e964056f53a290504f13be1102d7c8f60ff939e42a1928b6ac1f"
+    },
+    "license_ledger": {
+      "path": "docs/deliveries/PPA-00/license-ledger.json",
+      "bytes": 87160,
+      "sha256": "4232d50524dfa17e780bbf2c05c3416f49c7e7e59aee520f5baa4dd1a5d5224d"
+    },
+    "runtime_lock": {
+      "path": "docs/deliveries/PPA-00/runtime-toolchain-lock.json",
+      "bytes": 1016,
+      "sha256": "4a22e1d06b7b39fc82fe52b7df23a0b94bcf8c65a687f35dfc248e22e1048a30"
+    }
+  }
 }

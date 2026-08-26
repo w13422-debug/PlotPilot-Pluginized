@@ -1,0 +1,2697 @@
+{
+  "artifacts": [
+    {
+      "bytes": 20392,
+      "exit_code": 0,
+      "path": "docs/contracts/finding-closure-v1.json",
+      "role": "closure-index",
+      "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+    },
+    {
+      "bytes": 45372,
+      "exit_code": 0,
+      "path": "contracts/manifest-v1.json",
+      "role": "manifest",
+      "sha256": "fd792d98201e2c38e356c1c4a7251abd597bc732f55dbfac706022edf47f48fa"
+    },
+    {
+      "bytes": 10692,
+      "exit_code": 0,
+      "path": "tests/contract/test_finding_closure.py",
+      "role": "executable-test",
+      "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+    },
+    {
+      "bytes": 110715,
+      "exit_code": 0,
+      "path": "tools/integration/verify_contracts.py",
+      "role": "executable-support",
+      "sha256": "9484d1f0c382d4661ed9644eb0338b6da95e3290d79694e2eccef782d315d4ac"
+    },
+    {
+      "bytes": 44992,
+      "exit_code": 0,
+      "path": "backend/plotpilot_plugin_sdk/verifier.py",
+      "role": "executable-support",
+      "sha256": "8e4751691a66ec68e81d5ef78a12994d1d1d671e14d55ac80a8c2e479579c5d7"
+    },
+    {
+      "bytes": 8825,
+      "exit_code": 0,
+      "path": "backend/plotpilot_plugin_sdk/rpc.py",
+      "role": "executable-support",
+      "sha256": "d07b298c42c327158923e36d05aa55928d209ebd6b3134f9f32201adca80ddab"
+    },
+    {
+      "bytes": 4629,
+      "exit_code": 0,
+      "path": "backend/plotpilot_plugin_sdk/fixtures.py",
+      "role": "executable-support",
+      "sha256": "94b6c6b2cf048825b3b78578f0c81eee7b8bc81c4d540af7940951a8832ef86b"
+    },
+    {
+      "bytes": 4978,
+      "exit_code": 0,
+      "path": "backend/plotpilot_plugin_sdk/package.py",
+      "role": "executable-support",
+      "sha256": "f579905344f5882ecf0eed1ba027d19e48dfec368446bc2824671548a87fdb7f"
+    },
+    {
+      "bytes": 4314,
+      "exit_code": 0,
+      "path": "backend/plotpilot_plugin_sdk/fake_provider.py",
+      "role": "executable-support",
+      "sha256": "bb0bcc8376f3977b2539d6079f182cdfacc94783018a39e015bf7f6a93c0ef9c"
+    },
+    {
+      "bytes": 8855,
+      "exit_code": 0,
+      "path": "contracts/json-schema/run-snapshot-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "5a27ad82709b4102cb0638f64e0c6529b919102371619f4b119ceff2ce5278ae"
+    },
+    {
+      "bytes": 1030,
+      "exit_code": 0,
+      "path": "contracts/json-schema/skill-manifest-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "ad07ed1fbf90946b3a1cf314d325f9f2c9be1ea090f8ae5410714a68b4a2e702"
+    },
+    {
+      "bytes": 1094,
+      "exit_code": 0,
+      "path": "contracts/corpus/negative/84.13/01.json",
+      "role": "negative-corpus",
+      "sha256": "61b5bf74c4997d1e06e66a873a5713ac622320d96256caddac93f552c8cedcc1"
+    },
+    {
+      "bytes": 17891,
+      "exit_code": 0,
+      "path": "contracts/json-schema/result-bundle-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "3879de30d28d6470bbb90d554f2b3d5c79648f346a54cdd318153ee2ddeebe63"
+    },
+    {
+      "bytes": 4824,
+      "exit_code": 0,
+      "path": "contracts/json-schema/candidate-item-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "53e7c97c9f41b62c8091a82fac549c1d27834e20ef497d0c7cd45b83c8743aab"
+    },
+    {
+      "bytes": 1746,
+      "exit_code": 0,
+      "path": "contracts/corpus/negative/84.13/02.json",
+      "role": "negative-corpus",
+      "sha256": "b0c22fabf08c61ee483a6a110483774134e7d975c0be85ba0f7d526bed7a4bed"
+    },
+    {
+      "bytes": 2174,
+      "exit_code": 0,
+      "path": "contracts/json-schema/broker-invocation-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "41e8735dafc917cd3edab0461951523401b6755641c3f5dc76b49e53962d4bf2"
+    },
+    {
+      "bytes": 2574,
+      "exit_code": 0,
+      "path": "contracts/json-schema/broker-child-record-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "cb8f46a03b61517d0be1e882d5612b35a2dd05d8a4cbb76e32cd4872a34d5a7d"
+    },
+    {
+      "bytes": 1717,
+      "exit_code": 0,
+      "path": "contracts/corpus/negative/84.13/03.json",
+      "role": "negative-corpus",
+      "sha256": "a8ed413d0a3aa00690a6665cb1eb150d6e2bb659e4b7bd79d4226f0df361e439"
+    },
+    {
+      "bytes": 2155,
+      "exit_code": 0,
+      "path": "contracts/json-schema/plugin-data-bundle-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "47b35fe0fb13078c0e2b23f1b2bbcf57dcb9ad61bfae1ba392a9cca0598531eb"
+    },
+    {
+      "bytes": 1369,
+      "exit_code": 0,
+      "path": "contracts/corpus/negative/84.13/04.json",
+      "role": "negative-corpus",
+      "sha256": "9a6af239788ba5d9723e36b18a30bfdac11d9b0a8f08221fcd74f45ce0aaf1a4"
+    },
+    {
+      "bytes": 21465,
+      "exit_code": 0,
+      "path": "contracts/json-schema/plugin-ui-tree-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "9dcd17fe33adb0786d0baf0677ce583c29b8e9c5edb55fae6d4458a8f652afb7"
+    },
+    {
+      "bytes": 79449,
+      "exit_code": 0,
+      "path": "contracts/json-schema/plugin-ui-message-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "059a00ae6a51bf1993635222de7b52670ddd1f6f9ced2d753d8af15d835fee27"
+    },
+    {
+      "bytes": 3091,
+      "exit_code": 0,
+      "path": "contracts/json-schema/plugin-ui-intent-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "4ea01be9a665c5705e36c16bd5d9159d0007bb55ab89f4c3b3c230f0b2471b91"
+    },
+    {
+      "bytes": 1566,
+      "exit_code": 0,
+      "path": "contracts/corpus/negative/84.13/12.json",
+      "role": "negative-corpus",
+      "sha256": "a8acb908d711515951571bdd0db874d1ebf8b7dfb6319c76400ceba6bb0b50d2"
+    },
+    {
+      "bytes": 5174,
+      "exit_code": 0,
+      "path": "contracts/json-schema/job-snapshot-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "1ee52f372fd06896fef491eab863324f949c03cf69a9ea634cea239d8eb2fd78"
+    },
+    {
+      "bytes": 2383,
+      "exit_code": 0,
+      "path": "contracts/json-schema/checkpoint-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "85e64e5a540b90fc968b6196c1c451eaf0a9149fa329e5e95c90dc37c8a3984c"
+    },
+    {
+      "bytes": 1303,
+      "exit_code": 0,
+      "path": "contracts/corpus/negative/84.13/05.json",
+      "role": "negative-corpus",
+      "sha256": "6db120f5bd41bab7cba2aca988fe1d5d389bcc0c73751b539cf518c7065a0718"
+    },
+    {
+      "bytes": 1300,
+      "exit_code": 0,
+      "path": "contracts/corpus/negative/84.13/06.json",
+      "role": "negative-corpus",
+      "sha256": "9dee7a41292036de604b575e63755b500285d078df41e9424efee9b76662fbb5"
+    },
+    {
+      "bytes": 110097,
+      "exit_code": 0,
+      "path": "contracts/json-schema/rpc-request-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "2fdb68c75daf0de4e6a0fb17a898609dd506358e1d8e0818436351bac67a241d"
+    },
+    {
+      "bytes": 33157,
+      "exit_code": 0,
+      "path": "contracts/json-schema/rpc-success-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "e7ab36d64fa052b16470a0a5452a59b38ad57aa5d2dbb73bba3828c56cd3056e"
+    },
+    {
+      "bytes": 5263,
+      "exit_code": 0,
+      "path": "contracts/json-schema/provenance-receipt-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "7881ed77bdc687757f656405572ecf4d28355ca5d2a77709245e1bbd81625152"
+    },
+    {
+      "bytes": 2139,
+      "exit_code": 0,
+      "path": "contracts/json-schema/stream-prefix-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "640a3410e6630b939fb4784607bd08ca8afd7fa2db39286a1f73531057c38be3"
+    },
+    {
+      "bytes": 3110,
+      "exit_code": 0,
+      "path": "contracts/json-schema/core-event-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "7ebe5b9967035f728474381f513856093ecbbc44ce0b30808fba54866fe3ae1e"
+    },
+    {
+      "bytes": 2036,
+      "exit_code": 0,
+      "path": "contracts/json-schema/plugin-job-event-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "adb63779272ea8a9573ea55c1cdba6fcd32b701e6cec807ae05ae3a58bc6c8e9"
+    },
+    {
+      "bytes": 2013,
+      "exit_code": 0,
+      "path": "contracts/json-schema/sse-recovery-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "ce15e29e51d706dc11333c16c6823d84ffb492b205022a8098fa940eea61665c"
+    },
+    {
+      "bytes": 1363,
+      "exit_code": 0,
+      "path": "contracts/corpus/negative/84.13/09.json",
+      "role": "negative-corpus",
+      "sha256": "aaa0ae51d2e07dea966b5adf8fd148ec07dcbb02e0a852b41130d63544b27779"
+    },
+    {
+      "bytes": 6113,
+      "exit_code": 0,
+      "path": "contracts/json-schema/plugin-plan-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "ea2c83a040ff3f5c224149a17bf2303aecbd40b62f7d2b11d4d0af53dbcd6968"
+    },
+    {
+      "bytes": 3821,
+      "exit_code": 0,
+      "path": "contracts/json-schema/plugin-generation-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "79ecf7bdb52e23cd5e37e4ca598a14f8ddb1810a55ebb579a55cfab4eee85463"
+    },
+    {
+      "bytes": 2611,
+      "exit_code": 0,
+      "path": "contracts/json-schema/settings-revision-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "edee64094a4792e260b1b06e83584b9fedcdfd19ebc1c960c0ef73dec3b8f4e7"
+    },
+    {
+      "bytes": 938,
+      "exit_code": 0,
+      "path": "contracts/json-schema/plugin-ui-init-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "4e1f515d6058263e89379c5283e15ca50505911afed9d0074a84af9f8d5a86b6"
+    },
+    {
+      "bytes": 5617,
+      "exit_code": 0,
+      "path": "contracts/json-schema/backup-bundle-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "54887b44adea8be450aeb61158111fa9c0f461db9e73b6db2ff9df180d431f87"
+    },
+    {
+      "bytes": 3430,
+      "exit_code": 0,
+      "path": "contracts/json-schema/restore-report-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "ffaa61c96ba8e817f9bc13e4e47f2f6d18a74c3e41b8583082c65676c186d3f7"
+    },
+    {
+      "bytes": 1160,
+      "exit_code": 0,
+      "path": "contracts/corpus/negative/84.13/13.json",
+      "role": "negative-corpus",
+      "sha256": "f98dad6feec026a8ed3123b35503c4527830747d15afa86b20f8d7fbaa1da859"
+    },
+    {
+      "bytes": 734,
+      "exit_code": 0,
+      "path": "contracts/json-schema/compatibility-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "56679d74bcb8d74a36038ffd6e37eeecf676eb235ee94156eeca5762bae073a7"
+    },
+    {
+      "bytes": 1718,
+      "exit_code": 0,
+      "path": "contracts/corpus/negative/84.13/14.json",
+      "role": "negative-corpus",
+      "sha256": "e4850af02cf8e529024efee55b77d32ad8ff9e0849358ded4fa0c4bdc6893cee"
+    },
+    {
+      "bytes": 1078,
+      "exit_code": 0,
+      "path": "contracts/corpus/negative/84.13/10.json",
+      "role": "negative-corpus",
+      "sha256": "6fa4f42e95c650c73d2b5c80484bf25a5521b78fc351db229772753ad13d2a96"
+    },
+    {
+      "bytes": 558,
+      "exit_code": 0,
+      "path": "contracts/corpus/paths/windows-paths.json",
+      "role": "schema-or-corpus",
+      "sha256": "972dcd43a54b45602735d3ab2374f6fc23c4ba56fa775a39f50de2a0f7b403e0"
+    },
+    {
+      "bytes": 6007,
+      "exit_code": 0,
+      "path": "contracts/json-schema/skill-run-receipt-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "fe0b1ed36ca95a05eefc50c8adaddfed82c76854f36d8267240adfe9f8a0a154"
+    },
+    {
+      "bytes": 2696,
+      "exit_code": 0,
+      "path": "contracts/json-schema/skill-chain-result-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "0d3440b33301510d1134a657f7aa4249cbd5abdf2cf529c84a9544f19e40db3c"
+    },
+    {
+      "bytes": 1373,
+      "exit_code": 0,
+      "path": "contracts/corpus/negative/84.13/11.json",
+      "role": "negative-corpus",
+      "sha256": "5c288d678583bb94b2058b103084625145c780f95b7b4506544e57b0b65f5274"
+    },
+    {
+      "bytes": 3943,
+      "exit_code": 0,
+      "path": "contracts/json-schema/plugin-lifecycle-transition-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "00ecb8104bdf9d6e61d8760e722d9f93bb166769abbea18531a05291de777ed8"
+    },
+    {
+      "bytes": 1861,
+      "exit_code": 0,
+      "path": "contracts/json-schema/settings-migration-manifest-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "73028d3a7157dde3d5e6793fb9faa2a780a91f5e9dc4284b47e0f342944383cb"
+    },
+    {
+      "bytes": 2016,
+      "exit_code": 0,
+      "path": "contracts/corpus/negative/84.13/07.json",
+      "role": "negative-corpus",
+      "sha256": "9b28313fffbb5562ee4569271ec6e08faedd5f0424884cdac27d25e8a265e920"
+    },
+    {
+      "bytes": 1722,
+      "exit_code": 0,
+      "path": "contracts/json-schema/settings-validation-receipt-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "bdcd828206a2b8fd39bcfb80ca95e984daf9c1a6c7c8bbfbdae27ff4f082302d"
+    },
+    {
+      "bytes": 1388,
+      "exit_code": 0,
+      "path": "contracts/json-schema/release-retirement-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "79e9901acf85216cb92400adb82b19012c3d945bfb40f52c6360f3578bb47f18"
+    },
+    {
+      "bytes": 1570,
+      "exit_code": 0,
+      "path": "contracts/json-schema/release-pin-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "558ac4cbec8e996dd941f08e1e0b25173eff0cf04dda7433bc493619d4219213"
+    },
+    {
+      "bytes": 1034,
+      "exit_code": 0,
+      "path": "contracts/corpus/negative/84.13/08.json",
+      "role": "negative-corpus",
+      "sha256": "948f207a59b02ddc1bf7e52a26adb5d0c89a9948c6242e7b6e16425860d7c79b"
+    },
+    {
+      "bytes": 3234,
+      "exit_code": 0,
+      "path": "contracts/json-schema/job-event-page-v1.schema.json",
+      "role": "schema-or-corpus",
+      "sha256": "3094be64440314cc398f312ae34359fde090d9824ef82c81bb8c0894989b7aa4"
+    }
+  ],
+  "closure_index": {
+    "bytes": 20392,
+    "exit_code": 0,
+    "path": "docs/contracts/finding-closure-v1.json",
+    "role": "closure-index",
+    "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+  },
+  "commands": [
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 45372,
+          "exit_code": 0,
+          "path": "contracts/manifest-v1.json",
+          "role": "manifest",
+          "sha256": "fd792d98201e2c38e356c1c4a7251abd597bc732f55dbfac706022edf47f48fa"
+        }
+      ],
+      "command": "python -m pytest tests/contract/test_finding_closure.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "id": "finding-closure-targeted-pytest",
+      "observed_exit_code": 0,
+      "result": {
+        "corpus_group_count": 14,
+        "executable_case_count": 105,
+        "finding_count": 25
+      },
+      "status": "passed",
+      "stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 1005,
+        "sha256": "4fd4e019c8c259ccec0a5c5d25a42096e2c6f9b91049a17fcedfd9d6d4d70115"
+      }
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 1094,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/01.json",
+          "role": "negative-corpus",
+          "sha256": "61b5bf74c4997d1e06e66a873a5713ac622320d96256caddac93f552c8cedcc1"
+        },
+        {
+          "bytes": 1746,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/02.json",
+          "role": "negative-corpus",
+          "sha256": "b0c22fabf08c61ee483a6a110483774134e7d975c0be85ba0f7d526bed7a4bed"
+        },
+        {
+          "bytes": 1717,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/03.json",
+          "role": "negative-corpus",
+          "sha256": "a8ed413d0a3aa00690a6665cb1eb150d6e2bb659e4b7bd79d4226f0df361e439"
+        },
+        {
+          "bytes": 1369,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/04.json",
+          "role": "negative-corpus",
+          "sha256": "9a6af239788ba5d9723e36b18a30bfdac11d9b0a8f08221fcd74f45ce0aaf1a4"
+        },
+        {
+          "bytes": 1303,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/05.json",
+          "role": "negative-corpus",
+          "sha256": "6db120f5bd41bab7cba2aca988fe1d5d389bcc0c73751b539cf518c7065a0718"
+        },
+        {
+          "bytes": 1300,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/06.json",
+          "role": "negative-corpus",
+          "sha256": "9dee7a41292036de604b575e63755b500285d078df41e9424efee9b76662fbb5"
+        },
+        {
+          "bytes": 2016,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/07.json",
+          "role": "negative-corpus",
+          "sha256": "9b28313fffbb5562ee4569271ec6e08faedd5f0424884cdac27d25e8a265e920"
+        },
+        {
+          "bytes": 1034,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/08.json",
+          "role": "negative-corpus",
+          "sha256": "948f207a59b02ddc1bf7e52a26adb5d0c89a9948c6242e7b6e16425860d7c79b"
+        },
+        {
+          "bytes": 1363,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/09.json",
+          "role": "negative-corpus",
+          "sha256": "aaa0ae51d2e07dea966b5adf8fd148ec07dcbb02e0a852b41130d63544b27779"
+        },
+        {
+          "bytes": 1078,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/10.json",
+          "role": "negative-corpus",
+          "sha256": "6fa4f42e95c650c73d2b5c80484bf25a5521b78fc351db229772753ad13d2a96"
+        },
+        {
+          "bytes": 1373,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/11.json",
+          "role": "negative-corpus",
+          "sha256": "5c288d678583bb94b2058b103084625145c780f95b7b4506544e57b0b65f5274"
+        },
+        {
+          "bytes": 1566,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/12.json",
+          "role": "negative-corpus",
+          "sha256": "a8acb908d711515951571bdd0db874d1ebf8b7dfb6319c76400ceba6bb0b50d2"
+        },
+        {
+          "bytes": 1160,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/13.json",
+          "role": "negative-corpus",
+          "sha256": "f98dad6feec026a8ed3123b35503c4527830747d15afa86b20f8d7fbaa1da859"
+        },
+        {
+          "bytes": 1718,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/14.json",
+          "role": "negative-corpus",
+          "sha256": "e4850af02cf8e529024efee55b77d32ad8ff9e0849358ded4fa0c4bdc6893cee"
+        }
+      ],
+      "command": "verify_negative_cases() via test_finding_closure.py::test_finding_closure_inventory",
+      "exit_code": 0,
+      "id": "registry-backed-84-13-inventory",
+      "result": {
+        "all_cases_passed": true,
+        "case_count": 105,
+        "group_count": 14
+      },
+      "status": "passed"
+    }
+  ],
+  "executable_case_aliases": {
+    "install-crash-matrix": [
+      "install-crash-before-prepare",
+      "install-crash-after-staging",
+      "install-crash-after-activate",
+      "install-crash-after-settings",
+      "install-crash-after-projection"
+    ],
+    "safe-mode-exit": [
+      "safe-mode-exit-without-reconciliation",
+      "safe-mode-exit-after-reconciliation"
+    ]
+  },
+  "executions": [
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 45372,
+          "exit_code": 0,
+          "path": "contracts/manifest-v1.json",
+          "role": "manifest",
+          "sha256": "fd792d98201e2c38e356c1c4a7251abd597bc732f55dbfac706022edf47f48fa"
+        }
+      ],
+      "command": "python -m pytest tests/contract/test_finding_closure.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "id": "finding-closure-targeted-pytest",
+      "observed_exit_code": 0,
+      "result": {
+        "corpus_group_count": 14,
+        "executable_case_count": 105,
+        "finding_count": 25
+      },
+      "status": "passed",
+      "stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stdout": {
+        "bytes": 1005,
+        "sha256": "4fd4e019c8c259ccec0a5c5d25a42096e2c6f9b91049a17fcedfd9d6d4d70115"
+      }
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 1094,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/01.json",
+          "role": "negative-corpus",
+          "sha256": "61b5bf74c4997d1e06e66a873a5713ac622320d96256caddac93f552c8cedcc1"
+        },
+        {
+          "bytes": 1746,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/02.json",
+          "role": "negative-corpus",
+          "sha256": "b0c22fabf08c61ee483a6a110483774134e7d975c0be85ba0f7d526bed7a4bed"
+        },
+        {
+          "bytes": 1717,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/03.json",
+          "role": "negative-corpus",
+          "sha256": "a8ed413d0a3aa00690a6665cb1eb150d6e2bb659e4b7bd79d4226f0df361e439"
+        },
+        {
+          "bytes": 1369,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/04.json",
+          "role": "negative-corpus",
+          "sha256": "9a6af239788ba5d9723e36b18a30bfdac11d9b0a8f08221fcd74f45ce0aaf1a4"
+        },
+        {
+          "bytes": 1303,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/05.json",
+          "role": "negative-corpus",
+          "sha256": "6db120f5bd41bab7cba2aca988fe1d5d389bcc0c73751b539cf518c7065a0718"
+        },
+        {
+          "bytes": 1300,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/06.json",
+          "role": "negative-corpus",
+          "sha256": "9dee7a41292036de604b575e63755b500285d078df41e9424efee9b76662fbb5"
+        },
+        {
+          "bytes": 2016,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/07.json",
+          "role": "negative-corpus",
+          "sha256": "9b28313fffbb5562ee4569271ec6e08faedd5f0424884cdac27d25e8a265e920"
+        },
+        {
+          "bytes": 1034,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/08.json",
+          "role": "negative-corpus",
+          "sha256": "948f207a59b02ddc1bf7e52a26adb5d0c89a9948c6242e7b6e16425860d7c79b"
+        },
+        {
+          "bytes": 1363,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/09.json",
+          "role": "negative-corpus",
+          "sha256": "aaa0ae51d2e07dea966b5adf8fd148ec07dcbb02e0a852b41130d63544b27779"
+        },
+        {
+          "bytes": 1078,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/10.json",
+          "role": "negative-corpus",
+          "sha256": "6fa4f42e95c650c73d2b5c80484bf25a5521b78fc351db229772753ad13d2a96"
+        },
+        {
+          "bytes": 1373,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/11.json",
+          "role": "negative-corpus",
+          "sha256": "5c288d678583bb94b2058b103084625145c780f95b7b4506544e57b0b65f5274"
+        },
+        {
+          "bytes": 1566,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/12.json",
+          "role": "negative-corpus",
+          "sha256": "a8acb908d711515951571bdd0db874d1ebf8b7dfb6319c76400ceba6bb0b50d2"
+        },
+        {
+          "bytes": 1160,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/13.json",
+          "role": "negative-corpus",
+          "sha256": "f98dad6feec026a8ed3123b35503c4527830747d15afa86b20f8d7fbaa1da859"
+        },
+        {
+          "bytes": 1718,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/14.json",
+          "role": "negative-corpus",
+          "sha256": "e4850af02cf8e529024efee55b77d32ad8ff9e0849358ded4fa0c4bdc6893cee"
+        }
+      ],
+      "command": "verify_negative_cases() via test_finding_closure.py::test_finding_closure_inventory",
+      "exit_code": 0,
+      "id": "registry-backed-84-13-inventory",
+      "result": {
+        "all_cases_passed": true,
+        "case_count": 105,
+        "group_count": 14
+      },
+      "status": "passed"
+    }
+  ],
+  "exit_code": 0,
+  "findings": [
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 8855,
+          "exit_code": 0,
+          "path": "contracts/json-schema/run-snapshot-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "5a27ad82709b4102cb0638f64e0c6529b919102371619f4b119ceff2ce5278ae"
+        },
+        {
+          "bytes": 1030,
+          "exit_code": 0,
+          "path": "contracts/json-schema/skill-manifest-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "ad07ed1fbf90946b3a1cf314d325f9f2c9be1ea090f8ae5410714a68b4a2e702"
+        },
+        {
+          "bytes": 1094,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/01.json",
+          "role": "negative-corpus",
+          "sha256": "61b5bf74c4997d1e06e66a873a5713ac622320d96256caddac93f552c8cedcc1"
+        }
+      ],
+      "corpus": [
+        "84.13-01"
+      ],
+      "executable_case_ids": [
+        "snapshot-set-permutation",
+        "skill-order-permutation"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-FINAL-001",
+      "normative_section": "§84.1/§84.4",
+      "schema": [
+        "run-snapshot-v1",
+        "skill-manifest-v1"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier": [
+        "snapshot_hash",
+        "verify_skill_identity"
+      ]
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 17891,
+          "exit_code": 0,
+          "path": "contracts/json-schema/result-bundle-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "3879de30d28d6470bbb90d554f2b3d5c79648f346a54cdd318153ee2ddeebe63"
+        },
+        {
+          "bytes": 4824,
+          "exit_code": 0,
+          "path": "contracts/json-schema/candidate-item-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "53e7c97c9f41b62c8091a82fac549c1d27834e20ef497d0c7cd45b83c8743aab"
+        },
+        {
+          "bytes": 1746,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/02.json",
+          "role": "negative-corpus",
+          "sha256": "b0c22fabf08c61ee483a6a110483774134e7d975c0be85ba0f7d526bed7a4bed"
+        }
+      ],
+      "corpus": [
+        "84.13-02"
+      ],
+      "executable_case_ids": [
+        "result-profile-mismatch",
+        "candidate-target-outside-write-set"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-FINAL-002",
+      "normative_section": "§22/§84.5",
+      "schema": [
+        "result-bundle-v1",
+        "candidate-item-v1"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_verifier_remediation.py::test_result_profile_workspace_duplicate_ids_and_candidate_write_binding"
+      ],
+      "verifier": [
+        "verify_result_bundle",
+        "_verify_candidate_item"
+      ]
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 2174,
+          "exit_code": 0,
+          "path": "contracts/json-schema/broker-invocation-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "41e8735dafc917cd3edab0461951523401b6755641c3f5dc76b49e53962d4bf2"
+        },
+        {
+          "bytes": 2574,
+          "exit_code": 0,
+          "path": "contracts/json-schema/broker-child-record-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "cb8f46a03b61517d0be1e882d5612b35a2dd05d8a4cbb76e32cd4872a34d5a7d"
+        },
+        {
+          "bytes": 1717,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/03.json",
+          "role": "negative-corpus",
+          "sha256": "a8ed413d0a3aa00690a6665cb1eb150d6e2bb659e4b7bd79d4226f0df361e439"
+        }
+      ],
+      "corpus": [
+        "84.13-03"
+      ],
+      "executable_case_ids": [
+        "broker-ack-loss",
+        "child-cancel-propagation",
+        "receipt-propagation-mismatch"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-FINAL-003",
+      "normative_section": "§21.3/§84.12",
+      "schema": [
+        "broker-invocation-v1",
+        "broker-child-record-v1"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_rpc_and_sdk.py::test_operation_ledger_replays_exact_frame_and_rejects_payload_drift"
+      ],
+      "verifier": [
+        "OperationLedger",
+        "derive_child_cancel_key"
+      ]
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 2155,
+          "exit_code": 0,
+          "path": "contracts/json-schema/plugin-data-bundle-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "47b35fe0fb13078c0e2b23f1b2bbcf57dcb9ad61bfae1ba392a9cca0598531eb"
+        },
+        {
+          "bytes": 8855,
+          "exit_code": 0,
+          "path": "contracts/json-schema/run-snapshot-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "5a27ad82709b4102cb0638f64e0c6529b919102371619f4b119ceff2ce5278ae"
+        },
+        {
+          "bytes": 1717,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/03.json",
+          "role": "negative-corpus",
+          "sha256": "a8ed413d0a3aa00690a6665cb1eb150d6e2bb659e4b7bd79d4226f0df361e439"
+        },
+        {
+          "bytes": 1369,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/04.json",
+          "role": "negative-corpus",
+          "sha256": "9a6af239788ba5d9723e36b18a30bfdac11d9b0a8f08221fcd74f45ce0aaf1a4"
+        }
+      ],
+      "corpus": [
+        "84.13-03",
+        "84.13-04"
+      ],
+      "executable_case_ids": [
+        "unsupported-data-format",
+        "snapshot-parameters-not-in-assets"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-FINAL-004",
+      "normative_section": "§11.2/§17/§84.2/§84.4",
+      "schema": [
+        "plugin-data-bundle-v1",
+        "run-snapshot-v1"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_verifier_remediation.py::test_data_bundle_hash_unicode_collision_and_skill_manifest_exact_bytes",
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier": [
+        "verify_data_bundle",
+        "verify_snapshot"
+      ]
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 21465,
+          "exit_code": 0,
+          "path": "contracts/json-schema/plugin-ui-tree-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "9dcd17fe33adb0786d0baf0677ce583c29b8e9c5edb55fae6d4458a8f652afb7"
+        },
+        {
+          "bytes": 79449,
+          "exit_code": 0,
+          "path": "contracts/json-schema/plugin-ui-message-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "059a00ae6a51bf1993635222de7b52670ddd1f6f9ced2d753d8af15d835fee27"
+        },
+        {
+          "bytes": 3091,
+          "exit_code": 0,
+          "path": "contracts/json-schema/plugin-ui-intent-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "4ea01be9a665c5705e36c16bd5d9159d0007bb55ab89f4c3b3c230f0b2471b91"
+        },
+        {
+          "bytes": 1566,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/12.json",
+          "role": "negative-corpus",
+          "sha256": "a8acb908d711515951571bdd0db874d1ebf8b7dfb6319c76400ceba6bb0b50d2"
+        }
+      ],
+      "corpus": [
+        "84.13-12"
+      ],
+      "executable_case_ids": [
+        "unknown-component",
+        "unknown-prop",
+        "unknown-event",
+        "stale-intent"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-FINAL-005",
+      "normative_section": "§34.1/§84.10",
+      "schema": [
+        "plugin-ui-tree-v1",
+        "plugin-ui-message-v1",
+        "plugin-ui-intent-v1"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier": [
+        "PluginUIHostFixture",
+        "verify_ui_security"
+      ]
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 5174,
+          "exit_code": 0,
+          "path": "contracts/json-schema/job-snapshot-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "1ee52f372fd06896fef491eab863324f949c03cf69a9ea634cea239d8eb2fd78"
+        },
+        {
+          "bytes": 2383,
+          "exit_code": 0,
+          "path": "contracts/json-schema/checkpoint-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "85e64e5a540b90fc968b6196c1c451eaf0a9149fa329e5e95c90dc37c8a3984c"
+        },
+        {
+          "bytes": 1303,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/05.json",
+          "role": "negative-corpus",
+          "sha256": "6db120f5bd41bab7cba2aca988fe1d5d389bcc0c73751b539cf518c7065a0718"
+        },
+        {
+          "bytes": 1300,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/06.json",
+          "role": "negative-corpus",
+          "sha256": "9dee7a41292036de604b575e63755b500285d078df41e9424efee9b76662fbb5"
+        }
+      ],
+      "corpus": [
+        "84.13-05",
+        "84.13-06"
+      ],
+      "executable_case_ids": [
+        "attempt-cancel-complete-race",
+        "checkpoint-backward",
+        "checkpoint-different-snapshot"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-FINAL-006",
+      "normative_section": "§25–§29/§84.12",
+      "schema": [
+        "job-snapshot-v1",
+        "checkpoint-v1"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_verifier_remediation.py::test_checkpoint_heartbeat_rpc_capability_and_ui_refs_are_bound",
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier": [
+        "verify_job_snapshot",
+        "verify_checkpoint"
+      ]
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 110097,
+          "exit_code": 0,
+          "path": "contracts/json-schema/rpc-request-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "2fdb68c75daf0de4e6a0fb17a898609dd506358e1d8e0818436351bac67a241d"
+        },
+        {
+          "bytes": 33157,
+          "exit_code": 0,
+          "path": "contracts/json-schema/rpc-success-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "e7ab36d64fa052b16470a0a5452a59b38ad57aa5d2dbb73bba3828c56cd3056e"
+        },
+        {
+          "bytes": 1369,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/04.json",
+          "role": "negative-corpus",
+          "sha256": "9a6af239788ba5d9723e36b18a30bfdac11d9b0a8f08221fcd74f45ce0aaf1a4"
+        }
+      ],
+      "corpus": [
+        "84.13-04"
+      ],
+      "executable_case_ids": [
+        "operation-ack-loss",
+        "upload-first-retry",
+        "upload-middle-retry",
+        "upload-final-retry",
+        "upload-status-recovery",
+        "same-key-different-payload"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-FINAL-007",
+      "normative_section": "§20.5/§84.3",
+      "schema": [
+        "rpc-request-v1",
+        "rpc-success-v1"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_rpc_and_sdk.py::test_chunk_upload_covers_final_hash_and_status_recovery",
+        "tests/contract/test_rpc_and_sdk.py::test_operation_ledger_replays_exact_frame_and_rejects_payload_drift"
+      ],
+      "verifier": [
+        "OperationLedger",
+        "ChunkUploadLedger",
+        "validate_rpc_response"
+      ]
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 17891,
+          "exit_code": 0,
+          "path": "contracts/json-schema/result-bundle-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "3879de30d28d6470bbb90d554f2b3d5c79648f346a54cdd318153ee2ddeebe63"
+        },
+        {
+          "bytes": 5263,
+          "exit_code": 0,
+          "path": "contracts/json-schema/provenance-receipt-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "7881ed77bdc687757f656405572ecf4d28355ca5d2a77709245e1bbd81625152"
+        },
+        {
+          "bytes": 1300,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/06.json",
+          "role": "negative-corpus",
+          "sha256": "9dee7a41292036de604b575e63755b500285d078df41e9424efee9b76662fbb5"
+        }
+      ],
+      "corpus": [
+        "84.13-06"
+      ],
+      "executable_case_ids": [
+        "bundle-producer-mismatch",
+        "bundle-receipt-mismatch",
+        "outcome-transaction-mismatch"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-FINAL-008",
+      "normative_section": "§22/§84.5",
+      "schema": [
+        "result-bundle-v1",
+        "provenance-receipt-v1"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_verifier_remediation.py::test_all_self_hash_positive_fixtures_are_strict_and_tamper_negative"
+      ],
+      "verifier": [
+        "verify_result_bundle",
+        "verify_provenance_receipt"
+      ]
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 110097,
+          "exit_code": 0,
+          "path": "contracts/json-schema/rpc-request-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "2fdb68c75daf0de4e6a0fb17a898609dd506358e1d8e0818436351bac67a241d"
+        },
+        {
+          "bytes": 2383,
+          "exit_code": 0,
+          "path": "contracts/json-schema/checkpoint-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "85e64e5a540b90fc968b6196c1c451eaf0a9149fa329e5e95c90dc37c8a3984c"
+        },
+        {
+          "bytes": 2139,
+          "exit_code": 0,
+          "path": "contracts/json-schema/stream-prefix-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "640a3410e6630b939fb4784607bd08ca8afd7fa2db39286a1f73531057c38be3"
+        },
+        {
+          "bytes": 1303,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/05.json",
+          "role": "negative-corpus",
+          "sha256": "6db120f5bd41bab7cba2aca988fe1d5d389bcc0c73751b539cf518c7065a0718"
+        },
+        {
+          "bytes": 1300,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/06.json",
+          "role": "negative-corpus",
+          "sha256": "9dee7a41292036de604b575e63755b500285d078df41e9424efee9b76662fbb5"
+        }
+      ],
+      "corpus": [
+        "84.13-05",
+        "84.13-06"
+      ],
+      "executable_case_ids": [
+        "shadow-lease-stale",
+        "stale-attempt-lease"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-FINAL-009",
+      "normative_section": "§20.3/§27.1/§84.3",
+      "schema": [
+        "rpc-request-v1",
+        "checkpoint-v1",
+        "stream-prefix-v1"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_verifier_remediation.py::test_checkpoint_heartbeat_rpc_capability_and_ui_refs_are_bound"
+      ],
+      "verifier": [
+        "validate_rpc_request",
+        "verify_checkpoint",
+        "verify_stream_prefix"
+      ]
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 8855,
+          "exit_code": 0,
+          "path": "contracts/json-schema/run-snapshot-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "5a27ad82709b4102cb0638f64e0c6529b919102371619f4b119ceff2ce5278ae"
+        },
+        {
+          "bytes": 1094,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/01.json",
+          "role": "negative-corpus",
+          "sha256": "61b5bf74c4997d1e06e66a873a5713ac622320d96256caddac93f552c8cedcc1"
+        }
+      ],
+      "corpus": [
+        "84.13-01"
+      ],
+      "executable_case_ids": [
+        "snapshot-set-permutation"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-FINAL-010",
+      "normative_section": "§27/§84.4",
+      "schema": [
+        "run-snapshot-v1"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_goldens.py::test_design_goldens_recompute_exactly"
+      ],
+      "verifier": [
+        "request_key",
+        "request_key_bytes"
+      ]
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 3110,
+          "exit_code": 0,
+          "path": "contracts/json-schema/core-event-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "7ebe5b9967035f728474381f513856093ecbbc44ce0b30808fba54866fe3ae1e"
+        },
+        {
+          "bytes": 2036,
+          "exit_code": 0,
+          "path": "contracts/json-schema/plugin-job-event-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "adb63779272ea8a9573ea55c1cdba6fcd32b701e6cec807ae05ae3a58bc6c8e9"
+        },
+        {
+          "bytes": 2013,
+          "exit_code": 0,
+          "path": "contracts/json-schema/sse-recovery-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "ce15e29e51d706dc11333c16c6823d84ffb492b205022a8098fa940eea61665c"
+        },
+        {
+          "bytes": 1363,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/09.json",
+          "role": "negative-corpus",
+          "sha256": "aaa0ae51d2e07dea966b5adf8fd148ec07dcbb02e0a852b41130d63544b27779"
+        }
+      ],
+      "corpus": [
+        "84.13-09"
+      ],
+      "executable_case_ids": [
+        "aggregate-event-crash",
+        "job-cursor-on-core-stream",
+        "cursor-ahead",
+        "gap-without-snapshot",
+        "event-snapshot-convergence"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-FINAL-011",
+      "normative_section": "§23/§84.6/§84.12",
+      "schema": [
+        "core-event-v1",
+        "plugin-job-event-v1",
+        "sse-recovery-v1"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier": [
+        "verify_sse_recovery",
+        "verify_event_cursor_domain"
+      ]
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 6113,
+          "exit_code": 0,
+          "path": "contracts/json-schema/plugin-plan-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "ea2c83a040ff3f5c224149a17bf2303aecbd40b62f7d2b11d4d0af53dbcd6968"
+        },
+        {
+          "bytes": 3821,
+          "exit_code": 0,
+          "path": "contracts/json-schema/plugin-generation-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "79ecf7bdb52e23cd5e37e4ca598a14f8ddb1810a55ebb579a55cfab4eee85463"
+        },
+        {
+          "bytes": 2611,
+          "exit_code": 0,
+          "path": "contracts/json-schema/settings-revision-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "edee64094a4792e260b1b06e83584b9fedcdfd19ebc1c960c0ef73dec3b8f4e7"
+        },
+        {
+          "bytes": 1717,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/03.json",
+          "role": "negative-corpus",
+          "sha256": "a8ed413d0a3aa00690a6665cb1eb150d6e2bb659e4b7bd79d4226f0df361e439"
+        },
+        {
+          "bytes": 1300,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/06.json",
+          "role": "negative-corpus",
+          "sha256": "9dee7a41292036de604b575e63755b500285d078df41e9424efee9b76662fbb5"
+        }
+      ],
+      "corpus": [
+        "84.13-03",
+        "84.13-06"
+      ],
+      "executable_case_ids": [
+        "plan-snapshot-mismatch",
+        "bundle-snapshot-mismatch"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-FINAL-012",
+      "normative_section": "§17/§84.7",
+      "schema": [
+        "plugin-plan-v1",
+        "plugin-generation-v1",
+        "settings-revision-v1"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier": [
+        "verify_plan",
+        "verify_generation_binding"
+      ]
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 938,
+          "exit_code": 0,
+          "path": "contracts/json-schema/plugin-ui-init-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "4e1f515d6058263e89379c5283e15ca50505911afed9d0074a84af9f8d5a86b6"
+        },
+        {
+          "bytes": 79449,
+          "exit_code": 0,
+          "path": "contracts/json-schema/plugin-ui-message-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "059a00ae6a51bf1993635222de7b52670ddd1f6f9ced2d753d8af15d835fee27"
+        },
+        {
+          "bytes": 1566,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/12.json",
+          "role": "negative-corpus",
+          "sha256": "a8acb908d711515951571bdd0db874d1ebf8b7dfb6319c76400ceba6bb0b50d2"
+        }
+      ],
+      "corpus": [
+        "84.13-12"
+      ],
+      "executable_case_ids": [
+        "immutable-worker-url",
+        "worker-csp-tamper",
+        "navigation-watchdog"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-FINAL-013",
+      "normative_section": "§34.1/§84.10",
+      "schema": [
+        "plugin-ui-init-v1",
+        "plugin-ui-message-v1"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier": [
+        "verify_ui_security",
+        "verify_navigation_watchdog"
+      ]
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 5617,
+          "exit_code": 0,
+          "path": "contracts/json-schema/backup-bundle-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "54887b44adea8be450aeb61158111fa9c0f461db9e73b6db2ff9df180d431f87"
+        },
+        {
+          "bytes": 3430,
+          "exit_code": 0,
+          "path": "contracts/json-schema/restore-report-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "ffaa61c96ba8e817f9bc13e4e47f2f6d18a74c3e41b8583082c65676c186d3f7"
+        },
+        {
+          "bytes": 1160,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/13.json",
+          "role": "negative-corpus",
+          "sha256": "f98dad6feec026a8ed3123b35503c4527830747d15afa86b20f8d7fbaa1da859"
+        }
+      ],
+      "corpus": [
+        "84.13-13"
+      ],
+      "executable_case_ids": [
+        "backup-mode-package",
+        "backup-manifest-tamper",
+        "crash-staging",
+        "restore-new-root",
+        "projection-rebuild"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-FINAL-014",
+      "normative_section": "§51–§52/§84.9",
+      "schema": [
+        "backup-bundle-v1",
+        "restore-report-v1"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier": [
+        "verify_backup",
+        "verify_restore_report"
+      ]
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 734,
+          "exit_code": 0,
+          "path": "contracts/json-schema/compatibility-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "56679d74bcb8d74a36038ffd6e37eeecf676eb235ee94156eeca5762bae073a7"
+        },
+        {
+          "bytes": 1718,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/14.json",
+          "role": "negative-corpus",
+          "sha256": "e4850af02cf8e529024efee55b77d32ad8ff9e0849358ded4fa0c4bdc6893cee"
+        }
+      ],
+      "corpus": [
+        "84.13-14"
+      ],
+      "executable_case_ids": [
+        "compatibility-or",
+        "history-reserialized"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-FINAL-015",
+      "normative_section": "§13.3/§84.8",
+      "schema": [
+        "compatibility-v1"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier": [
+        "verify_compatibility",
+        "verify_history_bytes"
+      ]
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 2383,
+          "exit_code": 0,
+          "path": "contracts/json-schema/checkpoint-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "85e64e5a540b90fc968b6196c1c451eaf0a9149fa329e5e95c90dc37c8a3984c"
+        },
+        {
+          "bytes": 2139,
+          "exit_code": 0,
+          "path": "contracts/json-schema/stream-prefix-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "640a3410e6630b939fb4784607bd08ca8afd7fa2db39286a1f73531057c38be3"
+        },
+        {
+          "bytes": 1303,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/05.json",
+          "role": "negative-corpus",
+          "sha256": "6db120f5bd41bab7cba2aca988fe1d5d389bcc0c73751b539cf518c7065a0718"
+        },
+        {
+          "bytes": 1078,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/10.json",
+          "role": "negative-corpus",
+          "sha256": "6fa4f42e95c650c73d2b5c80484bf25a5521b78fc351db229772753ad13d2a96"
+        }
+      ],
+      "corpus": [
+        "84.13-05",
+        "84.13-10"
+      ],
+      "executable_case_ids": [
+        "checkpoint-backward",
+        "terminal-hydration"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-FINAL-016",
+      "normative_section": "§27.2/§28/§84.6",
+      "schema": [
+        "checkpoint-v1",
+        "stream-prefix-v1"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_verifier_remediation.py::test_checkpoint_heartbeat_rpc_capability_and_ui_refs_are_bound",
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier": [
+        "verify_checkpoint",
+        "verify_stream_prefix"
+      ]
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 558,
+          "exit_code": 0,
+          "path": "contracts/corpus/paths/windows-paths.json",
+          "role": "schema-or-corpus",
+          "sha256": "972dcd43a54b45602735d3ab2374f6fc23c4ba56fa775a39f50de2a0f7b403e0"
+        },
+        {
+          "bytes": 1718,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/14.json",
+          "role": "negative-corpus",
+          "sha256": "e4850af02cf8e529024efee55b77d32ad8ff9e0849358ded4fa0c4bdc6893cee"
+        }
+      ],
+      "corpus": [
+        "84.13-14"
+      ],
+      "executable_case_ids": [
+        "reserved-device-name",
+        "ads-path",
+        "trailing-dot-space",
+        "unicode-casefold-collision"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-FINAL-017",
+      "normative_section": "§13.3/§84.8",
+      "schema": [
+        "path corpus"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_verifier_remediation.py::test_data_bundle_hash_unicode_collision_and_skill_manifest_exact_bytes"
+      ],
+      "verifier": [
+        "normalize_relative_path",
+        "unicode_nfc_casefold"
+      ]
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 1030,
+          "exit_code": 0,
+          "path": "contracts/json-schema/skill-manifest-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "ad07ed1fbf90946b3a1cf314d325f9f2c9be1ea090f8ae5410714a68b4a2e702"
+        },
+        {
+          "bytes": 6007,
+          "exit_code": 0,
+          "path": "contracts/json-schema/skill-run-receipt-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "fe0b1ed36ca95a05eefc50c8adaddfed82c76854f36d8267240adfe9f8a0a154"
+        },
+        {
+          "bytes": 2696,
+          "exit_code": 0,
+          "path": "contracts/json-schema/skill-chain-result-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "0d3440b33301510d1134a657f7aa4249cbd5abdf2cf529c84a9544f19e40db3c"
+        },
+        {
+          "bytes": 1094,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/01.json",
+          "role": "negative-corpus",
+          "sha256": "61b5bf74c4997d1e06e66a873a5713ac622320d96256caddac93f552c8cedcc1"
+        },
+        {
+          "bytes": 1373,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/11.json",
+          "role": "negative-corpus",
+          "sha256": "5c288d678583bb94b2058b103084625145c780f95b7b4506544e57b0b65f5274"
+        }
+      ],
+      "corpus": [
+        "84.13-01",
+        "84.13-11"
+      ],
+      "executable_case_ids": [
+        "skill-order-permutation",
+        "tampered-patch"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-FINAL-018",
+      "normative_section": "§33/§84.11",
+      "schema": [
+        "skill-manifest-v1",
+        "skill-run-receipt-v1",
+        "skill-chain-result-v1"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_verifier_remediation.py::test_all_self_hash_positive_fixtures_are_strict_and_tamper_negative",
+        "tests/contract/test_verifier_remediation.py::test_skill_chain_ref_pairing_and_bundleless_failed_receipt"
+      ],
+      "verifier": [
+        "verify_skill_identity",
+        "verify_skill_receipt",
+        "verify_skill_chain"
+      ]
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 4824,
+          "exit_code": 0,
+          "path": "contracts/json-schema/candidate-item-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "53e7c97c9f41b62c8091a82fac549c1d27834e20ef497d0c7cd45b83c8743aab"
+        },
+        {
+          "bytes": 17891,
+          "exit_code": 0,
+          "path": "contracts/json-schema/result-bundle-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "3879de30d28d6470bbb90d554f2b3d5c79648f346a54cdd318153ee2ddeebe63"
+        },
+        {
+          "bytes": 1746,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/02.json",
+          "role": "negative-corpus",
+          "sha256": "b0c22fabf08c61ee483a6a110483774134e7d975c0be85ba0f7d526bed7a4bed"
+        }
+      ],
+      "corpus": [
+        "84.13-02"
+      ],
+      "executable_case_ids": [
+        "candidate-target-outside-write-set",
+        "candidate-base-mismatch",
+        "candidate-cross-workspace-source"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-PASS2-NEW-001",
+      "normative_section": "§8.7–§8.8/§22/§84.5",
+      "schema": [
+        "candidate-item-v1",
+        "result-bundle-v1"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_verifier_remediation.py::test_result_profile_workspace_duplicate_ids_and_candidate_write_binding"
+      ],
+      "verifier": [
+        "verify_result_bundle",
+        "_verify_candidate_item"
+      ]
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 3943,
+          "exit_code": 0,
+          "path": "contracts/json-schema/plugin-lifecycle-transition-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "00ecb8104bdf9d6e61d8760e722d9f93bb166769abbea18531a05291de777ed8"
+        },
+        {
+          "bytes": 1861,
+          "exit_code": 0,
+          "path": "contracts/json-schema/settings-migration-manifest-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "73028d3a7157dde3d5e6793fb9faa2a780a91f5e9dc4284b47e0f342944383cb"
+        },
+        {
+          "bytes": 2016,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/07.json",
+          "role": "negative-corpus",
+          "sha256": "9b28313fffbb5562ee4569271ec6e08faedd5f0424884cdac27d25e8a265e920"
+        }
+      ],
+      "corpus": [
+        "84.13-07"
+      ],
+      "executable_case_ids": [
+        "concurrent-install-base-changed",
+        "install-crash-matrix",
+        "safe-mode-exit"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-PASS2-NEW-002",
+      "normative_section": "§14–§15/§84.7",
+      "schema": [
+        "plugin-lifecycle-transition-v1",
+        "settings-migration-manifest-v1"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier": [
+        "verify_install_transaction",
+        "verify_lifecycle_crash_matrix"
+      ]
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 2611,
+          "exit_code": 0,
+          "path": "contracts/json-schema/settings-revision-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "edee64094a4792e260b1b06e83584b9fedcdfd19ebc1c960c0ef73dec3b8f4e7"
+        },
+        {
+          "bytes": 1722,
+          "exit_code": 0,
+          "path": "contracts/json-schema/settings-validation-receipt-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "bdcd828206a2b8fd39bcfb80ca95e984daf9c1a6c7c8bbfbdae27ff4f082302d"
+        },
+        {
+          "bytes": 1861,
+          "exit_code": 0,
+          "path": "contracts/json-schema/settings-migration-manifest-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "73028d3a7157dde3d5e6793fb9faa2a780a91f5e9dc4284b47e0f342944383cb"
+        },
+        {
+          "bytes": 2016,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/07.json",
+          "role": "negative-corpus",
+          "sha256": "9b28313fffbb5562ee4569271ec6e08faedd5f0424884cdac27d25e8a265e920"
+        }
+      ],
+      "corpus": [
+        "84.13-07"
+      ],
+      "executable_case_ids": [
+        "invalid-settings-validator",
+        "settings-binding-mismatch"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-PASS2-NEW-003",
+      "normative_section": "§14/§24/§84.7",
+      "schema": [
+        "settings-revision-v1",
+        "settings-validation-receipt-v1",
+        "settings-migration-manifest-v1"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier": [
+        "verify_settings_validation_receipt",
+        "verify_settings_migration"
+      ]
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 1388,
+          "exit_code": 0,
+          "path": "contracts/json-schema/release-retirement-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "79e9901acf85216cb92400adb82b19012c3d945bfb40f52c6360f3578bb47f18"
+        },
+        {
+          "bytes": 1570,
+          "exit_code": 0,
+          "path": "contracts/json-schema/release-pin-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "558ac4cbec8e996dd941f08e1e0b25173eff0cf04dda7433bc493619d4219213"
+        },
+        {
+          "bytes": 4824,
+          "exit_code": 0,
+          "path": "contracts/json-schema/candidate-item-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "53e7c97c9f41b62c8091a82fac549c1d27834e20ef497d0c7cd45b83c8743aab"
+        },
+        {
+          "bytes": 1034,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/08.json",
+          "role": "negative-corpus",
+          "sha256": "948f207a59b02ddc1bf7e52a26adb5d0c89a9948c6242e7b6e16425860d7c79b"
+        }
+      ],
+      "corpus": [
+        "84.13-08"
+      ],
+      "executable_case_ids": [
+        "pin-while-retiring",
+        "retire-with-recoverable-attempt",
+        "package-delete-publication"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-PASS2-NEW-004",
+      "normative_section": "§16/§24/§84.7",
+      "schema": [
+        "release-retirement-v1",
+        "release-pin-v1",
+        "candidate-item-v1"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier": [
+        "verify_retirement_barrier",
+        "verify_publication_after_package_delete"
+      ]
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 3110,
+          "exit_code": 0,
+          "path": "contracts/json-schema/core-event-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "7ebe5b9967035f728474381f513856093ecbbc44ce0b30808fba54866fe3ae1e"
+        },
+        {
+          "bytes": 3234,
+          "exit_code": 0,
+          "path": "contracts/json-schema/job-event-page-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "3094be64440314cc398f312ae34359fde090d9824ef82c81bb8c0894989b7aa4"
+        },
+        {
+          "bytes": 2013,
+          "exit_code": 0,
+          "path": "contracts/json-schema/sse-recovery-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "ce15e29e51d706dc11333c16c6823d84ffb492b205022a8098fa940eea61665c"
+        },
+        {
+          "bytes": 1363,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/09.json",
+          "role": "negative-corpus",
+          "sha256": "aaa0ae51d2e07dea966b5adf8fd148ec07dcbb02e0a852b41130d63544b27779"
+        }
+      ],
+      "corpus": [
+        "84.13-09"
+      ],
+      "executable_case_ids": [
+        "aggregate-event-crash",
+        "event-snapshot-convergence",
+        "core-job-cursor-mix"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-PASS2-NEW-005",
+      "normative_section": "§23/§84.6",
+      "schema": [
+        "core-event-v1",
+        "job-event-page-v1",
+        "sse-recovery-v1"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier": [
+        "verify_event_cursor_domain",
+        "verify_sse_recovery"
+      ]
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 2139,
+          "exit_code": 0,
+          "path": "contracts/json-schema/stream-prefix-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "640a3410e6630b939fb4784607bd08ca8afd7fa2db39286a1f73531057c38be3"
+        },
+        {
+          "bytes": 4824,
+          "exit_code": 0,
+          "path": "contracts/json-schema/candidate-item-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "53e7c97c9f41b62c8091a82fac549c1d27834e20ef497d0c7cd45b83c8743aab"
+        },
+        {
+          "bytes": 5174,
+          "exit_code": 0,
+          "path": "contracts/json-schema/job-snapshot-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "1ee52f372fd06896fef491eab863324f949c03cf69a9ea634cea239d8eb2fd78"
+        },
+        {
+          "bytes": 1078,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/10.json",
+          "role": "negative-corpus",
+          "sha256": "6fa4f42e95c650c73d2b5c80484bf25a5521b78fc351db229772753ad13d2a96"
+        }
+      ],
+      "corpus": [
+        "84.13-10"
+      ],
+      "executable_case_ids": [
+        "raw-stream-over-ack",
+        "cancel-crash-race",
+        "duplicate-incomplete-candidate",
+        "terminal-hydration"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-PASS2-NEW-006",
+      "normative_section": "§29.2/§84.6",
+      "schema": [
+        "stream-prefix-v1",
+        "candidate-item-v1",
+        "job-snapshot-v1"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_84_13.py::test_84_13_all_fourteen_groups_execute"
+      ],
+      "verifier": [
+        "verify_stream_prefix",
+        "verify_result_bundle",
+        "verify_job_snapshot"
+      ]
+    },
+    {
+      "artifacts": [
+        {
+          "bytes": 20392,
+          "exit_code": 0,
+          "path": "docs/contracts/finding-closure-v1.json",
+          "role": "closure-index",
+          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+        },
+        {
+          "bytes": 10692,
+          "exit_code": 0,
+          "path": "tests/contract/test_finding_closure.py",
+          "role": "executable-test",
+          "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
+        },
+        {
+          "bytes": 6007,
+          "exit_code": 0,
+          "path": "contracts/json-schema/skill-run-receipt-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "fe0b1ed36ca95a05eefc50c8adaddfed82c76854f36d8267240adfe9f8a0a154"
+        },
+        {
+          "bytes": 2696,
+          "exit_code": 0,
+          "path": "contracts/json-schema/skill-chain-result-v1.schema.json",
+          "role": "schema-or-corpus",
+          "sha256": "0d3440b33301510d1134a657f7aa4249cbd5abdf2cf529c84a9544f19e40db3c"
+        },
+        {
+          "bytes": 1373,
+          "exit_code": 0,
+          "path": "contracts/corpus/negative/84.13/11.json",
+          "role": "negative-corpus",
+          "sha256": "5c288d678583bb94b2058b103084625145c780f95b7b4506544e57b0b65f5274"
+        }
+      ],
+      "corpus": [
+        "84.13-11"
+      ],
+      "executable_case_ids": [
+        "skipped-participated",
+        "model-claim-without-evidence",
+        "verified-patch-without-proof",
+        "tampered-patch"
+      ],
+      "exit_code": 0,
+      "finding_id": "PPV11-PASS2-NEW-007",
+      "normative_section": "§33/§84.11",
+      "schema": [
+        "skill-run-receipt-v1",
+        "skill-chain-result-v1"
+      ],
+      "status": "closed",
+      "test": [
+        "tests/contract/test_verifier_remediation.py::test_skill_chain_ref_pairing_and_bundleless_failed_receipt"
+      ],
+      "verifier": [
+        "verify_skill_receipt",
+        "verify_skill_chain"
+      ]
+    }
+  ],
+  "inventory": {
+    "corpus_group_count": 14,
+    "corpus_groups": [
+      {
+        "bytes": 1094,
+        "exit_code": 0,
+        "group_id": "84.13-01",
+        "negative_case_count": 6,
+        "path": "contracts/corpus/negative/84.13/01.json",
+        "sha256": "61b5bf74c4997d1e06e66a873a5713ac622320d96256caddac93f552c8cedcc1"
+      },
+      {
+        "bytes": 1746,
+        "exit_code": 0,
+        "group_id": "84.13-02",
+        "negative_case_count": 9,
+        "path": "contracts/corpus/negative/84.13/02.json",
+        "sha256": "b0c22fabf08c61ee483a6a110483774134e7d975c0be85ba0f7d526bed7a4bed"
+      },
+      {
+        "bytes": 1717,
+        "exit_code": 0,
+        "group_id": "84.13-03",
+        "negative_case_count": 9,
+        "path": "contracts/corpus/negative/84.13/03.json",
+        "sha256": "a8ed413d0a3aa00690a6665cb1eb150d6e2bb659e4b7bd79d4226f0df361e439"
+      },
+      {
+        "bytes": 1369,
+        "exit_code": 0,
+        "group_id": "84.13-04",
+        "negative_case_count": 8,
+        "path": "contracts/corpus/negative/84.13/04.json",
+        "sha256": "9a6af239788ba5d9723e36b18a30bfdac11d9b0a8f08221fcd74f45ce0aaf1a4"
+      },
+      {
+        "bytes": 1303,
+        "exit_code": 0,
+        "group_id": "84.13-05",
+        "negative_case_count": 7,
+        "path": "contracts/corpus/negative/84.13/05.json",
+        "sha256": "6db120f5bd41bab7cba2aca988fe1d5d389bcc0c73751b539cf518c7065a0718"
+      },
+      {
+        "bytes": 1300,
+        "exit_code": 0,
+        "group_id": "84.13-06",
+        "negative_case_count": 7,
+        "path": "contracts/corpus/negative/84.13/06.json",
+        "sha256": "9dee7a41292036de604b575e63755b500285d078df41e9424efee9b76662fbb5"
+      },
+      {
+        "bytes": 2016,
+        "exit_code": 0,
+        "group_id": "84.13-07",
+        "negative_case_count": 11,
+        "path": "contracts/corpus/negative/84.13/07.json",
+        "sha256": "9b28313fffbb5562ee4569271ec6e08faedd5f0424884cdac27d25e8a265e920"
+      },
+      {
+        "bytes": 1034,
+        "exit_code": 0,
+        "group_id": "84.13-08",
+        "negative_case_count": 4,
+        "path": "contracts/corpus/negative/84.13/08.json",
+        "sha256": "948f207a59b02ddc1bf7e52a26adb5d0c89a9948c6242e7b6e16425860d7c79b"
+      },
+      {
+        "bytes": 1363,
+        "exit_code": 0,
+        "group_id": "84.13-09",
+        "negative_case_count": 7,
+        "path": "contracts/corpus/negative/84.13/09.json",
+        "sha256": "aaa0ae51d2e07dea966b5adf8fd148ec07dcbb02e0a852b41130d63544b27779"
+      },
+      {
+        "bytes": 1078,
+        "exit_code": 0,
+        "group_id": "84.13-10",
+        "negative_case_count": 5,
+        "path": "contracts/corpus/negative/84.13/10.json",
+        "sha256": "6fa4f42e95c650c73d2b5c80484bf25a5521b78fc351db229772753ad13d2a96"
+      },
+      {
+        "bytes": 1373,
+        "exit_code": 0,
+        "group_id": "84.13-11",
+        "negative_case_count": 7,
+        "path": "contracts/corpus/negative/84.13/11.json",
+        "sha256": "5c288d678583bb94b2058b103084625145c780f95b7b4506544e57b0b65f5274"
+      },
+      {
+        "bytes": 1566,
+        "exit_code": 0,
+        "group_id": "84.13-12",
+        "negative_case_count": 9,
+        "path": "contracts/corpus/negative/84.13/12.json",
+        "sha256": "a8acb908d711515951571bdd0db874d1ebf8b7dfb6319c76400ceba6bb0b50d2"
+      },
+      {
+        "bytes": 1160,
+        "exit_code": 0,
+        "group_id": "84.13-13",
+        "negative_case_count": 6,
+        "path": "contracts/corpus/negative/84.13/13.json",
+        "sha256": "f98dad6feec026a8ed3123b35503c4527830747d15afa86b20f8d7fbaa1da859"
+      },
+      {
+        "bytes": 1718,
+        "exit_code": 0,
+        "group_id": "84.13-14",
+        "negative_case_count": 10,
+        "path": "contracts/corpus/negative/84.13/14.json",
+        "sha256": "e4850af02cf8e529024efee55b77d32ad8ff9e0849358ded4fa0c4bdc6893cee"
+      }
+    ],
+    "executable_case_count": 105,
+    "executable_case_ids": [
+      "snapshot-set-permutation",
+      "skill-order-permutation",
+      "package-golden-self-check",
+      "run-snapshot-golden-self-check",
+      "skill-golden-self-check",
+      "package-crlf",
+      "result-profile-mismatch",
+      "result-item-schema-mismatch",
+      "candidate-target-outside-write-set",
+      "candidate-mutation-mismatch",
+      "candidate-base-mismatch",
+      "candidate-cross-workspace-source",
+      "candidate-parent-cycle",
+      "candidate-item-mapping-mismatch",
+      "candidate-base-write-set-positive",
+      "broker-ack-loss",
+      "broker-different-input-same-key",
+      "child-cancel-propagation",
+      "cancel-after-child-terminal",
+      "receipt-propagation-mismatch",
+      "unsupported-data-format",
+      "snapshot-parameters-not-in-assets",
+      "plan-snapshot-mismatch",
+      "data-interpreter-mismatch",
+      "operation-ack-loss",
+      "same-key-different-payload",
+      "upload-first-retry",
+      "upload-middle-retry",
+      "upload-final-retry",
+      "upload-status-recovery",
+      "upload-offset-ahead",
+      "upload-final-hash-mismatch",
+      "attempt-cancel-complete-race",
+      "fresh-resume",
+      "checkpoint-backward",
+      "checkpoint-different-snapshot",
+      "shadow-lease-stale",
+      "stale-attempt-lease",
+      "terminal-attempt-resume",
+      "bundle-producer-mismatch",
+      "bundle-snapshot-mismatch",
+      "bundle-lease-mismatch",
+      "bundle-receipt-mismatch",
+      "staging-incomplete",
+      "outcome-transaction-mismatch",
+      "complete-transaction-positive",
+      "concurrent-install-base-changed",
+      "install-crash-before-prepare",
+      "install-crash-after-staging",
+      "install-crash-after-activate",
+      "install-crash-after-settings",
+      "install-crash-after-projection",
+      "rollback-second-attempt",
+      "safe-mode-exit-without-reconciliation",
+      "safe-mode-exit-after-reconciliation",
+      "invalid-settings-validator",
+      "settings-binding-mismatch",
+      "pin-while-retiring",
+      "retire-with-recoverable-attempt",
+      "package-delete-publication",
+      "publication-after-package-delete-valid",
+      "aggregate-event-crash",
+      "event-crash-after-core-write",
+      "job-cursor-on-core-stream",
+      "cursor-ahead",
+      "gap-without-snapshot",
+      "event-snapshot-convergence",
+      "core-job-cursor-mix",
+      "raw-stream-over-ack",
+      "cancel-crash-race",
+      "duplicate-incomplete-candidate",
+      "terminal-hydration",
+      "terminal-hydration-missing",
+      "executed-receipt-positive",
+      "failed-bundleless-receipt",
+      "skipped-participated",
+      "model-claim-without-evidence",
+      "verified-patch-without-proof",
+      "tampered-patch",
+      "patch-range-inverted",
+      "immutable-worker-url",
+      "worker-csp-tamper",
+      "stale-intent",
+      "duplicate-intent-different-payload",
+      "unknown-component",
+      "unknown-prop",
+      "unknown-event",
+      "navigation-watchdog",
+      "navigation-watchdog-loop",
+      "backup-mode-package",
+      "backup-manifest-tamper",
+      "crash-staging",
+      "restore-new-root",
+      "projection-rebuild",
+      "restore-missing-projection",
+      "compatibility-valid",
+      "compatibility-or",
+      "compatibility-missing-python",
+      "history-raw-reader",
+      "history-reserialized",
+      "reserved-device-name",
+      "ads-path",
+      "trailing-dot-space",
+      "unicode-casefold-collision",
+      "unicode-casefold-decomposed-collision"
+    ],
+    "finding_count": 25,
+    "finding_ids": [
+      "PPV11-FINAL-001",
+      "PPV11-FINAL-002",
+      "PPV11-FINAL-003",
+      "PPV11-FINAL-004",
+      "PPV11-FINAL-005",
+      "PPV11-FINAL-006",
+      "PPV11-FINAL-007",
+      "PPV11-FINAL-008",
+      "PPV11-FINAL-009",
+      "PPV11-FINAL-010",
+      "PPV11-FINAL-011",
+      "PPV11-FINAL-012",
+      "PPV11-FINAL-013",
+      "PPV11-FINAL-014",
+      "PPV11-FINAL-015",
+      "PPV11-FINAL-016",
+      "PPV11-FINAL-017",
+      "PPV11-FINAL-018",
+      "PPV11-PASS2-NEW-001",
+      "PPV11-PASS2-NEW-002",
+      "PPV11-PASS2-NEW-003",
+      "PPV11-PASS2-NEW-004",
+      "PPV11-PASS2-NEW-005",
+      "PPV11-PASS2-NEW-006",
+      "PPV11-PASS2-NEW-007"
+    ],
+    "registry_execution": "verify_negative_cases"
+  },
+  "manifest_binding": {
+    "binding": {
+      "bytes": 20392,
+      "finding_count": 25,
+      "ids": [
+        "PPV11-FINAL-001",
+        "PPV11-FINAL-002",
+        "PPV11-FINAL-003",
+        "PPV11-FINAL-004",
+        "PPV11-FINAL-005",
+        "PPV11-FINAL-006",
+        "PPV11-FINAL-007",
+        "PPV11-FINAL-008",
+        "PPV11-FINAL-009",
+        "PPV11-FINAL-010",
+        "PPV11-FINAL-011",
+        "PPV11-FINAL-012",
+        "PPV11-FINAL-013",
+        "PPV11-FINAL-014",
+        "PPV11-FINAL-015",
+        "PPV11-FINAL-016",
+        "PPV11-FINAL-017",
+        "PPV11-FINAL-018",
+        "PPV11-PASS2-NEW-001",
+        "PPV11-PASS2-NEW-002",
+        "PPV11-PASS2-NEW-003",
+        "PPV11-PASS2-NEW-004",
+        "PPV11-PASS2-NEW-005",
+        "PPV11-PASS2-NEW-006",
+        "PPV11-PASS2-NEW-007"
+      ],
+      "path": "docs/contracts/finding-closure-v1.json",
+      "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+    },
+    "bytes": 45372,
+    "exit_code": 0,
+    "path": "contracts/manifest-v1.json",
+    "role": "manifest",
+    "sha256": "fd792d98201e2c38e356c1c4a7251abd597bc732f55dbfac706022edf47f48fa"
+  },
+  "schema": "plotpilot-finding-closure-evidence/v1",
+  "status": "passed",
+  "task_id": "PPA-M0-FINDING-CLOSURE-03"
+}

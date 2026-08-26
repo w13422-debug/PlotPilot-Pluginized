@@ -4,7 +4,7 @@ The generator only reads the frozen contract tree and the recorded browser
 evidence.  It does not start PlotPilot, access a provider, or touch the donor
 repository.  Delivery JSON is intentionally content-addressed where a
 content hash is meaningful; the M0 manifest uses the symbolic ``M0-OPEN``
-commit reference to avoid a self-referential commit hash.
+commit/tag reference to avoid a self-referential commit hash.
 """
 from __future__ import annotations
 
@@ -14,6 +14,11 @@ import json
 import subprocess
 from pathlib import Path
 from typing import Any, Iterable
+
+try:
+    from validate_merge_gate import verify_creation_gate
+except ModuleNotFoundError:  # pragma: no cover - package-style imports
+    from .validate_merge_gate import verify_creation_gate
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -33,6 +38,7 @@ BACKUP_MANIFEST_PATH = Path(
 DESIGN_SHA256 = "e70f450b75cfa753148cf620d13855d0073f7d61294e7599ea9cc98f3e612b7b"
 BASE_SHA = "1c481237b6fa32ef5f85d7f8da4cb16f366cd4f0"
 P0_BRANCH = "codex/ppa-00-integration"
+RELEASE_LABEL = "M0-OPEN-R2"
 
 FAMILY_IDS = [
     "84.1-common-jcs",
@@ -120,28 +126,28 @@ NEGATIVE_DESCRIPTIONS = {
 }
 
 FEATURE_ROWS = [
-    ("PP46-LIB-CREATE", "填入作品信息并创建书目", "P4", ["P1", "P5"], ["home-create-surface", "home-populated-list"], "baseline_observed"),
-    ("PP46-LIB-SETUP", "创建后执行或跳过设定初始化", "P5", ["P4", "P1", "P3"], ["home-advanced-surface"], "surface_observed"),
-    ("PP46-LIB-OPEN", "从书库打开作品并进入工作台", "P4", ["P1", "P5"], ["home-populated-list", "workbench-shell", "return-home"], "baseline_observed"),
+    ("PP46-LIB-CREATE", "填入作品信息并创建书目", "P4", ["P1", "P5"], ["home-create-surface"], "baseline_observed"),
+    ("PP46-LIB-SETUP", "创建后执行或跳过设定初始化", "P5", ["P4", "P1", "P3"], ["wizard-generation"], "baseline_observed"),
+    ("PP46-LIB-OPEN", "从书库打开作品并进入工作台", "P4", ["P1", "P5"], ["workbench-shell"], "baseline_observed"),
     ("PP46-LIB-DELETE", "删除单本书目并更新列表", "P4", ["P1"], [], "m0_not_exercised"),
     ("PP46-LIB-BATCH-DELETE", "选择多本后批量删除", "P4", ["P1"], [], "m0_not_exercised"),
     ("PP46-WB-THREE-PANE", "章节树—正文—右侧上下文三栏工作台", "P4", ["P1"], ["workbench-shell"], "baseline_observed"),
     ("PP46-CHAPTER-TREE", "查看、选择、刷新并按路由定位章节", "P4", ["P1"], ["workbench-chapter-tree"], "baseline_observed"),
-    ("PP46-CHAPTER-EDIT-SAVE", "打开章节、编辑并保存正文", "P4", ["P1"], ["workbench-chapter-tree"], "surface_observed"),
+    ("PP46-CHAPTER-EDIT-SAVE", "打开章节、编辑并保存正文", "P4", ["P1"], ["chapter-edit-save"], "baseline_observed"),
     ("PP46-ACT-CHAPTER-PLAN", "从幕发起规划并确认章节规划结果", "P6", ["P4", "P1", "P3"], [], "m0_not_exercised"),
-    ("PP46-WB-SETTINGS", "右侧设置和生成偏好更新", "P4", ["P1", "P2", "P3"], ["home-advanced-surface", "workbench-shell"], "surface_observed"),
+    ("PP46-WB-SETTINGS", "右侧设置和生成偏好更新", "P4", ["P1", "P2", "P3"], [], "m0_not_exercised"),
     ("PP46-BIBLE", "查看作品 Story Bible", "P5", ["P4", "P1"], ["workbench-writing-support"], "baseline_observed"),
     ("PP46-CHARACTER", "查看人物档案和设定", "P5", ["P4", "P1"], ["workbench-writing-support"], "baseline_observed"),
-    ("PP46-WORLDBUILDING", "查看世界观", "P5", ["P4", "P1"], ["workbench-reference-panel"], "baseline_observed"),
+    ("PP46-WORLDBUILDING", "查看世界观", "P5", ["P4", "P1"], ["workbench-shell"], "baseline_observed"),
     ("PP46-PROPS", "查看道具/物品生命周期", "P5", ["P4", "P1"], [], "m0_not_exercised"),
     ("PP46-FORESHADOW", "查看伏笔台账和待处理数量", "P5", ["P4", "P1"], ["workbench-writing-support"], "baseline_observed"),
-    ("PP46-STORY-EVOLUTION", "查看故事演进并兼容旧 tab 参数", "P5", ["P4", "P1"], ["workbench-writing-support"], "baseline_observed"),
-    ("PP46-KNOWLEDGE-GRAPH", "查看故事知识/知识图谱", "P5", ["P4", "P1"], ["workbench-chapter-tree"], "surface_observed"),
-    ("PP46-GENERATE", "执行章节规划、写作、审计和状态推进", "P6", ["P1", "P2", "P3", "P4", "P5"], ["workbench-shell"], "m0_not_exercised"),
-    ("PP46-GENERATE-PAUSE", "暂停/继续生成并产生 checkpoint", "P6", ["P3", "P4"], ["workbench-shell"], "m0_not_exercised"),
-    ("PP46-GENERATE-CANCEL", "取消生成并保留合同允许的残稿", "P6", ["P3", "P4", "P1"], ["workbench-shell"], "m0_not_exercised"),
-    ("PP46-AUTOPILOT-PROGRESS", "SSE 展示自动驾驶进度和阶段", "P6", ["P3", "P4"], ["workbench-shell"], "surface_observed"),
-    ("PP46-AUTOPILOT-LOG", "查看自动驾驶阶段和日志", "P6", ["P3", "P4"], ["workbench-shell"], "surface_observed"),
+    ("PP46-STORY-EVOLUTION", "查看故事演进并兼容旧 tab 参数", "P5", ["P4", "P1"], ["checkpoint-recovery"], "baseline_observed"),
+    ("PP46-KNOWLEDGE-GRAPH", "查看故事知识/知识图谱", "P5", ["P4", "P1"], [], "m0_not_exercised"),
+    ("PP46-GENERATE", "执行章节规划、写作、审计和状态推进", "P6", ["P1", "P2", "P3", "P4", "P5"], [], "m0_not_exercised"),
+    ("PP46-GENERATE-PAUSE", "暂停/继续生成并产生 checkpoint", "P6", ["P3", "P4"], ["generation-pause-cancel"], "baseline_observed"),
+    ("PP46-GENERATE-CANCEL", "取消生成并保留合同允许的残稿", "P6", ["P3", "P4", "P1"], ["generation-pause-cancel"], "baseline_observed"),
+    ("PP46-AUTOPILOT-PROGRESS", "SSE 展示自动驾驶进度和阶段", "P6", ["P3", "P4"], ["sse-disconnect-recovery"], "baseline_observed"),
+    ("PP46-AUTOPILOT-LOG", "查看自动驾驶阶段和日志", "P6", ["P3", "P4"], ["sse-disconnect-recovery"], "baseline_observed"),
     ("PP46-QUALITY", "查看质量结果并生成候选修订", "P6", ["P3", "P4", "P1"], [], "m0_not_exercised"),
     ("PP46-CHECKPOINT", "阶段前产生检查点并恢复", "P3", ["P6", "P4", "P1"], [], "m0_not_exercised"),
     ("PP46-PROVIDER-CONFIG", "配置 Provider、凭证、Base URL 和模型", "P3", ["P4", "P1"], [], "m0_not_exercised"),
@@ -150,16 +156,16 @@ FEATURE_ROWS = [
 ]
 
 MAIN_FLOW_ROWS = [
-    ("FLOW-01", "PP46-LIB-CREATE", "建书", ["home-create-surface", "home-populated-list"], "observed_surface"),
-    ("FLOW-02", "PP46-LIB-SETUP", "设定生成并确认", ["home-advanced-surface"], "surface_only"),
-    ("FLOW-03", "PP46-LIB-OPEN", "打开章节", ["workbench-shell", "workbench-chapter-tree"], "observed"),
-    ("FLOW-04", "PP46-CHAPTER-EDIT-SAVE", "编辑保存", ["workbench-chapter-tree"], "surface_only"),
-    ("FLOW-05", "PP46-GENERATE-CANCEL", "生成/暂停/取消", ["workbench-shell"], "not_exercised_by_m0_boundary"),
-    ("FLOW-06", "PP46-AUTOPILOT-PROGRESS", "SSE 断线重连", ["workbench-shell"], "not_exercised_by_m0_boundary"),
-    ("FLOW-07", "PP46-FORESHADOW", "查看伏笔", ["workbench-writing-support"], "observed"),
-    ("FLOW-08", "PP46-BIBLE", "查看故事演进/Bible", ["workbench-writing-support"], "observed"),
-    ("FLOW-09", "PP46-CHECKPOINT", "恢复任务", ["workbench-shell"], "not_exercised_by_m0_boundary"),
-    ("FLOW-10", "PP46-EXPORT", "导出", ["workbench-export-menu"], "observed"),
+    ("FLOW-01", "PP46-LIB-CREATE", "建书", ["home-create-surface"]),
+    ("FLOW-02", "PP46-LIB-SETUP", "设定生成并确认", ["wizard-generation"]),
+    ("FLOW-03", "PP46-LIB-OPEN", "打开章节", ["workbench-shell", "workbench-chapter-tree"]),
+    ("FLOW-04", "PP46-CHAPTER-EDIT-SAVE", "编辑保存", ["chapter-edit-save"]),
+    ("FLOW-05", "PP46-GENERATE-CANCEL", "生成/暂停/取消", ["generation-pause-cancel"]),
+    ("FLOW-06", "PP46-AUTOPILOT-PROGRESS", "SSE 断线重连", ["sse-disconnect-recovery"]),
+    ("FLOW-07", "PP46-FORESHADOW", "查看伏笔", ["workbench-writing-support"]),
+    ("FLOW-08", "PP46-BIBLE", "查看故事演进/Bible", ["workbench-writing-support"]),
+    ("FLOW-09", "PP46-CHECKPOINT", "恢复任务", ["checkpoint-recovery"]),
+    ("FLOW-10", "PP46-EXPORT", "导出", ["workbench-export-menu"]),
 ]
 
 
@@ -206,7 +212,41 @@ def iter_files(*roots: Path) -> Iterable[Path]:
         yield from sorted((path for path in root.rglob("*") if path.is_file()), key=lambda path: rel(path))
 
 
+def corpus_inventory() -> dict[str, Any]:
+    """Read counts from the current contract tree instead of stale constants."""
+
+    negative_paths = sorted((CONTRACTS / "corpus" / "negative" / "84.13").glob("*.json"))
+    groups = [read_json(path) for path in negative_paths]
+    return {
+        "schema_count": len(list(SCHEMAS.glob("*.schema.json"))),
+        "positive_fixture_count": len(list((CONTRACTS / "examples" / "fixtures").glob("*.json"))),
+        "combination_example_count": len(list((CONTRACTS / "examples").glob("*.json"))),
+        "negative_group_count": len(groups),
+        "negative_case_count": sum(len(group.get("negative", [])) for group in groups),
+        "negative_group_ids": [str(group["group_id"]) for group in groups],
+    }
+
+
+def evidence_flow_id(flow: dict[str, Any]) -> str:
+    value = flow.get("flow_id", flow.get("id"))
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"browser evidence flow has no id: {flow!r}")
+    return value
+
+
+def flow_status(flow: dict[str, Any]) -> str:
+    """Return the only accepted M0 flow status: a real exercised pass."""
+
+    status = flow.get("status")
+    if status == "passed" and flow.get("exercised", True) is True:
+        return "exercised"
+    if status == "exercised" and flow.get("passed", True) is True:
+        return "exercised"
+    raise ValueError(f"browser flow is not a real exercised pass: {evidence_flow_id(flow)}")
+
+
 def render_contract_docs() -> None:
+    inventory = corpus_inventory()
     write_text(
         ROOT / "docs" / "contracts" / "README.md",
         f"""# PlotPilot-Pluginized v1.2 公共合同
@@ -220,26 +260,26 @@ def render_contract_docs() -> None:
 
 ## 物化范围
 
-`contracts/json-schema/` 中的 48 个 `*.schema.json` 是 Draft 2020-12 closed schemas；
+`contracts/json-schema/` 中的 {inventory['schema_count']} 个 `*.schema.json` 是 Draft 2020-12 closed schemas；
 `rpc-method-matrix.v1.json` 和 `compatibility-matrix.v1.json` 是方法/兼容性机器清单。
-正例 fixture、四组 hash golden、Windows path corpus、compatibility/history corpus 与十四组
+正例 fixture、四组 hash golden、Windows path corpus、compatibility/history corpus 与 {inventory['negative_group_count']} 组
 `84.13` negative corpus 均由 `contracts/manifest-v1.json` 内容寻址。
 
 | 项目 | 数量/规则 |
 |---|---|
-| closed schemas | 48 |
-| 正例 fixture | 35 个 `contracts/examples/fixtures/*.json`，另有 4 个组合示例 |
+| closed schemas | {inventory['schema_count']} |
+| 正例 fixture | {inventory['positive_fixture_count']} 个 `contracts/examples/fixtures/*.json`，另有 {inventory['combination_example_count']} 个组合示例 |
 | golden | package、Skill、RunSnapshot/request-key、backup |
-| negative | 14 组、39 个 negative case |
+| negative | {inventory['negative_group_count']} 组、{inventory['negative_case_count']} 个 negative case |
 | 哈希 JSON | RFC 8785 JCS、UTF-8、无 BOM；自含 hash 先省略自身字段 |
 | 对象 | `additionalProperties=false`；联合顶层 `unevaluatedProperties=false` |
 
 ## 读取顺序
 
 1. 先读 `surface.md` 固定语义与错误码；
-2. 用 `schema-map.md` 定位 48 个 schema 与 §84 family；
+2. 用 `schema-map.md` 定位 {inventory['schema_count']} 个 schema 与 §84 family；
 3. 用 `method-matrix.md` 对照 §20 RPC 方法、meta profile、参数和结果；
-4. 用 `negative-golden.md` 运行十四组故障断言；
+4. 用 `negative-golden.md` 运行 {inventory['negative_group_count']} 组故障断言；
 5. 用 `contracts/manifest-v1.json` 和 `docs/deliveries/PPA-00/contract-golden-manifest.json` 校验内容哈希。
 
 ## 验收命令
@@ -309,7 +349,7 @@ Skill receipt 具备四级独立归因；Job 的 Attempt/Step/Job terminal 与 B
 
 ### 84.13–84.14 negative 与 finding closure
 
-`negative-golden.md` 对应十四组断言；每组至少一个真实负例且由 Python verifier 执行。Finding closure ID 以正式设计 §84.14 为准，
+`negative-golden.md` 对应 {inventory['negative_group_count']} 组断言；每组至少一个真实负例且由 Python verifier 执行。Finding closure ID 以正式设计 §84.14 为准，
 不能用“页面存在”或单一正例替代合同负例。
 
 ## Error codes
@@ -333,11 +373,11 @@ Skill receipt 具备四级独立归因；Job 的 Attempt/Step/Job terminal 与 B
         schema_rows.append(
             f"| `{contract_id}` | `{SCHEMA_SECTIONS[contract_id]}` | `{rel(path)}` | `{schema.get('$id', '')}` |"
         )
-    if len(schema_rows) != 48:
-        raise ValueError(f"expected 48 schema rows, got {len(schema_rows)}")
+    if len(schema_rows) != inventory["schema_count"]:
+        raise ValueError(f"expected {inventory['schema_count']} schema rows, got {len(schema_rows)}")
     write_text(
         ROOT / "docs" / "contracts" / "schema-map.md",
-        """# 48 closed schema 映射
+        f"""# {inventory['schema_count']} closed schema 映射
 
 `contract_id`、路径和 `$id` 直接从当前 schema 文件读取；section 映射只标注正式设计 §84 的规范来源，不新增字段语义。
 
@@ -354,7 +394,7 @@ Skill receipt 具备四级独立归因；Job 的 Attempt/Step/Job terminal 与 B
 | `contracts/json-schema/rpc-method-matrix.v1.json` | 29 个 worker/host 方法、profile、参数/结果字段及 14 错误码 | §20 / §84.3 |
 | `contracts/json-schema/compatibility-matrix.v1.json` | Core API、plugin RPC、UI host、Python 兼容窗口 | §84.8 |
 
-以上两个 JSON 不是 `*.schema.json`，但与 48 个 closed schema 一起进入 `contracts/manifest-v1.json` 的内容清单。
+以上两个 JSON 不是 `*.schema.json`，但与 {inventory['schema_count']} 个 closed schema 一起进入 `contracts/manifest-v1.json` 的内容清单。
 """,
     )
 
@@ -510,37 +550,81 @@ def build_contract_golden_manifest() -> dict[str, Any]:
 
 
 def flow_index(evidence: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    return {str(flow["id"]): flow for flow in evidence["flows"]}
+    flows = evidence.get("flows")
+    if not isinstance(flows, list) or len(flows) != 10:
+        raise ValueError("browser evidence must contain exactly ten flow records")
+    index: dict[str, dict[str, Any]] = {}
+    for flow in flows:
+        if not isinstance(flow, dict):
+            raise ValueError("browser evidence flow must be an object")
+        flow_id = evidence_flow_id(flow)
+        if flow_id in index:
+            raise ValueError(f"duplicate browser evidence flow: {flow_id}")
+        index[flow_id] = flow
+    return index
 
 
 def flow_evidence(flow_ids: list[str], index: dict[str, dict[str, Any]], evidence_path: Path) -> dict[str, Any]:
-    flows = [index[flow_id] for flow_id in flow_ids]
+    flows = []
+    for flow_id in flow_ids:
+        if flow_id not in index:
+            raise ValueError(f"required browser flow is missing: {flow_id}")
+        flows.append(index[flow_id])
     screenshots: list[dict[str, Any]] = []
-    assertions: list[str] = []
+    assertions: list[Any] = []
+    ui_actions: list[Any] = []
+    expected_actual: list[Any] = []
     request_urls: list[str] = []
     trace_entries = 0
     for flow in flows:
-        screenshot = Path(str(flow["screenshot"]))
-        if screenshot.is_file():
+        flow_status(flow)
+        screenshot_values = flow.get("screenshots", flow.get("screenshot"))
+        if isinstance(screenshot_values, (str, Path)):
+            screenshot_values = [screenshot_values]
+        if not isinstance(screenshot_values, list) or not screenshot_values:
+            raise ValueError(f"browser flow has no screenshot: {evidence_flow_id(flow)}")
+        for screenshot_value in screenshot_values:
+            screenshot_path = screenshot_value.get("path") if isinstance(screenshot_value, dict) else screenshot_value
+            screenshot = Path(str(screenshot_path))
+            if not screenshot.is_file():
+                raise ValueError(f"browser screenshot is missing: {screenshot}")
             screenshots.append({"path": str(screenshot), "bytes": screenshot.stat().st_size, "sha256": sha256(screenshot)})
-        assertions.extend(str(item) for item in flow.get("assertions", []))
+        flow_assertions = flow.get("assertions", [])
+        if isinstance(flow_assertions, list):
+            assertions.extend(flow_assertions)
+        flow_actions = flow.get("ui_actions", flow.get("actions", []))
+        if isinstance(flow_actions, list):
+            ui_actions.extend(flow_actions)
+        flow_expected_actual = flow.get("expected_actual", flow.get("expected_vs_actual", []))
+        if isinstance(flow_expected_actual, list):
+            expected_actual.extend(flow_expected_actual)
         trace = flow.get("api_trace", [])
+        if not isinstance(trace, list) or not trace:
+            raise ValueError(f"browser flow has no API trace: {evidence_flow_id(flow)}")
         trace_entries += len(trace)
-        request_urls.extend(str(entry["url"]) for entry in trace if entry.get("kind") == "request")
+        request_urls.extend(str(entry.get("url")) for entry in trace if isinstance(entry, dict) and entry.get("url"))
+    if not assertions and not expected_actual:
+        raise ValueError(f"browser flow has no behavior assertion: {evidence_flow_id(flows[0])}")
+    if not ui_actions:
+        raise ValueError(f"browser flow has no UI actions: {evidence_flow_id(flows[0])}")
     return {
         "evidence_file": str(evidence_path),
         "evidence_sha256": sha256(evidence_path),
         "flow_ids": flow_ids,
+        "status": "exercised",
+        "executed": True,
         "screenshot_count": len(screenshots),
         "screenshots": screenshots,
         "api_trace_entries": trace_entries,
         "api_request_urls": sorted(set(request_urls)),
         "behavior_assertions": assertions,
+        "ui_actions": ui_actions,
+        "expected_actual": expected_actual,
     }
 
 
 def render_feature_row(feature: tuple[str, str, str, list[str], list[str], str], index: dict[str, dict[str, Any]], evidence_path: Path) -> dict[str, Any]:
-    feature_id, user_action, owner, collaborators, flow_ids, status = feature
+    feature_id, user_action, owner, collaborators, flow_ids, declared_status = feature
     evidence = flow_evidence(flow_ids, index, evidence_path) if flow_ids else {
         "evidence_file": str(evidence_path),
         "evidence_sha256": sha256(evidence_path),
@@ -550,11 +634,14 @@ def render_feature_row(feature: tuple[str, str, str, list[str], list[str], str],
         "api_trace_entries": 0,
         "api_request_urls": [],
         "behavior_assertions": [],
+        "ui_actions": [],
+        "expected_actual": [],
     }
+    status = "exercised" if flow_ids else "owner_slice_pending"
     limitations = (
-        "M0 smoke 只观察 surface/read paths；未执行持久 mutation、真实 Provider、generation、pause/cancel 或 resume。"
-        if status != "baseline_observed"
-        else "M0 证据仅冻结当前 PlotPilot 行为观察点；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。"
+        "该功能未被十条 M0 主流程覆盖；由矩阵指定 owner 在后续里程碑提供完整纵切证据。"
+        if not flow_ids
+        else "M0 仅冻结现有 PlotPilot 入口与真实行为；插件化后的完整 owner 结果由对应项目在 M1–M7 验证。"
     )
     return {
         "feature_id": feature_id,
@@ -565,7 +652,7 @@ def render_feature_row(feature: tuple[str, str, str, list[str], list[str], str],
         "core_plugin_ui_dependencies": collaborators,
         "baseline_evidence": evidence,
         "automated_test_ids": ["M0-BROWSER-01"],
-        "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；M0 safety boundary。",
+        "manual_smoke": "headful Chromium；fresh temporary PLOTPILOT_PROD_DATA_DIR；fresh browser context；真实 UI→API→执行链。",
         "writer_mode_and_cutover": "M0 不切换 writer；后续按 owner 的 legacy|plugin fence 与 Core Publication/Candidate 门禁切换。",
         "rollback": "失败时保留 evidence/receipt/Candidate（若有），回到上一 LKG/legacy adapter；不得删除既有正式 Revision。",
         "legacy_delete_gate": "M7 同一观察点的真实集成、恢复、故障和 legacy-hit=0 证据通过后才可删除。",
@@ -579,7 +666,8 @@ def build_parity_ledger() -> dict[str, Any]:
     evidence = read_json(evidence_path)
     index = flow_index(evidence)
     main_flows: list[dict[str, Any]] = []
-    for flow_id, feature_id, formal_flow, flow_ids, status in MAIN_FLOW_ROWS:
+    for flow_id, feature_id, formal_flow, flow_ids in MAIN_FLOW_ROWS:
+        evidence_for_flow = flow_evidence(flow_ids, index, evidence_path)
         main_flows.append(
             {
                 "flow_id": flow_id,
@@ -587,17 +675,17 @@ def build_parity_ledger() -> dict[str, Any]:
                 "feature_id": feature_id,
                 "user_entry_and_precondition": "fresh browser context；按 PlotPilot Home/Workbench 当前入口操作。",
                 "legacy_observation": "M0 只记录 donor-compatible Home/Workbench 行为，不改业务实现。",
-                "expected_pluginized_observation": "后续插件化必须保持同一入口/结果顺序，并通过 typed contract；不把 surface 观察升级为功能完成。",
+                "expected_pluginized_observation": "后续插件化必须保持同一入口/结果顺序，并通过 typed contract；本条记录来自真实 UI 行为。",
                 "owner_project": next(row[2] for row in FEATURE_ROWS if row[0] == feature_id),
                 "core_plugin_ui_dependencies": next(row[3] for row in FEATURE_ROWS if row[0] == feature_id),
-                "baseline_evidence": flow_evidence(flow_ids, index, evidence_path),
+                "baseline_evidence": evidence_for_flow,
                 "automated_test_ids": ["M0-BROWSER-01"],
                 "manual_smoke": "node tools/integration/browser_smoke.mjs；headful Chromium 152.0.7977.54。",
                 "writer_mode_and_cutover": "M0 不切换 writer；生成/保存/恢复后续由 Core/owner 按合同 cutover。",
                 "rollback": "M0 无业务切换；后续失败回到上一 LKG/legacy adapter，保留可审计 evidence。",
                 "legacy_delete_gate": "对应完整真实集成、恢复和故障证据通过后才关闭 legacy 路径。",
-                "status": status,
-                "scope_note": "未执行项是 M0 边界的诚实记录：合同/SDK/negative tests 已验证，但不能替代真实生成或恢复操作。",
+                "status": evidence_for_flow["status"],
+                "scope_note": "本条主流程已由真实 UI 动作、API trace、执行/恢复结果和截图共同冻结。",
             }
         )
     features = [render_feature_row(row, index, evidence_path) for row in FEATURE_ROWS]
@@ -622,7 +710,8 @@ def build_parity_ledger() -> dict[str, Any]:
             "fixture": evidence["fixture"],
             "constraints": evidence["constraints"],
             "data_evidence": evidence["data_evidence"],
-            "forbidden_generation_calls": evidence["forbidden_generation_calls"],
+            "unexpected_external_calls": evidence.get("unexpected_external_calls", []),
+            "forbidden_generation_calls": evidence.get("forbidden_generation_calls", []),
             "page_errors": evidence["page_errors"],
             "console_warning_count": len(evidence.get("console_errors", [])),
             "api_trace_entries": len(evidence["api_trace"]),
@@ -636,8 +725,8 @@ def build_parity_ledger() -> dict[str, Any]:
         "features": features,
         "interpretation": {
             "observed": "截图、API trace 和行为断言来自真实 headful browser run。",
-            "not_exercised": "M0 明确禁止真实模型调用、generation pipeline、非空正文保存；对应流程保留 status 和后续 owner/delete gate。",
-            "export": "Markdown HTTP 200、UTF-8、无 BOM、观察到 filename/content sequence；其他格式在后续 P6 纵切中按同一 ledger 补齐。",
+            "executed": "十条主流程均由真实 UI→API→执行/恢复链执行；生成使用隔离 deterministic fake Provider，不接触付费/外网 Provider。",
+            "export": "导出通过 UI 菜单与浏览器 download 事件捕获，并校验 UTF-8、BOM、文件名与非空内容。",
         },
     }
 
@@ -653,6 +742,8 @@ def build_identity_evidence() -> dict[str, Any]:
     bootstrap = read_json(BOOTSTRAP_PATH)
     external_manifest = read_json(BACKUP_MANIFEST_PATH)
     matrix = read_json(MATRIX_PATH)
+    creation_gate = verify_creation_gate(matrix_path=MATRIX_PATH, root=ROOT)
+    live_gate_state = "closed" if creation_gate["closed"] else "open"
     return {
         "schema": "p0-identity-runtime-evidence/v1",
         "status": "verified",
@@ -698,7 +789,8 @@ def build_identity_evidence() -> dict[str, Any]:
             "desktop_script_names_absent": [name for name in ("tauri", "tauri:dev", "tauri:build") if name not in frontend_package.get("scripts", {})],
             "browser_scripts_present": [name for name in ("dev", "build", "preview") if name in frontend_package.get("scripts", {})],
         },
-        "git_controls": {"donor_local_push": current_git("remote", "get-url", "--push", "donor-local"), "p1_p6_creation_gate": "closed"},
+        "git_controls": {"donor_local_push": current_git("remote", "get-url", "--push", "donor-local"), "p1_p6_creation_gate": live_gate_state},
+        "creation_gate": creation_gate,
         "matrix_projection": {"schema": matrix["schema"], "construction_authorized": matrix["construction_authorized"], "gate": matrix["topology"]["p1_to_p6_creation_gate"]},
     }
 
@@ -717,12 +809,15 @@ def build_m0_open_manifest(contract_manifest: dict[str, Any], parity: dict[str, 
     for name, path in outputs.items():
         if path.exists():
             artifact_records[name] = file_record(path)
+    creation_gate = identity["creation_gate"]
+    live_gate_state = "closed" if creation_gate["closed"] else "open"
+    inventory = corpus_inventory()
     return {
         "schema": "plotpilot-m0-open-manifest/v1",
         "status": "open",
         "milestone": "M0",
-        "commit_ref": "M0-OPEN",
-        "tag": "M0-OPEN",
+        "commit_ref": RELEASE_LABEL,
+        "tag": RELEASE_LABEL,
         "self_hash_excluded": True,
         "identity": {
             "project_id": "P0",
@@ -744,9 +839,9 @@ def build_m0_open_manifest(contract_manifest: dict[str, Any], parity: dict[str, 
             "M0.1": {"status": "passed", "evidence": [str(DELIVERY / "m0.1-donor-protection.json"), str(BACKUP_MANIFEST_PATH), str(BOOTSTRAP_PATH)], "assertion": "external donor manifest, three file hashes, donor HEAD/status and product bootstrap identity match"},
             "M0.2": {"status": "passed", "evidence": [str(EVIDENCE / "m0.2-identity-runtime.json"), str(DELIVERY / "runtime-toolchain-lock.json"), str(DELIVERY / "license-ledger.json")], "assertion": "baseline, exact runtime lock, browser-only scripts, source/data-root separation and license record"},
             "M0.3": {"status": "passed", "evidence": ["backend/plotpilot_core/bootstrap", "backend/plotpilot_plugin_sdk/ports.py", "frontend/src/contracts/types.ts", "frontend/src/contracts/rpc.ts"], "assertion": "composition root, typed ports, unified errors/diagnostics and existing Home/Workbench composition preserved"},
-            "M0.4": {"status": "passed", "evidence": ["contracts/manifest-v1.json", "docs/contracts/README.md", "docs/contracts/schema-map.md", "docs/contracts/method-matrix.md", "docs/contracts/negative-golden.md"], "assertion": "48 closed schemas, §13.4/§20/§84 surface, four goldens and all fourteen negative groups"},
+            "M0.4": {"status": "passed", "evidence": ["contracts/manifest-v1.json", "docs/contracts/README.md", "docs/contracts/schema-map.md", "docs/contracts/method-matrix.md", "docs/contracts/negative-golden.md"], "assertion": f"{inventory['schema_count']} closed schemas, §13.4/§20/§84 surface, four goldens and all {inventory['negative_group_count']} negative groups ({inventory['negative_case_count']} executable cases)"},
             "M0.5": {"status": "passed", "evidence": ["backend/plotpilot_plugin_sdk/fake_provider.py", "backend/plotpilot_plugin_sdk/fixtures.py", "backend/plotpilot_plugin_sdk/ports.py", "frontend/src/contracts/verifier.ts"], "assertion": "deterministic fake Provider, typed port/UI/HTTP/SSE fixtures and Python/TypeScript SDK/verifiers"},
-            "M0.6": {"status": "passed", "evidence": [str(DELIVERY / "parity-ledger.json"), str(EVIDENCE / "browser-smoke.json"), str(ROOT / "docs" / "deliveries" / "PPA-00" / "parity" / "screenshots")], "assertion": "ten formal flow records cite ten real screenshots, API trace and behavior assertions; safety-limited actions are explicitly unexecuted"},
+            "M0.6": {"status": "passed", "evidence": [str(DELIVERY / "parity-ledger.json"), str(EVIDENCE / "browser-smoke.json"), str(ROOT / "docs" / "deliveries" / "PPA-00" / "parity" / "screenshots")], "assertion": "ten formal flow records cite real UI actions, expected/actual assertions, API trace, execution/recovery evidence and screenshots; deterministic fake Provider is isolated from live network"},
             "M0.7": {"status": "passed", "evidence": ["AGENTS.md", "coordination/integration-queue", "coordination/PPA-00/state.json", "tools/integration/validate_merge_gate.py"], "assertion": "write-set, delta, integration-ready, checkpoint, state, single queue and merge gate are tracked"},
         },
         "verification": {
@@ -758,7 +853,7 @@ def build_m0_open_manifest(contract_manifest: dict[str, Any], parity: dict[str, 
         },
         "constraints": {
             "donor_local_push": identity["git_controls"]["donor_local_push"],
-            "p1_p6_creation_gate": "closed",
+            "p1_p6_creation_gate": live_gate_state,
             "contract_delta": "none",
             "dependency_delta": "none",
             "desktop_build": "not run",
@@ -768,7 +863,7 @@ def build_m0_open_manifest(contract_manifest: dict[str, Any], parity: dict[str, 
         },
         "artifacts": artifact_records,
         "limitations": [
-            "M0 browser smoke deliberately does not call generation, pause/cancel, SSE reconnect or task resume and does not save a non-empty chapter body; those rows remain explicit follow-up gates.",
+            "M0 browser smoke uses the existing UI-to-API execution chain with deterministic fake Provider; no live/paid provider or external network is used.",
             "The read-only donor still contains its pre-construction dirty files; the external backup manifest is the authority and the donor was not cleaned or reset.",
             "The legacy src-tauri directory and compatibility dependency remain read-only donor material; no Tauri build script or build was used in M0.",
         ],

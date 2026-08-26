@@ -285,7 +285,7 @@
     {
       "bytes": 623,
       "path": "contracts/examples/fixtures/checkpoint.json",
-      "sha256": "55aceb0527fabc5033db3adf275bc2ec5e1d6b08cda69334d36f9a53eb0ac34c"
+      "sha256": "59879b17b7f09930cf1d2002e6379709027fc9bc006af7ea47f198e70e98cfae"
     },
     {
       "bytes": 443,
@@ -295,7 +295,7 @@
     {
       "bytes": 424,
       "path": "contracts/examples/fixtures/core-snapshot.json",
-      "sha256": "6c8b19eeb715a6e47c9be38a0a002f8940c0a4634dbbee3a6823061847b0153c"
+      "sha256": "dc68617db394eb16bb6b7b78f8f32c53f2ea2986fb11bc8aafbbd81d3eb0d0af"
     },
     {
       "bytes": 151,
@@ -305,12 +305,12 @@
     {
       "bytes": 615,
       "path": "contracts/examples/fixtures/job-snapshot.json",
-      "sha256": "422b27f0bc90d4657821887a537336fbcbbc14d68b3b383c41742495bd8c3e2c"
+      "sha256": "3ec4adb14bdff892d7ee48a37213d22cd5eedd9752904fae13e28e9b1d078ad1"
     },
     {
       "bytes": 633,
       "path": "contracts/examples/fixtures/plugin-data-bundle.json",
-      "sha256": "84bb68dee9e3d1bb111bbe6c283ca054238d6364eecf6f9db20bf1923bed55b9"
+      "sha256": "b94ac48ee336cf02b3fb193aa167977116b11cf8e024225d0913d188f4bcc4fe"
     },
     {
       "bytes": 301,
@@ -370,7 +370,7 @@
     {
       "bytes": 786,
       "path": "contracts/examples/fixtures/provenance-receipt.json",
-      "sha256": "f75b628bf12c77e37cf7906bf3d4114b74ec7f80fd79c85371c8684f0ebf8e90"
+      "sha256": "aef0a7863d059244eb12bd43488afe735141e9a87a55abea612efbe550aba51f"
     },
     {
       "bytes": 288,
@@ -420,7 +420,7 @@
     {
       "bytes": 605,
       "path": "contracts/examples/fixtures/settings-validation-receipt.json",
-      "sha256": "82bb2bf4fcd86738ec9d63169aed225577d7447c7f153621636636625e4329c0"
+      "sha256": "daf651124692cbbe1ad5adf407298840fdaef2c44a512a8d3d42e65892b1b477"
     },
     {
       "bytes": 770,
@@ -553,74 +553,74 @@
       "sha256": "c79eb501ee49c9ddb6be4538d95abe8178e9cf0fbef24e3f5c9b0778af900160"
     },
     {
-      "bytes": 535,
+      "bytes": 1094,
       "path": "contracts/corpus/negative/84.13/01.json",
-      "sha256": "a006b82393a2d7d851db4cef980f1012a974bf06714a862b2e5a26bb3b4c95d0"
+      "sha256": "61b5bf74c4997d1e06e66a873a5713ac622320d96256caddac93f552c8cedcc1"
     },
     {
-      "bytes": 559,
+      "bytes": 1746,
       "path": "contracts/corpus/negative/84.13/02.json",
-      "sha256": "e15ad45610b9e68bd70078fe71d13df0e8eb37e95bf226304b7ff320f268b467"
+      "sha256": "b0c22fabf08c61ee483a6a110483774134e7d975c0be85ba0f7d526bed7a4bed"
     },
     {
-      "bytes": 427,
+      "bytes": 1717,
       "path": "contracts/corpus/negative/84.13/03.json",
-      "sha256": "79e2993df7f9452f5c927e151dbe0766b34cf3fedabe9ad1c868eb8239f9b364"
+      "sha256": "a8ed413d0a3aa00690a6665cb1eb150d6e2bb659e4b7bd79d4226f0df361e439"
     },
     {
-      "bytes": 414,
+      "bytes": 1369,
       "path": "contracts/corpus/negative/84.13/04.json",
-      "sha256": "e1846992c3eeccd3291602977f0f3358c300bf415ed517e131231efc646be241"
+      "sha256": "9a6af239788ba5d9723e36b18a30bfdac11d9b0a8f08221fcd74f45ce0aaf1a4"
     },
     {
-      "bytes": 513,
+      "bytes": 1303,
       "path": "contracts/corpus/negative/84.13/05.json",
-      "sha256": "8b6cd7ff0e7442df007db334575e80723213fcc3333dbe4553ca85a4cfbf6dea"
+      "sha256": "6db120f5bd41bab7cba2aca988fe1d5d389bcc0c73751b539cf518c7065a0718"
     },
     {
-      "bytes": 535,
+      "bytes": 1300,
       "path": "contracts/corpus/negative/84.13/06.json",
-      "sha256": "10525b73e0b86d3274ef624d0e432faabef4083ba75b1de4e45d4ab1f69b8e4a"
+      "sha256": "9dee7a41292036de604b575e63755b500285d078df41e9424efee9b76662fbb5"
     },
     {
-      "bytes": 568,
+      "bytes": 2016,
       "path": "contracts/corpus/negative/84.13/07.json",
-      "sha256": "50e4341e999c0d3150522d09cbb6103e5bd54fa2ff6325709b72c15f950bb97b"
+      "sha256": "9b28313fffbb5562ee4569271ec6e08faedd5f0424884cdac27d25e8a265e920"
     },
     {
-      "bytes": 548,
+      "bytes": 1034,
       "path": "contracts/corpus/negative/84.13/08.json",
-      "sha256": "e0ccc768d5daec45c195c5da9d219274b92d65b527471628342607bff3d310a8"
+      "sha256": "948f207a59b02ddc1bf7e52a26adb5d0c89a9948c6242e7b6e16425860d7c79b"
     },
     {
-      "bytes": 433,
+      "bytes": 1363,
       "path": "contracts/corpus/negative/84.13/09.json",
-      "sha256": "ca579dc8e1b47774fbc60bce72fde4990881bc6e797eb5467bf8b8b3256de7e1"
+      "sha256": "aaa0ae51d2e07dea966b5adf8fd148ec07dcbb02e0a852b41130d63544b27779"
     },
     {
-      "bytes": 543,
+      "bytes": 1078,
       "path": "contracts/corpus/negative/84.13/10.json",
-      "sha256": "88ae60b67e76676d6ce287220ffab2f3e26a74611f351b6734f0a70ea9814bdb"
+      "sha256": "6fa4f42e95c650c73d2b5c80484bf25a5521b78fc351db229772753ad13d2a96"
     },
     {
-      "bytes": 526,
+      "bytes": 1373,
       "path": "contracts/corpus/negative/84.13/11.json",
-      "sha256": "6be7403164fbf85ef84214fc5a5903c1150797e640a98b4f4d2628dac233b732"
+      "sha256": "5c288d678583bb94b2058b103084625145c780f95b7b4506544e57b0b65f5274"
     },
     {
-      "bytes": 545,
+      "bytes": 1566,
       "path": "contracts/corpus/negative/84.13/12.json",
-      "sha256": "09668ae51ea1ece53f3d19ce0e9cc4c79cc9a8f4e1a00453031e6e6a1d705916"
+      "sha256": "a8acb908d711515951571bdd0db874d1ebf8b7dfb6319c76400ceba6bb0b50d2"
     },
     {
-      "bytes": 582,
+      "bytes": 1160,
       "path": "contracts/corpus/negative/84.13/13.json",
-      "sha256": "1973267660e70012010d861d62e0acf46d7901fc7ed6eeff072e02b9224516f2"
+      "sha256": "f98dad6feec026a8ed3123b35503c4527830747d15afa86b20f8d7fbaa1da859"
     },
     {
-      "bytes": 679,
+      "bytes": 1718,
       "path": "contracts/corpus/negative/84.13/14.json",
-      "sha256": "8f127d7d812a9a23e2eea6315b38384cb7554d7a32acc8c69ad2cd28cf4ad540"
+      "sha256": "e4850af02cf8e529024efee55b77d32ad8ff9e0849358ded4fa0c4bdc6893cee"
     },
     {
       "bytes": 558,
@@ -628,6 +628,38 @@
       "sha256": "972dcd43a54b45602735d3ab2374f6fc23c4ba56fa775a39f50de2a0f7b403e0"
     }
   ],
+  "finding_closure": {
+    "finding_count": 25,
+    "ids": [
+      "PPV11-FINAL-001",
+      "PPV11-FINAL-002",
+      "PPV11-FINAL-003",
+      "PPV11-FINAL-004",
+      "PPV11-FINAL-005",
+      "PPV11-FINAL-006",
+      "PPV11-FINAL-007",
+      "PPV11-FINAL-008",
+      "PPV11-FINAL-009",
+      "PPV11-FINAL-010",
+      "PPV11-FINAL-011",
+      "PPV11-FINAL-012",
+      "PPV11-FINAL-013",
+      "PPV11-FINAL-014",
+      "PPV11-FINAL-015",
+      "PPV11-FINAL-016",
+      "PPV11-FINAL-017",
+      "PPV11-FINAL-018",
+      "PPV11-PASS2-NEW-001",
+      "PPV11-PASS2-NEW-002",
+      "PPV11-PASS2-NEW-003",
+      "PPV11-PASS2-NEW-004",
+      "PPV11-PASS2-NEW-005",
+      "PPV11-PASS2-NEW-006",
+      "PPV11-PASS2-NEW-007"
+    ],
+    "path": "docs/contracts/finding-closure-v1.json",
+    "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+  },
   "golden_vectors": {
     "backup": {
       "bundle_hash": "cb26bba0a85711962d2d6f44115b2c186bd9db0aa3514b58dcecc9c0083fbaf8",
@@ -663,147 +695,166 @@
   },
   "inventory": {
     "file_count_excluding_manifest": 122,
-    "negative_case_count": 39,
+    "negative_case_count": 105,
     "negative_group_count": 14,
     "schema_count": 48
   },
   "negative_groups": [
     {
       "group_id": "84.13-01",
-      "negative_case_count": 2,
+      "negative_case_count": 6,
       "path": "contracts/corpus/negative/84.13/01.json",
       "positive_fixture_ids": [
         "package-golden",
         "skill-golden",
         "run-snapshot-golden"
       ],
-      "sha256": "a006b82393a2d7d851db4cef980f1012a974bf06714a862b2e5a26bb3b4c95d0"
+      "sha256": "61b5bf74c4997d1e06e66a873a5713ac622320d96256caddac93f552c8cedcc1"
     },
     {
       "group_id": "84.13-02",
-      "negative_case_count": 3,
+      "negative_case_count": 9,
       "path": "contracts/corpus/negative/84.13/02.json",
       "positive_fixture_ids": [
-        "result-bundle"
+        "result-bundle",
+        "candidate-item",
+        "provenance-receipt"
       ],
-      "sha256": "e15ad45610b9e68bd70078fe71d13df0e8eb37e95bf226304b7ff320f268b467"
+      "sha256": "b0c22fabf08c61ee483a6a110483774134e7d975c0be85ba0f7d526bed7a4bed"
     },
     {
       "group_id": "84.13-03",
-      "negative_case_count": 2,
+      "negative_case_count": 9,
       "path": "contracts/corpus/negative/84.13/03.json",
       "positive_fixture_ids": [
-        "broker-invocation"
+        "broker-invocation",
+        "broker-child-record",
+        "run-snapshot",
+        "plugin-plan",
+        "provenance-receipt"
       ],
-      "sha256": "79e2993df7f9452f5c927e151dbe0766b34cf3fedabe9ad1c868eb8239f9b364"
+      "sha256": "a8ed413d0a3aa00690a6665cb1eb150d6e2bb659e4b7bd79d4226f0df361e439"
     },
     {
       "group_id": "84.13-04",
-      "negative_case_count": 2,
+      "negative_case_count": 8,
       "path": "contracts/corpus/negative/84.13/04.json",
       "positive_fixture_ids": [
-        "run-snapshot"
+        "rpc-upload",
+        "rpc-success"
       ],
-      "sha256": "e1846992c3eeccd3291602977f0f3358c300bf415ed517e131231efc646be241"
+      "sha256": "9a6af239788ba5d9723e36b18a30bfdac11d9b0a8f08221fcd74f45ce0aaf1a4"
     },
     {
       "group_id": "84.13-05",
-      "negative_case_count": 3,
+      "negative_case_count": 7,
       "path": "contracts/corpus/negative/84.13/05.json",
       "positive_fixture_ids": [
-        "rpc-upload"
+        "checkpoint",
+        "job-snapshot"
       ],
-      "sha256": "8b6cd7ff0e7442df007db334575e80723213fcc3333dbe4553ca85a4cfbf6dea"
+      "sha256": "6db120f5bd41bab7cba2aca988fe1d5d389bcc0c73751b539cf518c7065a0718"
     },
     {
       "group_id": "84.13-06",
-      "negative_case_count": 3,
+      "negative_case_count": 7,
       "path": "contracts/corpus/negative/84.13/06.json",
       "positive_fixture_ids": [
-        "checkpoint"
+        "result-bundle",
+        "provenance-receipt",
+        "settings-validation-receipt"
       ],
-      "sha256": "10525b73e0b86d3274ef624d0e432faabef4083ba75b1de4e45d4ab1f69b8e4a"
+      "sha256": "9dee7a41292036de604b575e63755b500285d078df41e9424efee9b76662fbb5"
     },
     {
       "group_id": "84.13-07",
-      "negative_case_count": 3,
+      "negative_case_count": 11,
       "path": "contracts/corpus/negative/84.13/07.json",
       "positive_fixture_ids": [
-        "result-bundle",
-        "provenance-receipt"
+        "plugin-lifecycle-transition",
+        "settings-validation-receipt",
+        "settings-migration-manifest"
       ],
-      "sha256": "50e4341e999c0d3150522d09cbb6103e5bd54fa2ff6325709b72c15f950bb97b"
+      "sha256": "9b28313fffbb5562ee4569271ec6e08faedd5f0424884cdac27d25e8a265e920"
     },
     {
       "group_id": "84.13-08",
-      "negative_case_count": 3,
+      "negative_case_count": 4,
       "path": "contracts/corpus/negative/84.13/08.json",
       "positive_fixture_ids": [
-        "plugin-lifecycle-transition"
+        "release-retirement",
+        "release-pin",
+        "publication-after-package-delete"
       ],
-      "sha256": "e0ccc768d5daec45c195c5da9d219274b92d65b527471628342607bff3d310a8"
+      "sha256": "948f207a59b02ddc1bf7e52a26adb5d0c89a9948c6242e7b6e16425860d7c79b"
     },
     {
       "group_id": "84.13-09",
-      "negative_case_count": 2,
+      "negative_case_count": 7,
       "path": "contracts/corpus/negative/84.13/09.json",
       "positive_fixture_ids": [
-        "release-retirement",
-        "release-pin"
-      ],
-      "sha256": "ca579dc8e1b47774fbc60bce72fde4990881bc6e797eb5467bf8b8b3256de7e1"
-    },
-    {
-      "group_id": "84.13-10",
-      "negative_case_count": 3,
-      "path": "contracts/corpus/negative/84.13/10.json",
-      "positive_fixture_ids": [
         "core-event",
+        "plugin-job-event",
         "sse-recovery",
         "core-snapshot"
       ],
-      "sha256": "88ae60b67e76676d6ce287220ffab2f3e26a74611f351b6734f0a70ea9814bdb"
+      "sha256": "aaa0ae51d2e07dea966b5adf8fd148ec07dcbb02e0a852b41130d63544b27779"
+    },
+    {
+      "group_id": "84.13-10",
+      "negative_case_count": 5,
+      "path": "contracts/corpus/negative/84.13/10.json",
+      "positive_fixture_ids": [
+        "stream-prefix",
+        "job-snapshot",
+        "result-bundle"
+      ],
+      "sha256": "6fa4f42e95c650c73d2b5c80484bf25a5521b78fc351db229772753ad13d2a96"
     },
     {
       "group_id": "84.13-11",
-      "negative_case_count": 3,
+      "negative_case_count": 7,
       "path": "contracts/corpus/negative/84.13/11.json",
       "positive_fixture_ids": [
-        "stream-prefix"
+        "skill-run-receipt",
+        "skill-chain-result",
+        "failed-bundleless-receipt"
       ],
-      "sha256": "6be7403164fbf85ef84214fc5a5903c1150797e640a98b4f4d2628dac233b732"
+      "sha256": "5c288d678583bb94b2058b103084625145c780f95b7b4506544e57b0b65f5274"
     },
     {
       "group_id": "84.13-12",
-      "negative_case_count": 3,
+      "negative_case_count": 9,
       "path": "contracts/corpus/negative/84.13/12.json",
-      "positive_fixture_ids": [
-        "skill-run-receipt",
-        "skill-chain-result"
-      ],
-      "sha256": "09668ae51ea1ece53f3d19ce0e9cc4c79cc9a8f4e1a00453031e6e6a1d705916"
-    },
-    {
-      "group_id": "84.13-13",
-      "negative_case_count": 3,
-      "path": "contracts/corpus/negative/84.13/13.json",
       "positive_fixture_ids": [
         "plugin-ui-tree",
         "plugin-ui-intent",
         "plugin-ui-message"
       ],
-      "sha256": "1973267660e70012010d861d62e0acf46d7901fc7ed6eeff072e02b9224516f2"
+      "sha256": "a8acb908d711515951571bdd0db874d1ebf8b7dfb6319c76400ceba6bb0b50d2"
+    },
+    {
+      "group_id": "84.13-13",
+      "negative_case_count": 6,
+      "path": "contracts/corpus/negative/84.13/13.json",
+      "positive_fixture_ids": [
+        "backup-golden",
+        "restore-report",
+        "restore-new-root",
+        "projection-rebuild"
+      ],
+      "sha256": "f98dad6feec026a8ed3123b35503c4527830747d15afa86b20f8d7fbaa1da859"
     },
     {
       "group_id": "84.13-14",
-      "negative_case_count": 4,
+      "negative_case_count": 10,
       "path": "contracts/corpus/negative/84.13/14.json",
       "positive_fixture_ids": [
-        "backup-golden",
         "compatibility-valid",
-        "history-v1"
+        "history-v1",
+        "windows-casefold-valid"
       ],
-      "sha256": "8f127d7d812a9a23e2eea6315b38384cb7554d7a32acc8c69ad2cd28cf4ad540"
+      "sha256": "e4850af02cf8e529024efee55b77d32ad8ff9e0849358ded4fa0c4bdc6893cee"
     }
   ],
   "schema": "plotpilot-contract-manifest/v1",

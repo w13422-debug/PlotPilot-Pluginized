@@ -2,16 +2,16 @@
   "browser_smoke": {
     "command": "node tools/integration/browser_smoke.mjs",
     "evidence": {
-      "bytes": 81182,
+      "bytes": 333714,
       "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-      "sha256": "93056d17ab4122ab27a24ce6e90d7ea7e21ff8c42bca5bf55414fd4e4f047ed3"
+      "sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4"
     },
     "execution": "recorded_prior_run_not_repeated",
     "exit_code": 0,
     "id": "browser-smoke-headful",
     "status": "passed"
   },
-  "captured_at": "2026-08-26T08:38:08Z",
+  "captured_at": "2026-08-26T17:21:46Z",
   "commands": [
     {
       "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe tools/integration/generate_contract_manifest.py --check",
@@ -42,11 +42,11 @@
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "stdout": {
-        "bytes": 17483,
+        "bytes": 51835,
         "first_line": "{",
         "last_line": "}",
         "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\python-contracts-all.stdout.txt",
-        "sha256": "00c77e93d2496b25083f903899d8549321839f04152480f3c017633e792bd4f4"
+        "sha256": "31192c381756c91f63256bcbe1585b35941e0ba609858923c04a0fbee080b6c5"
       }
     },
     {
@@ -60,11 +60,11 @@
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "stdout": {
-        "bytes": 1337,
+        "bytes": 1229,
         "first_line": "============================= test session starts =============================",
-        "last_line": "======================== 10 passed, 1 warning in 2.52s ========================",
+        "last_line": "============================= 23 passed in 7.33s ==============================",
         "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\pytest-contract-acceptance.stdout.txt",
-        "sha256": "af8eb5677d2b6b38dd085f2e4cbe405415c759efd40efecae234d2cb3396f021"
+        "sha256": "ae571041a45eac99d7e18765288a2cf3e318f7b43fa66e502a6d534b41b27c22"
       }
     },
     {
@@ -132,11 +132,11 @@
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "stdout": {
-        "bytes": 431,
+        "bytes": 3800,
         "first_line": "{",
         "last_line": "}",
         "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\delivery-record-check.stdout.txt",
-        "sha256": "41c4c614cf5a1d87485faec1988981eec453a47995aadb3d6757446a0a8cf439"
+        "sha256": "c39b7a9fb069cc52b6b624b64a8a0400d3feccc8a6d38a646c5ec10db158b15f"
       }
     },
     {
@@ -150,11 +150,11 @@
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "stdout": {
-        "bytes": 15306,
+        "bytes": 18364,
         "first_line": "{",
         "last_line": "}",
         "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\merge-gate.stdout.txt",
-        "sha256": "d6fcaf9d630a5325e120cf8cd7851e4157db69099bec844c235f744d169c55be"
+        "sha256": "f09f29d8413646e075e80389f1a0b057430555293429ea66a2c86aec570e46f0"
       }
     }
   ],
@@ -167,7 +167,7 @@
   },
   "git": {
     "branch": "codex/ppa-00-integration",
-    "head": "1c481237b6fa32ef5f85d7f8da4cb16f366cd4f0"
+    "head": "786986a02219973a69a0d1c1114191149924d7f7"
   },
   "root": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized",
   "schema": "plotpilot-integration-test-ledger/v1",

@@ -2,9 +2,14 @@
   "artifacts": {
     "contract_docs": [
       {
-        "bytes": 2199,
+        "bytes": 2196,
         "path": "docs/contracts/README.md",
-        "sha256": "0af6ec0f48c22702a88e00a9bb724795ac529e28e7a89fecb154d971d253cde3"
+        "sha256": "e81d21a6f4f69713bd2f017dc2624c5f36fb9fe069fef679dfbb43d43b21cf36"
+      },
+      {
+        "bytes": 20392,
+        "path": "docs/contracts/finding-closure-v1.json",
+        "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
       },
       {
         "bytes": 6481,
@@ -12,19 +17,19 @@
         "sha256": "fea85558b1e621df6dc2af0c97ebf3f8b7950f480e88f93739d19efe4fbf12ae"
       },
       {
-        "bytes": 3376,
+        "bytes": 3379,
         "path": "docs/contracts/negative-golden.md",
-        "sha256": "1169c49821733fb6d4f37ae371bd554e4d49b3e2f4baefebcadf7aa5d4a45265"
+        "sha256": "2fe89b357576c97546e823150970e2710b440779162059f0f96461ecb4ecb8b4"
       },
       {
-        "bytes": 7871,
+        "bytes": 7896,
         "path": "docs/contracts/schema-map.md",
-        "sha256": "53d0eab3b69df9ec934dcde8f0fbfd8dc19c5bba877c6d8ac1537cdda3c2aeef"
+        "sha256": "b0402160160337a7c176dc14603017a0ca180a4de2af4bb971594cf6fa5983f5"
       },
       {
-        "bytes": 4164,
+        "bytes": 4162,
         "path": "docs/contracts/surface.md",
-        "sha256": "ea1b22d60544c3cd53be2c99343d331445dcd4cc5a5506caf4451aaa58ebd9e6"
+        "sha256": "4df7dfb00f539ba2a6be575b628de88243865b8b8ae191b65e93dc1de6837d1c"
       }
     ],
     "contract_files": [
@@ -296,7 +301,7 @@
       {
         "bytes": 623,
         "path": "contracts/examples/fixtures/checkpoint.json",
-        "sha256": "55aceb0527fabc5033db3adf275bc2ec5e1d6b08cda69334d36f9a53eb0ac34c"
+        "sha256": "59879b17b7f09930cf1d2002e6379709027fc9bc006af7ea47f198e70e98cfae"
       },
       {
         "bytes": 443,
@@ -306,7 +311,7 @@
       {
         "bytes": 424,
         "path": "contracts/examples/fixtures/core-snapshot.json",
-        "sha256": "6c8b19eeb715a6e47c9be38a0a002f8940c0a4634dbbee3a6823061847b0153c"
+        "sha256": "dc68617db394eb16bb6b7b78f8f32c53f2ea2986fb11bc8aafbbd81d3eb0d0af"
       },
       {
         "bytes": 151,
@@ -316,12 +321,12 @@
       {
         "bytes": 615,
         "path": "contracts/examples/fixtures/job-snapshot.json",
-        "sha256": "422b27f0bc90d4657821887a537336fbcbbc14d68b3b383c41742495bd8c3e2c"
+        "sha256": "3ec4adb14bdff892d7ee48a37213d22cd5eedd9752904fae13e28e9b1d078ad1"
       },
       {
         "bytes": 633,
         "path": "contracts/examples/fixtures/plugin-data-bundle.json",
-        "sha256": "84bb68dee9e3d1bb111bbe6c283ca054238d6364eecf6f9db20bf1923bed55b9"
+        "sha256": "b94ac48ee336cf02b3fb193aa167977116b11cf8e024225d0913d188f4bcc4fe"
       },
       {
         "bytes": 301,
@@ -381,7 +386,7 @@
       {
         "bytes": 786,
         "path": "contracts/examples/fixtures/provenance-receipt.json",
-        "sha256": "f75b628bf12c77e37cf7906bf3d4114b74ec7f80fd79c85371c8684f0ebf8e90"
+        "sha256": "aef0a7863d059244eb12bd43488afe735141e9a87a55abea612efbe550aba51f"
       },
       {
         "bytes": 288,
@@ -431,7 +436,7 @@
       {
         "bytes": 605,
         "path": "contracts/examples/fixtures/settings-validation-receipt.json",
-        "sha256": "82bb2bf4fcd86738ec9d63169aed225577d7447c7f153621636636625e4329c0"
+        "sha256": "daf651124692cbbe1ad5adf407298840fdaef2c44a512a8d3d42e65892b1b477"
       },
       {
         "bytes": 770,
@@ -564,74 +569,74 @@
         "sha256": "c79eb501ee49c9ddb6be4538d95abe8178e9cf0fbef24e3f5c9b0778af900160"
       },
       {
-        "bytes": 535,
+        "bytes": 1094,
         "path": "contracts/corpus/negative/84.13/01.json",
-        "sha256": "a006b82393a2d7d851db4cef980f1012a974bf06714a862b2e5a26bb3b4c95d0"
+        "sha256": "61b5bf74c4997d1e06e66a873a5713ac622320d96256caddac93f552c8cedcc1"
       },
       {
-        "bytes": 559,
+        "bytes": 1746,
         "path": "contracts/corpus/negative/84.13/02.json",
-        "sha256": "e15ad45610b9e68bd70078fe71d13df0e8eb37e95bf226304b7ff320f268b467"
+        "sha256": "b0c22fabf08c61ee483a6a110483774134e7d975c0be85ba0f7d526bed7a4bed"
       },
       {
-        "bytes": 427,
+        "bytes": 1717,
         "path": "contracts/corpus/negative/84.13/03.json",
-        "sha256": "79e2993df7f9452f5c927e151dbe0766b34cf3fedabe9ad1c868eb8239f9b364"
+        "sha256": "a8ed413d0a3aa00690a6665cb1eb150d6e2bb659e4b7bd79d4226f0df361e439"
       },
       {
-        "bytes": 414,
+        "bytes": 1369,
         "path": "contracts/corpus/negative/84.13/04.json",
-        "sha256": "e1846992c3eeccd3291602977f0f3358c300bf415ed517e131231efc646be241"
+        "sha256": "9a6af239788ba5d9723e36b18a30bfdac11d9b0a8f08221fcd74f45ce0aaf1a4"
       },
       {
-        "bytes": 513,
+        "bytes": 1303,
         "path": "contracts/corpus/negative/84.13/05.json",
-        "sha256": "8b6cd7ff0e7442df007db334575e80723213fcc3333dbe4553ca85a4cfbf6dea"
+        "sha256": "6db120f5bd41bab7cba2aca988fe1d5d389bcc0c73751b539cf518c7065a0718"
       },
       {
-        "bytes": 535,
+        "bytes": 1300,
         "path": "contracts/corpus/negative/84.13/06.json",
-        "sha256": "10525b73e0b86d3274ef624d0e432faabef4083ba75b1de4e45d4ab1f69b8e4a"
+        "sha256": "9dee7a41292036de604b575e63755b500285d078df41e9424efee9b76662fbb5"
       },
       {
-        "bytes": 568,
+        "bytes": 2016,
         "path": "contracts/corpus/negative/84.13/07.json",
-        "sha256": "50e4341e999c0d3150522d09cbb6103e5bd54fa2ff6325709b72c15f950bb97b"
+        "sha256": "9b28313fffbb5562ee4569271ec6e08faedd5f0424884cdac27d25e8a265e920"
       },
       {
-        "bytes": 548,
+        "bytes": 1034,
         "path": "contracts/corpus/negative/84.13/08.json",
-        "sha256": "e0ccc768d5daec45c195c5da9d219274b92d65b527471628342607bff3d310a8"
+        "sha256": "948f207a59b02ddc1bf7e52a26adb5d0c89a9948c6242e7b6e16425860d7c79b"
       },
       {
-        "bytes": 433,
+        "bytes": 1363,
         "path": "contracts/corpus/negative/84.13/09.json",
-        "sha256": "ca579dc8e1b47774fbc60bce72fde4990881bc6e797eb5467bf8b8b3256de7e1"
+        "sha256": "aaa0ae51d2e07dea966b5adf8fd148ec07dcbb02e0a852b41130d63544b27779"
       },
       {
-        "bytes": 543,
+        "bytes": 1078,
         "path": "contracts/corpus/negative/84.13/10.json",
-        "sha256": "88ae60b67e76676d6ce287220ffab2f3e26a74611f351b6734f0a70ea9814bdb"
+        "sha256": "6fa4f42e95c650c73d2b5c80484bf25a5521b78fc351db229772753ad13d2a96"
       },
       {
-        "bytes": 526,
+        "bytes": 1373,
         "path": "contracts/corpus/negative/84.13/11.json",
-        "sha256": "6be7403164fbf85ef84214fc5a5903c1150797e640a98b4f4d2628dac233b732"
+        "sha256": "5c288d678583bb94b2058b103084625145c780f95b7b4506544e57b0b65f5274"
       },
       {
-        "bytes": 545,
+        "bytes": 1566,
         "path": "contracts/corpus/negative/84.13/12.json",
-        "sha256": "09668ae51ea1ece53f3d19ce0e9cc4c79cc9a8f4e1a00453031e6e6a1d705916"
+        "sha256": "a8acb908d711515951571bdd0db874d1ebf8b7dfb6319c76400ceba6bb0b50d2"
       },
       {
-        "bytes": 582,
+        "bytes": 1160,
         "path": "contracts/corpus/negative/84.13/13.json",
-        "sha256": "1973267660e70012010d861d62e0acf46d7901fc7ed6eeff072e02b9224516f2"
+        "sha256": "f98dad6feec026a8ed3123b35503c4527830747d15afa86b20f8d7fbaa1da859"
       },
       {
-        "bytes": 679,
+        "bytes": 1718,
         "path": "contracts/corpus/negative/84.13/14.json",
-        "sha256": "8f127d7d812a9a23e2eea6315b38384cb7554d7a32acc8c69ad2cd28cf4ad540"
+        "sha256": "e4850af02cf8e529024efee55b77d32ad8ff9e0849358ded4fa0c4bdc6893cee"
       },
       {
         "bytes": 558,
@@ -691,9 +696,9 @@
         "sha256": "d07b298c42c327158923e36d05aa55928d209ebd6b3134f9f32201adca80ddab"
       },
       {
-        "bytes": 33624,
+        "bytes": 44992,
         "path": "backend/plotpilot_plugin_sdk/verifier.py",
-        "sha256": "a45604c292ec6622b74ea02172e4704147d41bfe98477e0a8c4ea1abfcc40e10"
+        "sha256": "8e4751691a66ec68e81d5ef78a12994d1d1d671e14d55ac80a8c2e479579c5d7"
       },
       {
         "bytes": 1847,
@@ -711,16 +716,21 @@
         "sha256": "c5871e08f512a97bfa14b6ff2b485805b692c0aadbc1766fe1cc3adf287d0157"
       },
       {
-        "bytes": 9765,
+        "bytes": 49407,
         "path": "frontend/src/contracts/verifier.ts",
-        "sha256": "090b570651d33ed69e3a08abf0c3daa813a6b382bd432bec6202c462471c181b"
+        "sha256": "2b0b4c777208ebc3819d1131a55c5cd43ed8d6dbf55789ee04e2e47a1ccf9d3a"
       }
     ],
     "tooling": [
       {
-        "bytes": 22337,
+        "bytes": 38931,
         "path": "tools/integration/browser_smoke.mjs",
-        "sha256": "bc37a9eebb6e405c76bba7d1b2931b146d1a80697f4e2a9c4036ac42b9d922a9"
+        "sha256": "358169dfcbe129feb6d932a22303167892f78dd5ad7c428adaa9faed2b7fff7a"
+      },
+      {
+        "bytes": 6610,
+        "path": "tools/integration/browser_smoke_provider.py",
+        "sha256": "25fd04fde4e031ab50dedb82827bf2a9a129d4717bee9507a9299ea59d623445"
       },
       {
         "bytes": 4923,
@@ -728,14 +738,14 @@
         "sha256": "cef3a40e66c36652d5e76febda1072bc320fc64ef132f011b6f7506e6a7bfa24"
       },
       {
-        "bytes": 12074,
+        "bytes": 14115,
         "path": "tools/integration/fresh_m0_review.py",
-        "sha256": "45ae590b538d8a39deb88bec8097dcd515b78697580cb6294997eb652fef1e52"
+        "sha256": "78ff15334c6c0608d757c78fc21562209e82e2dde06e621d01544e75a01b97db"
       },
       {
-        "bytes": 4768,
+        "bytes": 5216,
         "path": "tools/integration/generate_contract_manifest.py",
-        "sha256": "25d7656190ea37070cfd2e43007c39833389f1f8ebfa630508ab82cee442d820"
+        "sha256": "e4a6a7ff175f352fdfc7edee7e00553a1daa434308d435d75bc71b97b81568fb"
       },
       {
         "bytes": 66742,
@@ -763,19 +773,19 @@
         "sha256": "2dc8729302fcf8dfc9054fbea1e59c267994e7fb5434a83f44848d6fc6af452a"
       },
       {
-        "bytes": 44785,
+        "bytes": 49528,
         "path": "tools/integration/generate_m0_delivery.py",
-        "sha256": "9877c1486ffb1d3c2e41807d4cdcba81e715b09b148d4e0dfbe6043fa1dc1e43"
+        "sha256": "ce42f3c784f0994f403a1e7a4acc16768db7fbabd35edfc374c0937c3156fec1"
       },
       {
-        "bytes": 7688,
+        "bytes": 17543,
         "path": "tools/integration/validate_m0_delivery.py",
-        "sha256": "2fabc4a87ea3421c75fb7111cf33d1c2c0c618729dd4983d6425008da0b636c8"
+        "sha256": "0de191c6ce158b25a2f5b6218486e679bdc33e59f3d64e88112366d16a31dee1"
       },
       {
-        "bytes": 10241,
+        "bytes": 31418,
         "path": "tools/integration/validate_merge_gate.py",
-        "sha256": "a28a09549ec316cb3b46c53517704c87e99d8ce57e06febdb2c570090255d949"
+        "sha256": "035849b113621dacf838ae3e3428c777e164562753f3ab45bdc25657ac6d7a51"
       },
       {
         "bytes": 10209,
@@ -788,9 +798,9 @@
         "sha256": "ef39db2a463ce43edb26f8ef8a0c93e1b9dd5a33fce67b5ebfa2fccb4c0eb035"
       },
       {
-        "bytes": 39226,
+        "bytes": 110715,
         "path": "tools/integration/verify_contracts.py",
-        "sha256": "07b1551d6f0c60467183bcf503f22d2b22ad11ecb0eb68c99470e6a6e92e4005"
+        "sha256": "9484d1f0c382d4661ed9644eb0338b6da95e3290d79694e2eccef782d315d4ac"
       },
       {
         "bytes": 2214,
@@ -820,7 +830,7 @@
     "contract_file_count": 122,
     "contract_manifest": {
       "path": "contracts/manifest-v1.json",
-      "sha256": "c8be12b5e0389a3c67d71b0c2e9b00964b67543aa78fb982cb5d952273b929d0"
+      "sha256": "fd792d98201e2c38e356c1c4a7251abd597bc732f55dbfac706022edf47f48fa"
     },
     "schema_count": 48
   },
@@ -945,7 +955,7 @@
   },
   "inventory": {
     "combination_example_count": 4,
-    "negative_case_count": 39,
+    "negative_case_count": 105,
     "negative_group_count": 14,
     "positive_fixture_count": 35,
     "schema_count": 48
@@ -953,140 +963,159 @@
   "negative_groups": [
     {
       "group_id": "84.13-01",
-      "negative_case_count": 2,
+      "negative_case_count": 6,
       "path": "contracts/corpus/negative/84.13/01.json",
       "positive_fixture_ids": [
         "package-golden",
         "skill-golden",
         "run-snapshot-golden"
       ],
-      "sha256": "a006b82393a2d7d851db4cef980f1012a974bf06714a862b2e5a26bb3b4c95d0"
+      "sha256": "61b5bf74c4997d1e06e66a873a5713ac622320d96256caddac93f552c8cedcc1"
     },
     {
       "group_id": "84.13-02",
-      "negative_case_count": 3,
+      "negative_case_count": 9,
       "path": "contracts/corpus/negative/84.13/02.json",
       "positive_fixture_ids": [
-        "result-bundle"
+        "result-bundle",
+        "candidate-item",
+        "provenance-receipt"
       ],
-      "sha256": "e15ad45610b9e68bd70078fe71d13df0e8eb37e95bf226304b7ff320f268b467"
+      "sha256": "b0c22fabf08c61ee483a6a110483774134e7d975c0be85ba0f7d526bed7a4bed"
     },
     {
       "group_id": "84.13-03",
-      "negative_case_count": 2,
+      "negative_case_count": 9,
       "path": "contracts/corpus/negative/84.13/03.json",
       "positive_fixture_ids": [
-        "broker-invocation"
+        "broker-invocation",
+        "broker-child-record",
+        "run-snapshot",
+        "plugin-plan",
+        "provenance-receipt"
       ],
-      "sha256": "79e2993df7f9452f5c927e151dbe0766b34cf3fedabe9ad1c868eb8239f9b364"
+      "sha256": "a8ed413d0a3aa00690a6665cb1eb150d6e2bb659e4b7bd79d4226f0df361e439"
     },
     {
       "group_id": "84.13-04",
-      "negative_case_count": 2,
+      "negative_case_count": 8,
       "path": "contracts/corpus/negative/84.13/04.json",
       "positive_fixture_ids": [
-        "run-snapshot"
+        "rpc-upload",
+        "rpc-success"
       ],
-      "sha256": "e1846992c3eeccd3291602977f0f3358c300bf415ed517e131231efc646be241"
+      "sha256": "9a6af239788ba5d9723e36b18a30bfdac11d9b0a8f08221fcd74f45ce0aaf1a4"
     },
     {
       "group_id": "84.13-05",
-      "negative_case_count": 3,
+      "negative_case_count": 7,
       "path": "contracts/corpus/negative/84.13/05.json",
       "positive_fixture_ids": [
-        "rpc-upload"
+        "checkpoint",
+        "job-snapshot"
       ],
-      "sha256": "8b6cd7ff0e7442df007db334575e80723213fcc3333dbe4553ca85a4cfbf6dea"
+      "sha256": "6db120f5bd41bab7cba2aca988fe1d5d389bcc0c73751b539cf518c7065a0718"
     },
     {
       "group_id": "84.13-06",
-      "negative_case_count": 3,
+      "negative_case_count": 7,
       "path": "contracts/corpus/negative/84.13/06.json",
       "positive_fixture_ids": [
-        "checkpoint"
+        "result-bundle",
+        "provenance-receipt",
+        "settings-validation-receipt"
       ],
-      "sha256": "10525b73e0b86d3274ef624d0e432faabef4083ba75b1de4e45d4ab1f69b8e4a"
+      "sha256": "9dee7a41292036de604b575e63755b500285d078df41e9424efee9b76662fbb5"
     },
     {
       "group_id": "84.13-07",
-      "negative_case_count": 3,
+      "negative_case_count": 11,
       "path": "contracts/corpus/negative/84.13/07.json",
       "positive_fixture_ids": [
-        "result-bundle",
-        "provenance-receipt"
+        "plugin-lifecycle-transition",
+        "settings-validation-receipt",
+        "settings-migration-manifest"
       ],
-      "sha256": "50e4341e999c0d3150522d09cbb6103e5bd54fa2ff6325709b72c15f950bb97b"
+      "sha256": "9b28313fffbb5562ee4569271ec6e08faedd5f0424884cdac27d25e8a265e920"
     },
     {
       "group_id": "84.13-08",
-      "negative_case_count": 3,
+      "negative_case_count": 4,
       "path": "contracts/corpus/negative/84.13/08.json",
       "positive_fixture_ids": [
-        "plugin-lifecycle-transition"
+        "release-retirement",
+        "release-pin",
+        "publication-after-package-delete"
       ],
-      "sha256": "e0ccc768d5daec45c195c5da9d219274b92d65b527471628342607bff3d310a8"
+      "sha256": "948f207a59b02ddc1bf7e52a26adb5d0c89a9948c6242e7b6e16425860d7c79b"
     },
     {
       "group_id": "84.13-09",
-      "negative_case_count": 2,
+      "negative_case_count": 7,
       "path": "contracts/corpus/negative/84.13/09.json",
       "positive_fixture_ids": [
-        "release-retirement",
-        "release-pin"
-      ],
-      "sha256": "ca579dc8e1b47774fbc60bce72fde4990881bc6e797eb5467bf8b8b3256de7e1"
-    },
-    {
-      "group_id": "84.13-10",
-      "negative_case_count": 3,
-      "path": "contracts/corpus/negative/84.13/10.json",
-      "positive_fixture_ids": [
         "core-event",
+        "plugin-job-event",
         "sse-recovery",
         "core-snapshot"
       ],
-      "sha256": "88ae60b67e76676d6ce287220ffab2f3e26a74611f351b6734f0a70ea9814bdb"
+      "sha256": "aaa0ae51d2e07dea966b5adf8fd148ec07dcbb02e0a852b41130d63544b27779"
+    },
+    {
+      "group_id": "84.13-10",
+      "negative_case_count": 5,
+      "path": "contracts/corpus/negative/84.13/10.json",
+      "positive_fixture_ids": [
+        "stream-prefix",
+        "job-snapshot",
+        "result-bundle"
+      ],
+      "sha256": "6fa4f42e95c650c73d2b5c80484bf25a5521b78fc351db229772753ad13d2a96"
     },
     {
       "group_id": "84.13-11",
-      "negative_case_count": 3,
+      "negative_case_count": 7,
       "path": "contracts/corpus/negative/84.13/11.json",
       "positive_fixture_ids": [
-        "stream-prefix"
+        "skill-run-receipt",
+        "skill-chain-result",
+        "failed-bundleless-receipt"
       ],
-      "sha256": "6be7403164fbf85ef84214fc5a5903c1150797e640a98b4f4d2628dac233b732"
+      "sha256": "5c288d678583bb94b2058b103084625145c780f95b7b4506544e57b0b65f5274"
     },
     {
       "group_id": "84.13-12",
-      "negative_case_count": 3,
+      "negative_case_count": 9,
       "path": "contracts/corpus/negative/84.13/12.json",
-      "positive_fixture_ids": [
-        "skill-run-receipt",
-        "skill-chain-result"
-      ],
-      "sha256": "09668ae51ea1ece53f3d19ce0e9cc4c79cc9a8f4e1a00453031e6e6a1d705916"
-    },
-    {
-      "group_id": "84.13-13",
-      "negative_case_count": 3,
-      "path": "contracts/corpus/negative/84.13/13.json",
       "positive_fixture_ids": [
         "plugin-ui-tree",
         "plugin-ui-intent",
         "plugin-ui-message"
       ],
-      "sha256": "1973267660e70012010d861d62e0acf46d7901fc7ed6eeff072e02b9224516f2"
+      "sha256": "a8acb908d711515951571bdd0db874d1ebf8b7dfb6319c76400ceba6bb0b50d2"
+    },
+    {
+      "group_id": "84.13-13",
+      "negative_case_count": 6,
+      "path": "contracts/corpus/negative/84.13/13.json",
+      "positive_fixture_ids": [
+        "backup-golden",
+        "restore-report",
+        "restore-new-root",
+        "projection-rebuild"
+      ],
+      "sha256": "f98dad6feec026a8ed3123b35503c4527830747d15afa86b20f8d7fbaa1da859"
     },
     {
       "group_id": "84.13-14",
-      "negative_case_count": 4,
+      "negative_case_count": 10,
       "path": "contracts/corpus/negative/84.13/14.json",
       "positive_fixture_ids": [
-        "backup-golden",
         "compatibility-valid",
-        "history-v1"
+        "history-v1",
+        "windows-casefold-valid"
       ],
-      "sha256": "8f127d7d812a9a23e2eea6315b38384cb7554d7a32acc8c69ad2cd28cf4ad540"
+      "sha256": "e4850af02cf8e529024efee55b77d32ad8ff9e0849358ded4fa0c4bdc6893cee"
     }
   ],
   "schema": "plotpilot-contract-golden-delivery/v1",

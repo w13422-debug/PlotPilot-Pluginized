@@ -11,6 +11,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 CONTRACTS = ROOT / "contracts"
 OUTPUT = CONTRACTS / "manifest-v1.json"
+FINDING_CLOSURE = ROOT / "docs" / "contracts" / "finding-closure-v1.json"
 DESIGN_PATH = r"C:\Users\Administrator\Desktop\交接文档\PlotPilot-Pluginized正式设计规划-2026-08-25-v1.md"
 DESIGN_SHA256 = "e70f450b75cfa753148cf620d13855d0073f7d61294e7599ea9cc98f3e612b7b"
 FAMILY_IDS = [
@@ -87,6 +88,8 @@ def golden_vectors() -> dict[str, Any]:
 def render() -> dict[str, Any]:
     schemas = schema_records()
     files = file_records()
+    closure = json.loads(FINDING_CLOSURE.read_text(encoding="utf-8"))
+    closure_ids = [item["finding_id"] for item in closure.get("findings", [])]
     return {
         "schema": "plotpilot-contract-manifest/v1",
         "contract_version": "1.2.0",
@@ -101,6 +104,12 @@ def render() -> dict[str, Any]:
         "schemas": schemas,
         "golden_vectors": golden_vectors(),
         "negative_groups": negative_records(),
+        "finding_closure": {
+            "path": relative(FINDING_CLOSURE),
+            "sha256": sha256(FINDING_CLOSURE),
+            "finding_count": closure.get("finding_count"),
+            "ids": closure_ids,
+        },
         "files": files,
     }
 

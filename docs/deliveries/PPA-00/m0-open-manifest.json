@@ -1,9 +1,9 @@
 {
   "artifacts": {
     "contract_golden_manifest": {
-      "bytes": 40689,
+      "bytes": 41661,
       "path": "docs/deliveries/PPA-00/contract-golden-manifest.json",
-      "sha256": "c9bf177afd5224fca42654725710119b609451456e012e6551b708af99afa88a"
+      "sha256": "afe818df1fafbf47561de5427349bf67d0d3fa7f2f254ed25680c25ba0eb0147"
     },
     "donor_protection_evidence": {
       "bytes": 14549,
@@ -11,14 +11,14 @@
       "sha256": "d4f663a6da60a12e8fdfd3ff62f71229e32c48e796ab2f2213bfb7ed313b0c9c"
     },
     "identity_runtime_evidence": {
-      "bytes": 3642,
+      "bytes": 6921,
       "path": "docs/deliveries/PPA-00/evidence/m0.2-identity-runtime.json",
-      "sha256": "4d7d10247858d5ecbbfe5b219179fce6fff9b47ca104af77c0d3e31203f412af"
+      "sha256": "90bfce813b2a18849711cbd31ed74cfc9373d515fd58f30ed659024458a4c0d9"
     },
     "integration_test_ledger": {
-      "bytes": 8394,
+      "bytes": 8396,
       "path": "docs/deliveries/PPA-00/integration-test-ledger.json",
-      "sha256": "286ee7d7d38fd5e5bfbdb6d4914d9c516f9522fa35020dd3f6d6f2d5df1f2880"
+      "sha256": "19adf026de0ea80ee90bfe157446f16b7f1310119f6036f3f3831bb036f8b924"
     },
     "license_ledger": {
       "bytes": 87160,
@@ -26,9 +26,9 @@
       "sha256": "4232d50524dfa17e780bbf2c05c3416f49c7e7e59aee520f5baa4dd1a5d5224d"
     },
     "parity_ledger": {
-      "bytes": 116536,
+      "bytes": 129098,
       "path": "docs/deliveries/PPA-00/parity-ledger.json",
-      "sha256": "87bc58039aef861367ba32f89f60ad8144af3704d840cc21057f2a3705a9199f"
+      "sha256": "0b3965a34b6a51d09d58d4a5282691cf2caeed759d8084c75821a683f70759c6"
     },
     "runtime_lock": {
       "bytes": 1016,
@@ -36,7 +36,7 @@
       "sha256": "4a22e1d06b7b39fc82fe52b7df23a0b94bcf8c65a687f35dfc248e22e1048a30"
     }
   },
-  "commit_ref": "M0-OPEN",
+  "commit_ref": "M0-OPEN-R2",
   "constraints": {
     "contract_delta": "none",
     "dependency_delta": "none",
@@ -77,7 +77,7 @@
       "status": "passed"
     },
     "M0.4": {
-      "assertion": "48 closed schemas, §13.4/§20/§84 surface, four goldens and all fourteen negative groups",
+      "assertion": "48 closed schemas, §13.4/§20/§84 surface, four goldens and all 14 negative groups (105 executable cases)",
       "evidence": [
         "contracts/manifest-v1.json",
         "docs/contracts/README.md",
@@ -98,7 +98,7 @@
       "status": "passed"
     },
     "M0.6": {
-      "assertion": "ten formal flow records cite ten real screenshots, API trace and behavior assertions; safety-limited actions are explicitly unexecuted",
+      "assertion": "ten formal flow records cite real UI actions, expected/actual assertions, API trace, execution/recovery evidence and screenshots; deterministic fake Provider is isolated from live network",
       "evidence": [
         "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity-ledger.json",
         "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
@@ -127,7 +127,7 @@
     "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized"
   },
   "limitations": [
-    "M0 browser smoke deliberately does not call generation, pause/cancel, SSE reconnect or task resume and does not save a non-empty chapter body; those rows remain explicit follow-up gates.",
+    "M0 browser smoke uses the existing UI-to-API execution chain with deterministic fake Provider; no live/paid provider or external network is used.",
     "The read-only donor still contains its pre-construction dirty files; the external backup manifest is the authority and the donor was not cleaned or reset.",
     "The legacy src-tauri directory and compatibility dependency remain read-only donor material; no Tauri build script or build was used in M0."
   ],
@@ -142,7 +142,7 @@
     "task": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized七项目任务书-2026-08-26\\PPA-00-Integration.md"
   },
   "status": "open",
-  "tag": "M0-OPEN",
+  "tag": "M0-OPEN-R2",
   "verification": {
     "commands": [
       "python tools/integration/verify_contracts.py --all",
@@ -153,19 +153,19 @@
     ],
     "contract_golden_delivery": {
       "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\contract-golden-manifest.json",
-      "sha256": "c9bf177afd5224fca42654725710119b609451456e012e6551b708af99afa88a"
+      "sha256": "afe818df1fafbf47561de5427349bf67d0d3fa7f2f254ed25680c25ba0eb0147"
     },
     "contract_manifest": {
       "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\contracts\\manifest-v1.json",
-      "sha256": "c8be12b5e0389a3c67d71b0c2e9b00964b67543aa78fb982cb5d952273b929d0"
+      "sha256": "fd792d98201e2c38e356c1c4a7251abd597bc732f55dbfac706022edf47f48fa"
     },
     "parity_ledger": {
       "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity-ledger.json",
-      "sha256": "87bc58039aef861367ba32f89f60ad8144af3704d840cc21057f2a3705a9199f"
+      "sha256": "0b3965a34b6a51d09d58d4a5282691cf2caeed759d8084c75821a683f70759c6"
     },
     "test_ledger": {
       "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\integration-test-ledger.json",
-      "sha256": "286ee7d7d38fd5e5bfbdb6d4914d9c516f9522fa35020dd3f6d6f2d5df1f2880"
+      "sha256": "19adf026de0ea80ee90bfe157446f16b7f1310119f6036f3f3831bb036f8b924"
     }
   }
 }

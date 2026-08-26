@@ -50,7 +50,7 @@ Skill receipt 具备四级独立归因；Job 的 Attempt/Step/Job terminal 与 B
 
 ### 84.13–84.14 negative 与 finding closure
 
-`negative-golden.md` 对应十四组断言；每组至少一个真实负例且由 Python verifier 执行。Finding closure ID 以正式设计 §84.14 为准，
+`negative-golden.md` 对应 14 组断言；每组至少一个真实负例且由 Python verifier 执行。Finding closure ID 以正式设计 §84.14 为准，
 不能用“页面存在”或单一正例替代合同负例。
 
 ## Error codes

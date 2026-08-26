@@ -79,10 +79,13 @@ used to justify a write outside the matrix.
 - M0 must materialize the complete §13.4, §20, §84 and §84.13 surface,
   including closed schemas, method matrix, SDK/verifiers, goldens and all
   fourteen negative groups.
-- Automatic contract tests use the deterministic fake Provider and disabled
-  network.  Browser smoke is local Home/Workbench only, uses a fresh temporary
-  `PLOTPILOT_PROD_DATA_DIR` and a fresh browser context, and does not save a
-  non-empty chapter body or invoke generation pipelines.
+- Automatic contract tests and browser smoke use the deterministic fake
+  Provider with disabled external network.  Browser smoke is local
+  Home/Workbench only, uses a fresh temporary `PLOTPILOT_PROD_DATA_DIR` and a
+  fresh browser context, and exercises the existing UI-to-API execution chain,
+  including a non-empty edit save/re-read and fake-provider generation.  It
+  must never contact a live/paid provider or persist data outside the
+  temporary run root.
 - M0 uses the browser/Vite route only.  Do not run PyInstaller, Tauri, a
   desktop/EXE/installer build, or a desktop smoke test.
 - Never commit user data, caches, virtual environments, `node_modules`, build

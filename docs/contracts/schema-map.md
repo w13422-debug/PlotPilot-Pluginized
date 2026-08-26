@@ -60,4 +60,4 @@
 | `contracts/json-schema/rpc-method-matrix.v1.json` | 29 个 worker/host 方法、profile、参数/结果字段及 14 错误码 | §20 / §84.3 |
 | `contracts/json-schema/compatibility-matrix.v1.json` | Core API、plugin RPC、UI host、Python 兼容窗口 | §84.8 |
 
-以上两个 JSON 不是 `*.schema.json`，但与 48 个 closed schema 一起进入 `contracts/manifest-v1.json` 的内容清单。
+以上两个 JSON 不是 `*.schema.json`，但与 {inventory['schema_count']} 个 closed schema 一起进入 `contracts/manifest-v1.json` 的内容清单。
