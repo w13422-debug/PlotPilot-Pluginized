@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://plotpilot.local/plugins/export-suite/export-request-v1",
+  "title": "writing.export/v1 request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["workspace_id", "novel_id", "format", "current_revisions"],
+  "properties": {
+    "workspace_id": {"type": "string", "minLength": 1},
+    "novel_id": {"type": "string", "minLength": 1},
+    "title": {"type": "string"},
+    "author": {"type": "string"},
+    "premise": {"type": "string"},
+    "format": {"enum": ["epub", "pdf", "docx", "markdown"]},
+    "document_id": {"type": ["string", "null"], "minLength": 1},
+    "current_revisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["document_id", "revision_id", "number", "title", "content", "content_hash"],
+        "properties": {
+          "document_id": {"type": "string", "minLength": 1},
+          "revision_id": {"type": "string", "minLength": 1},
+          "number": {"type": "integer", "minimum": 0},
+          "title": {"type": "string"},
+          "content": {"type": "string"},
+          "content_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      }
+    }
+  }
+}

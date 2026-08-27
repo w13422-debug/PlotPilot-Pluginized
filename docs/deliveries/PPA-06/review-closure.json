@@ -1,0 +1,49 @@
+{
+  "schema": "finding-closure/v1",
+  "reviewer": "/root/p6_first_batch_review",
+  "reviewed_head": "701c1e3a",
+  "initial_result": "REQUEST_CHANGES",
+  "findings": [
+    {
+      "finding_id": "P6-F01",
+      "status": "closed",
+      "evidence": "targeted recheck after fa1a181e"
+    },
+    {
+      "finding_id": "P6-F02",
+      "status": "closed",
+      "evidence": "targeted recheck after fa1a181e"
+    },
+    {
+      "finding_id": "P6-F03",
+      "status": "closed",
+      "evidence": "targeted recheck after fa1a181e"
+    },
+    {
+      "finding_id": "P6-F04",
+      "status": "closed",
+      "evidence": "targeted recheck after fa1a181e"
+    },
+    {
+      "finding_id": "P6-F05",
+      "status": "closed",
+      "evidence": "targeted recheck after fa1a181e"
+    },
+    {
+      "finding_id": "P6-F06",
+      "status": "closed",
+      "evidence": "targeted recheck after fa1a181e"
+    },
+    {
+      "finding_id": "P6-F07",
+      "status": "closed",
+      "evidence": "targeted recheck after fa1a181e"
+    },
+    {
+      "finding_id": "P6-F08",
+      "status": "closed",
+      "evidence": "tests/p6-writing/test_export_suite.py binary content/order/filename assertions; final pytest 18 passed"
+    }
+  ],
+  "status": "approved"
+}

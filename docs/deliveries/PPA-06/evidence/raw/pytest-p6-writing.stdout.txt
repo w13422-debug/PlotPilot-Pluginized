@@ -1,0 +1,12 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-06-Writing
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 15 items
+
+tests\p6-writing\test_dependency_free_domains.py ...                     [ 20%]
+tests\p6-writing\test_export_suite.py ............                       [100%]
+
+============================= 15 passed in 1.12s ==============================

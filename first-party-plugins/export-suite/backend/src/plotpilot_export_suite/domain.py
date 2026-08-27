@@ -1,0 +1,287 @@
+"""Pure export logic adapted from the accepted PlotPilot v4.6.0 baseline.
+
+The caller must supply immutable current-revision values obtained from Core.
+This module never owns, saves, or mutates chapter text and returns bytes that
+the host can publish through ``host.asset.create/v1``.
+"""
+from __future__ import annotations
+
+import html
+import io
+import os
+import re
+import tempfile
+import zipfile
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from enum import Enum
+from hashlib import sha256
+from pathlib import Path
+from typing import Iterable
+
+
+class ExportFormat(str, Enum):
+    EPUB = "epub"
+    PDF = "pdf"
+    DOCX = "docx"
+    MARKDOWN = "markdown"
+
+
+@dataclass(frozen=True, slots=True)
+class ChapterRevision:
+    document_id: str
+    revision_id: str
+    number: int
+    title: str
+    content: str
+    content_hash: str
+
+    def __post_init__(self) -> None:
+        if self.number < 0:
+            raise ValueError("chapter number must be non-negative")
+        if sha256(self.content.encode("utf-8")).hexdigest() != self.content_hash:
+            raise ValueError("chapter content does not match current revision hash")
+
+
+@dataclass(frozen=True, slots=True)
+class ExportDocument:
+    workspace_id: str
+    novel_id: str
+    title: str
+    author: str
+    premise: str
+    chapters: tuple[ChapterRevision, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ExportSelection:
+    legacy_enabled: bool
+    plugin_enabled: bool
+
+
+@dataclass(frozen=True, slots=True)
+class ExportPayload:
+    content: bytes
+    media_type: str
+    filename: str
+    sha256: str
+    source_revisions: tuple[tuple[str, str, str], ...]
+
+
+def validate_selection(selection: ExportSelection) -> str:
+    """Enforce the frozen single-writer capability flag."""
+    if selection.legacy_enabled == selection.plugin_enabled:
+        raise ValueError("exactly one of legacy or plugin exporter must be enabled")
+    return "plugin" if selection.plugin_enabled else "legacy"
+
+
+def safe_filename_stem(title: str, max_len: int = 80) -> str:
+    value = (title or "novel").strip()
+    value = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", value)
+    value = value.replace(" ", "_").strip("._") or "novel"
+    return value[:max_len]
+
+
+def chapter_display_title(chapter: ChapterRevision) -> str:
+    return chapter.title.strip() if chapter.title and chapter.title.strip() else f"第 {chapter.number} 章"
+
+
+def _ordered(chapters: Iterable[ChapterRevision]) -> tuple[ChapterRevision, ...]:
+    # Stable sorting retains Core order for equal chapter numbers.
+    return tuple(sorted(chapters, key=lambda chapter: chapter.number))
+
+
+def _markdown(document: ExportDocument, chapters: tuple[ChapterRevision, ...]) -> tuple[bytes, str]:
+    lines = [
+        f"# {document.title or '未命名'}",
+        "",
+        f"**作者**: {document.author or '—'}",
+        "",
+        "## 简介",
+        "",
+        document.premise.strip() or "（无）",
+        "",
+    ]
+    for chapter in chapters:
+        lines.extend((f"## {chapter_display_title(chapter)}", "", chapter.content.strip() or "（无正文）", ""))
+    return "\n".join(lines).encode("utf-8"), "text/markdown; charset=utf-8"
+
+
+def _docx(document: ExportDocument, chapters: tuple[ChapterRevision, ...]) -> tuple[bytes, str]:
+    from docx import Document
+
+    output = Document()
+    output.add_heading(document.title or "未命名", level=0)
+    output.add_paragraph(f"作者：{document.author or '—'}")
+    premise = output.add_paragraph()
+    premise.add_run("简介：").bold = True
+    premise.add_run(document.premise.strip() or "（无）")
+    for chapter in chapters:
+        output.add_heading(chapter_display_title(chapter), level=1)
+        if not chapter.content.strip():
+            output.add_paragraph("（无正文）")
+        else:
+            for line in chapter.content.splitlines():
+                output.add_paragraph(line)
+    stream = io.BytesIO()
+    output.save(stream)
+    # python-docx emits ZIP entries with wall-clock timestamps.  Repack with
+    # the fixed package profile so identical immutable input has identical
+    # bytes, independent of render time or host filesystem.
+    return _repack_zip_deterministic(stream.getvalue()), "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+
+def _epub(document: ExportDocument, chapters: tuple[ChapterRevision, ...]) -> tuple[bytes, str]:
+    from ebooklib import epub
+
+    book = epub.EpubBook()
+    book.set_identifier(f"plotpilot:{document.novel_id}")
+    book.set_title(document.title or "未命名")
+    book.set_language("zh")
+    book.add_author(document.author or "未知作者")
+    intro = epub.EpubHtml(title="简介", file_name="intro.xhtml", lang="zh")
+    intro.content = (
+        '<?xml version="1.0" encoding="utf-8"?>\n'
+        '<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" lang="zh">'
+        f"<head><title>简介</title><meta charset=\"utf-8\"/></head><body><h1>{html.escape(document.title or '未命名')}</h1>"
+        f"<p>作者：{html.escape(document.author or '—')}</p><p>{html.escape(document.premise.strip() or '（无简介）')}</p></body></html>"
+    ).encode("utf-8")
+    book.add_item(intro)
+    spine = [intro]
+    for index, chapter in enumerate(chapters, 1):
+        title = chapter_display_title(chapter)
+        paragraphs = [f"<p>{html.escape(line.strip())}</p>" for line in chapter.content.replace("\r\n", "\n").replace("\r", "\n").split("\n") if line.strip()]
+        item = epub.EpubHtml(title=title, file_name=f"chap_{index:03d}.xhtml", lang="zh")
+        item.content = (
+            '<?xml version="1.0" encoding="utf-8"?>\n'
+            '<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh">'
+            f"<head><title>{html.escape(title)}</title><meta charset=\"utf-8\"/></head><body><h1>{html.escape(title)}</h1>"
+            f"{'\n'.join(paragraphs) if paragraphs else '<p></p>'}</body></html>"
+        ).encode("utf-8")
+        book.add_item(item)
+        spine.append(item)
+    book.toc = tuple(spine)
+    book.add_item(epub.EpubNcx())
+    book.spine = spine
+    path: str | None = None
+    try:
+        descriptor, path = tempfile.mkstemp(suffix=".epub")
+        os.close(descriptor)
+        epub.write_epub(path, book, {})
+        with open(path, "rb") as stream:
+            content = stream.read()
+    finally:
+        if path and os.path.isfile(path):
+            os.unlink(path)
+    return _repack_zip_deterministic(content, epub=True), "application/epub+zip"
+
+
+def _pdf(document: ExportDocument, chapters: tuple[ChapterRevision, ...]) -> tuple[bytes, str]:
+    from fpdf import FPDF
+
+    pdf = FPDF()
+    # FPDF otherwise inserts the current second into /CreationDate and the
+    # derived file identifier.  A fixed UTC instant is part of this renderer's
+    # deterministic output profile.
+    pdf.set_creation_date(datetime(2000, 1, 1, tzinfo=timezone.utc))
+    pdf.set_auto_page_break(auto=True, margin=14)
+    font = ""
+    candidates: list[Path] = []
+    configured = (os.getenv("PLOTPILOT_EXPORT_CJK_FONT", "") or "").strip()
+    if configured:
+        candidates.append(Path(configured))
+    if os.name == "nt":
+        fonts = Path(os.getenv("WINDIR", r"C:\Windows")) / "Fonts"
+        candidates.extend(fonts / name for name in ("msyh.ttf", "simhei.ttf", "simsun.ttc", "msyh.ttc", "simkai.ttf"))
+    else:
+        candidates.extend(Path(value) for value in (
+            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttf",
+            "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+        ))
+    for candidate in candidates:
+        if not candidate.is_file():
+            continue
+        try:
+            pdf.add_font("PlotExportCJK", "", str(candidate), uni=True)
+            font = "PlotExportCJK"
+            break
+        except Exception:
+            continue
+    if not font:
+        raise RuntimeError("no usable CJK font is available for PDF export")
+    pdf.add_page()
+
+    def add(size: float, text: str, height: float) -> None:
+        pdf.set_font(font, size=size)
+        pdf.multi_cell(0, height, text or " ", new_x="LMARGIN", new_y="NEXT")
+
+    add(16, document.title or "未命名", 9)
+    add(11, f"作者：{document.author or '—'}\n简介：{document.premise.strip() or '—'}", 6)
+    for chapter in chapters:
+        add(14, chapter_display_title(chapter), 8)
+        add(11, chapter.content.strip() or "（无正文）", 6)
+    raw = pdf.output()
+    return bytes(raw) if not isinstance(raw, str) else raw.encode("latin-1"), "application/pdf"
+
+
+def _repack_zip_deterministic(data: bytes, *, epub: bool = False) -> bytes:
+    """Normalize ZIP metadata/order without changing member payloads.
+
+    Both DOCX and EPUB are ZIP-based formats.  Their libraries correctly
+    generate the document payload but leave timestamps (and EPUB's modified
+    metadata) variable.  This adapter fixes only container metadata and keeps
+    the EPUB ``mimetype`` member first and stored as required by EPUB readers.
+    """
+    source = io.BytesIO(data)
+    output = io.BytesIO()
+    with zipfile.ZipFile(source, "r") as archive, zipfile.ZipFile(output, "w", allowZip64=True) as normalized:
+        entries = sorted(archive.infolist(), key=lambda info: (0 if epub and info.filename == "mimetype" else 1, info.filename))
+        for entry in entries:
+            payload = archive.read(entry.filename)
+            if epub and entry.filename == "EPUB/content.opf":
+                payload = re.sub(
+                    rb'(<meta property="dcterms:modified">)[^<]*(</meta>)',
+                    rb"\g<1>2000-01-01T00:00:00Z\g<2>",
+                    payload,
+                )
+            info = zipfile.ZipInfo(entry.filename, date_time=(1980, 1, 1, 0, 0, 0))
+            info.create_system = 3
+            info.create_version = 20
+            info.extract_version = 20
+            info.flag_bits = 0x800
+            info.comment = b""
+            info.extra = b""
+            is_directory = entry.filename.endswith("/")
+            info.external_attr = (0o40755 if is_directory else 0o100644) << 16
+            info.compress_type = zipfile.ZIP_STORED if (epub and entry.filename == "mimetype") else zipfile.ZIP_DEFLATED
+            if info.compress_type == zipfile.ZIP_DEFLATED:
+                normalized.writestr(info, payload, compresslevel=9)
+            else:
+                normalized.writestr(info, payload)
+    return output.getvalue()
+
+
+_RENDERERS = {
+    ExportFormat.MARKDOWN: (_markdown, "md"),
+    ExportFormat.DOCX: (_docx, "docx"),
+    ExportFormat.EPUB: (_epub, "epub"),
+    ExportFormat.PDF: (_pdf, "pdf"),
+}
+
+
+def build_export(document: ExportDocument, export_format: ExportFormat, *, document_id: str | None = None) -> ExportPayload:
+    chapters = _ordered(document.chapters)
+    if document_id is not None:
+        chapters = tuple(chapter for chapter in chapters if chapter.document_id == document_id)
+        if not chapters:
+            raise ValueError(f"chapter does not exist: {document_id}")
+        if len(chapters) != 1:
+            raise ValueError(f"document id is ambiguous: {document_id}")
+    renderer, extension = _RENDERERS[export_format]
+    content, media_type = renderer(document, chapters)
+    stem = safe_filename_stem(document.title)
+    if document_id is not None:
+        stem = safe_filename_stem(f"{document.title or 'novel'}-第{chapters[0].number}章")
+    sources = tuple((chapter.document_id, chapter.revision_id, chapter.content_hash) for chapter in chapters)
+    return ExportPayload(content, media_type, f"{stem}.{extension}", sha256(content).hexdigest(), sources)
