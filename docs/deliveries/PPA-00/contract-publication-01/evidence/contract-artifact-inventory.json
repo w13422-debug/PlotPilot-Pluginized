@@ -1,0 +1,289 @@
+{
+  "schema": "p0-contract-publication-artifact-inventory/v1",
+  "batch_id": "PPA-M1-CONTRACT-PUBLICATION-01",
+  "status": "passed",
+  "contract_version": "1.2.0",
+  "implementation_binding": {
+    "baseline_head": "63ee2b89b719734dd2f9d50bab12cbe0fe10e37e",
+    "staged_tree": "5a7052549d780d54d65d18aad4cdc58d51f1b8fd"
+  },
+  "contract_manifest": {
+    "path": "contracts/manifest-v1.json",
+    "sha256": "cbe9d02fc42409332151cd7905e387a46537b330b039a2d3d6798f48cbfcc024",
+    "schema_count": 53,
+    "file_count_excluding_manifest": 137,
+    "contract_family_count": 20
+  },
+  "published_families": [
+    "core-authority-command-query/v1",
+    "publication-command-result/v1",
+    "asset-metadata/v1",
+    "plugin-ui-ingress-validator/v1",
+    "operation-context-identity/v1",
+    "export-current-revisions/v1"
+  ],
+  "artifacts": [
+    {
+      "path": "contracts/.gitattributes",
+      "bytes": 123,
+      "sha256": "4d3520b731df889c6395c85ec36c68dacf6b3f7f3213ae088cd41648c29254b3",
+      "hash_basis": "git_index_blob_bytes"
+    },
+    {
+      "path": "contracts/json-schema/core-authority-command-query-v1.schema.json",
+      "bytes": 43782,
+      "sha256": "5b60a3edf630aa55c7313172c5ee20636969866e0c60cbd89adb075f0306153f",
+      "hash_basis": "git_index_blob_bytes"
+    },
+    {
+      "path": "contracts/json-schema/publication-command-result-v1.schema.json",
+      "bytes": 3367,
+      "sha256": "11d704a7c0bf72a8a6d6ccc620d1be85360262c0359ea75d0f3bb7df3a83d08c",
+      "hash_basis": "git_index_blob_bytes"
+    },
+    {
+      "path": "contracts/json-schema/asset-metadata-v1.schema.json",
+      "bytes": 3457,
+      "sha256": "49c49b8d3b6adf828ab0623c8d82df176a3d27a1be8fda349d2857ae8de20c6a",
+      "hash_basis": "git_index_blob_bytes"
+    },
+    {
+      "path": "contracts/json-schema/operation-context-identity-v1.schema.json",
+      "bytes": 2904,
+      "sha256": "aec9857f1de78b98a0841e11cbf4d59bbc8d967f8e255f0f155e9108131b97ad",
+      "hash_basis": "git_index_blob_bytes"
+    },
+    {
+      "path": "contracts/json-schema/export-current-revisions-v1.schema.json",
+      "bytes": 2293,
+      "sha256": "e459e3d45193838694b6b7aede09c01c5be2586c110ff336c24c7098ebcc1199",
+      "hash_basis": "git_index_blob_bytes"
+    },
+    {
+      "path": "contracts/json-schema/core-api-method-matrix.v1.json",
+      "bytes": 18866,
+      "sha256": "69afdda8043c3df9fac2fc1e909f741c290d6d19c1aa1a73e7d8862d5a705b4f",
+      "hash_basis": "git_index_blob_bytes"
+    },
+    {
+      "path": "contracts/golden/contract-publication-v1/context-identity.json",
+      "bytes": 2707,
+      "sha256": "0d3477b3e22018ccb2e277950ec7d1e2e34ce84f30718ede6768dd72e33109c6",
+      "hash_basis": "git_index_blob_bytes"
+    },
+    {
+      "path": "contracts/golden/contract-publication-v1/core-http.json",
+      "bytes": 33562,
+      "sha256": "6831b14d1516fa807406e46fa911505ed32887e2db43e017947daa756b437995",
+      "hash_basis": "git_index_blob_bytes"
+    },
+    {
+      "path": "contracts/golden/contract-publication-v1/expected.json",
+      "bytes": 600,
+      "sha256": "4637cacd156297edabca115e3b8115f1195fe8b7d599f33867c8cca7b9ec8414",
+      "hash_basis": "git_index_blob_bytes"
+    },
+    {
+      "path": "contracts/golden/contract-publication-v1/export-current-revisions.json",
+      "bytes": 683,
+      "sha256": "ca4beac5511c2c5a1096f29be6eb6d6bffcda07ed5171abf4245481909bbe1e7",
+      "hash_basis": "git_index_blob_bytes"
+    },
+    {
+      "path": "contracts/golden/contract-publication-v1/export-run-snapshot.json",
+      "bytes": 1251,
+      "sha256": "5c70045ea67d04f540ff1024e6653d28cc2b23944d3bce60e129a1a45532dee6",
+      "hash_basis": "git_index_blob_bytes"
+    },
+    {
+      "path": "contracts/golden/contract-publication-v1/ui-ingress.json",
+      "bytes": 2086,
+      "sha256": "57dcdce41205b5d534950817c2a38877c3c75106a88f85fb03a160871e1e0dda",
+      "hash_basis": "git_index_blob_bytes"
+    },
+    {
+      "path": "contracts/golden/package/data/rules.json",
+      "bytes": 20,
+      "sha256": "54bfa55d6557dcf1a11f3e845e6492e4fe34f35a0d6751f45e0e8ae77df36e78",
+      "hash_basis": "git_index_blob_bytes"
+    },
+    {
+      "path": "contracts/corpus/contract-publication-v1/negative.json",
+      "bytes": 11782,
+      "sha256": "55164bd67abd64d85f81149e9d5f2ffc2a60f69a2bb3f687979e44d8c9d3e14a",
+      "hash_basis": "git_index_blob_bytes"
+    }
+  ],
+  "decisions": [
+    {
+      "path": "coordination/PPA-00/contract-decision-PPA-01-CD-001.json",
+      "bytes": 14550,
+      "sha256": "2dd214259e39fa2b402230f2ff18451f45e3fce2906ca2ffc9128f36d36d0d85",
+      "hash_basis": "git_index_blob_bytes"
+    },
+    {
+      "path": "coordination/PPA-00/contract-decision-PPA-04-CD-001.json",
+      "bytes": 2499,
+      "sha256": "23332ada56ed81ea7e62180ef88d9d34d3528bb6ea00ac92722fb4b272362552",
+      "hash_basis": "git_index_blob_bytes"
+    },
+    {
+      "path": "coordination/PPA-00/contract-decision-P3-CD-CONTEXT-IDENTITY-001.json",
+      "bytes": 3031,
+      "sha256": "f39ca8445b803e5353a4d55d9c0b3f546408c6a7dc8d99f4735684337b928cbe",
+      "hash_basis": "git_index_blob_bytes"
+    },
+    {
+      "path": "coordination/PPA-00/contract-decision-P6-CD-EXPORT-CURRENT-REVISIONS-001.json",
+      "bytes": 2680,
+      "sha256": "3c09ac7fdb6f1ea16b679eab9500a2543c5709f79727e8e832e772f6f5f266e6",
+      "hash_basis": "git_index_blob_bytes"
+    }
+  ],
+  "contract_publication_negative_cases": {
+    "path": "contracts/corpus/contract-publication-v1/negative.json",
+    "case_count": 35,
+    "case_ids": [
+      "core-authority-extra-field",
+      "core-workspace-update-noop",
+      "core-revision-two-targets",
+      "core-cross-workspace",
+      "publication-cross-workspace",
+      "publication-revision-target-mismatch",
+      "publication-command-result-candidate-mismatch",
+      "asset-range-self-hash-tamper",
+      "asset-partial-range-self-hash-tamper",
+      "asset-range-next-offset-tamper",
+      "asset-metadata-range-identity-mismatch",
+      "asset-metadata-range-hash-mismatch",
+      "core-http-stale-cas-request",
+      "core-http-operation-key-payload-reuse",
+      "core-relation-delete-cas-required",
+      "operation-context-projection-epoch",
+      "operation-context-stale-epoch",
+      "operation-context-install-missing-current-epoch",
+      "operation-context-attempt-missing-current-epoch",
+      "operation-context-invalid-deadline",
+      "export-noncontiguous-ordinal",
+      "export-duplicate-document",
+      "export-cross-workspace",
+      "export-revision-not-in-snapshot",
+      "export-title-tamper-raw-asset",
+      "export-raw-bom",
+      "export-raw-whitespace",
+      "export-raw-duplicate-key",
+      "export-asset-hash-not-frozen",
+      "export-object-caller-hash-is-not-binding",
+      "plugin-ui-tree-event-outside-component",
+      "plugin-ui-intent-extra-field",
+      "job-snapshot-extra-field",
+      "typescript-prototype-backed-ingress",
+      "typescript-getter-ingress"
+    ]
+  },
+  "m0_84_13_preservation": {
+    "group_count": 14,
+    "negative_case_count": 105,
+    "all_unchanged_from_baseline": true,
+    "groups": [
+      {
+        "group_id": "84.13-01",
+        "path": "contracts/corpus/negative/84.13/01.json",
+        "negative_case_count": 6,
+        "sha256": "61b5bf74c4997d1e06e66a873a5713ac622320d96256caddac93f552c8cedcc1",
+        "changed_from_baseline": false
+      },
+      {
+        "group_id": "84.13-02",
+        "path": "contracts/corpus/negative/84.13/02.json",
+        "negative_case_count": 9,
+        "sha256": "b0c22fabf08c61ee483a6a110483774134e7d975c0be85ba0f7d526bed7a4bed",
+        "changed_from_baseline": false
+      },
+      {
+        "group_id": "84.13-03",
+        "path": "contracts/corpus/negative/84.13/03.json",
+        "negative_case_count": 9,
+        "sha256": "a8ed413d0a3aa00690a6665cb1eb150d6e2bb659e4b7bd79d4226f0df361e439",
+        "changed_from_baseline": false
+      },
+      {
+        "group_id": "84.13-04",
+        "path": "contracts/corpus/negative/84.13/04.json",
+        "negative_case_count": 8,
+        "sha256": "9a6af239788ba5d9723e36b18a30bfdac11d9b0a8f08221fcd74f45ce0aaf1a4",
+        "changed_from_baseline": false
+      },
+      {
+        "group_id": "84.13-05",
+        "path": "contracts/corpus/negative/84.13/05.json",
+        "negative_case_count": 7,
+        "sha256": "6db120f5bd41bab7cba2aca988fe1d5d389bcc0c73751b539cf518c7065a0718",
+        "changed_from_baseline": false
+      },
+      {
+        "group_id": "84.13-06",
+        "path": "contracts/corpus/negative/84.13/06.json",
+        "negative_case_count": 7,
+        "sha256": "9dee7a41292036de604b575e63755b500285d078df41e9424efee9b76662fbb5",
+        "changed_from_baseline": false
+      },
+      {
+        "group_id": "84.13-07",
+        "path": "contracts/corpus/negative/84.13/07.json",
+        "negative_case_count": 11,
+        "sha256": "9b28313fffbb5562ee4569271ec6e08faedd5f0424884cdac27d25e8a265e920",
+        "changed_from_baseline": false
+      },
+      {
+        "group_id": "84.13-08",
+        "path": "contracts/corpus/negative/84.13/08.json",
+        "negative_case_count": 4,
+        "sha256": "948f207a59b02ddc1bf7e52a26adb5d0c89a9948c6242e7b6e16425860d7c79b",
+        "changed_from_baseline": false
+      },
+      {
+        "group_id": "84.13-09",
+        "path": "contracts/corpus/negative/84.13/09.json",
+        "negative_case_count": 7,
+        "sha256": "aaa0ae51d2e07dea966b5adf8fd148ec07dcbb02e0a852b41130d63544b27779",
+        "changed_from_baseline": false
+      },
+      {
+        "group_id": "84.13-10",
+        "path": "contracts/corpus/negative/84.13/10.json",
+        "negative_case_count": 5,
+        "sha256": "6fa4f42e95c650c73d2b5c80484bf25a5521b78fc351db229772753ad13d2a96",
+        "changed_from_baseline": false
+      },
+      {
+        "group_id": "84.13-11",
+        "path": "contracts/corpus/negative/84.13/11.json",
+        "negative_case_count": 7,
+        "sha256": "5c288d678583bb94b2058b103084625145c780f95b7b4506544e57b0b65f5274",
+        "changed_from_baseline": false
+      },
+      {
+        "group_id": "84.13-12",
+        "path": "contracts/corpus/negative/84.13/12.json",
+        "negative_case_count": 9,
+        "sha256": "a8acb908d711515951571bdd0db874d1ebf8b7dfb6319c76400ceba6bb0b50d2",
+        "changed_from_baseline": false
+      },
+      {
+        "group_id": "84.13-13",
+        "path": "contracts/corpus/negative/84.13/13.json",
+        "negative_case_count": 6,
+        "sha256": "f98dad6feec026a8ed3123b35503c4527830747d15afa86b20f8d7fbaa1da859",
+        "changed_from_baseline": false
+      },
+      {
+        "group_id": "84.13-14",
+        "path": "contracts/corpus/negative/84.13/14.json",
+        "negative_case_count": 10,
+        "sha256": "e4850af02cf8e529024efee55b77d32ad8ff9e0849358ded4fa0c4bdc6893cee",
+        "changed_from_baseline": false
+      }
+    ]
+  }
+}

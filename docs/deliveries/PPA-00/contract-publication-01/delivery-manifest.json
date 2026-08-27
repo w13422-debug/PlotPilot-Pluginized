@@ -1,0 +1,271 @@
+{
+  "schema": "p0-contract-publication-delivery-manifest/v1",
+  "batch_id": "PPA-M1-CONTRACT-PUBLICATION-01",
+  "status": "passed",
+  "baseline_head": "63ee2b89b719734dd2f9d50bab12cbe0fe10e37e",
+  "reviewed_implementation_commit": "c99937d64ad4b34b6b4e071a10eaf3484028f5fa",
+  "reviewed_tree": "5a7052549d780d54d65d18aad4cdc58d51f1b8fd",
+  "contract_manifest": {
+    "path": "contracts/manifest-v1.json",
+    "sha256": "cbe9d02fc42409332151cd7905e387a46537b330b039a2d3d6798f48cbfcc024"
+  },
+  "sol_gate": {
+    "verdict": "PASS",
+    "reviewer_model": "gpt-5.6-sol/max",
+    "finding_ids": [
+      "P0-CP-F-001",
+      "P0-CP-F-002",
+      "P0-CP-F-003",
+      "P0-CP-F-004",
+      "P0-CP-F-005"
+    ],
+    "closure_path": "docs/deliveries/PPA-00/contract-publication-01/evidence/finding-closure.json",
+    "closure_sha256": "82d9f7732e8120ef53c62841bf875fdc5f2c83f6cdac4a3fcc0cacbbb61ef296"
+  },
+  "artifact_count_excluding_self": 32,
+  "artifacts": [
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/.gitattributes",
+      "bytes": 112,
+      "sha256": "97bb15cf922bef613a115bc8507cbe73bf497aed3c457e7b5e85199475472319",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/contract-artifact-inventory.json",
+      "bytes": 10831,
+      "sha256": "ecaffac9479d3a8a50a5ea1428de5fa9d4e4250154a1c747cd8720485d16d03c",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/finding-closure.json",
+      "bytes": 12638,
+      "sha256": "82d9f7732e8120ef53c62841bf875fdc5f2c83f6cdac4a3fcc0cacbbb61ef296",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/p0-write-set-audit.json",
+      "bytes": 3897,
+      "sha256": "eaa9b2887746fd6ef603524caa2c1cd10c5ba1e9a8e0531f8989c85d05c9e932",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-byte-contract.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-byte-contract.stdout.txt",
+      "bytes": 847,
+      "sha256": "8979136cd9855a7a40d0d8bec430247797d64159c3d5b76b70671e10df0dd9e2",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-contract-pytest.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-contract-pytest.stdout.txt",
+      "bytes": 665,
+      "sha256": "9b289c3b85395e5f9e0299bf9202faa90d3da8cd72ef0869457667ce7fde9695",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-cross-language-goldens.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-cross-language-goldens.stdout.txt",
+      "bytes": 1322,
+      "sha256": "731b8bfc7340cfc09230a6d0bf750d77f02c2b07ff982d8e381565ff74a17b40",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-manifest-check.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-manifest-check.stdout.txt",
+      "bytes": 48,
+      "sha256": "e9dd7fc9defb72d61d64aac2906a107a80ea6dd52d438126a8d7571b410968ff",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-node-contracts-all.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-node-contracts-all.stdout.txt",
+      "bytes": 777,
+      "sha256": "998b1b45cb90e61f2de40dfee137cffe82fafef07a8c1efe9c986639b0e506b8",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-python-contracts-all.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-python-contracts-all.stdout.txt",
+      "bytes": 55140,
+      "sha256": "7c8f906ea58007d418a7d5dd0651ff62b46b4b960831ba4f6df4d519e1bfa4f5",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-schema-check.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-schema-check.stdout.txt",
+      "bytes": 50,
+      "sha256": "813a4bcf16b1292667932962a65d8440c7e9b9fa516388c58b0f2ed6dfeba05d",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-verification-summary.json",
+      "bytes": 5597,
+      "sha256": "bd0b451ccba5cd00fa601bf021da7707df8a0b715d07b0386bd3c39dc2c539ce",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-worktree-add.stderr.txt",
+      "bytes": 480,
+      "sha256": "f60029aca70a0eeabbfeefd40764b7b2d67b5ed8e6c53755e30063ac1a39e664",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-worktree-add.stdout.txt",
+      "bytes": 71,
+      "sha256": "88de9cdcd9a814f98319df81280c49ac2a0673e024721e3b64ac304c48f2b7ee",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-worktree-remove.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-worktree-remove.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/typescript-contracts.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/typescript-contracts.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/typescript-typecheck-summary.json",
+      "bytes": 870,
+      "sha256": "2bf0fca2e35e460f05ec5d2026b94f69f2f38027f26b536e113d43b5c073d7d0",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw-test-summary.json",
+      "bytes": 12310,
+      "sha256": "ec3275c82f75c8f20599f245799d979fff019312aa36fc3e4480abab095f10cd",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/sol-focused-review-r1.json",
+      "bytes": 7747,
+      "sha256": "bece37010bc2aa4d7d504405248056f45999b165580ce534f965001b71867689",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/sol-focused-review-r2.json",
+      "bytes": 17374,
+      "sha256": "6b2ad769ec14c0e69ac7884f2d8942bfd79c570376faaaa487bb8121c8ebf2e5",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/integration-ready.json",
+      "bytes": 5996,
+      "sha256": "e0b188707f8232a955a7bd499b5fbcc88c92d8f174a9f3acef1820e1f063fcbf",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/publication-receipt.json",
+      "bytes": 1657,
+      "sha256": "18b18e48b5d5fb11bdb342eefe2ec14bc0ca104ac91a87d58c9fdcb12371510e",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/summary.md",
+      "bytes": 1877,
+      "sha256": "dca1d7f4828f4ebd35eaf2099ebb29853eb1ed768c0a6f1d0aecadb406627dcd",
+      "hash_basis": "git_blob_bytes"
+    }
+  ],
+  "decisions": [
+    {
+      "path": "coordination/PPA-00/contract-decision-P3-CD-CONTEXT-IDENTITY-001.json",
+      "bytes": 3432,
+      "sha256": "364defe621455f50a27b9c1041178ad5cfe30b2319061241c4d64890c7ad6b40",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "coordination/PPA-00/contract-decision-P6-CD-EXPORT-CURRENT-REVISIONS-001.json",
+      "bytes": 3081,
+      "sha256": "8364f7fb03ff00f8c96f225ba8d735251fa19bb3edb753f521881453228e0c54",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "coordination/PPA-00/contract-decision-PPA-01-CD-001.json",
+      "bytes": 14951,
+      "sha256": "cb6bca8bb7f83763ed84c7fd4b379692f7aa8de993158861eeece899b9e1bdc2",
+      "hash_basis": "git_blob_bytes"
+    },
+    {
+      "path": "coordination/PPA-00/contract-decision-PPA-04-CD-001.json",
+      "bytes": 2900,
+      "sha256": "030cfc598545d9017bc2b20baf5658aaa3c829f807c47d211022a8fba851c97a",
+      "hash_basis": "git_blob_bytes"
+    }
+  ],
+  "old_tags": {
+    "M0-OPEN": {
+      "tag_object": "0a527454a2e9d20e353c41391d53d734a6dd62dc",
+      "peeled_commit": "786986a02219973a69a0d1c1114191149924d7f7"
+    },
+    "M0-OPEN-R2": {
+      "tag_object": "2b375224ec4762b9b25bca10cb80035f715b0b6f",
+      "peeled_commit": "36ca847d8b328e3f4f7791c836e0530e8a5ea5b3"
+    },
+    "M0-OPEN-R3": {
+      "tag_object": "9c7dbb76b0ce63c55b922e7ee629f25d229b9269",
+      "peeled_commit": "b6e20df15de9eb4b25de1acfe4e8a8f9e7080bde"
+    },
+    "M0-OPEN-R4": {
+      "tag_object": "385bc499032910195081e83a270b59c539f33539",
+      "peeled_commit": "42123d1a5126bb2bef31304b0498e2e7def9183e"
+    }
+  },
+  "donor_push_url": "DISABLED",
+  "p2_p6_merged_in_this_batch": false,
+  "remaining_limits": [
+    "This batch publishes contracts only; it does not integrate P2-P6.",
+    "P6 Export runtime remains stopped until real P1 Asset/current-pointer and P2/P3 runtime dependencies are integrated.",
+    "Desktop, EXE, installer and M8+ remain out of scope."
+  ]
+}

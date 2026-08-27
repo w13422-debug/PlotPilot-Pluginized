@@ -1,0 +1,224 @@
+{
+  "schema": "p0-contract-publication-focused-review/v1",
+  "reviewer_model": "gpt-5.6-sol/max",
+  "reviewer_agent_id": "01a04231-3411-7c33-a83d-3522f61d9261",
+  "review_round": 1,
+  "verdict": "BLOCK",
+  "staged_tree": "246745fbca8a7e822038a4c3e70ebee962a25eaf",
+  "contract_manifest_sha256": "2336dffaac04aa98799ffcaffa910d6d26bb509e0ffbf1d709fe97304cddb728",
+  "findings": [
+    {
+      "id": "P0-CP-F-001",
+      "severity": "BLOCKER",
+      "evidence": [
+        {
+          "path": "coordination/PPA-00/contract-decision-PPA-01-CD-001.json",
+          "detail": "Decision freezes separate Document/Node revision routes and explicit expected/base revision semantics."
+        },
+        {
+          "path": "tools/integration/generate_contract_schemas.py",
+          "detail": "Generated matrix instead publishes generic /api/v1/core/{target_kind}/{target_id}/revisions routes."
+        },
+        {
+          "command_id": "C-14",
+          "detail": "Decision paths absent; workspace.get accepted workspace_id=null; relation.delete accepted without expected/base CAS."
+        }
+      ],
+      "required_action": "Align binding decision, ADR, method matrix, route-specific DTO and fakes; require non-empty path identity and explicit CAS for revision-affecting mutations."
+    },
+    {
+      "id": "P0-CP-F-002",
+      "severity": "BLOCKER",
+      "evidence": [
+        {
+          "path": "coordination/PPA-00/contract-decision-PPA-01-CD-001.json",
+          "detail": "Decision requires typed Core HTTP error responses for unknown references, stale CAS and operation-key reuse."
+        },
+        {
+          "path": "contracts/json-schema/core-api-method-matrix.v1.json",
+          "detail": "Routes bind only success_statuses/result_schema; no error schema/status bindings."
+        },
+        {
+          "command_id": "C-14",
+          "detail": "No Core HTTP error schema; existing stale-CAS/reuse probes only mismatch a frozen success request."
+        }
+      ],
+      "required_action": "Publish minimal closed Core HTTP error DTO, bind failure statuses/results, and execute unknown reference, stale CAS, same-key/different-payload and partial Publication negative exchanges."
+    },
+    {
+      "id": "P0-CP-F-003",
+      "severity": "BLOCKER",
+      "evidence": [
+        {
+          "path": "backend/plotpilot_plugin_sdk/core_api.py",
+          "detail": "Python hashes decoded bytes for every Asset range."
+        },
+        {
+          "path": "frontend/src/contracts/core-api.ts",
+          "detail": "TypeScript hashes bytes only for full-range responses."
+        },
+        {
+          "command_id": "C-15",
+          "detail": "Schema-valid partial range with forged content_hash rejected by Python but accepted by real TypeScript."
+        }
+      ],
+      "required_action": "Freeze one content_hash meaning, align Python/TypeScript, and add partial positive/tampered/binding cross-language probes."
+    },
+    {
+      "id": "P0-CP-F-004",
+      "severity": "BLOCKER",
+      "evidence": [
+        {
+          "path": "coordination/PPA-00/contract-decision-P3-CD-CONTEXT-IDENTITY-001.json",
+          "detail": "Decision requires fencing before identity derivation/ledger lookup."
+        },
+        {
+          "path": "backend/plotpilot_plugin_sdk/context_identity.py",
+          "detail": "expected_lease_epoch is optional."
+        },
+        {
+          "path": "frontend/src/contracts/verifier.ts",
+          "detail": "expectedLeaseEpoch is optional."
+        },
+        {
+          "command_id": "C-16",
+          "detail": "Both runtimes derive attempt identity when expected epoch is omitted."
+        }
+      ],
+      "required_action": "Require current epoch/fencing proof for install/attempt public derivation; omission rejects; control remains epochless."
+    },
+    {
+      "id": "P0-CP-F-005",
+      "severity": "BLOCKER",
+      "evidence": [
+        {
+          "path": "coordination/PPA-00/contract-decision-P6-CD-EXPORT-CURRENT-REVISIONS-001.json",
+          "detail": "Decision requires exact immutable JSON Asset bytes hash frozen in RunSnapshot."
+        },
+        {
+          "path": "backend/plotpilot_plugin_sdk/core_api.py",
+          "detail": "Compares caller-supplied asset_sha256 but never hashes supplied export bytes."
+        },
+        {
+          "path": "frontend/src/contracts/core-api.ts",
+          "detail": "Same trust gap."
+        },
+        {
+          "command_id": "C-17",
+          "detail": "Both verifiers accept a title-tampered object with the original Asset hash."
+        }
+      ],
+      "required_action": "Verify assembled raw Asset bytes SHA-256 before closed JSON parse and RunSnapshot binding; add non-revision field tamper negative."
+    }
+  ],
+  "commands": [
+    {
+      "id": "C-01",
+      "command": "git identity/index-tree/donor/status audit",
+      "exit_code": 0,
+      "key_result": "branch/head/tree/donor PASS"
+    },
+    {
+      "id": "C-02",
+      "command": "formal design and Delta source SHA/parse",
+      "exit_code": 0,
+      "key_result": "design and source hashes matched"
+    },
+    {
+      "id": "C-03",
+      "command": "manifest staged content-address audit",
+      "exit_code": 0,
+      "key_result": "53 schemas, 137 files, 20 families, no drift"
+    },
+    {
+      "id": "C-04",
+      "command": "staged rules bytes and cached attributes",
+      "exit_code": 0,
+      "key_result": "20 bytes, LF, SHA 54bfa55d..., eol=lf"
+    },
+    {
+      "id": "C-05",
+      "command": "fresh raw evidence/hash/worktree audit",
+      "exit_code": 0,
+      "key_result": "all stdout/hash/exit bindings valid; temp removed"
+    },
+    {
+      "id": "C-06",
+      "command": "schema and manifest deterministic checks",
+      "exit_code": 0,
+      "key_result": "56 generated; 137 manifest files"
+    },
+    {
+      "id": "C-07",
+      "command": "targeted pytest",
+      "exit_code": 0,
+      "key_result": "6 passed in 1.94s"
+    },
+    {
+      "id": "C-08",
+      "command": "Python contracts --all --json",
+      "exit_code": 0,
+      "key_result": "53 schemas; 14/105 M0; 24 routes; 25 TS publication negatives"
+    },
+    {
+      "id": "C-09",
+      "command": "Node contracts --all",
+      "exit_code": 0,
+      "key_result": "inventory and four golden families passed"
+    },
+    {
+      "id": "C-10",
+      "command": "cross-language goldens",
+      "exit_code": 0,
+      "key_result": "status=ok"
+    },
+    {
+      "id": "C-11",
+      "command": "strict targeted TypeScript tsc",
+      "exit_code": 0,
+      "key_result": "no diagnostics"
+    },
+    {
+      "id": "C-12",
+      "command": "P0 write-set and M0 corpus preservation",
+      "exit_code": 0,
+      "key_result": "43 paths, out_of_set=0, 14/105 unchanged"
+    },
+    {
+      "id": "C-13",
+      "command": "plugin RPC/ports/migration boundary",
+      "exit_code": 0,
+      "key_result": "unchanged; no Publication/current-revisions callable"
+    },
+    {
+      "id": "C-14",
+      "command": "Core HTTP route/error/CAS/path probe",
+      "exit_code": 0,
+      "key_result": "found F-001/F-002"
+    },
+    {
+      "id": "C-15",
+      "command": "partial range forged-hash cross-runtime probe",
+      "exit_code": 0,
+      "key_result": "Python rejected; TypeScript accepted"
+    },
+    {
+      "id": "C-16",
+      "command": "fencing omission probe",
+      "exit_code": 0,
+      "key_result": "both derived without expected epoch"
+    },
+    {
+      "id": "C-17",
+      "command": "Export raw-byte tamper probe",
+      "exit_code": 0,
+      "key_result": "both accepted tampered object/original hash"
+    },
+    {
+      "id": "C-18",
+      "command": "final read-only identity audit",
+      "exit_code": 0,
+      "key_result": "reviewed index unchanged; no edits"
+    }
+  ]
+}

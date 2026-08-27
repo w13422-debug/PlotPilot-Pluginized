@@ -1,0 +1,12 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\AppData\Local\Temp\plotpilot-p0-cp-fresh-3d06ff02bb
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 6 items
+
+tests\contract\test_contract_publication.py ....                         [ 66%]
+tests\contract\test_schema_meta.py ..                                    [100%]
+
+============================== 6 passed in 3.44s ==============================

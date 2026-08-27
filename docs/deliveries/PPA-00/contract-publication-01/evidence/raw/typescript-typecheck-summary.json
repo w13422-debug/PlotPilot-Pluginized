@@ -1,0 +1,13 @@
+{
+  "schema": "p0-typescript-typecheck/v1",
+  "status": "passed",
+  "command": "pnpm --dir frontend exec tsc --noEmit --pretty false --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions true --lib 'ES2022,DOM' --strict src/contracts/types.ts src/contracts/schema-ingress.ts src/contracts/core-api.ts src/contracts/ingress.ts src/contracts/verifier.ts",
+  "exit_code": 0,
+  "duration_ms": 2449,
+  "stdout_bytes": 0,
+  "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr_bytes": 0,
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/typescript-contracts.stdout.txt",
+  "stderr_path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/typescript-contracts.stderr.txt"
+}

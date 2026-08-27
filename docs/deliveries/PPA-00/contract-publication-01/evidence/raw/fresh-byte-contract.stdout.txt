@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "tracked_rules": [
+    "contracts/golden/package/data/rules.json"
+  ],
+  "rules_bytes": 20,
+  "rules_sha256": "54bfa55d6557dcf1a11f3e845e6492e4fe34f35a0d6751f45e0e8ae77df36e78",
+  "skill_prompt_sha256": "240c9cc169ce9ea5b2b7802201b672812abb8f7cd2cfa3c3e2327b61b748e061",
+  "skill_files_sha256_sha256": "7ceb3f3c812ea8d094177d1816257bd4fff970e78ecee3522775ed390dec6e6b",
+  "attributes": [
+    "contracts/.gitattributes: text: set",
+    "contracts/.gitattributes: eol: lf",
+    "contracts/golden/package/data/rules.json: text: set",
+    "contracts/golden/package/data/rules.json: eol: lf",
+    "contracts/golden/skill/prompt.txt: text: set",
+    "contracts/golden/skill/prompt.txt: eol: lf",
+    "contracts/golden/skill/files.sha256: text: set",
+    "contracts/golden/skill/files.sha256: eol: lf"
+  ]
+}

@@ -1,0 +1,119 @@
+{
+  "schema": "p0-fresh-verification/v1",
+  "status": "passed",
+  "baseline_head": "63ee2b89b719734dd2f9d50bab12cbe0fe10e37e",
+  "staged_tree": "5a7052549d780d54d65d18aad4cdc58d51f1b8fd",
+  "ephemeral_commit": "eac5c09423ae11414e80a5ec5b644eb7101b1fcc",
+  "fresh_worktree": {
+    "path": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\plotpilot-p0-cp-fresh-3d06ff02bb",
+    "under_temp_root": true,
+    "removed": true,
+    "remove_exit_code": 0
+  },
+  "environment": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.10",
+    "node": "v24.18.0",
+    "pnpm": "11.7.0"
+  },
+  "commands": [
+    {
+      "id": "fresh-byte-contract",
+      "command": "python -B <tracked rules/skill LF/hash/attribute probe>",
+      "exit_code": 0,
+      "status": "passed",
+      "duration_ms": 151,
+      "stdout_nonempty": true,
+      "stdout_bytes": 847,
+      "stdout_sha256": "8979136cd9855a7a40d0d8bec430247797d64159c3d5b76b70671e10df0dd9e2",
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-byte-contract.stdout.txt",
+      "stderr_path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-byte-contract.stderr.txt"
+    },
+    {
+      "id": "fresh-schema-check",
+      "command": "python -B tools/integration/generate_contract_schemas.py --check",
+      "exit_code": 0,
+      "status": "passed",
+      "duration_ms": 111,
+      "stdout_nonempty": true,
+      "stdout_bytes": 50,
+      "stdout_sha256": "813a4bcf16b1292667932962a65d8440c7e9b9fa516388c58b0f2ed6dfeba05d",
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-schema-check.stdout.txt",
+      "stderr_path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-schema-check.stderr.txt"
+    },
+    {
+      "id": "fresh-manifest-check",
+      "command": "python -B tools/integration/generate_contract_manifest.py --check",
+      "exit_code": 0,
+      "status": "passed",
+      "duration_ms": 134,
+      "stdout_nonempty": true,
+      "stdout_bytes": 48,
+      "stdout_sha256": "e9dd7fc9defb72d61d64aac2906a107a80ea6dd52d438126a8d7571b410968ff",
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-manifest-check.stdout.txt",
+      "stderr_path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-manifest-check.stderr.txt"
+    },
+    {
+      "id": "fresh-contract-pytest",
+      "command": "python -B -m pytest -q tests/contract/test_contract_publication.py tests/contract/test_schema_meta.py",
+      "exit_code": 0,
+      "status": "passed",
+      "duration_ms": 4042,
+      "stdout_nonempty": true,
+      "stdout_bytes": 665,
+      "stdout_sha256": "9b289c3b85395e5f9e0299bf9202faa90d3da8cd72ef0869457667ce7fde9695",
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-contract-pytest.stdout.txt",
+      "stderr_path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-contract-pytest.stderr.txt"
+    },
+    {
+      "id": "fresh-python-contracts-all",
+      "command": "python -B tools/integration/verify_contracts.py --all --json",
+      "exit_code": 0,
+      "status": "passed",
+      "duration_ms": 2386,
+      "stdout_nonempty": true,
+      "stdout_bytes": 55140,
+      "stdout_sha256": "7c8f906ea58007d418a7d5dd0651ff62b46b4b960831ba4f6df4d519e1bfa4f5",
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-python-contracts-all.stdout.txt",
+      "stderr_path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-python-contracts-all.stderr.txt"
+    },
+    {
+      "id": "fresh-node-contracts-all",
+      "command": "node tools/integration/verify_contracts.mjs --all",
+      "exit_code": 0,
+      "status": "passed",
+      "duration_ms": 92,
+      "stdout_nonempty": true,
+      "stdout_bytes": 777,
+      "stdout_sha256": "998b1b45cb90e61f2de40dfee137cffe82fafef07a8c1efe9c986639b0e506b8",
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-node-contracts-all.stdout.txt",
+      "stderr_path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-node-contracts-all.stderr.txt"
+    },
+    {
+      "id": "fresh-cross-language-goldens",
+      "command": "python -B tools/integration/verify_cross_language_goldens.py",
+      "exit_code": 0,
+      "status": "passed",
+      "duration_ms": 376,
+      "stdout_nonempty": true,
+      "stdout_bytes": 1322,
+      "stdout_sha256": "731b8bfc7340cfc09230a6d0bf750d77f02c2b07ff982d8e381565ff74a17b40",
+      "stderr_bytes": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-cross-language-goldens.stdout.txt",
+      "stderr_path": "docs/deliveries/PPA-00/contract-publication-01/evidence/raw/fresh-cross-language-goldens.stderr.txt"
+    }
+  ]
+}

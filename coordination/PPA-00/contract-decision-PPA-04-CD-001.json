@@ -48,7 +48,15 @@
   "publication": {
     "batch_id": "PPA-M1-CONTRACT-PUBLICATION-01",
     "contract_manifest_sha256": "cbe9d02fc42409332151cd7905e387a46537b330b039a2d3d6798f48cbfcc024",
-    "status": "implemented_pending_focused_review"
+    "status": "published",
+    "reviewed_implementation_commit": "c99937d64ad4b34b6b4e071a10eaf3484028f5fa",
+    "reviewed_tree": "5a7052549d780d54d65d18aad4cdc58d51f1b8fd",
+    "sol_closure": {
+      "path": "docs/deliveries/PPA-00/contract-publication-01/evidence/sol-focused-review-r2.json",
+      "sha256": "6b2ad769ec14c0e69ac7884f2d8942bfd79c570376faaaa487bb8121c8ebf2e5",
+      "verdict": "PASS",
+      "reviewer_model": "gpt-5.6-sol/max"
+    }
   },
   "resume_gate": {
     "affected_slice": "P4 unknown worker/UI ingress and removal of private wire DTOs",
