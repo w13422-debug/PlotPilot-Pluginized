@@ -1,3 +1,9 @@
+coordination/PPA-06/first-batch-integration-readiness.md
+docs/deliveries/PPA-06/P6-first-batch.md
+docs/deliveries/PPA-06/evidence/raw/changed-paths.txt
+docs/deliveries/PPA-06/evidence/raw/commits.txt
+docs/deliveries/PPA-06/evidence/raw/git-status-before-delivery.txt
+docs/deliveries/PPA-06/evidence/raw/pytest-p6-writing.stdout.txt
 first-party-plugins/autopilot/backend/src/plotpilot_autopilot/__init__.py
 first-party-plugins/autopilot/backend/src/plotpilot_autopilot/dag.py
 first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow/__init__.py
