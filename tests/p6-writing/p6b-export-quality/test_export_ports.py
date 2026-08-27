@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from hashlib import sha256
+import json
 
 import pytest
 
@@ -13,6 +14,7 @@ from plotpilot_export_suite import (
     ExportPortError,
     export_from_ports,
 )
+import plotpilot_export_suite.integration as export_integration
 
 
 class FakeAssetPort:
@@ -86,6 +88,28 @@ class LegacyAssetStore:
             "provenance": provenance,
             "rebuildable": rebuildable,
         }
+
+
+class RichMetadataPort(FakeAssetPort):
+    def __init__(self, assets: dict[str, bytes], overrides: dict[str, object]) -> None:
+        super().__init__(assets)
+        self.overrides = dict(overrides)
+
+    def create_asset(self, content: bytes, *, mime: str) -> dict[str, object]:
+        asset_id = super().create_asset(content, mime=mime)
+        raw = bytes(content)
+        metadata: dict[str, object] = {
+            "schema": "asset-metadata/v1",
+            "asset_id": asset_id,
+            "sha256": sha256(raw).hexdigest(),
+            "mime": mime,
+            "size": len(raw),
+            "logical_role": "export_output",
+            "provenance": "plotpilot:export-suite",
+            "rebuildable": True,
+        }
+        metadata.update(self.overrides)
+        return metadata
 
 
 def _case() -> tuple[dict[str, object], FakeAssetPort, dict[str, bytes]]:
@@ -244,6 +268,66 @@ def test_manifest_and_snapshot_binding_rejects_tampering_before_any_output_creat
 
     with pytest.raises(ExportPortError):
         export_from_ports(tampered, port, novel_id="novel-1", title="标题")
+    assert port.created == []
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"schema": "wrong-schema/v9"},
+        {"size": 1.0},
+        {"size": True},
+        {"sha256": "0" * 64},
+        {"mime": "application/octet-stream"},
+        {"asset_id": 123},
+    ],
+)
+def test_rich_create_metadata_is_strictly_validated(overrides: dict[str, object]) -> None:
+    snapshot, base_port, assets = _case()
+    port = RichMetadataPort(assets, overrides)
+
+    with pytest.raises(ExportPortError):
+        export_from_ports(snapshot, port, novel_id="novel-1", title="星河")
+    assert len(port.created) == 1
+    assert base_port.created == []
+
+
+@pytest.mark.parametrize("field", ["title", "author", "premise"])
+def test_output_strings_reject_surrogates_as_export_port_errors(field: str) -> None:
+    snapshot, port, _ = _case()
+    kwargs = {"novel_id": "novel-1", "title": "星河", "author": "作者", "premise": "前提"}
+    kwargs[field] = "\ud800"
+
+    with pytest.raises(ExportPortError, match="strict UTF-8") as captured:
+        export_from_ports(snapshot, port, **kwargs)
+    assert isinstance(captured.value.__cause__, UnicodeEncodeError)
+    assert port.created == []
+
+
+def test_missing_and_ambiguous_document_selection_are_wrapped_with_causes() -> None:
+    snapshot, port, _ = _case()
+    with pytest.raises(ExportPortError, match="domain/render") as missing:
+        export_from_ports(snapshot, port, novel_id="novel-1", title="星河", document_id="doc-missing")
+    assert isinstance(missing.value.__cause__, ValueError)
+    assert port.created == []
+
+    manifest = json.loads(port.assets["asset-export-current-revisions"].decode("utf-8"))
+    manifest["ordered_revisions"][1]["document_id"] = "doc-a"
+    with pytest.raises(ExportPortError, match="domain/render") as ambiguous:
+        export_integration._build_prepared_export(
+            snapshot=snapshot,
+            manifest_asset_id="asset-export-current-revisions",
+            manifest_sha256=sha256(port.assets["asset-export-current-revisions"]).hexdigest(),
+            manifest=manifest,
+            asset_read_port=port,
+            novel_id="novel-1",
+            title="星河",
+            author="作者",
+            premise="前提",
+            export_format=ExportFormat.MARKDOWN,
+            document_id="doc-a",
+        )
+    assert isinstance(ambiguous.value.__cause__, ValueError)
     assert port.created == []
 
 

@@ -258,6 +258,10 @@ def _require_text(value: object, label: str, *, nonempty: bool = False) -> str:
     if not isinstance(value, str) or (nonempty and not value):
         suffix = " must be a non-empty string" if nonempty else " must be a string"
         _fail(label + suffix)
+    try:
+        value.encode("utf-8", errors="strict")
+    except UnicodeEncodeError as exc:
+        raise ExportPortError(f"{label} must be strict UTF-8 text") from exc
     return value
 
 
@@ -391,6 +395,25 @@ def _metadata_value(metadata: object, *names: str) -> object:
         except Exception as exc:  # pragma: no cover - hostile duck-typed metadata
             raise ExportPortError(f"Asset metadata field {name} could not be read: {exc}") from exc
     return _MISSING
+
+
+def _metadata_values(metadata: object, *names: str) -> tuple[object, ...]:
+    if metadata is None:
+        return ()
+    values: list[object] = []
+    if isinstance(metadata, Mapping):
+        for name in names:
+            if name in metadata:
+                values.append(metadata[name])
+        return tuple(values)
+    for name in names:
+        try:
+            values.append(getattr(metadata, name))
+        except AttributeError:
+            continue
+        except Exception as exc:  # pragma: no cover - hostile duck-typed metadata
+            raise ExportPortError(f"Asset metadata field {name} could not be read: {exc}") from exc
+    return tuple(values)
 
 
 def _validate_asset_metadata(
@@ -531,12 +554,18 @@ def _build_prepared_export(
         content_asset_id = _require_id(item.get("content_asset_id"), f"ordered_revisions[{index}].content_asset_id")
         content_hash = _require_hash(item.get("content_hash"), f"ordered_revisions[{index}].content_hash")
         content = _read_verified_body(asset_read_port, item, workspace_id)
-        chapter = ChapterRevision(item_document_id, revision_id, index + 1, item_title, content, content_hash)
+        try:
+            chapter = ChapterRevision(item_document_id, revision_id, index + 1, item_title, content, content_hash)
+        except Exception as exc:
+            raise ExportPortError(f"export chapter domain validation failed: {exc}") from exc
         chapters.append(chapter)
         source_by_key[(item_document_id, revision_id, content_hash)] = (content_asset_id, content_hash)
 
-    document = ExportDocument(workspace_id, novel_id, title, author, premise, tuple(chapters))
-    payload = build_export(document, export_format, document_id=document_id)
+    try:
+        document = ExportDocument(workspace_id, novel_id, title, author, premise, tuple(chapters))
+        payload = build_export(document, export_format, document_id=document_id)
+    except Exception as exc:
+        raise ExportPortError(f"export domain/render failed: {exc}") from exc
     source_assets: list[tuple[str, str]] = []
     for source in payload.source_revisions:
         try:
@@ -637,20 +666,34 @@ def _create_asset(port: object, prepared: PreparedExport) -> ExportAssetMetadata
         supplied: object = None
     else:
         supplied = returned
-        asset_id = _metadata_value(returned, "asset_id")
-        if asset_id is _MISSING:
+        asset_ids = _metadata_values(returned, "asset_id")
+        if not asset_ids:
             _fail("Asset create result has no asset_id")
+        if len(asset_ids) != 1:
+            _fail("Asset create result has ambiguous asset_id")
+        asset_id = asset_ids[0]
+        schemas = _metadata_values(returned, "schema")
+        if any(not isinstance(value, str) or value != "asset-metadata/v1" for value in schemas):
+            _fail("created output Asset schema must be asset-metadata/v1")
     asset_id = _require_id(asset_id, "created output asset_id")
     output_hash = prepared.payload.sha256
     output_size = len(prepared.payload.content)
-    for field_name, expected, aliases in (
-        ("sha256", output_hash, ("sha256", "content_hash")),
-        ("mime", asset_mime, ("mime", "media_type", "content_type")),
-        ("size", output_size, ("size", "total_size")),
-    ):
-        value = _metadata_value(supplied, *aliases)
-        if value is not _MISSING and value != expected:
-            _fail(f"created output Asset {field_name} does not match rendered bytes")
+    if supplied is not None:
+        hashes = _metadata_values(supplied, "sha256", "content_hash")
+        if not hashes:
+            _fail("created output Asset has no sha256")
+        if any(not isinstance(value, str) or _HASH_RE.fullmatch(value) is None or value != output_hash for value in hashes):
+            _fail("created output Asset sha256 does not match rendered bytes")
+        mimes = _metadata_values(supplied, "mime", "media_type", "content_type")
+        if not mimes:
+            _fail("created output Asset has no MIME")
+        if any(not isinstance(value, str) or value != asset_mime for value in mimes):
+            _fail("created output Asset MIME does not match rendered bytes")
+        sizes = _metadata_values(supplied, "size", "total_size")
+        if not sizes:
+            _fail("created output Asset has no size")
+        if any(isinstance(value, bool) or not isinstance(value, int) or value != output_size for value in sizes):
+            _fail("created output Asset size does not match rendered bytes")
     logical_role = _metadata_value(supplied, "logical_role")
     if logical_role is _MISSING:
         logical_role = "export_output"

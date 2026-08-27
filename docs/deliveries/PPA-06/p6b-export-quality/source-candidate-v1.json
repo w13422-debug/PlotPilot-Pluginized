@@ -1,6 +1,6 @@
 {
   "schema": "p6b-source-candidate/v1",
-  "status": "awaiting-sol-review",
+  "status": "remediation-awaiting-same-sol-reviewer",
   "project_id": "P6B",
   "parent_project": "P6",
   "branch": "codex/ppa-06b-export-quality",
@@ -11,6 +11,7 @@
   "changed_paths": [
     "coordination/PPA-06/p6b-export-quality/runtime-port-delta-v1.json",
     "docs/deliveries/PPA-06/p6b-export-quality/delivery-record-v1.md",
+    "docs/deliveries/PPA-06/p6b-export-quality/finding-remediation-v1.json",
     "docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/changed-paths.txt",
     "docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/compileall.stderr.txt",
     "docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/compileall.stdout.txt",
@@ -107,6 +108,22 @@
       "stderr": "evidence/raw/git-diff-check.stderr.txt"
     }
   ],
+  "remediation": {
+    "round": 1,
+    "blocked_parent_sha": "3081b2ee60c87ec0e421aa4a6ec3f85c3063ce93",
+    "finding_manifest_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p6b-finding-manifest-20260827.json",
+    "finding_manifest_sha256": "23fd82242ed3441a493a1654de26b82b4ac2f931f809188c9387b1a85412d216",
+    "finding_ids": [
+      "P6B-SOL-REVIEW-02-F001",
+      "P6B-SOL-REVIEW-02-F002",
+      "P6B-SOL-REVIEW-02-F003",
+      "P6B-SOL-REVIEW-02-F004",
+      "P6B-SOL-REVIEW-02-F005"
+    ],
+    "reviewer_agent_id": "01a0435e-2920-7093-a31e-b016aed32fd0",
+    "candidate_head_sha": null,
+    "candidate_head_note": "Reported from Git after the one source remediation commit; intentionally non-self-referential."
+  },
   "review": {
     "required": true,
     "model": "gpt-5.6-sol/max",

@@ -22,6 +22,7 @@ _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _SEVERITIES = frozenset({"info", "warning", "error"})
 _UTF8_BOM = b"\xef\xbb\xbf"
 _UTF8_BOM_CHAR = "\ufeff"
+_SOURCE_TEXT_MIME = "text/plain"
 
 
 class ProvenanceError(ValueError):
@@ -296,6 +297,17 @@ def freeze_source(
         raise ProvenanceError("asset provenance encoding must be utf-8")
     if encodings and len({value for _, value in encodings}) != 1:
         raise ProvenanceError("asset provenance encoding fields do not match")
+    mimes = [
+        (key, nested.get(key))
+        for key in ("mime", "media_type", "content_type")
+        if nested.get(key) is not None
+    ]
+    if mimes and any(not isinstance(value, str) for _, value in mimes):
+        raise ProvenanceError("asset provenance MIME must be a string")
+    if mimes and len({value for _, value in mimes}) != 1:
+        raise ProvenanceError("asset provenance MIME fields do not match")
+    if mimes and mimes[0][1] != _SOURCE_TEXT_MIME:
+        raise ProvenanceError(f"asset provenance MIME must be {_SOURCE_TEXT_MIME}")
     return frozen
 
 
@@ -333,6 +345,7 @@ class QualityBundle:
         object.__setattr__(self, "payload", _freeze(plain))
         object.__setattr__(self, "json_bytes", raw)
         object.__setattr__(self, "sha256", sha256_hex(raw))
+        validate_bundle(self)
 
     @property
     def bytes(self) -> bytes:
@@ -436,46 +449,72 @@ def _coerce_source(source: BundleInput) -> FrozenSource:
         raise ProvenanceError("bundle input must be a FrozenSource or provenance mapping")
 
     root = source
-    if "provenance" in root:
-        nested_value = root["provenance"]
-    else:
-        nested_value = root.get("source")
-    if nested_value is None:
-        nested: Mapping[str, object] = {}
-    elif isinstance(nested_value, Mapping):
-        nested = nested_value
-    else:
-        raise ProvenanceError("bundle provenance must be a mapping")
+    mappings: list[tuple[str, Mapping[str, object]]] = [("root", root)]
+    asset_mappings: list[tuple[str, Mapping[str, object]]] = []
+    for container in ("provenance", "source", "asset", "asset_provenance"):
+        value = root.get(container)
+        if value is None:
+            continue
+        if not isinstance(value, Mapping):
+            label = "asset provenance" if container in {"asset", "asset_provenance"} else "bundle provenance"
+            raise ProvenanceError(f"{label} must be a mapping")
+        entry = (container, value)
+        mappings.append(entry)
+        if container in {"asset", "asset_provenance"}:
+            asset_mappings.append(entry)
 
-    if "asset" in root:
-        asset_value = root["asset"]
-    else:
-        asset_value = root.get("asset_provenance")
-    if asset_value is None:
-        asset: Mapping[str, object] = {}
-    elif isinstance(asset_value, Mapping):
-        asset = asset_value
-    else:
-        raise ProvenanceError("bundle asset provenance must be a mapping")
-
-    def pick(*keys: str) -> object:
-        for mapping in (root, nested, asset):
+    def resolve(*keys: str, label: str) -> object:
+        found: list[tuple[str, object]] = []
+        for mapping_name, mapping in mappings:
             for key in keys:
                 if key in mapping and mapping[key] is not None:
-                    return mapping[key]
-        return None
+                    found.append((f"{mapping_name}.{key}", mapping[key]))
+        if not found:
+            return None
+        first_name, first_value = found[0]
+        for other_name, other_value in found[1:]:
+            try:
+                matches = other_value == first_value
+            except Exception:  # pragma: no cover - hostile value implementation
+                matches = False
+            if matches is not True:
+                raise ProvenanceError(f"conflicting {label}: {first_name} does not match {other_name}")
+        return first_value
 
-    content = pick("content", "text")
+    content = resolve("content", "text", label="content")
+    workspace_id = resolve("workspace_id", label="workspace_id")
+    revision_id = resolve("revision_id", "source_revision", label="revision_id")
+    asset_id = resolve("asset_id", label="asset_id")
+    content_hash = resolve("content_hash", label="content_hash")
+    asset_hash = resolve("asset_hash", "asset_sha256", "sha256", label="asset_hash")
+
+    merged_asset: dict[str, object] = {}
+    for canonical, aliases in (
+        ("workspace_id", ("workspace_id",)),
+        ("asset_id", ("asset_id",)),
+        ("sha256", ("asset_hash", "asset_sha256", "sha256")),
+        ("content_hash", ("content_hash",)),
+        ("mime", ("mime", "media_type", "content_type")),
+        ("size", ("size", "total_size")),
+        ("encoding", ("encoding", "charset")),
+    ):
+        value = resolve(*aliases, label=canonical)
+        if value is not None:
+            merged_asset[canonical] = value
+    schema_values = [mapping.get("schema") for _, mapping in asset_mappings if mapping.get("schema") is not None]
+    if schema_values:
+        if any(value != schema_values[0] for value in schema_values[1:]):
+            raise ProvenanceError("conflicting asset schema")
+        merged_asset["schema"] = schema_values[0]
+
     return freeze_source(
         content,  # type: ignore[arg-type]
-        workspace_id=pick("workspace_id"),  # type: ignore[arg-type]
-        revision_id=pick("revision_id"),  # type: ignore[arg-type]
-        source_revision=pick("source_revision"),  # type: ignore[arg-type]
-        asset_id=pick("asset_id"),  # type: ignore[arg-type]
-        content_hash=pick("content_hash"),  # type: ignore[arg-type]
-        asset_hash=pick("asset_hash"),  # type: ignore[arg-type]
-        asset_sha256=pick("asset_sha256", "sha256"),  # type: ignore[arg-type]
-        asset_provenance=asset if asset else None,
+        workspace_id=workspace_id,  # type: ignore[arg-type]
+        revision_id=revision_id,  # type: ignore[arg-type]
+        asset_id=asset_id,  # type: ignore[arg-type]
+        content_hash=content_hash,  # type: ignore[arg-type]
+        asset_hash=asset_hash,  # type: ignore[arg-type]
+        asset_provenance=merged_asset or None,
     )
 
 
@@ -765,8 +804,38 @@ def validate_bundle(bundle: QualityBundle) -> None:
     if bundle.bundle_type == "candidate":
         if bundle["publication_eligibility"] != "none":
             raise BundleValidationError("candidate bundle cannot be publication-eligible")
-        if any(item.get("status") != "proposed" for item in bundle.items):
-            raise BundleValidationError("candidate items must remain proposed")
+        candidate_fields = {
+            "action",
+            "candidate_id",
+            "item_id",
+            "publication_eligibility",
+            "schema",
+            "source_finding_id",
+            "source_refs",
+            "status",
+            "suggestion",
+            "target",
+        }
+        for item in bundle.items:
+            if not isinstance(item, Mapping) or set(item) != candidate_fields:
+                raise BundleValidationError("candidate item fields are not closed")
+            if item["schema"] != "quality-candidate-item/v1":
+                raise BundleValidationError("candidate item schema is invalid")
+            if item["action"] != "review":
+                raise BundleValidationError("candidate item action must remain review")
+            if item["status"] != "proposed":
+                raise BundleValidationError("candidate items must remain proposed")
+            if item["publication_eligibility"] != "none":
+                raise BundleValidationError("candidate items cannot be publication-eligible")
+            for field in ("candidate_id", "item_id", "source_finding_id", "suggestion"):
+                if not isinstance(item[field], str) or not item[field].strip():
+                    raise BundleValidationError(f"candidate item {field} must be a non-empty string")
+            target = item["target"]
+            target_fields = {"asset_id", "content_hash", "revision_id", "workspace_id"}
+            if not isinstance(target, Mapping) or set(target) != target_fields:
+                raise BundleValidationError("candidate item target fields are not closed")
+            if any(target[field] != provenance[field] for field in target_fields):
+                raise BundleValidationError("candidate item target does not match provenance")
     elif "publication_eligibility" in bundle:
         raise BundleValidationError("non-candidate bundle cannot carry publication eligibility")
 

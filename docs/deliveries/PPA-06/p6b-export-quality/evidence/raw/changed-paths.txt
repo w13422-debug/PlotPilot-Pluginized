@@ -1,5 +1,6 @@
 coordination/PPA-06/p6b-export-quality/runtime-port-delta-v1.json
 docs/deliveries/PPA-06/p6b-export-quality/delivery-record-v1.md
+docs/deliveries/PPA-06/p6b-export-quality/finding-remediation-v1.json
 docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/changed-paths.txt
 docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/compileall.stderr.txt
 docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/compileall.stdout.txt

@@ -79,3 +79,16 @@ Raw command output is kept under `evidence/raw/`:
 The exact command, exit code, and observed result are also recorded in
 `source-candidate-v1.json`. The source candidate must be reviewed by
 `gpt-5.6-sol/max` before P0 considers no-ff integration.
+
+## Frozen Finding remediation round 1
+
+- Blocked parent: `3081b2ee60c87ec0e421aa4a6ec3f85c3063ce93`.
+- Frozen manifest SHA-256: `23fd82242ed3441a493a1654de26b82b4ac2f931f809188c9387b1a85412d216`.
+- Scope is limited to `P6B-SOL-REVIEW-02-F001` through `F005`.
+- Quality candidate items are now closed and review-only; declared source MIME and every root/nested/Asset provenance alias fail closed on drift.
+- Rich output Asset metadata now has strict schema/type/value checks while plain `asset_id: str` remains compatible.
+- Export output strings require strict UTF-8 and domain/render failures cross the adapter as `ExportPortError` with their cause.
+- The three affected stdout files were recaptured as UTF-8 without BOM and with LF line endings.
+- Final source-state evidence: P6B `28 passed`; P6 regression `47 passed, 4 warnings`; compileall PASS; all four repeated renders byte-equal.
+
+The exact remediation head is reported from Git after the single source remediation commit. Finding closure and merge eligibility remain exclusively with reviewer `01a0435e-2920-7093-a31e-b016aed32fd0`.

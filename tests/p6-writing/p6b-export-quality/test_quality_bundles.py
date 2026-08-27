@@ -1,14 +1,18 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import FrozenInstanceError
 from hashlib import sha256
 
 import pytest
 
 from plotpilot_quality_suite import (
+    BundleValidationError,
     Finding,
     ProvenanceError,
+    QualityBundle,
     build_quality_bundles,
+    canonical_json_bytes,
     freeze_source,
     validate_bundle,
 )
@@ -137,3 +141,80 @@ def test_finding_provenance_and_excerpt_are_fenced_to_frozen_content() -> None:
     bad_excerpt = Finding("quality.rule", "warning", "message", 0, 2, "错", digest)
     with pytest.raises(ProvenanceError, match="excerpt"):
         build_quality_bundles(source, [bad_excerpt])
+
+
+@pytest.mark.parametrize(
+    ("field", "bad_value"),
+    [
+        ("schema", "wrong-candidate/v9"),
+        ("action", "publish"),
+        ("status", "published"),
+        ("publication_eligibility", "eligible"),
+        ("__extra__", True),
+    ],
+)
+def test_candidate_item_tampering_is_rejected_after_bundle_id_recalculation(field: str, bad_value: object) -> None:
+    _, _, source = _source()
+    payload = deepcopy(build_quality_bundles(source).candidate.to_dict())
+    if field == "__extra__":
+        payload["items"][0]["unexpected"] = bad_value
+    else:
+        payload["items"][0][field] = bad_value
+    identity = dict(payload)
+    identity.pop("bundle_id")
+    payload["bundle_id"] = f"quality-candidate-{sha256(canonical_json_bytes(identity)).hexdigest()}"
+
+    with pytest.raises(BundleValidationError, match="candidate item"):
+        QualityBundle(payload)
+
+
+def test_quality_rejects_non_text_mime_and_conflicting_provenance_aliases() -> None:
+    body = "正文"
+    digest = sha256(body.encode("utf-8")).hexdigest()
+    with pytest.raises(ProvenanceError, match="MIME must be text/plain"):
+        freeze_source(
+            body,
+            workspace_id="ws-1",
+            revision_id="rev-1",
+            asset_id="asset-1",
+            content_hash=digest,
+            asset_provenance={
+                "schema": "asset-metadata/v1",
+                "asset_id": "asset-1",
+                "sha256": digest,
+                "mime": "application/octet-stream",
+                "size": len(body.encode("utf-8")),
+                "encoding": "utf-8",
+            },
+        )
+
+    with pytest.raises(ProvenanceError, match="conflicting workspace_id"):
+        build_quality_bundles(
+            {
+                "content": body,
+                "workspace_id": "ws-root",
+                "revision_id": "rev-1",
+                "asset_id": "asset-1",
+                "content_hash": digest,
+                "asset_hash": digest,
+                "provenance": {"workspace_id": "ws-nested"},
+                "asset": {"workspace_id": "ws-root", "mime": "text/plain"},
+            }
+        )
+
+    with pytest.raises(ProvenanceError, match="conflicting asset_id"):
+        build_quality_bundles(
+            {
+                "content": body,
+                "workspace_id": "ws-1",
+                "revision_id": "rev-1",
+                "content_hash": digest,
+                "asset_hash": digest,
+                "provenance": {"asset_id": "asset-nested"},
+                "asset_provenance": {
+                    "asset_id": "asset-other",
+                    "sha256": digest,
+                    "mime": "text/plain",
+                },
+            }
+        )
