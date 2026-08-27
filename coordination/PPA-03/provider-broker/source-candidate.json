@@ -1,0 +1,106 @@
+{
+  "schema": "p3b-generation-2-source-candidate/v1",
+  "project": "PPA-03B-Provider-Broker",
+  "generation": 2,
+  "branch": "codex/ppa-03b-provider-broker-g2",
+  "base_commit": "1b352be671e70a2ce443b10499060982e93d64b7",
+  "required_parent_commit": "1b352be671e70a2ce443b10499060982e93d64b7",
+  "source_seed": "32ebc76273ce8ef5307ff7cb82b0461435b0be87",
+  "head_commit": null,
+  "head_commit_note": "Exact G2 commit is returned after this same source commit; no evidence-only follow-up is permitted.",
+  "decision_sha256": "03b7c22551f7567944caf2ad108dcb92014420bd00db067b2d867f0773ff7487",
+  "reviewer_task_id": "01a0438c-f40b-7ec1-b943-f2a9a711b375",
+  "donor_local_push": "DISABLED",
+  "commit_kind": "generation-2-source",
+  "structural_ids": [
+    "P3B-SOL-F-001",
+    "P3B-SOL-F-003",
+    "P3B-SOL-F-005",
+    "P3B-SOL-F-006"
+  ],
+  "preserved_ids": [
+    "P3B-SOL-F-002",
+    "P3B-SOL-F-004",
+    "P3B-SOL-F-007"
+  ],
+  "withdrawn_untouched": [
+    "P3B-SOL-F-008"
+  ],
+  "changed_paths": [
+    "backend/plotpilot_core/api/v1/models/__init__.py",
+    "backend/plotpilot_core/api/v1/models/dto.py",
+    "backend/plotpilot_core/broker/__init__.py",
+    "backend/plotpilot_core/broker/service.py",
+    "backend/plotpilot_core/model/__init__.py",
+    "backend/plotpilot_core/model/profile.py",
+    "backend/plotpilot_core/model/repositories.py",
+    "backend/plotpilot_core/model/repository.py",
+    "coordination/PPA-03/provider-broker/remaining-delta.md",
+    "coordination/PPA-03/provider-broker/source-candidate.json",
+    "docs/deliveries/PPA-03/provider-broker/P3B-first-batch.md",
+    "docs/deliveries/PPA-03/provider-broker/P3B-generation-2.md",
+    "docs/deliveries/PPA-03/provider-broker/P3B-remediation-F001-F007.md",
+    "docs/deliveries/PPA-03/provider-broker/evidence/raw/compileall.stdout.txt",
+    "docs/deliveries/PPA-03/provider-broker/evidence/raw/git-diff-check.stdout.txt",
+    "docs/deliveries/PPA-03/provider-broker/evidence/raw/manifest-validation.stdout.txt",
+    "docs/deliveries/PPA-03/provider-broker/evidence/raw/offline-smoke.stdout.txt",
+    "docs/deliveries/PPA-03/provider-broker/evidence/raw/parent-p3-pytest.stdout.txt",
+    "docs/deliveries/PPA-03/provider-broker/evidence/raw/targeted-pytest.stdout.txt",
+    "docs/deliveries/PPA-03/provider-broker/evidence/raw/write-set-audit.stdout.txt",
+    "first-party-plugins/provider-openai-compatible/README.md",
+    "first-party-plugins/provider-openai-compatible/backend/requirements.lock",
+    "first-party-plugins/provider-openai-compatible/backend/src/plotpilot_provider_openai_compatible/__init__.py",
+    "first-party-plugins/provider-openai-compatible/backend/src/plotpilot_provider_openai_compatible/provider.py",
+    "first-party-plugins/provider-openai-compatible/backend/src/plotpilot_provider_openai_compatible/transport.py",
+    "first-party-plugins/provider-openai-compatible/migrations/manifest.json",
+    "first-party-plugins/provider-openai-compatible/plugin.json",
+    "tests/p3-execution/provider-broker/test_broker.py",
+    "tests/p3-execution/provider-broker/test_model_profile.py",
+    "tests/p3-execution/provider-broker/test_provider.py"
+  ],
+  "out_of_set": [],
+  "root_readme_in_diff": false,
+  "api_v1_changed_unauthorized": [],
+  "validation": {
+    "targeted_pytest": {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p3-execution/provider-broker -q",
+      "result": "35 passed in 0.74s",
+      "exit_code": 0
+    },
+    "parent_p3_pytest": {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p3-execution/test_job_execution.py tests/p3-execution/provider-broker -q",
+      "result": "39 passed in 0.81s",
+      "exit_code": 0
+    },
+    "compileall": {
+      "result": "COMPILEALL_OK=1",
+      "exit_code": 0
+    },
+    "manifest": {
+      "result": "MANIFEST_VALID=1",
+      "exit_code": 0
+    },
+    "offline_smoke": {
+      "result": "OFFLINE_SMOKE=1; NETWORK_CALLS=1; AUTH_REDACTED=True",
+      "exit_code": 0
+    },
+    "git_diff_check": {
+      "result": "GIT_DIFF_CHECK_OK=1",
+      "exit_code": 0
+    },
+    "write_set": {
+      "result": "30 paths; OUT_OF_SET_COUNT=0; ROOT_README_IN_DIFF=0; API_V1_CHANGED_UNAUTHORIZED=[]",
+      "exit_code": 0
+    }
+  },
+  "remaining_delta": [
+    "P1-owned durable reservation-ledger adapter and atomic create_or_recover_child production activation gate"
+  ],
+  "review": {
+    "same_sol_reviewer": "pending central redispatch",
+    "central_pass": "not claimed",
+    "finding_closure": "not claimed",
+    "merge_eligibility": "not claimed"
+  },
+  "old_branch_preserved_head": "32ebc76273ce8ef5307ff7cb82b0461435b0be87"
+}

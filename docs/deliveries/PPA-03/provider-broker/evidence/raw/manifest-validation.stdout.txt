@@ -1,0 +1,8 @@
+GENERATION=2
+BRANCH=codex/ppa-03b-provider-broker-g2
+BASE=1b352be671e70a2ce443b10499060982e93d64b7
+COMMAND=SDK verify_manifest(first-party-plugins/provider-openai-compatible/plugin.json)
+MANIFEST_VALID=1
+MANIFEST_PLUGIN_ID=com.plotpilot.provider.openai-compatible
+MANIFEST_VERIFY_RESULT=None
+EXIT_CODE=0

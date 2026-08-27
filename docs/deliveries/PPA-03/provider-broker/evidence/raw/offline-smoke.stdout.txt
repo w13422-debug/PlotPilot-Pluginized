@@ -1,0 +1,11 @@
+GENERATION=2
+BRANCH=codex/ppa-03b-provider-broker-g2
+BASE=1b352be671e70a2ce443b10499060982e93d64b7
+COMMAND=injected DeterministicTransport offline smoke
+OFFLINE_SMOKE=1
+STATE=receipted
+TEXT=g2 offline
+NETWORK_CALLS=1
+AUTH_REDACTED=True
+REPLAY_POLICY=idempotent_auto
+EXIT_CODE=0
