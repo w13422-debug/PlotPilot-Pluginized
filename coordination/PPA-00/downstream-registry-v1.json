@@ -1,6 +1,6 @@
 {
   "schema": "ppa-downstream-registry/v1",
-  "status": "registered-awaiting-submissions",
+  "status": "p1-batch-01-integrated-awaiting-p0-contract-publication",
   "phase": "M1-M7",
   "owner": {
     "project_key": "P0",
@@ -17,10 +17,12 @@
     "design_sha256": "e70f450b75cfa753148cf620d13855d0073f7d61294e7599ea9cc98f3e612b7b"
   },
   "accepted_base": {
-    "sha": "42123d1a5126bb2bef31304b0498e2e7def9183e",
-    "tag": "M0-OPEN-R4",
-    "tag_peeled_commit": "42123d1a5126bb2bef31304b0498e2e7def9183e",
-    "verified_current_p0_head": true,
+    "sha": "0239ea6cf3d94b1991c68b9ef9671b33319c2bc0",
+    "tag": null,
+    "tag_peeled_commit": null,
+    "previous_sha": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+    "previous_tag": "M0-OPEN-R4",
+    "verified_integration_commit": true,
     "rule": "A downstream branch is not accepted merely because it exists or is ahead; a ready submission must prove base_sha/head_sha and the actual diff."
   },
   "dependency_order": [
@@ -68,10 +70,13 @@
         "coordination/PPA-01/**"
       ],
       "first_party_plugins": [],
-      "observed_head": "752e2b6b6e56031eabe9a8e630a7f4638706da8d",
+      "observed_head": "77e836d126e5be525e95b34f2f396ac7b9f864a1",
       "observed_head_is_accepted_base": false,
       "registration_status": "registered",
-      "submission_status": "awaiting-integration-ready/v1"
+      "submission_status": "integrated",
+      "accepted_submission_id": "PPA-01-BATCH-01-77e836d1",
+      "reviewed_implementation_head": "93a34093e25603c3e2553ff72bfd6469e033de4a",
+      "integrated_commit": "0239ea6cf3d94b1991c68b9ef9671b33319c2bc0"
     },
     {
       "project_key": "P2",
@@ -308,10 +313,73 @@
     "queue_state": "coordination/integration-queue/queue-state-v1.json",
     "registry": "coordination/PPA-00/downstream-registry-v1.json",
     "submission_directory": "coordination/integration-queue/",
-    "accepted_submissions": [],
-    "pending_contract_deltas": [],
+    "accepted_submissions": [
+      {
+        "submission_id": "PPA-01-BATCH-01-77e836d1",
+        "project_id": "P1",
+        "batch_id": "PPA-01-BATCH-01",
+        "source_branch": "codex/ppa-01-core",
+        "base_sha": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+        "head_sha": "77e836d126e5be525e95b34f2f396ac7b9f864a1",
+        "reviewed_implementation_head": "93a34093e25603c3e2553ff72bfd6469e033de4a",
+        "evidence_only_submission_head": "77e836d126e5be525e95b34f2f396ac7b9f864a1",
+        "submission_parent": "93a34093e25603c3e2553ff72bfd6469e033de4a",
+        "merge_commit": "0239ea6cf3d94b1991c68b9ef9671b33319c2bc0",
+        "status": "integrated",
+        "changed_paths_count": 17,
+        "out_of_set_paths": [],
+        "contract_manifest_sha256": "2866b8d0b36ec954ee8cb5c87374e0ca0a0c4acefd1901070cee0b45979d25e7",
+        "closure_evidence": {
+          "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p1-batch-01-f-p1-int-01-closure-20260827.json",
+          "sha256": "d2080ccdb7ca9501f71be481165c8f603196b5979412c36a26d5a802b9b515df",
+          "exit_code": 0,
+          "finding_id": "F-P1-INT-01",
+          "status": "CLOSED"
+        },
+        "merge_receipt": "coordination/integration-queue/PPA-01-BATCH-01-merge-receipt.json"
+      }
+    ],
+    "pending_contract_deltas": [
+      {
+        "delta_id": "PPA-01-CD-001",
+        "status": "accepted_with_scoped_public_contract",
+        "public_contracts_published": false,
+        "affected_projects": [
+          "P1",
+          "P4",
+          "P5",
+          "P6"
+        ]
+      }
+    ],
     "pending_dependency_deltas": [],
-    "intake_status": "awaiting-real-submission"
+    "intake_status": "p1-batch-01-integrated-awaiting-p0-public-contract-publication"
   },
-  "observed_at": "2026-08-27T04:14:51.721862Z"
+  "observed_at": "2026-08-27T04:14:51.721862Z",
+  "last_integrated_submission": {
+    "submission_id": "PPA-01-BATCH-01-77e836d1",
+    "project_id": "P1",
+    "batch_id": "PPA-01-BATCH-01",
+    "source_branch": "codex/ppa-01-core",
+    "base_sha": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+    "head_sha": "77e836d126e5be525e95b34f2f396ac7b9f864a1",
+    "reviewed_implementation_head": "93a34093e25603c3e2553ff72bfd6469e033de4a",
+    "evidence_only_submission_head": "77e836d126e5be525e95b34f2f396ac7b9f864a1",
+    "submission_parent": "93a34093e25603c3e2553ff72bfd6469e033de4a",
+    "merge_commit": "0239ea6cf3d94b1991c68b9ef9671b33319c2bc0",
+    "status": "integrated",
+    "changed_paths_count": 17,
+    "out_of_set_paths": [],
+    "contract_manifest_sha256": "2866b8d0b36ec954ee8cb5c87374e0ca0a0c4acefd1901070cee0b45979d25e7",
+    "closure_evidence": {
+      "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p1-batch-01-f-p1-int-01-closure-20260827.json",
+      "sha256": "d2080ccdb7ca9501f71be481165c8f603196b5979412c36a26d5a802b9b515df",
+      "exit_code": 0,
+      "finding_id": "F-P1-INT-01",
+      "status": "CLOSED"
+    },
+    "merge_receipt": "coordination/integration-queue/PPA-01-BATCH-01-merge-receipt.json"
+  },
+  "last_merge_receipt": "coordination/integration-queue/PPA-01-BATCH-01-merge-receipt.json",
+  "next_batch_base_sha": "0239ea6cf3d94b1991c68b9ef9671b33319c2bc0"
 }

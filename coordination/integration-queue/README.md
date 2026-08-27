@@ -17,7 +17,8 @@ and fill every required field.  A submission is not ready until it contains:
 4. commands with exit codes and raw-output artifact paths;
 5. a reviewer and finding-closure reference.
 
-Run the gate from this worktree before asking P0 to merge:
+For an M0-era submission (before downstream worktrees exist), run the gate
+from this worktree before asking P0 to merge:
 
 ```powershell
 python tools/integration/validate_merge_gate.py --submission <path> --json
@@ -27,6 +28,18 @@ P0 performs the final `--no-ff` merge and reruns the affected tests.  No
 submission may modify a public v1 contract without a Contract Delta; no root
 dependency or lockfile change may proceed without a Dependency Delta.
 
+After M0 has opened the downstream projects, an already integrated batch is
+checked with the M1-specific post-merge gate.  It reuses the same
+project-specific submission/write-set verifier but also proves the exact
+non-fast-forward parent pair and content-addressed merge receipt:
+
+```powershell
+python -B tools/integration/validate_downstream_merge.py `
+  --submission coordination/integration-queue/<submission>.json `
+  --merge-receipt coordination/integration-queue/<merge-receipt>.json `
+  --require-clean
+```
+
 ## Delta policy
 
 - **Contract Delta** records a discovered mismatch with the immutable v1.2
@@ -35,11 +48,12 @@ dependency or lockfile change may proceed without a Dependency Delta.
 - **Dependency Delta** records a root/runtime dependency addition, removal, or
   version change, including license, provenance, compatibility, and validation
   evidence.
-- `queue-state-v1.json` records `PPA-01-CD-001` as an accepted-for-adjudication
-  Contract Delta.  Its public Core API/Publication slice is stopped until the
-  P0 decision's contracts are published; P1's unrelated internal authority
-  work may still be submitted.  Empty `pending_*` arrays only describe the
-  historical M0 baseline and never waive the policy for later work.
+- `queue-state-v1.json` records `PPA-01-CD-001` as an
+  `accepted_with_scoped_public_contract` Contract Delta.  Its public Core
+  API/Publication slice remains stopped until the P0 decision's contracts are
+  published; P1's unrelated internal authority batch is now integrated.  Empty
+  `pending_*` arrays only describe the historical M0 baseline and never waive
+  the policy for later work.
 
 The queue contains no product implementation, user data, credentials, or
 mock responses.  Development fakes belong in the P0 SDK fixture package and
@@ -48,7 +62,7 @@ must never enter a user-facing path.
 ## M1–M7 downstream registration
 
 P0 在 `coordination/PPA-00/downstream-registry-v1.json` 登记六个保存项目的 Codex 身份、矩阵写集、依赖顺序与 accepted base。
-当前 accepted base 为 `M0-OPEN-R4` peeled commit `42123d1a5126bb2bef31304b0498e2e7def9183e`。
+P1 Batch 01 已以 no-ff merge commit `0239ea6cf3d94b1991c68b9ef9671b33319c2bc0` 集成；该提交的父一为 M0-OPEN-R4 peeled commit `42123d1a5126bb2bef31304b0498e2e7def9183e`，父二为精确 submission `77e836d126e5be525e95b34f2f396ac7b9f864a1`。
 登记不等于入队：P0 只处理落入本目录、状态为 `ready=true` 的真实 `integration-ready/v1` submission；分支存在、下游 task 状态或 commit 本身都不能替代 submission。
 验证通过后才由 P0 按矩阵依赖使用 `git merge --no-ff`，合并后重跑受影响门禁并记录 receipt。
 

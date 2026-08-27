@@ -97,16 +97,27 @@
       "status": "accepted_with_scoped_public_contract",
       "decision": "coordination/PPA-00/contract-decision-PPA-01-CD-001.json",
       "adr": "docs/contracts/adr-041-core-api-contract-v1.md",
-      "affected_projects": ["P1", "P4", "P5", "P6"],
+      "affected_projects": [
+        "P1",
+        "P4",
+        "P5",
+        "P6"
+      ],
       "affected_slice_stopped": true,
-      "implementation_status": "not_observed",
+      "implementation_status": "public_families_not_published",
       "new_contract_families": [
         "core-authority-command-query/v1",
         "publication-command-result/v1",
         "asset-metadata/v1"
       ],
-      "internal_only": ["P1 Core schema migration receipt"],
-      "preserve": ["migration.apply/v1 receipt_hash", "existing M0 v1 RPC/SDK semantics"]
+      "internal_only": [
+        "P1 Core schema migration receipt"
+      ],
+      "preserve": [
+        "migration.apply/v1 receipt_hash",
+        "existing M0 v1 RPC/SDK semantics"
+      ],
+      "integrated_internal_batch": "0239ea6cf3d94b1991c68b9ef9671b33319c2bc0"
     }
   ],
   "deliverables": [
@@ -325,7 +336,7 @@
     "new_tag": "M0-OPEN-R4"
   },
   "gate": "P1-P6 creation is forbidden until M0-OPEN is committed and tagged.",
-  "in_progress": "PPA-01-CD-001 adjudicated by P0; ADR-041 and scoped decision written. Public implementation is not yet observed; P1 internal authority remains the only allowed affected work.",
+  "in_progress": "P1 Batch 01 internal authority is integrated by no-ff merge 0239ea6cf3d94b1991c68b9ef9671b33319c2bc0. PPA-01-CD-001 remains accepted_with_scoped_public_contract; ADR-041 public Core HTTP/Publication/Asset families are not yet published and affected public slices remain stopped.",
   "known_blockers": [
     {
       "acceptance": "project-specific P1-P6 write sets; real commit ancestry/diff/hash/evidence; first-party root; real creation gate; positive/negative submission tests",
@@ -410,10 +421,10 @@
     "M0.7": "passed"
   },
   "next_steps": [
-    "P1 submits an integration-ready/v1 internal authority batch without public Core API/Publication files.",
-    "P0 validates and no-ff integrates that batch, then publishes the three scoped v1 Core HTTP contract families and focused evidence.",
-    "P1/P4 fast-forward clean worktrees to the new P0 integration head before resuming public Core API/Publication consumption.",
-    "Sol reviews the future Luna contract diff and raw contract/fixture/DTO verifier output; no M0 rerun or desktop build."
+    "P0 按 ADR-041 在当前 integration head 发布并聚焦验收 core-authority-command-query/v1、publication-command-result/v1、asset-metadata/v1；",
+    "P1/P4/P5/P6 在公共合同发布前不得恢复受影响 public API/Publication 切片；P1 internal authority 批次已可作为后续依赖基线。",
+    "等待真实 integration-ready/v1 submission；按 project-matrix 依赖顺序逐批核验 base、实际 diff、P0 当前合同 manifest 和绑定测试证据后再 no-ff。",
+    "不构建桌面端/EXE/安装器，不重跑已通过 M0 浏览器/Unicode 审计。"
   ],
   "prohibitions": [
     "P1-P6 branch/worktree/project creation before M0-OPEN",
@@ -659,7 +670,7 @@
   "status": "in_progress",
   "target": "PPA-01-CD-001",
   "task_id": "PPA-01-CD-001",
-  "updated_at": "2026-08-27T04:30:00.000000+00:00",
+  "updated_at": "2026-08-27T00:00:00Z",
   "validation_runs": [
     {
       "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe tools/integration/generate_contract_manifest.py --check",
@@ -1033,6 +1044,25 @@
       "exit_code": 0,
       "status": "passed",
       "result": "out_of_set_paths=[], P1-P6 absent, donor push DISABLED; pre-commit worktree dirty only within P0 set"
+    },
+    {
+      "command": "P1 Batch 01 no-ff integration + post-merge targeted gates",
+      "exit_code": 0,
+      "status": "passed",
+      "result": {
+        "merge_commit": "0239ea6cf3d94b1991c68b9ef9671b33319c2bc0",
+        "parents": [
+          "42123d1a5126bb2bef31304b0498e2e7def9183e",
+          "77e836d126e5be525e95b34f2f396ac7b9f864a1"
+        ],
+        "p1_tests": "7 passed in 0.52s",
+        "compileall": "no diagnostics",
+        "diff_check": "exit 0",
+        "submission_write_set_gate": "PASS",
+        "contract_manifest_sha256": "2866b8d0b36ec954ee8cb5c87374e0ca0a0c4acefd1901070cee0b45979d25e7",
+        "closure_evidence_sha256": "d2080ccdb7ca9501f71be481165c8f603196b5979412c36a26d5a802b9b515df",
+        "receipt": "coordination/integration-queue/PPA-01-BATCH-01-merge-receipt.json"
+      }
     }
   ],
   "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized",
@@ -1100,5 +1130,21 @@
       "old tags immutable"
     ],
     "updated_at": "2026-08-27T03:12:54.997546+00:00"
-  }
+  },
+  "integrations": [
+    {
+      "submission_id": "PPA-01-BATCH-01-77e836d1",
+      "project_id": "P1",
+      "batch_id": "PPA-01-BATCH-01",
+      "status": "integrated",
+      "submission_head": "77e836d126e5be525e95b34f2f396ac7b9f864a1",
+      "reviewed_implementation_head": "93a34093e25603c3e2553ff72bfd6469e033de4a",
+      "merge_commit": "0239ea6cf3d94b1991c68b9ef9671b33319c2bc0",
+      "merge_method": "no-ff",
+      "merge_receipt": "coordination/integration-queue/PPA-01-BATCH-01-merge-receipt.json",
+      "changed_paths_count": 17,
+      "out_of_set_paths": [],
+      "closure_evidence_sha256": "d2080ccdb7ca9501f71be481165c8f603196b5979412c36a26d5a802b9b515df"
+    }
+  ]
 }

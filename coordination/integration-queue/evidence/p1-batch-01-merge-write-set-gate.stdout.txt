@@ -1,0 +1,16 @@
+{
+  "gate": "PASS",
+  "validator": "validate_merge_gate._verify_submission",
+  "merge_commit": "0239ea6cf3d94b1991c68b9ef9671b33319c2bc0",
+  "merge_parents": [
+    "42123d1a5126bb2bef31304b0498e2e7def9183e",
+    "77e836d126e5be525e95b34f2f396ac7b9f864a1"
+  ],
+  "submission_head": "77e836d126e5be525e95b34f2f396ac7b9f864a1",
+  "reviewed_implementation_head": "93a34093e25603c3e2553ff72bfd6469e033de4a",
+  "base_sha": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+  "changed_paths_count": 17,
+  "out_of_set_paths": [],
+  "contract_manifest_sha256": "2866b8d0b36ec954ee8cb5c87374e0ca0a0c4acefd1901070cee0b45979d25e7",
+  "donor_push_url": "DISABLED"
+}

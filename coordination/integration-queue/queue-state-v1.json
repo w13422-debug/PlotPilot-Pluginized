@@ -3,15 +3,45 @@
   "queue_owner": "P0",
   "merge_method": "no-ff",
   "project_matrix_path": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized七项目任务书-2026-08-26\\project-matrix.json",
-  "accepted_submissions": [],
+  "accepted_submissions": [
+    {
+      "submission_id": "PPA-01-BATCH-01-77e836d1",
+      "project_id": "P1",
+      "batch_id": "PPA-01-BATCH-01",
+      "source_branch": "codex/ppa-01-core",
+      "base_sha": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+      "head_sha": "77e836d126e5be525e95b34f2f396ac7b9f864a1",
+      "reviewed_implementation_head": "93a34093e25603c3e2553ff72bfd6469e033de4a",
+      "evidence_only_submission_head": "77e836d126e5be525e95b34f2f396ac7b9f864a1",
+      "submission_parent": "93a34093e25603c3e2553ff72bfd6469e033de4a",
+      "merge_commit": "0239ea6cf3d94b1991c68b9ef9671b33319c2bc0",
+      "status": "integrated",
+      "changed_paths_count": 17,
+      "out_of_set_paths": [],
+      "contract_manifest_sha256": "2866b8d0b36ec954ee8cb5c87374e0ca0a0c4acefd1901070cee0b45979d25e7",
+      "closure_evidence": {
+        "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p1-batch-01-f-p1-int-01-closure-20260827.json",
+        "sha256": "d2080ccdb7ca9501f71be481165c8f603196b5979412c36a26d5a802b9b515df",
+        "exit_code": 0,
+        "finding_id": "F-P1-INT-01",
+        "status": "CLOSED"
+      },
+      "merge_receipt": "coordination/integration-queue/PPA-01-BATCH-01-merge-receipt.json"
+    }
+  ],
   "pending_contract_deltas": [
     {
       "delta_id": "PPA-01-CD-001",
-      "status": "accepted_for_p0_adjudication",
+      "status": "accepted_with_scoped_public_contract",
       "source_path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-01-Core\\coordination\\PPA-01\\contract-delta-core-publication-v1.json",
       "decision_path": "coordination/PPA-00/contract-decision-PPA-01-CD-001.json",
       "adr_path": "docs/contracts/adr-041-core-api-contract-v1.md",
-      "affected_projects": ["P1", "P4", "P5", "P6"],
+      "affected_projects": [
+        "P1",
+        "P4",
+        "P5",
+        "P6"
+      ],
       "stopped_slices": [
         "P1 public Core HTTP API and Publication adapter",
         "P4 Core HTTP contract consumption",
@@ -27,23 +57,26 @@
         "publication-command-result/v1",
         "asset-metadata/v1"
       ],
-      "plugin_contract_change": false
+      "plugin_contract_change": false,
+      "public_contracts_published": false,
+      "resolution": "P0 decision accepted; internal authority batch integrated; three new public families remain unpublished and their slices remain stopped."
     }
   ],
   "pending_dependency_deltas": [],
   "last_decision": {
     "type": "contract-delta-adjudication",
     "status": "accepted_with_scoped_public_contract",
-    "submission_id": null,
-    "accepted_base_sha": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+    "submission_id": "PPA-01-BATCH-01-77e836d1",
+    "accepted_base_sha": "0239ea6cf3d94b1991c68b9ef9671b33319c2bc0",
     "delta_id": "PPA-01-CD-001",
     "decision_path": "coordination/PPA-00/contract-decision-PPA-01-CD-001.json",
     "adr_path": "docs/contracts/adr-041-core-api-contract-v1.md",
     "at": "2026-08-27T04:24:14.1427689Z",
-    "note": "A/B/C are confirmed public contract gaps; D is an internal P1 detail. No implementation or downstream submission has been accepted or merged."
+    "note": "P1 Batch 01 internal authority integrated with --no-ff. F-P1-INT-01 is closed. Public Core HTTP/Publication/Asset families from ADR-041 remain unpublished; affected public slices stay stopped.",
+    "accepted_merge_commit": "0239ea6cf3d94b1991c68b9ef9671b33319c2bc0"
   },
   "phase": "M1-M7",
-  "accepted_base_sha": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+  "accepted_base_sha": "0239ea6cf3d94b1991c68b9ef9671b33319c2bc0",
   "accepted_base_tag": "M0-OPEN-R4",
   "downstream_registry": "coordination/PPA-00/downstream-registry-v1.json",
   "dependency_order": [
@@ -54,5 +87,8 @@
     "P5",
     "P6"
   ],
-  "intake_status": "awaiting-p1-internal-submission_and_p0_contract-publication"
+  "intake_status": "p1-batch-01-integrated-awaiting-p0-public-contract-publication",
+  "accepted_base_commit": "0239ea6cf3d94b1991c68b9ef9671b33319c2bc0",
+  "previous_accepted_base_sha": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+  "last_merge_receipt": "coordination/integration-queue/PPA-01-BATCH-01-merge-receipt.json"
 }
