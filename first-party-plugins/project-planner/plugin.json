@@ -1,0 +1,17 @@
+{
+  "schema": "plotpilot-plugin/v1",
+  "plugin_id": "com.plotpilot.project-planner",
+  "version": "0.1.0",
+  "display_name": "PlotPilot Project Planner",
+  "compatibility": {"core_api": ">=1.0 <2.0", "plugin_rpc": "1", "python": "3.12.*", "ui_host": "1"},
+  "capabilities": [
+    {"capability_id": "planning.project.generate/v1", "operations": ["run", "validate"], "result_contract": "candidate-batch/v1"}
+  ],
+  "settings": null,
+  "needs": ["host.asset.read/v1", "host.asset.create/v1", "host.model.invoke/v1", "host.candidate.stage/v1"],
+  "kind": "code",
+  "backend": {"entrypoint": "plotpilot_project_planner.worker:main", "wheel": "backend/project_planner.whl", "requirements_lock": "backend/requirements.lock", "wheelhouse": "backend/wheels", "max_concurrency": 1},
+  "storage": {"schema_version": 1, "migration_policy": "transactional-shadow", "migration_manifest": "migrations/manifest.json"},
+  "ui": null,
+  "data": null
+}
