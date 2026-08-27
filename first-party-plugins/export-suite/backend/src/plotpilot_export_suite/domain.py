@@ -14,6 +14,7 @@ import tempfile
 from dataclasses import dataclass
 from enum import Enum
 from hashlib import sha256
+from pathlib import Path
 from typing import Iterable
 
 
@@ -175,12 +176,36 @@ def _pdf(document: ExportDocument, chapters: tuple[ChapterRevision, ...]) -> tup
 
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=14)
+    font = ""
+    candidates: list[Path] = []
+    configured = (os.getenv("PLOTPILOT_EXPORT_CJK_FONT", "") or "").strip()
+    if configured:
+        candidates.append(Path(configured))
+    if os.name == "nt":
+        fonts = Path(os.getenv("WINDIR", r"C:\Windows")) / "Fonts"
+        candidates.extend(fonts / name for name in ("msyh.ttf", "simhei.ttf", "simsun.ttc", "msyh.ttc", "simkai.ttf"))
+    else:
+        candidates.extend(Path(value) for value in (
+            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttf",
+            "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+        ))
+    for candidate in candidates:
+        if not candidate.is_file():
+            continue
+        try:
+            pdf.add_font("PlotExportCJK", "", str(candidate), uni=True)
+            font = "PlotExportCJK"
+            break
+        except Exception:
+            continue
+    if not font:
+        raise RuntimeError("no usable CJK font is available for PDF export")
     pdf.add_page()
 
     def add(size: float, text: str, height: float) -> None:
-        pdf.set_font("Helvetica", size=size)
-        safe = (text or " ").encode("latin-1", errors="replace").decode("latin-1")
-        pdf.multi_cell(0, height, safe, new_x="LMARGIN", new_y="NEXT")
+        pdf.set_font(font, size=size)
+        pdf.multi_cell(0, height, text or " ", new_x="LMARGIN", new_y="NEXT")
 
     add(16, document.title or "未命名", 9)
     add(11, f"作者：{document.author or '—'}\n简介：{document.premise.strip() or '—'}", 6)
@@ -199,18 +224,18 @@ _RENDERERS = {
 }
 
 
-def build_export(document: ExportDocument, export_format: ExportFormat, *, chapter_number: int | None = None) -> ExportPayload:
+def build_export(document: ExportDocument, export_format: ExportFormat, *, document_id: str | None = None) -> ExportPayload:
     chapters = _ordered(document.chapters)
-    if chapter_number is not None:
-        chapters = tuple(chapter for chapter in chapters if chapter.number == chapter_number)
+    if document_id is not None:
+        chapters = tuple(chapter for chapter in chapters if chapter.document_id == document_id)
         if not chapters:
-            raise ValueError(f"chapter does not exist: {chapter_number}")
+            raise ValueError(f"chapter does not exist: {document_id}")
         if len(chapters) != 1:
-            raise ValueError(f"chapter number is ambiguous: {chapter_number}")
+            raise ValueError(f"document id is ambiguous: {document_id}")
     renderer, extension = _RENDERERS[export_format]
     content, media_type = renderer(document, chapters)
     stem = safe_filename_stem(document.title)
-    if chapter_number is not None:
-        stem = safe_filename_stem(f"{document.title or 'novel'}-第{chapter_number}章")
+    if document_id is not None:
+        stem = safe_filename_stem(f"{document.title or 'novel'}-第{chapters[0].number}章")
     sources = tuple((chapter.document_id, chapter.revision_id, chapter.content_hash) for chapter in chapters)
     return ExportPayload(content, media_type, f"{stem}.{extension}", sha256(content).hexdigest(), sources)

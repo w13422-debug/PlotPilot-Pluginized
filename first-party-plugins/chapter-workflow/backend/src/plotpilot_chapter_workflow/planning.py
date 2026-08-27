@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from hashlib import sha256
+import json
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,7 +45,22 @@ def freeze_context_plan(operation: str, sources: tuple[ContextSource, ...], skil
     releases = [(skill.skill_id, skill.release_id) for skill in skills]
     if len(set(releases)) != len(releases):
         raise ValueError("duplicate Skill release")
-    material = [operation]
-    material.extend(f"{source.kind}:{source.source_id}:{source.revision_id}:{source.content_hash}" for source in sources)
-    material.extend(f"{skill.order}:{skill.skill_id}:{skill.release_id}:{skill.package_hash}:{skill.parameters_asset_id or ''}" for skill in skills)
-    return FrozenContextPlan(operation, sources, skills, sha256("\n".join(material).encode("utf-8")).hexdigest())
+    material = {
+        "operation": operation,
+        "sources": [
+            {"kind": source.kind, "source_id": source.source_id, "revision_id": source.revision_id, "content_hash": source.content_hash}
+            for source in sources
+        ],
+        "skills": [
+            {
+                "order": skill.order,
+                "skill_id": skill.skill_id,
+                "release_id": skill.release_id,
+                "package_hash": skill.package_hash,
+                "parameters_asset_id": skill.parameters_asset_id,
+            }
+            for skill in skills
+        ],
+    }
+    canonical = json.dumps(material, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return FrozenContextPlan(operation, sources, skills, sha256(canonical).hexdigest())

@@ -28,9 +28,10 @@
 
 ## Delivered behavior
 
-1. P0 v1-shaped `com.plotpilot.export-suite` source package with closed
-   manifest, package hash manifest, license, schema, deterministic renderers,
-   and a real callable domain entrypoint.
+1. `com.plotpilot.export-suite` domain source with license, request schema, and
+   deterministic renderers. Runtime packaging is stopped by formal Contract
+   Delta `P6-CD-EXPORT-CURRENT-REVISIONS-001`; no fake manifest/wheel/worker is
+   shipped.
 2. Immutable current-revision hash verification, stable chapter-number order,
    whole-book and single-chapter legacy filename behavior, four source-baseline
    formats, exact MIME/extension mapping, Markdown UTF-8 without BOM, and
@@ -74,7 +75,8 @@ captured in `evidence/raw/changed-paths.txt`.
 ## Not claimed
 
 - No durable Asset or re-download until P1's real Asset/current-revision port.
-- No installable release wheel until P2's real package pipeline.
+- No `plugin.json`, worker, or installable release wheel until P0 resolves the
+  current-revision contract and P1/P2/P3 real ports are integrated.
 - No Job/stream/checkpoint/Provider/Broker until P3.
 - No fixed UI Slot or browser download until P4.
 - No Story State composition until P5.
@@ -83,3 +85,14 @@ captured in `evidence/raw/changed-paths.txt`.
 
 P0 should integrate these commits with `--no-ff` in order after reviewing the
 real dependency gates above.
+
+## Independent review closure
+
+The first focused review returned `REQUEST_CHANGES` with findings P6-F01..F08.
+The bounded remediation removed the false runtime/package claim, raised the
+formal Contract Delta, added CJK-font fail-closed PDF rendering, changed
+single-chapter selection to exact `document_id`, replaced ambiguous context
+fingerprinting with canonical structured JSON, restored Autopilot audit loop/
+review/completion decisions, and adapted the donor's actual four language
+pattern families. Final recheck evidence is recorded in
+`integration-ready-v1.json`.

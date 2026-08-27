@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-import json
 from dataclasses import FrozenInstanceError
 from hashlib import sha256
 from pathlib import Path
 
 import pytest
-from backend.plotpilot_plugin_sdk.package import build_files_sha256
-from backend.plotpilot_plugin_sdk.verifier import verify_manifest
 
 from plotpilot_export_suite.domain import (
     ChapterRevision,
@@ -28,13 +25,10 @@ def document() -> ExportDocument:
     return ExportDocument("ws-1", "novel-1", ' 星 河：终章? ', "作者", "简介", (revision(2, "", "第二章"), revision(1, "开端", "第一章\r\n次行")))
 
 
-def test_manifest_is_exact_p0_v1_shape() -> None:
-    manifest = json.loads((Path(__file__).parents[2] / "first-party-plugins/export-suite/plugin.json").read_text(encoding="utf-8"))
-    assert manifest["schema"] == "plotpilot-plugin/v1"
-    assert manifest["plugin_id"] == "com.plotpilot.export-suite"
-    assert manifest["needs"] == ["host.asset.read/v1", "host.asset.create/v1"]
-    assert manifest["capabilities"] == [{"capability_id": "writing.export/v1", "operations": ["run", "validate"], "result_contract": "artifact-bundle/v1"}]
-    verify_manifest(manifest)
+def test_runtime_package_is_not_faked_before_real_ports_exist() -> None:
+    root = Path(__file__).parents[2] / "first-party-plugins/export-suite"
+    assert not (root / "plugin.json").exists()
+    assert not list(root.rglob("*.whl"))
 
 
 def test_markdown_preserves_legacy_order_filename_and_utf8_without_bom() -> None:
@@ -51,7 +45,7 @@ def test_markdown_preserves_legacy_order_filename_and_utf8_without_bom() -> None
 
 
 def test_single_chapter_uses_legacy_filename_and_exact_revision() -> None:
-    result = build_export(document(), ExportFormat.MARKDOWN, chapter_number=2)
+    result = build_export(document(), ExportFormat.MARKDOWN, document_id="doc-2")
     assert result.filename == "星_河：终章__-第2章.md"
     assert "第一章" not in result.content.decode("utf-8")
     assert result.source_revisions[0][1] == "rev-2"
@@ -61,7 +55,7 @@ def test_failure_cannot_change_frozen_body_or_source_revision() -> None:
     source = document()
     before = source.chapters
     with pytest.raises(ValueError, match="does not exist"):
-        build_export(source, ExportFormat.MARKDOWN, chapter_number=999)
+        build_export(source, ExportFormat.MARKDOWN, document_id="missing")
     assert source.chapters == before
     with pytest.raises(FrozenInstanceError):
         source.chapters[0].content = "changed"  # type: ignore[misc]
@@ -97,9 +91,13 @@ def test_binary_legacy_formats_are_real_files(export_format: ExportFormat, suffi
     assert result.media_type == media_type
     assert result.content.startswith(magic)
     assert len(result.content) > 100
+    if export_format is ExportFormat.PDF:
+        assert b"/ToUnicode" in result.content
 
 
-def test_package_hash_manifest_covers_every_source_file() -> None:
-    root = Path(__file__).parents[2] / "first-party-plugins/export-suite"
-    files = {path.relative_to(root).as_posix(): path.read_bytes() for path in root.rglob("*") if path.is_file() and path.name != "files.sha256"}
-    assert (root / "files.sha256").read_bytes() == build_files_sha256(files)
+def test_single_chapter_selects_exact_document_not_duplicate_number() -> None:
+    duplicate = revision(2, "重复号", "另一章")
+    source = document()
+    expanded = ExportDocument(source.workspace_id, source.novel_id, source.title, source.author, source.premise, source.chapters + (duplicate,))
+    result = build_export(expanded, ExportFormat.MARKDOWN, document_id="doc-1")
+    assert result.source_revisions == (("doc-1", "rev-1", source.chapters[1].content_hash),)

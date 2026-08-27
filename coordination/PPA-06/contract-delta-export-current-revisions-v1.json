@@ -1,0 +1,25 @@
+{
+  "schema": "contract-delta/v1",
+  "status": "raised",
+  "delta_id": "P6-CD-EXPORT-CURRENT-REVISIONS-001",
+  "raised_by_project": "P6",
+  "affected_contract_ids": [
+    "host.current-revisions.read/v1",
+    "host.asset.create/v1",
+    "result-bundle/v1",
+    "artifact-item/v1"
+  ],
+  "formal_design_version": "v1.2",
+  "formal_design_sha256": "e70f450b75cfa753148cf620d13855d0073f7d61294e7599ea9cc98f3e612b7b",
+  "observed_mismatch": "P0 SDK has no ordered current-revision query for Export. A conforming artifact result also requires the real P1 Asset and P2/P3 host runtime; a raw-bytes worker DTO would be a private replacement protocol.",
+  "evidence": [
+    "backend/plotpilot_plugin_sdk/ports.py",
+    "contracts/json-schema/result-bundle-v1.schema.json",
+    "contracts/json-schema/artifact-item-v1.schema.json",
+    "coordination/PPA-06/first-batch-integration-readiness.md"
+  ],
+  "affected_slice_stopped": true,
+  "proposed_v2_or_adr": "P0 decides the public ordered current-revision read surface; P1 supplies Asset creation and P2/P3 supply the real framed runtime. P6 then publishes plugin.json/wheel and returns a verified artifact-bundle/v1.",
+  "p0_decision": "pending",
+  "decision_evidence": null
+}

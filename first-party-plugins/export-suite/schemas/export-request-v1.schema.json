@@ -12,7 +12,7 @@
     "author": {"type": "string"},
     "premise": {"type": "string"},
     "format": {"enum": ["epub", "pdf", "docx", "markdown"]},
-    "chapter_number": {"type": ["integer", "null"], "minimum": 0},
+    "document_id": {"type": ["string", "null"], "minLength": 1},
     "current_revisions": {
       "type": "array",
       "items": {

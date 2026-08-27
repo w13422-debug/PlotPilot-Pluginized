@@ -1,3 +1,3 @@
-from .dag import AutopilotPlan, Stage, build_plan, next_stage
+from .dag import AutopilotPlan, Stage, StageOutcome, build_plan, decide_next_stage
 
-__all__ = ["AutopilotPlan", "Stage", "build_plan", "next_stage"]
+__all__ = ["AutopilotPlan", "Stage", "StageOutcome", "build_plan", "decide_next_stage"]

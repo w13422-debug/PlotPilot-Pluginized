@@ -2,7 +2,7 @@
 
 ## Ready now
 
-- `export-suite` accepts immutable, hash-verified current-revision records and
+- `export-suite` domain accepts immutable, hash-verified current-revision records and
   renders the four formats present in the v4.6.0 source baseline:
   EPUB, PDF, DOCX, and Markdown.
 - Ordering, legacy filename sanitization, MIME/extension mapping, Markdown
@@ -20,7 +20,7 @@
 | Owner | Required integration | P6 behavior until ready |
 |---|---|---|
 | P1 | list/read current document revisions; create durable Asset with hash/MIME/size/logical role/provenance; Candidate/Publication | Export renderer consumes frozen values only. It does not persist an Asset or claim browser re-download. Chapter/Quality do not publish. |
-| P2 | package build/install, Generation/Plan/Skill runtime, framed worker adapter | Source package and manifest are integration-ready; no private runtime is added. The release wheel must be produced by the real package pipeline. |
+| P2 | package build/install, Generation/Plan/Skill runtime, framed worker adapter | Domain source is integration-ready; `plugin.json`, wheel, and worker are intentionally absent until the real runtime exists. |
 | P3 | durable Job/stream/checkpoint/Provider/Broker and host callbacks | No local Job ledger, fake high-water mark, checkpoint, or Broker exists. |
 | P4 | fixed Slot contribution, Candidate controls, browser download | `ui` remains `null`; there is no fake button or local download substitute. |
 | P5 | published Story State read and chapter-settlement capability | No Story State import or local mirror exists. |
@@ -35,5 +35,6 @@ a later integration batch.
 
 `validate_selection()` rejects both zero-owner and dual-owner states. The
 actual workspace capability flag remains Core/Platform state and is not stored
-by P6. Legacy fallback and deletion remain gated on real parity and browser
+by P6. Contract Delta `P6-CD-EXPORT-CURRENT-REVISIONS-001` records the stopped
+runtime slice. Legacy fallback and deletion remain gated on real parity and browser
 download evidence.
