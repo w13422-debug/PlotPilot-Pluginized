@@ -1,0 +1,80 @@
+{
+  "schema": "integration-ready/v1",
+  "status": "ready",
+  "submission_id": "P6-FIRST-BATCH-20260827-R1",
+  "project_id": "P6",
+  "source_branch": "codex/ppa-06-writing",
+  "base_sha": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+  "head_sha": "859e3db8",
+  "contract_manifest_sha256": "5bc9b65e3ce3ffbcfd059e2a43521b2c8b6eb3e31661a1647fe8d3eff77db62c",
+  "changed_paths": [
+    "coordination/PPA-06/contract-delta-export-current-revisions-v1.json",
+    "coordination/PPA-06/first-batch-integration-readiness.md",
+    "docs/deliveries/PPA-06/P6-first-batch.md",
+    "docs/deliveries/PPA-06/evidence/raw/changed-paths.txt",
+    "docs/deliveries/PPA-06/evidence/raw/commits.txt",
+    "docs/deliveries/PPA-06/evidence/raw/final-git-diff-check.stdout.txt",
+    "docs/deliveries/PPA-06/evidence/raw/final-pytest-p6-writing.stdout.txt",
+    "docs/deliveries/PPA-06/evidence/raw/git-status-before-delivery.txt",
+    "docs/deliveries/PPA-06/evidence/raw/pytest-p6-writing.stdout.txt",
+    "docs/deliveries/PPA-06/integration-ready-v1.json",
+    "docs/deliveries/PPA-06/review-closure.json",
+    "first-party-plugins/autopilot/backend/src/plotpilot_autopilot/__init__.py",
+    "first-party-plugins/autopilot/backend/src/plotpilot_autopilot/dag.py",
+    "first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow/__init__.py",
+    "first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow/planning.py",
+    "first-party-plugins/export-suite/LICENSE",
+    "first-party-plugins/export-suite/README.md",
+    "first-party-plugins/export-suite/backend/src/plotpilot_export_suite/__init__.py",
+    "first-party-plugins/export-suite/backend/src/plotpilot_export_suite/domain.py",
+    "first-party-plugins/export-suite/schemas/export-request-v1.schema.json",
+    "first-party-plugins/quality-suite/backend/src/plotpilot_quality_suite/__init__.py",
+    "first-party-plugins/quality-suite/backend/src/plotpilot_quality_suite/rules.py",
+    "tests/p6-writing/conftest.py",
+    "tests/p6-writing/test_dependency_free_domains.py",
+    "tests/p6-writing/test_export_suite.py"
+  ],
+  "write_set_proof": {
+    "matrix_path": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized七项目任务书-2026-08-26\\project-matrix.json",
+    "project_id": "P6",
+    "project_write_set_match": true,
+    "p0_write_set_match": false,
+    "out_of_set_paths": []
+  },
+  "contract_delta_ids": [
+    "P6-CD-EXPORT-CURRENT-REVISIONS-001"
+  ],
+  "dependency_delta_ids": [],
+  "validation": [
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p6-writing -q",
+      "result": "PASS: 18 passed, 2 warnings",
+      "evidence": "docs/deliveries/PPA-06/evidence/raw/final-pytest-p6-writing.stdout.txt"
+    },
+    {
+      "command": "git diff --check 42123d1... HEAD",
+      "result": "PASS",
+      "evidence": "docs/deliveries/PPA-06/evidence/raw/final-git-diff-check.stdout.txt"
+    }
+  ],
+  "artifacts": [
+    "docs/deliveries/PPA-06/P6-first-batch.md",
+    "coordination/PPA-06/first-batch-integration-readiness.md",
+    "coordination/PPA-06/contract-delta-export-current-revisions-v1.json"
+  ],
+  "review": {
+    "reviewer": "/root/p6_first_batch_review",
+    "finding_ids": [
+      "P6-F01",
+      "P6-F02",
+      "P6-F03",
+      "P6-F04",
+      "P6-F05",
+      "P6-F06",
+      "P6-F07",
+      "P6-F08"
+    ],
+    "closure_artifact": "docs/deliveries/PPA-06/review-closure.json"
+  },
+  "ready": true
+}

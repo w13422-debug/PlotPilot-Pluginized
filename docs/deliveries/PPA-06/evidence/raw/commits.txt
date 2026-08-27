@@ -1,3 +1,6 @@
-d18ca160 (HEAD -> codex/ppa-06-writing) docs(p6): record first batch integration evidence
+859e3db8 (HEAD -> codex/ppa-06-writing) test(p6): verify binary export content parity
+fa1a181e fix(p6): close first batch review findings
+3c212ad3 docs(p6): finalize changed path proof
+d18ca160 docs(p6): record first batch integration evidence
 8a8c9879 feat(p6): freeze dependency-free writing decisions
 59b2a584 feat(p6): add deterministic export suite core
