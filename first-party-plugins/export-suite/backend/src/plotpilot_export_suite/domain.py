@@ -140,7 +140,7 @@ def _epub(document: ExportDocument, chapters: tuple[ChapterRevision, ...]) -> tu
         '<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" lang="zh">'
         f"<head><title>简介</title><meta charset=\"utf-8\"/></head><body><h1>{html.escape(document.title or '未命名')}</h1>"
         f"<p>作者：{html.escape(document.author or '—')}</p><p>{html.escape(document.premise.strip() or '（无简介）')}</p></body></html>"
-    )
+    ).encode("utf-8")
     book.add_item(intro)
     spine = [intro]
     for index, chapter in enumerate(chapters, 1):
@@ -152,7 +152,7 @@ def _epub(document: ExportDocument, chapters: tuple[ChapterRevision, ...]) -> tu
             '<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh">'
             f"<head><title>{html.escape(title)}</title><meta charset=\"utf-8\"/></head><body><h1>{html.escape(title)}</h1>"
             f"{'\n'.join(paragraphs) if paragraphs else '<p></p>'}</body></html>"
-        )
+        ).encode("utf-8")
         book.add_item(item)
         spine.append(item)
     book.toc = tuple(spine)

@@ -3,6 +3,10 @@ from __future__ import annotations
 from dataclasses import FrozenInstanceError
 from hashlib import sha256
 from pathlib import Path
+import io
+import re
+import zipfile
+import zlib
 
 import pytest
 
@@ -87,12 +91,58 @@ def test_filename_legacy_sanitization_and_limit() -> None:
 )
 def test_binary_legacy_formats_are_real_files(export_format: ExportFormat, suffix: str, media_type: str, magic: bytes) -> None:
     result = build_export(document(), export_format)
-    assert result.filename.endswith(suffix)
+    assert result.filename == f"星_河：终章{suffix}"
     assert result.media_type == media_type
     assert result.content.startswith(magic)
     assert len(result.content) > 100
     if export_format is ExportFormat.PDF:
         assert b"/ToUnicode" in result.content
+
+
+def _pdf_text(data: bytes) -> str:
+    streams: list[bytes] = []
+    for match in re.finditer(rb"stream\r?\n(.*?)\r?\nendstream", data, re.S):
+        stream = match.group(1)
+        try:
+            stream = zlib.decompress(stream)
+        except zlib.error:
+            pass
+        streams.append(stream)
+    cmap: dict[int, str] = {}
+    for stream in streams:
+        for cid, codepoint in re.findall(rb"<([0-9A-Fa-f]{4})> <([0-9A-Fa-f]{4,6})>", stream):
+            cmap[int(cid, 16)] = chr(int(codepoint, 16))
+
+    def unescape(value: bytes) -> bytes:
+        return re.sub(rb"\\([nrtbf()\\])", lambda match: {b"n": b"\n", b"r": b"\r", b"t": b"\t", b"b": b"\b", b"f": b"\f"}.get(match.group(1), match.group(1)), value)
+
+    parts: list[str] = []
+    for stream in streams:
+        for literal in re.findall(rb"\((.*?)\) Tj", stream, re.S):
+            raw = unescape(literal)
+            if len(raw) % 2 == 0:
+                parts.append("".join(cmap.get(int.from_bytes(raw[index:index + 2], "big"), "�") for index in range(0, len(raw), 2)))
+    return "\n".join(parts)
+
+
+def test_binary_formats_contain_chinese_in_current_revision_order() -> None:
+    source = document()
+    docx = build_export(source, ExportFormat.DOCX)
+    with zipfile.ZipFile(io.BytesIO(docx.content)) as archive:
+        docx_xml = archive.read("word/document.xml").decode("utf-8")
+    assert docx_xml.index("开端") < docx_xml.index("第一章") < docx_xml.index("第 2 章") < docx_xml.index("第二章")
+
+    epub = build_export(source, ExportFormat.EPUB)
+    with zipfile.ZipFile(io.BytesIO(epub.content)) as archive:
+        first = archive.read(next(name for name in archive.namelist() if name.endswith("chap_001.xhtml"))).decode("utf-8")
+        second = archive.read(next(name for name in archive.namelist() if name.endswith("chap_002.xhtml"))).decode("utf-8")
+    assert "开端" in first and "第一章" in first
+    assert "第 2 章" in second and "第二章" in second
+
+    pdf = build_export(source, ExportFormat.PDF)
+    pdf_text = _pdf_text(pdf.content)
+    assert pdf_text.index("开端") < pdf_text.index("第一章") < pdf_text.index("第 2 章") < pdf_text.index("第二章")
+    assert "�" not in pdf_text
 
 
 def test_single_chapter_selects_exact_document_not_duplicate_number() -> None:

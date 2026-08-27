@@ -49,7 +49,7 @@ Command:
 python -m pytest tests/p6-writing -q
 ```
 
-Raw result: `15 passed in 1.12s`.
+Final raw result after review remediation: `18 passed`.
 
 Additional checks:
 
