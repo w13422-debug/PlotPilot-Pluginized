@@ -779,6 +779,39 @@ export interface CoreHttpError {
   retryable: boolean
 }
 
+export type CoreHttpRequestErrorCode =
+  | 'malformed_json'
+  | 'invalid_request'
+  | 'invalid_query'
+  | 'range_out_of_bounds'
+
+export interface CoreHttpRequestError {
+  schema: 'core-http-request-error/v1'
+  error_code: CoreHttpRequestErrorCode
+  message: string
+  retryable: false
+}
+
+export type CoreHttpRequestFailureSource =
+  | 'json_decode'
+  | 'closed_request_schema'
+  | 'query_decode'
+  | 'asset_range_bounds'
+
+export interface CoreHttpRequestFailureBinding {
+  source: CoreHttpRequestFailureSource
+  error_code: CoreHttpRequestErrorCode
+  scope: 'all_core_routes' | 'asset.range'
+}
+
+export interface CoreHttpRequestFailurePolicy {
+  schema: 'core-http-request-failure-policy/v1'
+  status: 400
+  error_schema: 'core-http-request-error/v1'
+  retryable: false
+  bindings: CoreHttpRequestFailureBinding[]
+}
+
 export interface PublicationValidationOptions {
   expectedWorkspaceId?: Id
   command?: PublicationCommand

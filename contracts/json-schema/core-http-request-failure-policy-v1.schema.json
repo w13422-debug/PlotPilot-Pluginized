@@ -1,0 +1,67 @@
+{
+  "$id": "https://plotpilot.local/contracts/core-http-request-failure-policy-v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "bindings": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "error_code": {
+            "enum": [
+              "malformed_json",
+              "invalid_request",
+              "invalid_query",
+              "range_out_of_bounds"
+            ]
+          },
+          "scope": {
+            "enum": [
+              "all_core_routes",
+              "asset.range"
+            ]
+          },
+          "source": {
+            "enum": [
+              "json_decode",
+              "closed_request_schema",
+              "query_decode",
+              "asset_range_bounds"
+            ]
+          }
+        },
+        "required": [
+          "source",
+          "error_code",
+          "scope"
+        ],
+        "type": "object"
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "error_schema": {
+      "const": "core-http-request-error/v1"
+    },
+    "retryable": {
+      "const": false
+    },
+    "schema": {
+      "const": "core-http-request-failure-policy/v1"
+    },
+    "status": {
+      "const": 400
+    }
+  },
+  "required": [
+    "schema",
+    "status",
+    "error_schema",
+    "retryable",
+    "bindings"
+  ],
+  "title": "PlotPilot core-http-request-failure-policy-v1",
+  "type": "object"
+}

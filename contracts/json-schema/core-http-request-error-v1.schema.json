@@ -1,0 +1,33 @@
+{
+  "$id": "https://plotpilot.local/contracts/core-http-request-error-v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "error_code": {
+      "enum": [
+        "malformed_json",
+        "invalid_request",
+        "invalid_query",
+        "range_out_of_bounds"
+      ]
+    },
+    "message": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "retryable": {
+      "const": false
+    },
+    "schema": {
+      "const": "core-http-request-error/v1"
+    }
+  },
+  "required": [
+    "schema",
+    "error_code",
+    "message",
+    "retryable"
+  ],
+  "title": "PlotPilot core-http-request-error-v1",
+  "type": "object"
+}

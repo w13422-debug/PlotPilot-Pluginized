@@ -149,6 +149,35 @@ class CoreHttpErrorDto(TypedDict):
     retryable: bool
 
 
+CoreHttpRequestErrorCode = Literal[
+    "malformed_json",
+    "invalid_request",
+    "invalid_query",
+    "range_out_of_bounds",
+]
+
+
+class CoreHttpRequestErrorDto(TypedDict):
+    schema: Literal["core-http-request-error/v1"]
+    error_code: CoreHttpRequestErrorCode
+    message: str
+    retryable: Literal[False]
+
+
+class CoreHttpRequestFailureBinding(TypedDict):
+    source: Literal["json_decode", "closed_request_schema", "query_decode", "asset_range_bounds"]
+    error_code: CoreHttpRequestErrorCode
+    scope: Literal["all_core_routes", "asset.range"]
+
+
+class CoreHttpRequestFailurePolicy(TypedDict):
+    schema: Literal["core-http-request-failure-policy/v1"]
+    status: Literal[400]
+    error_schema: Literal["core-http-request-error/v1"]
+    retryable: Literal[False]
+    bindings: list[CoreHttpRequestFailureBinding]
+
+
 class WorkspaceGetQuery(TypedDict):
     schema: Literal["core-workspace-get-query/v1"]
     workspace_id: str
@@ -218,6 +247,13 @@ _AUTHORITY_WORKSPACE_PAGES = {
     "core-revision-page/v1",
 }
 
+_REQUEST_FAILURE_BINDINGS: tuple[tuple[str, str, str], ...] = (
+    ("json_decode", "malformed_json", "all_core_routes"),
+    ("closed_request_schema", "invalid_request", "all_core_routes"),
+    ("query_decode", "invalid_query", "all_core_routes"),
+    ("asset_range_bounds", "range_out_of_bounds", "asset.range"),
+)
+
 
 def _fail(message: str) -> None:
     raise ContractValidationError(message)
@@ -230,6 +266,26 @@ def _page_semantics(value: Mapping[str, Any]) -> None:
     expected_next = offset + len(items) if offset + len(items) < total else None
     if value["next_offset"] != expected_next:
         _fail("Core page next_offset does not match offset/items/total")
+
+
+def parse_core_http_request_error(value: Mapping[str, Any]) -> CoreHttpRequestErrorDto:
+    """Validate the additive pre-domain HTTP 400 error envelope."""
+
+    assert_valid("core-http-request-error/v1", value)
+    return copy.deepcopy(dict(value))  # type: ignore[return-value]
+
+
+def parse_core_http_request_failure_policy(value: Mapping[str, Any]) -> CoreHttpRequestFailurePolicy:
+    """Validate the exact ADR-043 failure-to-error binding table."""
+
+    assert_valid("core-http-request-failure-policy/v1", value)
+    actual = tuple(
+        (item["source"], item["error_code"], item["scope"])
+        for item in value["bindings"]
+    )
+    if actual != _REQUEST_FAILURE_BINDINGS:
+        _fail("Core HTTP request failure policy bindings/order drifted")
+    return copy.deepcopy(dict(value))  # type: ignore[return-value]
 
 
 def parse_core_authority(
@@ -405,6 +461,10 @@ def verify_export_current_revisions_asset(
 
 def _parse_by_schema(value: Mapping[str, Any]) -> dict[str, Any]:
     schema = value.get("schema")
+    if schema == "core-http-request-error/v1":
+        return parse_core_http_request_error(value)
+    if schema == "core-http-request-failure-policy/v1":
+        return parse_core_http_request_failure_policy(value)
     if isinstance(schema, str) and schema.startswith("core-"):
         return parse_core_authority(value)
     if schema in {"publication-command/v1", "publication-result/v1"}:
@@ -513,6 +573,10 @@ __all__ = [
     "AssetMetadataDto",
     "AssetReadRangeDto",
     "CoreHttpErrorDto",
+    "CoreHttpRequestErrorCode",
+    "CoreHttpRequestErrorDto",
+    "CoreHttpRequestFailureBinding",
+    "CoreHttpRequestFailurePolicy",
     "CoreHttpContractFixture",
     "DocumentGetQuery",
     "DocumentRevisionQuery",
@@ -530,6 +594,8 @@ __all__ = [
     "WorkspaceGetQuery",
     "parse_asset_contract",
     "parse_core_authority",
+    "parse_core_http_request_error",
+    "parse_core_http_request_failure_policy",
     "parse_export_current_revisions",
     "verify_export_current_revisions_asset",
     "parse_publication",

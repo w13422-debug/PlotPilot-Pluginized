@@ -19,7 +19,9 @@
     "asset-metadata/v1",
     "plugin-ui-ingress-validator/v1",
     "operation-context-identity/v1",
-    "export-current-revisions/v1"
+    "export-current-revisions/v1",
+    "core-http-request-error/v1",
+    "core-http-request-failure-policy/v1"
   ],
   "contract_version": "1.2.0",
   "files": [
@@ -42,6 +44,11 @@
       "bytes": 11782,
       "path": "contracts/corpus/contract-publication-v1/negative.json",
       "sha256": "55164bd67abd64d85f81149e9d5f2ffc2a60f69a2bb3f687979e44d8c9d3e14a"
+    },
+    {
+      "bytes": 3429,
+      "path": "contracts/corpus/core-http-request-failure-v1/negative.json",
+      "sha256": "d4bf65d2944db8d94495aa562310989453f74a5a27de5ff0d4018ec6f6882ea4"
     },
     {
       "bytes": 186,
@@ -364,6 +371,11 @@
       "sha256": "57dcdce41205b5d534950817c2a38877c3c75106a88f85fb03a160871e1e0dda"
     },
     {
+      "bytes": 1502,
+      "path": "contracts/golden/core-http-request-failure-v1/expected.json",
+      "sha256": "10fc2291a377299ad8664d337f9c62d12e2f65289c956c6d5056d879b05c56b3"
+    },
+    {
       "bytes": 20,
       "path": "contracts/golden/package/data/rules.json",
       "sha256": "54bfa55d6557dcf1a11f3e845e6492e4fe34f35a0d6751f45e0e8ae77df36e78"
@@ -492,6 +504,16 @@
       "bytes": 3110,
       "path": "contracts/json-schema/core-event-v1.schema.json",
       "sha256": "7ebe5b9967035f728474381f513856093ecbbc44ce0b30808fba54866fe3ae1e"
+    },
+    {
+      "bytes": 689,
+      "path": "contracts/json-schema/core-http-request-error-v1.schema.json",
+      "sha256": "a81b9712d2cf6e2843d77e1e898faf492322ed5ac58fede873952fea1da32188"
+    },
+    {
+      "bytes": 1497,
+      "path": "contracts/json-schema/core-http-request-failure-policy-v1.schema.json",
+      "sha256": "464d4b855a0e60141e5158d4ffba1faaebf38081fb2c12558288d81fbccef018"
     },
     {
       "bytes": 3131,
@@ -760,6 +782,63 @@
       "http_failure_exchange_count": 5,
       "ui_ingress_fixture_count": 4
     },
+    "core-http-request-failure-v1": {
+      "errors": [
+        {
+          "error_code": "malformed_json",
+          "message": "Request body is not valid JSON.",
+          "retryable": false,
+          "schema": "core-http-request-error/v1"
+        },
+        {
+          "error_code": "invalid_request",
+          "message": "Request does not satisfy its closed schema.",
+          "retryable": false,
+          "schema": "core-http-request-error/v1"
+        },
+        {
+          "error_code": "invalid_query",
+          "message": "Query parameter syntax is invalid.",
+          "retryable": false,
+          "schema": "core-http-request-error/v1"
+        },
+        {
+          "error_code": "range_out_of_bounds",
+          "message": "Asset range offset exceeds total size.",
+          "retryable": false,
+          "schema": "core-http-request-error/v1"
+        }
+      ],
+      "policy": {
+        "bindings": [
+          {
+            "error_code": "malformed_json",
+            "scope": "all_core_routes",
+            "source": "json_decode"
+          },
+          {
+            "error_code": "invalid_request",
+            "scope": "all_core_routes",
+            "source": "closed_request_schema"
+          },
+          {
+            "error_code": "invalid_query",
+            "scope": "all_core_routes",
+            "source": "query_decode"
+          },
+          {
+            "error_code": "range_out_of_bounds",
+            "scope": "asset.range",
+            "source": "asset_range_bounds"
+          }
+        ],
+        "error_schema": "core-http-request-error/v1",
+        "retryable": false,
+        "schema": "core-http-request-failure-policy/v1",
+        "status": 400
+      },
+      "schema": "core-http-request-failure-golden/v1"
+    },
     "package": {
       "expected_from_design": {
         "package_hash": "987e80013fe0cddd463eb8976fd75b62dbabef4f8e0e321ae6ad82a54f09b068",
@@ -788,10 +867,10 @@
     }
   },
   "inventory": {
-    "file_count_excluding_manifest": 137,
+    "file_count_excluding_manifest": 141,
     "negative_case_count": 105,
     "negative_group_count": 14,
-    "schema_count": 53
+    "schema_count": 55
   },
   "negative_groups": [
     {
@@ -1036,6 +1115,20 @@
       "path": "contracts/json-schema/core-event-v1.schema.json",
       "schema_id": "https://plotpilot.local/contracts/core-event-v1",
       "sha256": "7ebe5b9967035f728474381f513856093ecbbc44ce0b30808fba54866fe3ae1e"
+    },
+    {
+      "bytes": 689,
+      "contract_id": "core-http-request-error-v1",
+      "path": "contracts/json-schema/core-http-request-error-v1.schema.json",
+      "schema_id": "https://plotpilot.local/contracts/core-http-request-error-v1",
+      "sha256": "a81b9712d2cf6e2843d77e1e898faf492322ed5ac58fede873952fea1da32188"
+    },
+    {
+      "bytes": 1497,
+      "contract_id": "core-http-request-failure-policy-v1",
+      "path": "contracts/json-schema/core-http-request-failure-policy-v1.schema.json",
+      "schema_id": "https://plotpilot.local/contracts/core-http-request-failure-policy-v1",
+      "sha256": "464d4b855a0e60141e5158d4ffba1faaebf38081fb2c12558288d81fbccef018"
     },
     {
       "bytes": 3131,

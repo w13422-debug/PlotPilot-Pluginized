@@ -1,6 +1,8 @@
 import coreAuthoritySchema from '../../../contracts/json-schema/core-authority-command-query-v1.schema.json' with { type: 'json' }
 import publicationSchema from '../../../contracts/json-schema/publication-command-result-v1.schema.json' with { type: 'json' }
 import assetMetadataSchema from '../../../contracts/json-schema/asset-metadata-v1.schema.json' with { type: 'json' }
+import coreHttpRequestErrorSchema from '../../../contracts/json-schema/core-http-request-error-v1.schema.json' with { type: 'json' }
+import coreHttpRequestFailurePolicySchema from '../../../contracts/json-schema/core-http-request-failure-policy-v1.schema.json' with { type: 'json' }
 import operationContextIdentitySchema from '../../../contracts/json-schema/operation-context-identity-v1.schema.json' with { type: 'json' }
 import exportCurrentRevisionsSchema from '../../../contracts/json-schema/export-current-revisions-v1.schema.json' with { type: 'json' }
 import coreApiMethodMatrix from '../../../contracts/json-schema/core-api-method-matrix.v1.json' with { type: 'json' }
@@ -13,6 +15,8 @@ import type {
   AssetReadRange,
   CoreAuthorityCommandQuery,
   CoreAuthorityValidationOptions,
+  CoreHttpRequestError,
+  CoreHttpRequestFailurePolicy,
   ExportCurrentRevisions,
   ExportValidationOptions,
   PublicationCommand,
@@ -25,6 +29,13 @@ import type {
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/
 const HASH = /^[0-9a-f]{64}$/
 const BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:(?:[A-Za-z0-9+/]{2}==)|(?:[A-Za-z0-9+/]{3}=)|(?:[A-Za-z0-9+/]{2,3}))?$/
+
+const REQUEST_FAILURE_BINDINGS = [
+  ['json_decode', 'malformed_json', 'all_core_routes'],
+  ['closed_request_schema', 'invalid_request', 'all_core_routes'],
+  ['query_decode', 'invalid_query', 'all_core_routes'],
+  ['asset_range_bounds', 'range_out_of_bounds', 'asset.range'],
+] as const
 
 type JsonRecord = Record<string, unknown>
 
@@ -509,6 +520,31 @@ export function verifyPublicationCommandResultV1(value: unknown, options?: Publi
   parsePublicationCommandResultV1(value, options)
 }
 
+export function parseCoreHttpRequestErrorV1(value: unknown): Readonly<CoreHttpRequestError> {
+  return parseJsonSchema<CoreHttpRequestError>(value, coreHttpRequestErrorSchema as JsonSchema, 'core-http-request-error/v1')
+}
+
+export function verifyCoreHttpRequestErrorV1(value: unknown): void {
+  parseCoreHttpRequestErrorV1(value)
+}
+
+export function parseCoreHttpRequestFailurePolicyV1(value: unknown): Readonly<CoreHttpRequestFailurePolicy> {
+  const parsed = parseJsonSchema<CoreHttpRequestFailurePolicy>(
+    value,
+    coreHttpRequestFailurePolicySchema as JsonSchema,
+    'core-http-request-failure-policy/v1',
+  )
+  const actual = parsed.bindings.map(binding => [binding.source, binding.error_code, binding.scope])
+  if (JSON.stringify(actual) !== JSON.stringify(REQUEST_FAILURE_BINDINGS)) {
+    fail('Core HTTP request failure policy bindings/order drifted')
+  }
+  return parsed
+}
+
+export function verifyCoreHttpRequestFailurePolicyV1(value: unknown): void {
+  parseCoreHttpRequestFailurePolicyV1(value)
+}
+
 export function parsePublicationResultV1(value: unknown): Readonly<PublicationResult> {
   const parsed = parsePublicationCommandResultV1(value) as Readonly<PublicationResult>
   if (!('publication_id' in parsed)) fail('value is not a Publication result')
@@ -590,6 +626,8 @@ type CoreRoute = (typeof coreApiMethodMatrix.routes)[number]
 
 function parseCoreHttpPayload(value: unknown): Readonly<unknown> {
   if (!isRecord(value) || typeof value.schema !== 'string') fail('Core HTTP payload has no schema discriminator')
+  if (value.schema === 'core-http-request-error/v1') return parseCoreHttpRequestErrorV1(value)
+  if (value.schema === 'core-http-request-failure-policy/v1') return parseCoreHttpRequestFailurePolicyV1(value)
   if (value.schema.startsWith('core-')) return parseCoreAuthorityCommandQueryV1(value)
   if (value.schema === 'publication-command/v1' || value.schema === 'publication-result/v1') return parsePublicationCommandResultV1(value)
   if (value.schema === 'asset-query/v1' || value.schema === 'asset-read-range-query/v1' || value.schema === 'asset-metadata/v1' || value.schema === 'asset-read-range/v1') return parseAssetMetadataV1(value)

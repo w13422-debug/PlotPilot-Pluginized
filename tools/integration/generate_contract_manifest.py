@@ -35,6 +35,8 @@ FAMILY_IDS = [
     "plugin-ui-ingress-validator/v1",
     "operation-context-identity/v1",
     "export-current-revisions/v1",
+    "core-http-request-error/v1",
+    "core-http-request-failure-policy/v1",
 ]
 
 
@@ -91,7 +93,7 @@ def negative_records() -> list[dict[str, Any]]:
 
 def golden_vectors() -> dict[str, Any]:
     values: dict[str, Any] = {}
-    for name in ("package", "skill", "run-snapshot", "backup", "contract-publication-v1"):
+    for name in ("package", "skill", "run-snapshot", "backup", "contract-publication-v1", "core-http-request-failure-v1"):
         expected_path = CONTRACTS / "golden" / name / "expected.json"
         if expected_path.exists():
             values[name] = json.loads(expected_path.read_text(encoding="utf-8"))

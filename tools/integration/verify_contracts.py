@@ -38,6 +38,8 @@ from plotpilot_plugin_sdk.core_api import (  # noqa: E402
     CoreHttpContractFixture,
     parse_asset_contract,
     parse_core_authority,
+    parse_core_http_request_error,
+    parse_core_http_request_failure_policy,
     parse_export_current_revisions,
     parse_publication,
     verify_export_current_revisions_asset,
@@ -625,8 +627,8 @@ def verify_schemas() -> dict[str, Any]:
     if check.returncode:
         raise AssertionError(check.stdout + check.stderr)
     paths = sorted(SCHEMA_DIR.glob("*.schema.json"))
-    if len(paths) != 53:
-        raise AssertionError(f"expected 53 Draft 2020-12 schemas, found {len(paths)}")
+    if len(paths) != 55:
+        raise AssertionError(f"expected 55 Draft 2020-12 schemas, found {len(paths)}")
     for path in paths:
         schema = load_strict_json(path)
         Draft202012Validator.check_schema(schema)
@@ -679,7 +681,7 @@ def verify_contract_manifest() -> dict[str, Any]:
         seen.add(record["path"])
         if path.stat().st_size != record["bytes"] or hashlib.sha256(path.read_bytes()).hexdigest() != record["sha256"]:
             raise AssertionError(f"contract manifest hash drift: {record['path']}")
-    if manifest["inventory"]["schema_count"] != 53 or manifest["inventory"]["negative_group_count"] != 14:
+    if manifest["inventory"]["schema_count"] != 55 or manifest["inventory"]["negative_group_count"] != 14:
         raise AssertionError("contract manifest inventory does not cover the full M0 contract set")
     return {"files": len(records), "schemas": manifest["inventory"]["schema_count"], "negative_groups": manifest["inventory"]["negative_group_count"], "generator_check": check.stdout.strip()}
 
@@ -2322,6 +2324,158 @@ def _publication_mutation(value: Any, mutation: Mapping[str, Any]) -> Any:
     return result
 
 
+def _request_failure_fixture(reference: str) -> Any:
+    raw_path, _, fragment = reference.partition("#")
+    path = GOLDEN_DIR / "core-http-request-failure-v1" / raw_path
+    value: Any = load_strict_json(path)
+    for token in (item for item in fragment.removeprefix("/").split("/") if item):
+        value = value[int(token)] if isinstance(value, list) else value[token]
+    return copy.deepcopy(value)
+
+
+def _request_failure_mutation(value: Any, mutation: Mapping[str, Any]) -> Any:
+    result = copy.deepcopy(value)
+    path = list(mutation["path"])
+    target = result
+    for token in path[:-1]:
+        target = target[token]
+    operation = mutation["op"]
+    if operation == "set":
+        target[path[-1]] = copy.deepcopy(mutation["value"])
+    elif operation == "delete":
+        del target[path[-1]]
+    elif operation == "swap":
+        left, right = mutation["indices"]
+        sequence = target[path[-1]]
+        sequence[left], sequence[right] = sequence[right], sequence[left]
+    else:
+        raise AssertionError(f"unsupported request-failure mutation: {mutation}")
+    return result
+
+
+def verify_core_http_request_failure_contract() -> dict[str, Any]:
+    """Verify ADR-043 in the Python SDK and the real TypeScript parser."""
+
+    golden_path = GOLDEN_DIR / "core-http-request-failure-v1" / "expected.json"
+    corpus_path = CORPUS_DIR / "core-http-request-failure-v1" / "negative.json"
+    golden = load_strict_json(golden_path)
+    corpus = load_strict_json(corpus_path)
+
+    parsed_errors = [parse_core_http_request_error(value) for value in golden["errors"]]
+    parsed_policy = parse_core_http_request_failure_policy(golden["policy"])
+    expected_codes = [
+        "malformed_json",
+        "invalid_request",
+        "invalid_query",
+        "range_out_of_bounds",
+    ]
+    if [value["error_code"] for value in parsed_errors] != expected_codes:
+        raise AssertionError("request-error golden code order drifted")
+    if any(value["retryable"] is not False for value in parsed_errors):
+        raise AssertionError("request-error golden must be non-retryable")
+    if parsed_policy["status"] != 400 or parsed_policy["retryable"] is not False:
+        raise AssertionError("request-failure policy must bind HTTP 400/non-retryable")
+
+    python_negative: list[str] = []
+    for case in corpus["cases"]:
+        value = _request_failure_mutation(
+            _request_failure_fixture(case["fixture"]),
+            case["mutation"],
+        )
+        validator = case["validator"]
+        if validator == "request_error":
+            action = lambda value=value: parse_core_http_request_error(value)
+        elif validator == "request_failure_policy":
+            action = lambda value=value: parse_core_http_request_failure_policy(value)
+        else:
+            raise AssertionError(f"unknown request-failure validator: {validator}")
+        _expect_failure(action)
+        python_negative.append(case["case_id"])
+
+    script = r'''
+import { readFileSync } from 'node:fs'
+import { pathToFileURL } from 'node:url'
+
+const core = await import(pathToFileURL(process.env.PLOTPILOT_TS_CORE_API).href)
+const readJson = path => JSON.parse(readFileSync(path, 'utf8'))
+const golden = readJson(process.env.PLOTPILOT_REQUEST_FAILURE_GOLDEN)
+const corpus = readJson(process.env.PLOTPILOT_REQUEST_FAILURE_CORPUS)
+
+const fixture = reference => {
+  const [, fragment = ''] = reference.split('#', 2)
+  let value = structuredClone(golden)
+  for (const token of fragment.replace(/^\//, '').split('/').filter(Boolean)) {
+    value = Array.isArray(value) ? value[Number(token)] : value[token]
+  }
+  return structuredClone(value)
+}
+const mutate = (value, mutation) => {
+  const output = structuredClone(value)
+  let target = output
+  for (const token of mutation.path.slice(0, -1)) target = target[token]
+  const key = mutation.path.at(-1)
+  if (mutation.op === 'set') target[key] = structuredClone(mutation.value)
+  else if (mutation.op === 'delete') Array.isArray(target) ? target.splice(Number(key), 1) : delete target[key]
+  else if (mutation.op === 'swap') {
+    const sequence = target[key]
+    const [left, right] = mutation.indices
+    ;[sequence[left], sequence[right]] = [sequence[right], sequence[left]]
+  } else throw new Error(`unsupported mutation ${JSON.stringify(mutation)}`)
+  return output
+}
+const rejected = action => {
+  try { action(); return false } catch (_) { return true }
+}
+
+for (const value of golden.errors) core.parseCoreHttpRequestErrorV1(value)
+core.parseCoreHttpRequestFailurePolicyV1(golden.policy)
+const executed = []
+for (const testCase of corpus.cases) {
+  const value = mutate(fixture(testCase.fixture), testCase.mutation)
+  const action = testCase.validator === 'request_error'
+    ? () => core.parseCoreHttpRequestErrorV1(value)
+    : testCase.validator === 'request_failure_policy'
+      ? () => core.parseCoreHttpRequestFailurePolicyV1(value)
+      : () => { throw new Error(`unknown validator ${testCase.validator}`) }
+  if (!rejected(action)) throw new Error(`TypeScript false-accepted ${testCase.case_id}`)
+  executed.push(testCase.case_id)
+}
+console.log(JSON.stringify({ status: 'ok', positive_errors: golden.errors.length, negative_cases: executed }))
+'''
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "NODE_NO_WARNINGS": "1",
+            "PLOTPILOT_TS_CORE_API": str(ROOT / "frontend" / "src" / "contracts" / "core-api.ts"),
+            "PLOTPILOT_REQUEST_FAILURE_GOLDEN": str(golden_path),
+            "PLOTPILOT_REQUEST_FAILURE_CORPUS": str(corpus_path),
+        }
+    )
+    completed = subprocess.run(
+        ["node", "--experimental-strip-types", "--input-type=module", "-e", script],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=environment,
+        check=False,
+    )
+    if completed.returncode:
+        raise AssertionError(f"TypeScript request-failure verifier failed:\n{completed.stdout}\n{completed.stderr}")
+    typescript = json.loads(completed.stdout)
+    expected_negative = [case["case_id"] for case in corpus["cases"]]
+    if typescript.get("status") != "ok" or typescript.get("negative_cases") != expected_negative:
+        raise AssertionError(f"TypeScript request-failure result drifted: {typescript}")
+    return {
+        "status": "ok",
+        "http_status": parsed_policy["status"],
+        "positive_errors": len(parsed_errors),
+        "python_negative_cases": python_negative,
+        "typescript_negative_cases": typescript["negative_cases"],
+    }
+
+
 def verify_contract_publication() -> dict[str, Any]:
     """Verify the additive P0 contract-publication families and corpus."""
 
@@ -2763,6 +2917,7 @@ def verify_all() -> dict[str, Any]:
         "remediation": verify_remediation_probes(),
         "contract_publication": verify_contract_publication(),
         "contract_publication_typescript": verify_typescript_contract_publication(),
+        "core_http_request_failure": verify_core_http_request_failure_contract(),
         "typescript": verify_typescript_verifier(),
         "rpc_methods": {"worker": list(EXPECTED_WORKER_METHODS), "host": list(EXPECTED_HOST_METHODS), "error_codes": EXPECTED_ERROR_CODES},
     }

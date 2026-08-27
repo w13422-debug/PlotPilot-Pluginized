@@ -1,0 +1,158 @@
+{
+  "cases": [
+    {
+      "case_id": "request-error-unknown-code",
+      "fixture": "expected.json#/errors/0",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "error_code"
+        ],
+        "value": "unknown_reference"
+      },
+      "validator": "request_error"
+    },
+    {
+      "case_id": "request-error-retryable-true",
+      "fixture": "expected.json#/errors/1",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "retryable"
+        ],
+        "value": true
+      },
+      "validator": "request_error"
+    },
+    {
+      "case_id": "request-error-empty-message",
+      "fixture": "expected.json#/errors/2",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "message"
+        ],
+        "value": ""
+      },
+      "validator": "request_error"
+    },
+    {
+      "case_id": "request-error-extra-field",
+      "fixture": "expected.json#/errors/3",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "status"
+        ],
+        "value": 400
+      },
+      "validator": "request_error"
+    },
+    {
+      "case_id": "policy-status-422",
+      "fixture": "expected.json#/policy",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "status"
+        ],
+        "value": 422
+      },
+      "validator": "request_failure_policy"
+    },
+    {
+      "case_id": "policy-retryable-true",
+      "fixture": "expected.json#/policy",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "retryable"
+        ],
+        "value": true
+      },
+      "validator": "request_failure_policy"
+    },
+    {
+      "case_id": "policy-wrong-error-schema",
+      "fixture": "expected.json#/policy",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "error_schema"
+        ],
+        "value": "core-http-error/v1"
+      },
+      "validator": "request_failure_policy"
+    },
+    {
+      "case_id": "policy-binding-missing",
+      "fixture": "expected.json#/policy",
+      "mutation": {
+        "op": "delete",
+        "path": [
+          "bindings",
+          3
+        ]
+      },
+      "validator": "request_failure_policy"
+    },
+    {
+      "case_id": "policy-binding-reordered",
+      "fixture": "expected.json#/policy",
+      "mutation": {
+        "indices": [
+          0,
+          1
+        ],
+        "op": "swap",
+        "path": [
+          "bindings"
+        ]
+      },
+      "validator": "request_failure_policy"
+    },
+    {
+      "case_id": "policy-binding-pair-drift",
+      "fixture": "expected.json#/policy",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "bindings",
+          1,
+          "error_code"
+        ],
+        "value": "invalid_query"
+      },
+      "validator": "request_failure_policy"
+    },
+    {
+      "case_id": "policy-binding-scope-drift",
+      "fixture": "expected.json#/policy",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "bindings",
+          3,
+          "scope"
+        ],
+        "value": "all_core_routes"
+      },
+      "validator": "request_failure_policy"
+    },
+    {
+      "case_id": "policy-binding-extra-field",
+      "fixture": "expected.json#/policy",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "bindings",
+          0,
+          "http_status"
+        ],
+        "value": 400
+      },
+      "validator": "request_failure_policy"
+    }
+  ],
+  "schema": "core-http-request-failure-negative/v1"
+}

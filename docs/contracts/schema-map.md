@@ -1,4 +1,4 @@
-# 53 closed schema 映射
+# 55 closed schema 映射
 
 `contract_id`、路径和 `$id` 直接从当前 schema 文件读取；section 映射只标注正式设计 §84 的规范来源，不新增字段语义。
 
@@ -16,6 +16,8 @@
 | `compatibility-v1` | `84.8` | `contracts/json-schema/compatibility-v1.schema.json` | `https://plotpilot.local/contracts/compatibility-v1` |
 | `core-authority-command-query-v1` | `2.1 / 5 / 84.8` | `contracts/json-schema/core-authority-command-query-v1.schema.json` | `https://plotpilot.local/contracts/core-authority-command-query-v1` |
 | `core-event-v1` | `84.6` | `contracts/json-schema/core-event-v1.schema.json` | `https://plotpilot.local/contracts/core-event-v1` |
+| `core-http-request-error-v1` | `2.1 / 5 / 84.8 / ADR-043` | `contracts/json-schema/core-http-request-error-v1.schema.json` | `https://plotpilot.local/contracts/core-http-request-error-v1` |
+| `core-http-request-failure-policy-v1` | `2.1 / 5 / 84.8 / ADR-043` | `contracts/json-schema/core-http-request-failure-policy-v1.schema.json` | `https://plotpilot.local/contracts/core-http-request-failure-policy-v1` |
 | `core-snapshot-v1` | `84.6` | `contracts/json-schema/core-snapshot-v1.schema.json` | `https://plotpilot.local/contracts/core-snapshot-v1` |
 | `diagnostic-item-v1` | `84.5` | `contracts/json-schema/diagnostic-item-v1.schema.json` | `https://plotpilot.local/contracts/diagnostic-item-v1` |
 | `export-current-revisions-v1` | `2.1 / 5 / 71 / 84.8` | `contracts/json-schema/export-current-revisions-v1.schema.json` | `https://plotpilot.local/contracts/export-current-revisions-v1` |
@@ -66,4 +68,4 @@
 | `contracts/json-schema/compatibility-matrix.v1.json` | Core API、plugin RPC、UI host、Python 兼容窗口 | §84.8 |
 | `contracts/json-schema/core-api-method-matrix.v1.json` | P1/P4 Core HTTP route、request/result schema 与 success status 绑定 | §2.1 / §5 / §8 / §10 / §84.8 |
 
-以上三个 JSON 不是 `*.schema.json`，但与 53 个 closed schema 一起进入 `contracts/manifest-v1.json` 的内容清单。
+以上三个 JSON 不是 `*.schema.json`，但与 55 个 closed schema 一起进入 `contracts/manifest-v1.json` 的内容清单。

@@ -807,6 +807,59 @@ def core_api_schemas() -> dict[str, dict[str, Any]]:
     }
 
 
+def core_http_request_failure_schemas() -> dict[str, dict[str, Any]]:
+    """Additive pre-domain request-failure contracts from ADR-043.
+
+    These schemas intentionally remain separate from ``core-http-error/v1``
+    and the frozen Core API method matrix.  They describe failures raised by
+    P0 composition before a valid typed request can reach P1 authority.
+    """
+
+    error_code = enum(
+        "malformed_json",
+        "invalid_request",
+        "invalid_query",
+        "range_out_of_bounds",
+    )
+    request_error = obj(
+        {
+            "schema": const("core-http-request-error/v1"),
+            "error_code": error_code,
+            "message": NONEMPTY,
+            "retryable": const(False),
+        },
+        ("schema", "error_code", "message", "retryable"),
+    )
+    binding = obj(
+        {
+            "source": enum(
+                "json_decode",
+                "closed_request_schema",
+                "query_decode",
+                "asset_range_bounds",
+            ),
+            "error_code": error_code,
+            "scope": enum("all_core_routes", "asset.range"),
+        },
+        ("source", "error_code", "scope"),
+    )
+    policy = obj(
+        {
+            "schema": const("core-http-request-failure-policy/v1"),
+            "status": const(400),
+            "error_schema": const("core-http-request-error/v1"),
+            "retryable": const(False),
+            "bindings": array(binding, min_items=4, unique=True),
+        },
+        ("schema", "status", "error_schema", "retryable", "bindings"),
+    )
+    policy["properties"]["bindings"]["maxItems"] = 4
+    return {
+        "core-http-request-error-v1": request_error,
+        "core-http-request-failure-policy-v1": policy,
+    }
+
+
 def core_api_method_matrix() -> dict[str, Any]:
     """The minimal P1/P4 Core HTTP adapter surface from ADR-041."""
 
@@ -1065,6 +1118,7 @@ def schema_inventory() -> dict[str, dict[str, Any]]:
         **event_schemas(),
         **plan_schemas(),
         **core_api_schemas(),
+        **core_http_request_failure_schemas(),
         **ui_schemas(),
         **skill_schemas(),
         **backup_schemas(),

@@ -1,0 +1,577 @@
+{
+  "schema": "p0-contract-delta-adjudication/v1",
+  "decision_id": "PPA-00-NW-P1-CORE-HTTP-01-ADJUDICATION-001",
+  "delta_id": "NW-P1-CORE-HTTP-01-RUNTIME-SEAM-001",
+  "status": "accepted_with_split_ownership_and_dependency_gates",
+  "binding_owner": "P0",
+  "recorded_at": "2026-08-27T20:13:26.181090+00:00",
+  "baseline": {
+    "branch": "codex/ppa-00-integration-candidate-r2",
+    "head": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
+    "tree": "ecf773e49f93b20806ebda5dec2fa14db422a1f4",
+    "donor_push": "DISABLED",
+    "formal_design": {
+      "version": "v1.2",
+      "sha256": "e70f450b75cfa753148cf620d13855d0073f7d61294e7599ea9cc98f3e612b7b",
+      "sections": [
+        "2.1",
+        "5",
+        "8",
+        "10",
+        "84.8"
+      ]
+    },
+    "project_matrix_sha256": "076541384c643d879e8552737f94a9ce2ed9134dba3e0d448f2c4a0b58297656",
+    "contract_manifest_sha256": "cbe9d02fc42409332151cd7905e387a46537b330b039a2d3d6798f48cbfcc024"
+  },
+  "inputs": {
+    "blocker_commit": {
+      "commit": "27bd843ea4a0bfd88621057f38d124de4620e521",
+      "parent": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
+      "tree": "7f437ca2b9ab822a77b9155906c4eb752b7e9d74",
+      "disposition": "do_not_merge; evidence-only stopped source node"
+    },
+    "delta": {
+      "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-NW-P1-Core-HTTP\\coordination\\PPA-01\\core-http\\runtime-seam-contract-delta-v1.json",
+      "sha256": "1385ec5cabb9c9140efda65bd0002798ea6a633a8638b166245b6bc571c10f9b"
+    },
+    "blocker_report": {
+      "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-NW-P1-Core-HTTP\\docs\\deliveries\\PPA-01\\core-http\\blocker-report.md",
+      "sha256": "cc565f73c28268838255ad6010790af808620d483240a8b652e0657b35222989"
+    },
+    "execution_tx_candidate": {
+      "commit": "d1b6f612b1bb330a28328954fc23e2fdf0ce2d1d",
+      "parent": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
+      "tree": "16b7c0131f28146c56881cb723e844da288d8f26",
+      "review_status": "fresh_sol_review_pending",
+      "merge_eligible": false,
+      "disposition": "read-only capability input; do not merge before Sol PASS"
+    }
+  },
+  "binding_decision": {
+    "delta_is_real": true,
+    "reason": "A thin HTTP adapter cannot cover the frozen route matrix or typed Publication atomically from the accepted H_B seams. Direct SQL or fake dispatch would create a second authority/stub.",
+    "public_v1_immutability": "Existing core-authority-command-query/v1, publication-command-result/v1, asset-metadata/v1, core-api-method-matrix/v1 and core-http-error/v1 bytes and semantics remain immutable.",
+    "no_second_authority": true,
+    "no_stub_runtime": true,
+    "no_silent_contract_drift": true
+  },
+  "authority_routes": {
+    "expected_count": 23,
+    "actual_count": 23,
+    "classification_counts": {
+      "satisfied_read_primitive": 4,
+      "partial": 9,
+      "missing": 10
+    },
+    "application_seam_rule": "P1 must expose one production CoreAuthorityApplication over the sole CoreAuthorityRepository. All 23 handlers use it; the four satisfied primitives are delegated, and no HTTP handler may use repository._connection/private SQL.",
+    "execution_tx_closes_route_count": 0,
+    "routes": [
+      {
+        "ordinal": 1,
+        "route_id": "workspace.list",
+        "method": "GET",
+        "path_template": "/api/v1/core/workspaces",
+        "request_schema": "core-workspace-query/v1",
+        "result_schema": "core-workspace-page/v1",
+        "h_b_capability": "partial",
+        "h_b_evidence": "CoreAuthorityRepository.get_workspace handles only an exact ID; no page/list query.",
+        "execution_tx_effect": "none_on_route_surface",
+        "runtime_seam_owner": "P1",
+        "http_adapter_owner": "P1",
+        "mount_owner": "P0",
+        "disposition": "implement_in_new_p1_authority_application_slice"
+      },
+      {
+        "ordinal": 2,
+        "route_id": "workspace.get",
+        "method": "GET",
+        "path_template": "/api/v1/core/workspaces/{workspace_id}",
+        "request_schema": "core-workspace-get-query/v1",
+        "result_schema": "core-workspace/v1",
+        "h_b_capability": "satisfied_read_primitive",
+        "h_b_evidence": "CoreAuthorityRepository.get_workspace is sufficient after typed projection.",
+        "execution_tx_effect": "none_on_route_surface",
+        "runtime_seam_owner": "P1",
+        "http_adapter_owner": "P1",
+        "mount_owner": "P0",
+        "disposition": "delegate_existing_primitive_through_new_p1_application_seam"
+      },
+      {
+        "ordinal": 3,
+        "route_id": "workspace.create",
+        "method": "POST",
+        "path_template": "/api/v1/core/workspaces",
+        "request_schema": "core-workspace-create-command/v1",
+        "result_schema": "core-workspace/v1",
+        "h_b_capability": "partial",
+        "h_b_evidence": "create_workspace mutates authority but has no durable route-scoped operation ledger.",
+        "execution_tx_effect": "none_on_route_surface",
+        "runtime_seam_owner": "P1",
+        "http_adapter_owner": "P1",
+        "mount_owner": "P0",
+        "disposition": "implement_in_new_p1_authority_application_slice"
+      },
+      {
+        "ordinal": 4,
+        "route_id": "workspace.update",
+        "method": "PATCH",
+        "path_template": "/api/v1/core/workspaces/{workspace_id}",
+        "request_schema": "core-workspace-update-command/v1",
+        "result_schema": "core-workspace/v1",
+        "h_b_capability": "missing",
+        "h_b_evidence": "No update/CAS method.",
+        "execution_tx_effect": "none_on_route_surface",
+        "runtime_seam_owner": "P1",
+        "http_adapter_owner": "P1",
+        "mount_owner": "P0",
+        "disposition": "implement_in_new_p1_authority_application_slice"
+      },
+      {
+        "ordinal": 5,
+        "route_id": "workspace.delete",
+        "method": "DELETE",
+        "path_template": "/api/v1/core/workspaces/{workspace_id}",
+        "request_schema": "core-workspace-delete-command/v1",
+        "result_schema": "core-delete-result/v1",
+        "h_b_capability": "missing",
+        "h_b_evidence": "No delete/CAS method.",
+        "execution_tx_effect": "none_on_route_surface",
+        "runtime_seam_owner": "P1",
+        "http_adapter_owner": "P1",
+        "mount_owner": "P0",
+        "disposition": "implement_in_new_p1_authority_application_slice"
+      },
+      {
+        "ordinal": 6,
+        "route_id": "document.list",
+        "method": "GET",
+        "path_template": "/api/v1/core/workspaces/{workspace_id}/documents",
+        "request_schema": "core-document-query/v1",
+        "result_schema": "core-document-page/v1",
+        "h_b_capability": "partial",
+        "h_b_evidence": "get_document handles one ID; no bounded workspace page/list query.",
+        "execution_tx_effect": "none_on_route_surface",
+        "runtime_seam_owner": "P1",
+        "http_adapter_owner": "P1",
+        "mount_owner": "P0",
+        "disposition": "implement_in_new_p1_authority_application_slice"
+      },
+      {
+        "ordinal": 7,
+        "route_id": "document.get",
+        "method": "GET",
+        "path_template": "/api/v1/core/documents/{document_id}",
+        "request_schema": "core-document-get-query/v1",
+        "result_schema": "core-document/v1",
+        "h_b_capability": "satisfied_read_primitive",
+        "h_b_evidence": "CoreAuthorityRepository.get_document is sufficient after workspace check and typed projection.",
+        "execution_tx_effect": "none_on_route_surface",
+        "runtime_seam_owner": "P1",
+        "http_adapter_owner": "P1",
+        "mount_owner": "P0",
+        "disposition": "delegate_existing_primitive_through_new_p1_application_seam"
+      },
+      {
+        "ordinal": 8,
+        "route_id": "document.create",
+        "method": "POST",
+        "path_template": "/api/v1/core/workspaces/{workspace_id}/documents",
+        "request_schema": "core-document-create-command/v1",
+        "result_schema": "core-document/v1",
+        "h_b_capability": "partial",
+        "h_b_evidence": "create_document mutates authority but has no durable route-scoped operation ledger.",
+        "execution_tx_effect": "none_on_route_surface",
+        "runtime_seam_owner": "P1",
+        "http_adapter_owner": "P1",
+        "mount_owner": "P0",
+        "disposition": "implement_in_new_p1_authority_application_slice"
+      },
+      {
+        "ordinal": 9,
+        "route_id": "document.update",
+        "method": "PATCH",
+        "path_template": "/api/v1/core/documents/{document_id}",
+        "request_schema": "core-document-update-command/v1",
+        "result_schema": "core-document/v1",
+        "h_b_capability": "missing",
+        "h_b_evidence": "No update/CAS method.",
+        "execution_tx_effect": "none_on_route_surface",
+        "runtime_seam_owner": "P1",
+        "http_adapter_owner": "P1",
+        "mount_owner": "P0",
+        "disposition": "implement_in_new_p1_authority_application_slice"
+      },
+      {
+        "ordinal": 10,
+        "route_id": "node.list",
+        "method": "GET",
+        "path_template": "/api/v1/core/workspaces/{workspace_id}/nodes",
+        "request_schema": "core-node-query/v1",
+        "result_schema": "core-node-page/v1",
+        "h_b_capability": "partial",
+        "h_b_evidence": "list_nodes supports workspace/offset/limit only; frozen node_id/document_id/parent_node_id filters are missing.",
+        "execution_tx_effect": "none_on_route_surface",
+        "runtime_seam_owner": "P1",
+        "http_adapter_owner": "P1",
+        "mount_owner": "P0",
+        "disposition": "implement_in_new_p1_authority_application_slice"
+      },
+      {
+        "ordinal": 11,
+        "route_id": "node.get",
+        "method": "GET",
+        "path_template": "/api/v1/core/nodes/{node_id}",
+        "request_schema": "core-node-get-query/v1",
+        "result_schema": "core-node/v1",
+        "h_b_capability": "missing",
+        "h_b_evidence": "No exact node read method.",
+        "execution_tx_effect": "none_on_route_surface",
+        "runtime_seam_owner": "P1",
+        "http_adapter_owner": "P1",
+        "mount_owner": "P0",
+        "disposition": "implement_in_new_p1_authority_application_slice"
+      },
+      {
+        "ordinal": 12,
+        "route_id": "node.create",
+        "method": "POST",
+        "path_template": "/api/v1/core/workspaces/{workspace_id}/nodes",
+        "request_schema": "core-node-create-command/v1",
+        "result_schema": "core-node/v1",
+        "h_b_capability": "partial",
+        "h_b_evidence": "create_node validates ownership and writes, but has no durable route-scoped operation ledger.",
+        "execution_tx_effect": "none_on_route_surface",
+        "runtime_seam_owner": "P1",
+        "http_adapter_owner": "P1",
+        "mount_owner": "P0",
+        "disposition": "implement_in_new_p1_authority_application_slice"
+      },
+      {
+        "ordinal": 13,
+        "route_id": "node.update",
+        "method": "PATCH",
+        "path_template": "/api/v1/core/nodes/{node_id}",
+        "request_schema": "core-node-update-command/v1",
+        "result_schema": "core-node/v1",
+        "h_b_capability": "missing",
+        "h_b_evidence": "No structural update/CAS method.",
+        "execution_tx_effect": "none_on_route_surface",
+        "runtime_seam_owner": "P1",
+        "http_adapter_owner": "P1",
+        "mount_owner": "P0",
+        "disposition": "implement_in_new_p1_authority_application_slice"
+      },
+      {
+        "ordinal": 14,
+        "route_id": "node.delete",
+        "method": "DELETE",
+        "path_template": "/api/v1/core/nodes/{node_id}",
+        "request_schema": "core-node-delete-command/v1",
+        "result_schema": "core-delete-result/v1",
+        "h_b_capability": "missing",
+        "h_b_evidence": "No delete/CAS method.",
+        "execution_tx_effect": "none_on_route_surface",
+        "runtime_seam_owner": "P1",
+        "http_adapter_owner": "P1",
+        "mount_owner": "P0",
+        "disposition": "implement_in_new_p1_authority_application_slice"
+      },
+      {
+        "ordinal": 15,
+        "route_id": "relation.list",
+        "method": "GET",
+        "path_template": "/api/v1/core/workspaces/{workspace_id}/relations",
+        "request_schema": "core-relation-query/v1",
+        "result_schema": "core-relation-page/v1",
+        "h_b_capability": "missing",
+        "h_b_evidence": "No bounded relation query/filter method.",
+        "execution_tx_effect": "none_on_route_surface",
+        "runtime_seam_owner": "P1",
+        "http_adapter_owner": "P1",
+        "mount_owner": "P0",
+        "disposition": "implement_in_new_p1_authority_application_slice"
+      },
+      {
+        "ordinal": 16,
+        "route_id": "relation.create",
+        "method": "POST",
+        "path_template": "/api/v1/core/workspaces/{workspace_id}/relations",
+        "request_schema": "core-relation-create-command/v1",
+        "result_schema": "core-relation/v1",
+        "h_b_capability": "partial",
+        "h_b_evidence": "create_relation validates endpoints and writes, but has no durable route-scoped operation ledger.",
+        "execution_tx_effect": "none_on_route_surface",
+        "runtime_seam_owner": "P1",
+        "http_adapter_owner": "P1",
+        "mount_owner": "P0",
+        "disposition": "implement_in_new_p1_authority_application_slice"
+      },
+      {
+        "ordinal": 17,
+        "route_id": "relation.delete",
+        "method": "DELETE",
+        "path_template": "/api/v1/core/relations/{relation_id}",
+        "request_schema": "core-relation-delete-command/v1",
+        "result_schema": "core-delete-result/v1",
+        "h_b_capability": "missing",
+        "h_b_evidence": "No delete/CAS method.",
+        "execution_tx_effect": "none_on_route_surface",
+        "runtime_seam_owner": "P1",
+        "http_adapter_owner": "P1",
+        "mount_owner": "P0",
+        "disposition": "implement_in_new_p1_authority_application_slice"
+      },
+      {
+        "ordinal": 18,
+        "route_id": "document.revision.list",
+        "method": "GET",
+        "path_template": "/api/v1/core/documents/{document_id}/revisions",
+        "request_schema": "core-document-revision-query/v1",
+        "result_schema": "core-revision-page/v1",
+        "h_b_capability": "missing",
+        "h_b_evidence": "No bounded document revision list/filter method.",
+        "execution_tx_effect": "none_on_route_surface",
+        "runtime_seam_owner": "P1",
+        "http_adapter_owner": "P1",
+        "mount_owner": "P0",
+        "disposition": "implement_in_new_p1_authority_application_slice"
+      },
+      {
+        "ordinal": 19,
+        "route_id": "node.revision.list",
+        "method": "GET",
+        "path_template": "/api/v1/core/nodes/{node_id}/revisions",
+        "request_schema": "core-node-revision-query/v1",
+        "result_schema": "core-revision-page/v1",
+        "h_b_capability": "missing",
+        "h_b_evidence": "No bounded node revision list/filter method.",
+        "execution_tx_effect": "none_on_route_surface",
+        "runtime_seam_owner": "P1",
+        "http_adapter_owner": "P1",
+        "mount_owner": "P0",
+        "disposition": "implement_in_new_p1_authority_application_slice"
+      },
+      {
+        "ordinal": 20,
+        "route_id": "revision.get",
+        "method": "GET",
+        "path_template": "/api/v1/core/revisions/{revision_id}",
+        "request_schema": "core-revision-get-query/v1",
+        "result_schema": "core-revision/v1",
+        "h_b_capability": "satisfied_read_primitive",
+        "h_b_evidence": "CoreAuthorityRepository.get_revision is sufficient after workspace check and typed projection.",
+        "execution_tx_effect": "none_on_route_surface",
+        "runtime_seam_owner": "P1",
+        "http_adapter_owner": "P1",
+        "mount_owner": "P0",
+        "disposition": "delegate_existing_primitive_through_new_p1_application_seam"
+      },
+      {
+        "ordinal": 21,
+        "route_id": "revision.content",
+        "method": "GET",
+        "path_template": "/api/v1/core/revisions/{revision_id}/content",
+        "request_schema": "core-revision-content-query/v1",
+        "result_schema": "core-revision-content-page/v1",
+        "h_b_capability": "satisfied_read_primitive",
+        "h_b_evidence": "get_revision exposes immutable content; the P1 application seam may produce the bounded codepoint page without another writer.",
+        "execution_tx_effect": "none_on_route_surface",
+        "runtime_seam_owner": "P1",
+        "http_adapter_owner": "P1",
+        "mount_owner": "P0",
+        "disposition": "delegate_existing_primitive_through_new_p1_application_seam"
+      },
+      {
+        "ordinal": 22,
+        "route_id": "document.revision.create",
+        "method": "POST",
+        "path_template": "/api/v1/core/documents/{document_id}/revisions",
+        "request_schema": "core-document-revision-create-command/v1",
+        "result_schema": "core-revision/v1",
+        "h_b_capability": "partial",
+        "h_b_evidence": "publish_revision performs document CAS but has no durable route-scoped operation ledger.",
+        "execution_tx_effect": "none_on_route_surface",
+        "runtime_seam_owner": "P1",
+        "http_adapter_owner": "P1",
+        "mount_owner": "P0",
+        "disposition": "implement_in_new_p1_authority_application_slice"
+      },
+      {
+        "ordinal": 23,
+        "route_id": "node.revision.create",
+        "method": "POST",
+        "path_template": "/api/v1/core/nodes/{node_id}/revisions",
+        "request_schema": "core-node-revision-create-command/v1",
+        "result_schema": "core-revision/v1",
+        "h_b_capability": "partial",
+        "h_b_evidence": "publish_revision performs node CAS but has no durable route-scoped operation ledger.",
+        "execution_tx_effect": "none_on_route_surface",
+        "runtime_seam_owner": "P1",
+        "http_adapter_owner": "P1",
+        "mount_owner": "P0",
+        "disposition": "implement_in_new_p1_authority_application_slice"
+      }
+    ]
+  },
+  "cross_cutting_decisions": {
+    "durable_authority_operation_ledger": {
+      "verdict": "real_p1_runtime_gap",
+      "owner": "P1",
+      "covered_commands": 12,
+      "key_scope": [
+        "route_id",
+        "operation_key"
+      ],
+      "payload_identity": "SHA-256 of P0-validated closed request DTO canonical JCS bytes, including every request field",
+      "persistence": "Store payload_hash, first success HTTP status and exact typed response JSON in the same BEGIN IMMEDIATE transaction as the authority mutation.",
+      "replay": "Same key and same payload returns the first committed status/body without repeating mutation; same key with different payload returns 409 core-http-error/v1 operation_key_reuse; a failed pre-mutation validation/CAS does not create a ledger row.",
+      "execution_tx": "Its execution/Host ledgers are separate domains and MUST NOT be reused as the Core HTTP authority ledger."
+    },
+    "typed_publication": {
+      "verdict": "real_p1_runtime_gap_partially_prepared_by_execution_tx",
+      "owner": "P1",
+      "h_b": "PublicationReceipt has only publication_id,candidate_id,revision_id; operation key binds only candidate_id; implementation is document-only.",
+      "execution_tx": "If independently accepted and merged first, accept_in_transaction adds useful single-transaction Event/execution binding behavior, but still returns the narrow receipt, does not bind workspace_id+accepted_by+candidate_id as the full command, exposes no replay boolean, and does not cover every frozen entity_kind.",
+      "required": "P1 must atomically validate the complete publication-command/v1, frozen Candidate evidence and all write-set CAS; write Revision/structure/relation state, receipt and revision.published Event; persist the canonical full command identity and complete publication-result/v1 projection.",
+      "idempotent_semantics": "First committed response has idempotent=false; same-key/same-command replay returns the same publication/revision identities with idempotent=true; different command payload returns operation_key_reuse.",
+      "plugin_boundary": "No Publication callable may be added to plugin SDK/RPC/UI Bundle. Only Core-native service and Core-rendered confirmation may invoke it."
+    },
+    "malformed_ingress": {
+      "verdict": "real_p0_public_contract_and_composition_gap",
+      "owner": "P0",
+      "existing_v1_boundary": "core-http-error/v1 remains the domain failure envelope declared by core-api-method-matrix/v1; its enum/status bindings are not edited or reinterpreted.",
+      "minimal_additive_plan": {
+        "planned_adr": "ADR-043",
+        "contract_ids": [
+          "core-http-request-error/v1",
+          "core-http-request-failure-policy/v1"
+        ],
+        "status": 400,
+        "error_codes": [
+          "malformed_json",
+          "invalid_request",
+          "invalid_query",
+          "range_out_of_bounds"
+        ],
+        "retryable": false
+      },
+      "scope": "P0 maps malformed JSON, unknown fields, closed-schema failures and invalid integer query syntax before invoking P1 authority. No FastAPI default 422 body may escape for /api/v1/core/**.",
+      "version_reason": "This is a new pre-domain request-failure family for inputs that cannot produce a valid v1 request/result, not a mutation of any published v1 DTO or route-domain error family."
+    },
+    "asset_range": {
+      "normal_read_status": "satisfied_by_h_b_asset_store",
+      "owner_for_adapter": "P1",
+      "owner_for_edge_contract": "P0",
+      "h_b": "AssetStore.describe/read can provide metadata and bounded bytes. Execution TX create_asset/read_asset/require adds no HTTP range semantics.",
+      "semantics": [
+        "For 0 <= offset < total_size, length is a requested maximum; return min(length,total_size-offset) bytes, echo the request offset, and hash exactly the decoded returned chunk.",
+        "For offset == total_size, return HTTP 200 with offset=total_size,length=0,empty base64,next_offset=null,content_hash=SHA256(empty bytes).",
+        "For offset > total_size, return HTTP 400 core-http-request-error/v1 range_out_of_bounds; do not invent 416 or misuse unknown_reference/cross_workspace.",
+        "The endpoint remains the published JSON/base64 query; it does not implement Range headers, 206 or Content-Range."
+      ]
+    },
+    "etag": {
+      "verdict": "not_in_core_api_v1",
+      "owner": "P0 public contract",
+      "semantics": "No ETag, If-None-Match, 304 or If-Range behavior is promised or emitted by this v1 adapter. asset-metadata/v1.sha256 is the immutable whole-object hash; asset-read-range/v1.content_hash is the exact returned chunk hash.",
+      "future_change": "Any HTTP ETag/conditional/RFC Range feature requires a new versioned public contract and ADR; P1 must not invent it in this node."
+    },
+    "app_mount": {
+      "owner": "P0",
+      "path": "backend/plotpilot_core/api/app.py",
+      "status": "blocked_until_real_router_and_authority_are_accepted",
+      "p1_boundary": "P1 owns backend/plotpilot_core/api/v1/core/** router factory and application service; it must not edit app.py or create global authority instances.",
+      "p0_boundary": "P0 constructs/injects one production CoreAuthorityRepository, AssetStore and Publication service/application seam, attaches P0 request-error handlers, and mounts the accepted router before the SPA catch-all.",
+      "forbidden": "No FakeCoreAuthorityPort, fake dispatch, second SQLite database, private adapter SQL or import-time alternate writer in production composition."
+    }
+  },
+  "execution_tx_capability_adjudication": {
+    "satisfies_now": [],
+    "conditional_reuse_after_sol_pass": [
+      "single CoreAuthorityRepository transaction root",
+      "ExecutionAuthority and execution-domain durable ledgers",
+      "PublicationService.accept_in_transaction atomic Event/execution binding",
+      "AssetStore.require integrity check"
+    ],
+    "does_not_satisfy": [
+      "23-route authority application seam",
+      "12-command Core HTTP operation-key ledger",
+      "complete typed Publication result/full command binding/idempotent projection",
+      "malformed ingress contract",
+      "offset>size binding",
+      "ETag semantics",
+      "P0 app.py mount"
+    ],
+    "merge_order_rule": "Because d1b6f612 modifies authority.py and publication/service.py, any P1 authority/Publication remediation slice must start from the P0 integration head after d1b6f612 receives fresh Sol PASS and is no-ff integrated. Do not stack on or merge the blocker commit."
+  },
+  "ready_graph": [
+    {
+      "node_id": "P0-CORE-HTTP-REQUEST-FAILURE-CONTRACT-01",
+      "owner": "P0",
+      "status": "READY",
+      "writes": [
+        "contracts/**",
+        "backend/plotpilot_plugin_sdk/**",
+        "frontend/src/contracts/**",
+        "tests/contract/**",
+        "docs/contracts/**",
+        "coordination/PPA-00/**"
+      ],
+      "deliverable": "ADR-043 plus executable core-http-request-error/v1 and request-failure-policy/v1 schemas/SDK/TS/golden-negative tests; no product router or app mount."
+    },
+    {
+      "node_id": "NW-P1-EXECUTION-TX-01-SOL-GATE",
+      "owner": "central Sol reviewer",
+      "status": "RUNNING_EXTERNAL",
+      "input": "d1b6f612b1bb330a28328954fc23e2fdf0ce2d1d",
+      "gate": "Only exact-head fresh Sol PASS may make it merge-ready; this adjudication grants no eligibility."
+    },
+    {
+      "node_id": "NW-P1-AUTHORITY-PUBLICATION-SEAM-02",
+      "owner": "P1",
+      "status": "BLOCKED_ON_EXECUTION_TX_ACCEPT_AND_P0_MERGE",
+      "writes": [
+        "backend/plotpilot_core/repositories/**",
+        "backend/plotpilot_core/publication/**",
+        "tests/p1-core/**"
+      ],
+      "deliverable": "Real 23-route CoreAuthorityApplication, durable 12-command ledger and complete atomic typed Publication; no HTTP adapter, app.py or public-contract writes."
+    },
+    {
+      "node_id": "NW-P1-CORE-HTTP-02-GENERATION-2",
+      "owner": "P1",
+      "status": "BLOCKED_ON_P0_REQUEST_FAILURE_CONTRACT_AND_P1_AUTHORITY_PUBLICATION_SEAM",
+      "writes": [
+        "backend/plotpilot_core/api/v1/core/**",
+        "tests/p1-core/**",
+        "docs/deliveries/PPA-01/**",
+        "coordination/PPA-01/**"
+      ],
+      "deliverable": "Fresh source generation from the then-current integrated P0 head; thin router over real P1 application seam and AssetStore. The 27bd843e blocker commit is not merged or reused as a source candidate."
+    },
+    {
+      "node_id": "P0-CORE-HTTP-PRODUCTION-MOUNT-01",
+      "owner": "P0",
+      "status": "BLOCKED_ON_ACCEPTED_P1_CORE_HTTP_ROUTER",
+      "writes": [
+        "backend/plotpilot_core/bootstrap/**",
+        "backend/plotpilot_core/api/app.py",
+        "tests/acceptance/**",
+        "docs/deliveries/PPA-00/**"
+      ],
+      "deliverable": "Inject one real authority and mount the accepted router/error handlers before SPA catch-all; no fake/second writer."
+    }
+  ],
+  "held_work": {
+    "four_source_candidates_integration": "NOT_STARTED",
+    "reason": "This task is adjudication/planning only. No candidate commit receives merge eligibility here."
+  },
+  "prohibitions": [
+    "Do not merge 27bd843ea4a0bfd88621057f38d124de4620e521.",
+    "Do not merge d1b6f612b1bb330a28328954fc23e2fdf0ce2d1d before fresh Sol PASS.",
+    "Do not modify product source, public contracts/SDK, source worktrees, tags or donor in this adjudication.",
+    "Do not create a fake router/dispatch, direct-SQL HTTP writer, second authority or hidden HTTP error envelope.",
+    "Do not start integration of the four next-wave source candidates."
+  ]
+}
