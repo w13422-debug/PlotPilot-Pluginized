@@ -1,3 +1,5 @@
+import type { PluginUINode, PluginUITree } from '../contracts/types.ts'
+
 export const PLUGIN_UI_SLOTS = [
   'library.import.action',
   'library.project-create.extension',
@@ -45,6 +47,29 @@ export interface ValidatedHostTree {
   treeId: string
   renderSeq: number
   root: HostRenderNode
+}
+
+/**
+ * Convert the P0-owned, parsed tree DTO to the renderer's slot-local model.
+ *
+ * This is intentionally a projection, not another wire contract: parsing and
+ * deep ownership guarantees remain the responsibility of
+ * `contracts/ingress.ts`.  The slot model uses camelCase only because the
+ * existing renderer/session code is not a wire surface.
+ */
+export function toValidatedHostTree(tree: Readonly<PluginUITree>): ValidatedHostTree {
+  const projectNode = (node: PluginUINode): HostRenderNode => ({
+    component: node.component,
+    key: node.key,
+    props: { ...node.props },
+    children: node.children.map(projectNode),
+    event_ids: [...node.event_ids],
+  })
+  return {
+    treeId: tree.tree_id,
+    renderSeq: tree.render_seq,
+    root: projectNode(tree.root),
+  }
 }
 
 export function isPluginUiSlot(value: string): value is PluginUiSlot {

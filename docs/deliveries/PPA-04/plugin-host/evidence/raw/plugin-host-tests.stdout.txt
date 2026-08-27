@@ -1,0 +1,21 @@
+command: node --experimental-strip-types --test tests/p4-webui/plugin-host/*.test.mts
+exit_code: 0
+
+✔ uses the published P0 parsers for tree, intent and ACK ingress (3.405ms)
+✔ normalizes a published message envelope without re-declaring its P0 body DTO (13.6386ms)
+✔ accepts every closed direction/type/body branch and rejects matrix drift (6.5169ms)
+✔ rejects unknown tree components, props and events through the P0 closed parser (1.622ms)
+✔ starts a Dedicated Worker with init seq 1 and routes validated render/intent messages (10.3069ms)
+✔ fences identity and out-of-order worker messages by terminating only the current Worker (6.2039ms)
+✔ late events from a released Worker cannot affect its replacement (2.8493ms)
+✔ watchdog timeout terminates the current Worker once and remains Slot-local (2.0153ms)
+✔ the standalone watchdog identity-fences replacement workers (0.1648ms)
+✔ accepts only the immutable same-origin release/hash Worker route (0.4574ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 375.9214

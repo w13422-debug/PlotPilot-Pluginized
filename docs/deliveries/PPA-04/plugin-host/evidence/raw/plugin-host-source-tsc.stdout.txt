@@ -1,0 +1,3 @@
+command: adjacent TypeScript 5.9 compiler direct Plugin Host source check
+exit_code: 0
+arguments: --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --resolveJsonModule --verbatimModuleSyntax --skipLibCheck --lib ES2022,DOM --erasableSyntaxOnly frontend/src/plugin-host/*.ts frontend/src/contracts/canonical.ts frontend/src/contracts/ingress.ts frontend/src/contracts/schema-ingress.ts frontend/src/contracts/types.ts

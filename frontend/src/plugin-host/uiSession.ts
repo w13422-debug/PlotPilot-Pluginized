@@ -1,6 +1,7 @@
 import { canonicalJson } from '../contracts/canonical.ts'
-import type { PluginUIIntent } from '../contracts/types.ts'
-import { isPluginUiSlot, PLUGIN_UI_COMPONENT_RULES, type PluginUiComponent, type PluginUiSlot, type ValidatedHostTree } from './slotHost.ts'
+import { parsePluginUiTreeV1 } from '../contracts/ingress.ts'
+import type { PluginUIAck, PluginUIIntent, PluginUITree } from '../contracts/types.ts'
+import { isPluginUiSlot, PLUGIN_UI_COMPONENT_RULES, toValidatedHostTree, type PluginUiComponent, type PluginUiSlot, type ValidatedHostTree } from './slotHost.ts'
 
 export interface UiFreshnessFence { generation_id: string; plugin_release_id: string; workspace_id: string | null; workspace_revision_id: string | null; plan_revision_id: string | null }
 export interface UiSessionIdentity extends UiFreshnessFence { uiSessionId: string; workerInstanceId: string; contributionId: string; slot: PluginUiSlot }
@@ -20,6 +21,27 @@ function deepCloneFreeze<T>(value: T): Readonly<T> {
 }
 function rejected(intentId: string, errorCode: string): Readonly<RecordedIntentAck> {
   return deepCloneFreeze({ intentId, accepted: false, errorCode, coreEventSeq: null, jobId: null })
+}
+
+export function toRecordedIntentAck(ack: Readonly<PluginUIAck>): Readonly<RecordedIntentAck> {
+  return deepCloneFreeze({
+    intentId: ack.intent_id,
+    accepted: ack.accepted,
+    errorCode: ack.error_code,
+    coreEventSeq: ack.core_event_seq,
+    jobId: ack.job_id,
+  })
+}
+
+export function toPluginUiAck(ack: Readonly<RecordedIntentAck>): Readonly<PluginUIAck> {
+  return deepCloneFreeze({
+    schema: 'plugin-ui-ack/v1',
+    intent_id: ack.intentId,
+    accepted: ack.accepted,
+    error_code: ack.errorCode,
+    core_event_seq: ack.coreEventSeq,
+    job_id: ack.jobId,
+  })
 }
 function sameFreshness(left: PluginUIIntent['freshness'], right: UiFreshnessFence): boolean {
   return left.generation_id === right.generation_id && left.plugin_release_id === right.plugin_release_id
@@ -45,9 +67,12 @@ export class PluginUiSession {
     if (!isPluginUiSlot(identity.slot)) throw new Error('unknown_slot')
     this.identity = deepCloneFreeze(identity)
   }
-  installValidatedTree(tree: ValidatedHostTree): Readonly<ValidatedHostTree> {
-    if (this.installedTree && tree.renderSeq <= this.installedTree.renderSeq) throw new Error('stale_render_seq')
-    this.installedTree = deepCloneFreeze(tree)
+  installValidatedTree(tree: ValidatedHostTree | Readonly<PluginUITree>): Readonly<ValidatedHostTree> {
+    const normalized = Object.hasOwn(tree, 'tree_id')
+      ? toValidatedHostTree(parsePluginUiTreeV1(tree as PluginUITree))
+      : tree as ValidatedHostTree
+    if (this.installedTree && normalized.renderSeq <= this.installedTree.renderSeq) throw new Error('stale_render_seq')
+    this.installedTree = deepCloneFreeze(normalized)
     return deepCloneFreeze(this.installedTree)
   }
   decideValidatedIntent(input: PluginUIIntent): IntentDecision {
@@ -71,9 +96,12 @@ export class PluginUiSession {
     this.lastIntentSeq = intent.intent_seq
     return { kind: 'dispatch', intent: deepCloneFreeze(intent) }
   }
-  recordValidatedAck(intent: PluginUIIntent, ack: RecordedIntentAck): void {
-    if (ack.intentId !== intent.intent_id) throw new Error('ack_intent_mismatch')
+  recordValidatedAck(intent: PluginUIIntent, ack: RecordedIntentAck | PluginUIAck): void {
+    const recorded = Object.hasOwn(ack, 'intent_id')
+      ? toRecordedIntentAck(ack as PluginUIAck)
+      : deepCloneFreeze(ack as RecordedIntentAck)
+    if (recorded.intentId !== intent.intent_id) throw new Error('ack_intent_mismatch')
     if (!this.intentPayloads.has(intent.intent_id)) throw new Error('intent_not_dispatched')
-    this.intentAcks.set(intent.intent_id, deepCloneFreeze(ack))
+    this.intentAcks.set(intent.intent_id, recorded)
   }
 }

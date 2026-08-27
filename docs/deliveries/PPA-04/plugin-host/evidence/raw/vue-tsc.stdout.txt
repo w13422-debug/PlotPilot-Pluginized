@@ -1,0 +1,4 @@
+command: frontend/node_modules/.bin/vue-tsc.cmd --noEmit -p frontend/tsconfig.app.json
+exit_code: 1
+
+The prescribed executable is absent from this worktree: frontend/node_modules/.bin/vue-tsc.cmd

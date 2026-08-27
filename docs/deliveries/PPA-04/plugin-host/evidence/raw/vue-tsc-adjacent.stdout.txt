@@ -1,0 +1,7 @@
+command: C:\Users\Administrator\Desktop\写作资料汇总\PlotPilot-Pluginized-worktrees\PPA-04-WebUI\frontend\node_modules\.bin\vue-tsc.cmd --noEmit -p frontend/tsconfig.app.json --incremental false
+exit_code: 2
+
+error TS2688: Cannot find type definition file for 'vite/client'.
+  The file is in the program because:
+    Entry point of type library 'vite/client' specified in compilerOptions
+frontend/tsconfig.app.json(2,14): error TS6053: File '@vue/tsconfig/tsconfig.dom.json' not found.

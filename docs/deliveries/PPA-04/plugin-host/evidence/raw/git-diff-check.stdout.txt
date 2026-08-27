@@ -1,0 +1,10 @@
+command: git diff --check
+exit_code: 0
+
+warning: in the working copy of 'coordination/PPA-04/plugin-host/PPA-04B-integration-ready.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/deliveries/PPA-04/plugin-host/PPA-04B-plugin-host-delivery.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/deliveries/PPA-04/plugin-host/evidence/raw/p4-regression.stdout.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/deliveries/PPA-04/plugin-host/evidence/raw/plugin-host-source-tsc.stdout.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/deliveries/PPA-04/plugin-host/evidence/raw/plugin-host-tests.stdout.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/plugin-host/wireIngress.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/plugin-host/workerHost.ts', LF will be replaced by CRLF the next time Git touches it
