@@ -284,7 +284,17 @@ class SkillPackage:
         expected_files_sha256: bytes | None = None,
     ) -> "SkillPackage":
         material, supplied_manifest = _normalise_files(files)
+        # Every loadable package must carry the canonical control manifest.
+        # ``calculate_skill_identity`` remains usable for callers that are
+        # explicitly constructing an identity from an already verified map,
+        # but package materialization never accepts an implicit manifest.
+        if supplied_manifest is None and expected_files_sha256 is None:
+            raise ContractValidationError("Skill package requires files.sha256")
         manifest = _manifest_from_files(material)
+        # Validate an ordinary dictionary before SkillPackage.__post_init__
+        # freezes it with MappingProxyType.  jsonschema deliberately expects
+        # a plain mapping and this also keeps the validation order explicit.
+        assert_valid("plotpilot-skill/v1", dict(manifest))
         identity = calculate_skill_identity(
             material,
             manifest["skill_id"],
@@ -399,7 +409,8 @@ class SkillPackage:
             expected_release,
             expected_files_sha256=expected_files_sha256,
         )
-        assert_valid("plotpilot-skill/v1", self.manifest)
+        # Rehydrate the frozen view as a plain dict for schema validation.
+        assert_valid("plotpilot-skill/v1", dict(self.manifest))
 
 
 @dataclass(frozen=True, slots=True)

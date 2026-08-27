@@ -217,7 +217,11 @@ class PackageStore:
     ) -> VerifiedPackage:
         """Verify then publish a package without ever replacing an existing tree."""
 
-        verified = package if isinstance(package, VerifiedPackage) else verify_package(
+        # Never trust a caller-supplied VerifiedPackage as an authority.  It
+        # is a public dataclass and can be forged/replaced; verify_package()
+        # reconstructs and checks its generated files.sha256 before any
+        # destination or registry mutation occurs.
+        verified = verify_package(
             package,
             expected_package_hash=expected_package_hash,
             expected_release_id=expected_release_id,

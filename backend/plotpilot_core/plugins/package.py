@@ -58,17 +58,21 @@ _FILE_ATTRIBUTE_REPARSE_POINT = 0x0400
 DEFAULT_MAX_FILES = 10_000
 DEFAULT_MAX_FILE_SIZE = 64 * 1024 * 1024
 DEFAULT_MAX_TOTAL_SIZE = 256 * 1024 * 1024
+DEFAULT_MAX_PATH_LENGTH = 240
 
 _EXECUTABLE_SUFFIXES = frozenset(
     {
         ".bat",
         ".cmd",
         ".com",
+        ".cjs",
         ".dll",
         ".dylib",
         ".exe",
+        ".js",
         ".jar",
         ".msi",
+        ".mjs",
         ".pyd",
         ".py",
         ".pyc",
@@ -77,6 +81,7 @@ _EXECUTABLE_SUFFIXES = frozenset(
         ".sh",
         ".so",
         ".vbs",
+        ".wasm",
         ".whl",
     }
 )
@@ -131,20 +136,25 @@ class PackageLimits:
     max_files: int = DEFAULT_MAX_FILES
     max_file_size: int = DEFAULT_MAX_FILE_SIZE
     max_total_size: int = DEFAULT_MAX_TOTAL_SIZE
-    max_path_length: int = 240
+    max_path_length: int = DEFAULT_MAX_PATH_LENGTH
 
     def __post_init__(self) -> None:
-        if (
-            isinstance(self.max_files, bool)
-            or self.max_files <= 0
-            or isinstance(self.max_file_size, bool)
-            or self.max_file_size <= 0
-            or isinstance(self.max_total_size, bool)
-            or self.max_total_size <= 0
-            or isinstance(self.max_path_length, bool)
-            or self.max_path_length <= 0
-        ):
-            raise ValueError("package limits must be positive integers")
+        # These are policy inputs, not arbitrary arithmetic values.  In
+        # particular, ``bool`` is an ``int`` subclass and floats such as
+        # ``inf`` would otherwise pass the old positivity checks.  Refuse
+        # subclasses as well as non-integers and do not permit a caller to
+        # raise the frozen host limits.
+        bounds = (
+            ("max_files", self.max_files, DEFAULT_MAX_FILES),
+            ("max_file_size", self.max_file_size, DEFAULT_MAX_FILE_SIZE),
+            ("max_total_size", self.max_total_size, DEFAULT_MAX_TOTAL_SIZE),
+            ("max_path_length", self.max_path_length, DEFAULT_MAX_PATH_LENGTH),
+        )
+        for name, value, upper in bounds:
+            if type(value) is not int or not 1 <= value <= upper:
+                raise ValueError(
+                    f"{name} must be an integer in the range 1..{upper}"
+                )
 
 
 @dataclass(frozen=True)
@@ -243,7 +253,12 @@ def _is_reparse_or_link(path: Path, st: os.stat_result) -> bool:
     return path.is_symlink() or bool(getattr(st, "st_file_attributes", 0) & _FILE_ATTRIBUTE_REPARSE_POINT)
 
 
-def _canonical_member_name(raw_name: str, *, directory: bool = False) -> str | None:
+def _canonical_member_name(
+    raw_name: str,
+    *,
+    directory: bool = False,
+    max_path_length: int = DEFAULT_MAX_PATH_LENGTH,
+) -> str | None:
     """Return a normalized member name, preserving directory safety checks.
 
     ZIP directory records conventionally end in one slash.  The slash is a
@@ -260,12 +275,23 @@ def _canonical_member_name(raw_name: str, *, directory: bool = False) -> str | N
         canonical = normalize_relative_path(name)
     except ContractError as exc:
         raise PackagePathError(str(exc), path=raw_name) from exc
-    if len(canonical) > 240:
-        raise PackagePathError("package member path exceeds 240 characters", path=raw_name)
-    # ``files.sha256`` is a generated control file.  A casefold-equivalent
-    # ordinary file would make the package identity ambiguous on Windows.
-    if unicode_nfc_casefold(canonical) == unicode_nfc_casefold(_FILES_MANIFEST_NAME):
-        return _FILES_MANIFEST_NAME
+    if len(canonical) > max_path_length:
+        raise PackagePathError(
+            f"package member path exceeds {max_path_length} characters",
+            path=raw_name,
+        )
+    # ``files.sha256`` is a generated control file.  Do not canonicalize a
+    # case-equivalent spelling into the control name: doing so would make a
+    # non-canonical folder/ZIP entry appear valid and would erase the
+    # producer's exact path choice before the control-file gate sees it.
+    if (
+        unicode_nfc_casefold(canonical) == unicode_nfc_casefold(_FILES_MANIFEST_NAME)
+        and canonical != _FILES_MANIFEST_NAME
+    ):
+        raise PackagePathError(
+            "files.sha256 must use its canonical lowercase name",
+            path=raw_name,
+        )
     return canonical
 
 
@@ -281,7 +307,10 @@ def _insert_file(
         raise PackageError("package content must be raw bytes", path=raw_path)
     if len(content) > limits.max_file_size:
         raise PackageError("package member exceeds the maximum file size", path=raw_path)
-    canonical = _canonical_member_name(raw_path)
+    canonical = _canonical_member_name(
+        raw_path,
+        max_path_length=limits.max_path_length,
+    )
     if canonical is None:
         raise PackagePathError("empty package member path", path=raw_path)
     key = unicode_nfc_casefold(canonical)
@@ -337,7 +366,11 @@ def read_folder(path: str | os.PathLike[str], *, limits: PackageLimits | None = 
                 # not provide a path that would later be treated differently
                 # by a Windows extractor.
                 try:
-                    _canonical_member_name(relative + "/", directory=True)
+                    _canonical_member_name(
+                        relative + "/",
+                        directory=True,
+                        max_path_length=limits.max_path_length,
+                    )
                 except ContractError as exc:
                     raise PackagePathError(str(exc), path=relative) from exc
                 visit(entry, relative)
@@ -412,7 +445,11 @@ def read_zip(
                 raise PackageError("ZIP symlink/special-file members are forbidden", path=raw_name)
             if info.flag_bits & 0x1:
                 raise PackageError("encrypted ZIP members are not supported", path=raw_name)
-            canonical = _canonical_member_name(raw_name, directory=directory)
+            canonical = _canonical_member_name(
+                raw_name,
+                directory=directory,
+                max_path_length=limits.max_path_length,
+            )
             if canonical is None:
                 continue
             key = unicode_nfc_casefold(canonical)
@@ -484,7 +521,14 @@ def read_package_files(
     return read_zip(source, limits=limits)
 
 
-def _split_control_files(files: Mapping[str, bytes]) -> PackageFiles:
+def _split_control_files(
+    files: Mapping[str, bytes],
+    *,
+    limits: PackageLimits | None = None,
+) -> PackageFiles:
+    max_path_length = (
+        DEFAULT_MAX_PATH_LENGTH if limits is None else limits.max_path_length
+    )
     manifest_key = None
     files_manifest_key = None
     normalized: dict[str, bytes] = {}
@@ -494,6 +538,11 @@ def _split_control_files(files: Mapping[str, bytes]) -> PackageFiles:
             path = normalize_relative_path(raw_path)
         except ContractError as exc:
             raise PackagePathError(str(exc), path=str(raw_path)) from exc
+        if len(path) > max_path_length:
+            raise PackagePathError(
+                f"package member path exceeds {max_path_length} characters",
+                path=raw_path,
+            )
         key = unicode_nfc_casefold(path)
         if key in seen:
             raise PackagePathError("NFC/casefold package member collision", path=raw_path)
@@ -506,7 +555,10 @@ def _split_control_files(files: Mapping[str, bytes]) -> PackageFiles:
             manifest_key = path
         elif key == unicode_nfc_casefold(_FILES_MANIFEST_NAME):
             if path != _FILES_MANIFEST_NAME:
-                raise PackagePathError("files.sha256 must use its canonical name", path=path)
+                raise PackagePathError(
+                    "files.sha256 must use its canonical lowercase name",
+                    path=path,
+                )
             files_manifest_key = path
         else:
             normalized[path] = content
@@ -677,20 +729,54 @@ def verify_package(
     """
 
     if isinstance(source, VerifiedPackage):
-        # Re-verify the digest from the immutable view when an expected value
-        # is supplied.  This prevents a caller from claiming an arbitrary
-        # object is a verified package merely by constructing it directly.
-        files = dict(source.files)
+        # A VerifiedPackage is a convenience view, not an authority.  It is
+        # publicly constructible (and dataclasses.replace can produce one),
+        # so reconstruct the generated control member and run the exact same
+        # verifier as an untrusted folder/ZIP before accepting it.  The
+        # control member is intentionally absent from ``source.files`` in the
+        # public view; adding it here makes the re-verification path complete.
+        if not isinstance(source.files, Mapping):
+            raise PackageIntegrityError("verified package files must be a mapping")
+        for field_name in ("plugin_id", "version", "kind", "package_hash", "release_id"):
+            if not isinstance(getattr(source, field_name), str):
+                raise PackageIntegrityError(
+                    f"verified package {field_name} must be text"
+                )
+        try:
+            files = dict(source.files)
+        except (TypeError, ValueError) as exc:
+            raise PackageIntegrityError("verified package files must be a mapping") from exc
+        if _FILES_MANIFEST_NAME in files:
+            supplied_manifest = files.pop(_FILES_MANIFEST_NAME)
+            if not isinstance(supplied_manifest, bytes) or supplied_manifest != source.files_sha256:
+                raise PackageIntegrityError(
+                    "verified package files.sha256 does not match its control bytes"
+                )
+        if not isinstance(source.files_sha256, bytes):
+            raise PackageIntegrityError("verified package files.sha256 must be raw bytes")
+        files[_FILES_MANIFEST_NAME] = source.files_sha256
         if expected_package_hash is not None and source.package_hash != expected_package_hash:
             raise PackageIntegrityError("package_hash does not match the expected identity")
         if expected_release_id is not None and source.release_id != expected_release_id:
             raise PackageIntegrityError("release_id does not match the expected identity")
-        return _verify_file_map(
+        reverified = _verify_file_map(
             files,
             source=source.source,
-            expected_package_hash=expected_package_hash or source.package_hash,
-            expected_release_id=expected_release_id or source.release_id,
-            expected_files_sha256=expected_files_sha256 or source.files_sha256,
+            expected_package_hash=(
+                expected_package_hash
+                if expected_package_hash is not None
+                else source.package_hash
+            ),
+            expected_release_id=(
+                expected_release_id
+                if expected_release_id is not None
+                else source.release_id
+            ),
+            expected_files_sha256=(
+                expected_files_sha256
+                if expected_files_sha256 is not None
+                else source.files_sha256
+            ),
             limits=limits,
             compatibility=compatibility,
             core_api_version=core_api_version,
@@ -698,6 +784,11 @@ def verify_package(
             ui_host_version=ui_host_version,
             python_version=python_version,
         )
+        if reverified.identity != source.identity or reverified.kind != source.kind:
+            raise PackageIntegrityError(
+                "verified package identity metadata does not match its content"
+            )
+        return reverified
     files = read_package_files(source, limits=limits)
     source_path = Path(source) if isinstance(source, (str, os.PathLike)) else None
     return _verify_file_map(
@@ -730,7 +821,7 @@ def _verify_file_map(
     python_version: str | None,
 ) -> VerifiedPackage:
     limits = _validate_limits(limits)
-    controls = _split_control_files(files)
+    controls = _split_control_files(files, limits=limits)
     manifest_bytes = controls.files[_MANIFEST_NAME]
     manifest = _parse_manifest(manifest_bytes)
     if expected_files_sha256 is not None and not isinstance(expected_files_sha256, bytes):
@@ -759,10 +850,18 @@ def _verify_file_map(
     except ContractError as exc:
         raise PackageIntegrityError(str(exc)) from exc
     if expected_package_hash is not None:
-        if not _HEX64.fullmatch(expected_package_hash) or digest.package_hash != expected_package_hash:
+        if (
+            not isinstance(expected_package_hash, str)
+            or not _HEX64.fullmatch(expected_package_hash)
+            or digest.package_hash != expected_package_hash
+        ):
             raise PackageIntegrityError("package_hash does not match the expected identity")
     if expected_release_id is not None:
-        if not _HEX64.fullmatch(expected_release_id) or digest.release_id != expected_release_id:
+        if (
+            not isinstance(expected_release_id, str)
+            or not _HEX64.fullmatch(expected_release_id)
+            or digest.release_id != expected_release_id
+        ):
             raise PackageIntegrityError("release_id does not match the expected identity")
 
     _validate_type_gate(manifest, controls.files)
@@ -837,6 +936,7 @@ __all__ = [
     "CompatibilityProfile",
     "DEFAULT_MAX_FILE_SIZE",
     "DEFAULT_MAX_FILES",
+    "DEFAULT_MAX_PATH_LENGTH",
     "DEFAULT_MAX_TOTAL_SIZE",
     "PackageError",
     "PackageFiles",

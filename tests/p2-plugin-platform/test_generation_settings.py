@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from backend.plotpilot_core.plugins.generation import GenerationState, install_generation, rollback_once, validate_generation
+from backend.plotpilot_core.plugins.generation import GenerationState, install_generation, promote_lkg, rollback_once, validate_generation
 from backend.plotpilot_core.plugins.settings import accept_draft, apply_validation, require_activatable
 from plotpilot_plugin_sdk import ContractError
 from plotpilot_plugin_sdk.canonical import hash_jcs
@@ -19,9 +19,17 @@ def fixture(name: str) -> dict:
     return json.loads((ROOT / "contracts" / "examples" / "fixtures" / name).read_text(encoding="utf-8"))
 
 
+def _qualification_evidence(generation: dict) -> dict[str, str]:
+    return {
+        "generation_id": generation["generation_id"],
+        "health_result_asset_id": generation["health_result_asset_id"],
+    }
+
+
 def test_generation_base_cas_lkg_and_rollback_once() -> None:
     first = fixture("plugin-generation.json")
     state = install_generation(GenerationState(), first, expected_base_generation_id=None)
+    state = promote_lkg(state, evidence=_qualification_evidence(first))
     second = copy.deepcopy(first)
     second.update(generation_id="generation-2", parent_generation_id="generation-1", base_generation_id="generation-1")
     state = install_generation(state, second, expected_base_generation_id="generation-1")
@@ -30,6 +38,41 @@ def test_generation_base_cas_lkg_and_rollback_once() -> None:
     assert rolled.current["generation_id"] == "generation-1"
     safe = rollback_once(rolled, failed_generation_id="generation-1")
     assert safe.safe_mode is True
+
+
+def test_lkg_promotion_is_bound_and_safe_mode_cannot_promote_failed_current() -> None:
+    first = fixture("plugin-generation.json")
+    state = install_generation(GenerationState(), first, expected_base_generation_id=None)
+    with pytest.raises(ContractError):
+        promote_lkg(state, evidence={"generation_id": "other", "health_result_asset_id": "asset-health-1"})
+    state = promote_lkg(state, qualification_evidence=_qualification_evidence(first))
+
+    second = copy.deepcopy(first)
+    second.update(generation_id="generation-2", parent_generation_id="generation-1", base_generation_id="generation-1")
+    state = install_generation(state, second, expected_base_generation_id="generation-1")
+
+    # A persisted rollback token can be consumed while the failed current is
+    # still present.  The failed rollback must enter safe mode without moving
+    # the qualified LKG pointer.
+    failed = GenerationState(
+        current=state.current,
+        lkg=state.lkg,
+        rollback_consumed=True,
+    )
+    safe = rollback_once(failed, failed_generation_id="generation-2")
+    assert safe.safe_mode is True
+    assert safe.current["generation_id"] == "generation-2"
+    assert safe.lkg["generation_id"] == "generation-1"
+
+    with pytest.raises(ContractError):
+        promote_lkg(safe, evidence=_qualification_evidence(second))
+
+    third = copy.deepcopy(second)
+    third.update(generation_id="generation-3", parent_generation_id="generation-2", base_generation_id="generation-2")
+    recovered = install_generation(safe, third, expected_base_generation_id="generation-2")
+    assert recovered.safe_mode is False
+    assert recovered.current["generation_id"] == "generation-3"
+    assert recovered.lkg["generation_id"] == "generation-1"
 
 
 def test_generation_rejects_stale_base_and_duplicate_plugin() -> None:
