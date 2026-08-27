@@ -1,0 +1,50 @@
+{
+  "schema": "contract-delta/v1",
+  "status": "open",
+  "delta_id": "P3-CD-CONTEXT-IDENTITY-001",
+  "raised_by_project": "P3",
+  "origin": {
+    "base_sha": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+    "reviewed_head": "597f45548005269776259d18a193c32758f3536b",
+    "finding_manifest_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p3-first-slice-finding-manifest-20260827.json",
+    "finding_manifest_sha256": "3031dac166ad6936b00d09d746e8e82e506759de50133cd146e971a9be9a86c3"
+  },
+  "contract_manifest_sha256": "5bc9b65e3ce3ffbcfd059e2a43521b2c8b6eb3e31661a1647fe8d3eff77db62c",
+  "affected_contract_ids": [
+    "rpc-method-matrix-v1",
+    "rpc-request-v1",
+    "rpc-success-v1"
+  ],
+  "affected_projects": [
+    "P0",
+    "P2",
+    "P3"
+  ],
+  "formal_design_version": "v1.2",
+  "formal_design_sha256": "e70f450b75cfa753148cf620d13855d0073f7d61294e7599ea9cc98f3e612b7b",
+  "observed_mismatch": "M0 freezes the ledger key tuple but does not define the canonical context_identity construction supplied to P3.",
+  "reproducer": {
+    "steps": [
+      "Read backend/plotpilot_plugin_sdk/rpc.py OperationLedger.apply_frame key construction.",
+      "Read contracts/json-schema/rpc-method-matrix.v1.json and rpc request schemas.",
+      "Observe no canonical context_identity field or construction rule."
+    ],
+    "expected": "One canonical cross-project identity rule owned by P0.",
+    "actual": "Only an opaque SDK argument exists."
+  },
+  "evidence": [
+    {
+      "path": "backend/plotpilot_plugin_sdk/rpc.py",
+      "symbol": "OperationLedger.apply_frame"
+    },
+    {
+      "path": "coordination/PPA-03/CONTRACT-DELTA-CONTEXT-IDENTITY.md",
+      "sha256": "bbff3e7d2ecbed5279da34d24701a473a65eacb560c672ea28c28452f3e26747"
+    }
+  ],
+  "affected_slice_stopped": true,
+  "stopped_slice": "RPC adapter composition of context_identity for durable Host mutations",
+  "proposed_v2_or_adr": "P0 decision: clarify existing v1 canonical construction or publish v2 plus ADR.",
+  "p0_decision": "pending",
+  "decision_evidence": null
+}

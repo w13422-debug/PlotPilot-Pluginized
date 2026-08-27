@@ -1,0 +1,28 @@
+{
+  "schema": "p3-validation-artifact/v1",
+  "project_id": "P3",
+  "base_sha": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+  "head_sha": "b5b5fb816ae2588d47f38d5c18c4d5e5ec939f15",
+  "commands": [
+    {
+      "command": "python -m pytest tests/p3-execution/test_job_execution.py tests/contract/test_rpc_and_sdk.py -q",
+      "exit_code": 0,
+      "output": {
+        "path": "coordination/PPA-03/evidence/raw/targeted-tests.stdout.txt",
+        "sha256": "0fc0266defa41d36c2ed00064759a1efb04870ad1682905eff183431f845578b",
+        "bytes": 711,
+        "exit_code": 0
+      }
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "output": {
+        "path": "coordination/PPA-03/evidence/raw/git-diff-check.stdout.txt",
+        "sha256": "a9f58776a09b5dac438049683f24bf85764e0ff8e7455952456165c68c158627",
+        "bytes": 13,
+        "exit_code": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "schema": "integration-ready/v1",
+  "status": "ready",
+  "submission_id": "P3-FIRST-SLICE-REMEDIATION-20260827",
+  "project_id": "P3",
+  "source_branch": "codex/ppa-03-execution",
+  "base_sha": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+  "head_sha": "b5b5fb816ae2588d47f38d5c18c4d5e5ec939f15",
+  "contract_manifest_sha256": "5bc9b65e3ce3ffbcfd059e2a43521b2c8b6eb3e31661a1647fe8d3eff77db62c",
+  "changed_paths": [
+    "backend/plotpilot_core/jobs/__init__.py",
+    "backend/plotpilot_core/jobs/ledger.py",
+    "backend/plotpilot_core/jobs/migrations/001_host_operation_ledger.sql",
+    "backend/plotpilot_core/jobs/migrations/manifest.json",
+    "backend/plotpilot_core/jobs/ports.py",
+    "backend/plotpilot_core/jobs/states.py",
+    "coordination/PPA-03/CONTRACT-DELTA-CONTEXT-IDENTITY.md",
+    "coordination/PPA-03/P1-EXECUTION-AUTHORITY-INTEGRATION.md",
+    "coordination/PPA-03/contract-delta-context-identity-v1.json",
+    "coordination/PPA-03/evidence/raw/git-diff-check.stdout.txt",
+    "coordination/PPA-03/evidence/raw/targeted-tests.stdout.txt",
+    "coordination/PPA-03/finding-closure-20260827.json",
+    "docs/deliveries/PPA-03/2026-08-27-first-execution-slice.md",
+    "tests/p3-execution/test_job_execution.py"
+  ],
+  "write_set_proof": {
+    "matrix_path": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized七项目任务书-2026-08-26\\project-matrix.json",
+    "project_id": "P3",
+    "project_write_set_match": true,
+    "p0_write_set_match": true,
+    "out_of_set_paths": []
+  },
+  "contract_delta_ids": [
+    "P3-CD-CONTEXT-IDENTITY-001"
+  ],
+  "dependency_delta_ids": [],
+  "validation": [
+    {
+      "command": "python -m pytest tests/p3-execution/test_job_execution.py tests/contract/test_rpc_and_sdk.py -q",
+      "exit_code": 0,
+      "output": {
+        "path": "coordination/PPA-03/evidence/raw/targeted-tests.stdout.txt",
+        "sha256": "0fc0266defa41d36c2ed00064759a1efb04870ad1682905eff183431f845578b",
+        "bytes": 711,
+        "exit_code": 0
+      }
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "output": {
+        "path": "coordination/PPA-03/evidence/raw/git-diff-check.stdout.txt",
+        "sha256": "a9f58776a09b5dac438049683f24bf85764e0ff8e7455952456165c68c158627",
+        "bytes": 13,
+        "exit_code": 0
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "coordination/PPA-03/evidence/p3-first-slice-remediation-validation.json",
+      "sha256": "0ff102f077c335e1bb25d2795e72d3890f96db2c4ef1980ac7e46e69f4951d32",
+      "bytes": 922,
+      "exit_code": 0
+    },
+    {
+      "path": "coordination/PPA-03/finding-closure-20260827.json",
+      "sha256": "84b3e2d56728babb0b7255718b387eac1128337b3a3a9ed0046bcacab25938e3",
+      "bytes": 2566,
+      "exit_code": 0
+    }
+  ],
+  "review": {
+    "reviewer": "01a04179-bc91-7480-ba9d-89fe225e2c02",
+    "finding_ids": [
+      "P3-AUDIT-P1-LEDGER-FENCE-001",
+      "P3-AUDIT-P1-DELTA-002",
+      "P3-AUDIT-P1-QUEUE-003",
+      "P3-AUDIT-P2-FRAME-004",
+      "P3-AUDIT-P2-DURABILITY-005",
+      "P3-AUDIT-P2-ERROR-006",
+      "P3-CTRL-P1-MIGRATION-007"
+    ],
+    "closure_artifact": {
+      "path": "coordination/PPA-03/finding-closure-20260827.json",
+      "sha256": "84b3e2d56728babb0b7255718b387eac1128337b3a3a9ed0046bcacab25938e3",
+      "bytes": 2566,
+      "exit_code": 0
+    }
+  },
+  "residual_gates": [
+    "P1 authoritative transaction and migration contributor registration",
+    "P1 atomic request-key create/find",
+    "P0 canonical context_identity decision",
+    "P2 worker runtime and lease allocator/CAS"
+  ],
+  "ready": true
+}
