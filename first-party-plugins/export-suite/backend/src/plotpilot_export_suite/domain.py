@@ -11,7 +11,9 @@ import io
 import os
 import re
 import tempfile
+import zipfile
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from enum import Enum
 from hashlib import sha256
 from pathlib import Path
@@ -123,7 +125,10 @@ def _docx(document: ExportDocument, chapters: tuple[ChapterRevision, ...]) -> tu
                 output.add_paragraph(line)
     stream = io.BytesIO()
     output.save(stream)
-    return stream.getvalue(), "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    # python-docx emits ZIP entries with wall-clock timestamps.  Repack with
+    # the fixed package profile so identical immutable input has identical
+    # bytes, independent of render time or host filesystem.
+    return _repack_zip_deterministic(stream.getvalue()), "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
 
 def _epub(document: ExportDocument, chapters: tuple[ChapterRevision, ...]) -> tuple[bytes, str]:
@@ -168,13 +173,17 @@ def _epub(document: ExportDocument, chapters: tuple[ChapterRevision, ...]) -> tu
     finally:
         if path and os.path.isfile(path):
             os.unlink(path)
-    return content, "application/epub+zip"
+    return _repack_zip_deterministic(content, epub=True), "application/epub+zip"
 
 
 def _pdf(document: ExportDocument, chapters: tuple[ChapterRevision, ...]) -> tuple[bytes, str]:
     from fpdf import FPDF
 
     pdf = FPDF()
+    # FPDF otherwise inserts the current second into /CreationDate and the
+    # derived file identifier.  A fixed UTC instant is part of this renderer's
+    # deterministic output profile.
+    pdf.set_creation_date(datetime(2000, 1, 1, tzinfo=timezone.utc))
     pdf.set_auto_page_break(auto=True, margin=14)
     font = ""
     candidates: list[Path] = []
@@ -214,6 +223,43 @@ def _pdf(document: ExportDocument, chapters: tuple[ChapterRevision, ...]) -> tup
         add(11, chapter.content.strip() or "（无正文）", 6)
     raw = pdf.output()
     return bytes(raw) if not isinstance(raw, str) else raw.encode("latin-1"), "application/pdf"
+
+
+def _repack_zip_deterministic(data: bytes, *, epub: bool = False) -> bytes:
+    """Normalize ZIP metadata/order without changing member payloads.
+
+    Both DOCX and EPUB are ZIP-based formats.  Their libraries correctly
+    generate the document payload but leave timestamps (and EPUB's modified
+    metadata) variable.  This adapter fixes only container metadata and keeps
+    the EPUB ``mimetype`` member first and stored as required by EPUB readers.
+    """
+    source = io.BytesIO(data)
+    output = io.BytesIO()
+    with zipfile.ZipFile(source, "r") as archive, zipfile.ZipFile(output, "w", allowZip64=True) as normalized:
+        entries = sorted(archive.infolist(), key=lambda info: (0 if epub and info.filename == "mimetype" else 1, info.filename))
+        for entry in entries:
+            payload = archive.read(entry.filename)
+            if epub and entry.filename == "EPUB/content.opf":
+                payload = re.sub(
+                    rb'(<meta property="dcterms:modified">)[^<]*(</meta>)',
+                    rb"\g<1>2000-01-01T00:00:00Z\g<2>",
+                    payload,
+                )
+            info = zipfile.ZipInfo(entry.filename, date_time=(1980, 1, 1, 0, 0, 0))
+            info.create_system = 3
+            info.create_version = 20
+            info.extract_version = 20
+            info.flag_bits = 0x800
+            info.comment = b""
+            info.extra = b""
+            is_directory = entry.filename.endswith("/")
+            info.external_attr = (0o40755 if is_directory else 0o100644) << 16
+            info.compress_type = zipfile.ZIP_STORED if (epub and entry.filename == "mimetype") else zipfile.ZIP_DEFLATED
+            if info.compress_type == zipfile.ZIP_DEFLATED:
+                normalized.writestr(info, payload, compresslevel=9)
+            else:
+                normalized.writestr(info, payload)
+    return output.getvalue()
 
 
 _RENDERERS = {

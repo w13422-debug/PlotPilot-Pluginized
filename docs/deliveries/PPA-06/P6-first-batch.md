@@ -35,7 +35,9 @@
 2. Immutable current-revision hash verification, stable chapter-number order,
    whole-book and single-chapter legacy filename behavior, four source-baseline
    formats, exact MIME/extension mapping, Markdown UTF-8 without BOM, and
-   provenance hashes.
+   provenance hashes. ZIP entry timestamps/order, EPUB modified metadata, and
+   PDF creation metadata/file identity are fixed so repeated renders are
+   byte-for-byte and SHA-256 identical.
 3. Export exceptions cannot mutate the frozen body input; no repository or
    Publication path exists in the plugin.
 4. Deterministic Context/Skill freeze, explicit-enable Autopilot stage order,
@@ -49,7 +51,7 @@ Command:
 python -m pytest tests/p6-writing -q
 ```
 
-Final raw result after review remediation: `18 passed`.
+Final raw result after review remediation: `19 passed`.
 
 Additional checks:
 

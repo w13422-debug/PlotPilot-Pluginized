@@ -5,6 +5,7 @@ from hashlib import sha256
 from pathlib import Path
 import io
 import re
+import time
 import zipfile
 import zlib
 
@@ -151,3 +152,15 @@ def test_single_chapter_selects_exact_document_not_duplicate_number() -> None:
     expanded = ExportDocument(source.workspace_id, source.novel_id, source.title, source.author, source.premise, source.chapters + (duplicate,))
     result = build_export(expanded, ExportFormat.MARKDOWN, document_id="doc-1")
     assert result.source_revisions == (("doc-1", "rev-1", source.chapters[1].content_hash),)
+
+
+def test_repeated_render_is_byte_and_sha256_deterministic_for_every_format() -> None:
+    source = document()
+    first = {export_format: build_export(source, export_format) for export_format in ExportFormat}
+    # Cross a PDF second and ZIP timestamp boundary; a wall-clock dependent
+    # implementation would fail this assertion.
+    time.sleep(2.0)
+    second = {export_format: build_export(source, export_format) for export_format in ExportFormat}
+    for export_format in ExportFormat:
+        assert second[export_format].content == first[export_format].content
+        assert second[export_format].sha256 == first[export_format].sha256
