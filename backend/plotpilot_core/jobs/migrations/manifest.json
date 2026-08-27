@@ -1,0 +1,13 @@
+{
+  "schema": "p3-module-migrations/v1",
+  "module": "plotpilot_core.jobs",
+  "runner_owner": "P1",
+  "steps": [
+    {
+      "id": "p3-jobs-001",
+      "path": "001_host_operation_ledger.sql",
+      "sha256": "c764efce36fadbce08453251ebfc468426ab5d6b0f9a77bb400cf9a1d9bf8498",
+      "transactional": true
+    }
+  ]
+}

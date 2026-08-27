@@ -1,30 +1,35 @@
 from __future__ import annotations
-import hashlib, sqlite3
-from contextlib import contextmanager
-from pathlib import Path
-from typing import Callable, Iterator
-from backend.plotpilot_plugin_sdk import canonical_bytes
-from .errors import duplicate_request
+import hashlib
+from typing import Callable, Mapping, Protocol, Any
+from backend.plotpilot_plugin_sdk import ContractError, ErrorCode, canonical_bytes
+from backend.plotpilot_plugin_sdk.rpc import decode_frame
+
+class AuthoritativeConnection(Protocol):
+    """P1-owned connection already enclosed by its authoritative transaction."""
+    def execute(self, sql: str, parameters: tuple[Any, ...] = ()) -> Any: ...
 
 class DurableOperationLedger:
-    """Durable ACK-loss ledger storing the first complete response frame verbatim."""
-    def __init__(self, database: str | Path = ":memory:") -> None:
-        self.connection=sqlite3.connect(str(database), isolation_level=None); self.connection.row_factory=sqlite3.Row
-        self.connection.execute("CREATE TABLE IF NOT EXISTS host_operation_ledger(context_identity TEXT NOT NULL,method TEXT NOT NULL,operation_key TEXT NOT NULL,payload_hash TEXT NOT NULL,response_frame BLOB NOT NULL,PRIMARY KEY(context_identity,method,operation_key))")
-    @contextmanager
-    def transaction(self)->Iterator[sqlite3.Connection]:
-        self.connection.execute("BEGIN IMMEDIATE")
-        try: yield self.connection
-        except BaseException: self.connection.rollback(); raise
-        else: self.connection.commit()
-    def execute(self,*,context_identity:str,method:str,operation_key:str,payload:object,preflight:Callable[[],None],action:Callable[[sqlite3.Connection],bytes])->bytes:
-        digest=hashlib.sha256(canonical_bytes(payload)).hexdigest()
-        with self.transaction() as tx:
-            row=tx.execute("SELECT payload_hash,response_frame FROM host_operation_ledger WHERE context_identity=? AND method=? AND operation_key=?",(context_identity,method,operation_key)).fetchone()
-            if row is not None:
-                if row["payload_hash"]!=digest: raise duplicate_request()
-                return bytes(row["response_frame"])
-            preflight(); frame=action(tx)
-            if not isinstance(frame,bytes): raise TypeError("operation action must return the complete response frame as bytes")
-            tx.execute("INSERT INTO host_operation_ledger VALUES(?,?,?,?,?)",(context_identity,method,operation_key,digest,frame)); return frame
-    def close(self)->None: self.connection.close()
+    """Stateless P3 ledger logic; connection, transaction and migration ownership stay in P1."""
+    def execute(self, connection: AuthoritativeConnection, *, context_identity: str, method: str,
+                operation_key: str, payload: Mapping[str, Any], preflight: Callable[[], None],
+                action: Callable[[AuthoritativeConnection], bytes]) -> bytes:
+        # Frozen audit rule: fencing/context validation always precedes replay lookup.
+        preflight()
+        digest = hashlib.sha256(canonical_bytes(dict(payload))).hexdigest()
+        row = connection.execute(
+            "SELECT payload_hash,response_frame FROM p3_host_operation_ledger WHERE context_identity=? AND method=? AND operation_key=?",
+            (context_identity, method, operation_key),
+        ).fetchone()
+        if row is not None:
+            if row[0] != digest:
+                raise ContractError(ErrorCode.DUPLICATE_REQUEST, "operation key reused with a different payload")
+            frame = bytes(row[1]); decode_frame(frame); return frame
+        frame = action(connection)
+        if not isinstance(frame, bytes):
+            raise ContractError(ErrorCode.ASSET_ERROR, "operation action must return a complete response frame")
+        decode_frame(frame)
+        connection.execute(
+            "INSERT INTO p3_host_operation_ledger(context_identity,method,operation_key,payload_hash,response_frame) VALUES(?,?,?,?,?)",
+            (context_identity, method, operation_key, digest, frame),
+        )
+        return frame
