@@ -1,19 +1,19 @@
 command: node --experimental-strip-types --test tests/p4-webui/*.test.mts
 exit_code: 0
 
-✔ calculates progress from the Host-only drawer view model (1.8414ms)
-✔ presents every fixed capability state explicitly (0.448ms)
-✔ only exposes contract-valid resume and cancel affordances (0.2222ms)
-✔ maps a validated Host button node to a non-asset form renderer (2.0598ms)
-✔ keeps asset-backed and Candidate controls behind their authority boundaries (0.8579ms)
-✔ keeps plugin Slot rendering out of the app and router ownership boundary (5.9216ms)
-✔ contains renderer exceptions inside the Slot frame (4.315ms)
-✔ freezes the eleven v1 slots and rejects dynamic top-level slots (0.854ms)
-✔ fences old-render duplicate before replaying a previously accepted ACK (1.7679ms)
-✔ replays identical current-render ACK and rejects payload drift (0.4253ms)
-✔ deep-clones and freezes identity, installed tree, dispatch and ACK values (0.2983ms)
-✔ stops tree, intent and ACK unknown ingress until P0 validators exist (1.1605ms)
-✔ rejects prototype-backed values and inherited schema before validator dispatch (0.2194ms)
+✔ calculates progress from the Host-only drawer view model (2.4774ms)
+✔ presents every fixed capability state explicitly (0.2944ms)
+✔ only exposes contract-valid resume and cancel affordances (0.2361ms)
+✔ maps a validated Host button node to a non-asset form renderer (1.8708ms)
+✔ keeps asset-backed and Candidate controls behind their authority boundaries (0.6822ms)
+✔ keeps plugin Slot rendering out of the app and router ownership boundary (5.6968ms)
+✔ contains renderer exceptions inside the Slot frame (7.0553ms)
+✔ freezes the eleven v1 slots and rejects dynamic top-level slots (0.6927ms)
+✔ fences old-render duplicate before replaying a previously accepted ACK (1.8457ms)
+✔ replays identical current-render ACK and rejects payload drift (0.4073ms)
+✔ deep-clones and freezes identity, installed tree, dispatch and ACK values (0.4741ms)
+✔ stops tree, intent and ACK unknown ingress until P0 validators exist (0.7109ms)
+✔ rejects prototype-backed values and inherited schema before validator dispatch (0.1439ms)
 ℹ tests 13
 ℹ suites 0
 ℹ pass 13
@@ -21,4 +21,4 @@ exit_code: 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 492.3039
+ℹ duration_ms 495.325

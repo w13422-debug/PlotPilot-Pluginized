@@ -1,6 +1,12 @@
 import type { PluginUIAck, PluginUIIntent } from '../contracts/types.ts'
 import { deepCloneFreeze } from '../contracts/schema-ingress.ts'
-import { PluginUiSession, toPluginUiAck, type RecordedIntentAck, type UiSessionIdentity } from './uiSession.ts'
+import {
+  PluginUiSession,
+  toPluginUiAck,
+  type PluginUiHostEventInput,
+  type RecordedIntentAck,
+  type UiSessionIdentity,
+} from './uiSession.ts'
 import {
   ingestPluginUiAck,
   ingestPluginUiMessage,
@@ -24,12 +30,15 @@ export interface PluginWorkerLike extends WatchdogWorker {
 export type PluginWorkerFactory = (url: string) => PluginWorkerLike
 
 export type PluginWorkerHostState = 'idle' | 'starting' | 'running' | 'stopped' | 'failed'
+export type ValidatedPluginUiEventMessage = Extract<
+  ValidatedPluginUiMessage,
+  { direction: 'host_to_worker'; messageType: 'intent' }
+>
 
 export type IntentHandlerResult =
-  | void
   | Readonly<PluginUIAck>
   | Readonly<RecordedIntentAck>
-  | Promise<void | Readonly<PluginUIAck> | Readonly<RecordedIntentAck>>
+  | Promise<Readonly<PluginUIAck> | Readonly<RecordedIntentAck>>
 
 export interface PluginWorkerHostOptions {
   identity: UiSessionIdentity
@@ -107,6 +116,13 @@ function assertWorkerLike(value: unknown): asserts value is PluginWorkerLike {
   }
 }
 
+function configuredHighWater(value: number | undefined, label: string): number | undefined {
+  if (value !== undefined && (!Number.isSafeInteger(value) || value < 0)) {
+    throw new Error(`${label}_invalid`)
+  }
+  return value
+}
+
 /**
  * Per-Slot Dedicated Worker host. It owns only message transport, session
  * fencing and lifecycle; Core dispatch and UI mounting remain injected ports.
@@ -118,8 +134,6 @@ export class PluginWorkerHost {
   readonly workerBundleHash: string
   readonly watchdog: PluginSlotWatchdog
   private readonly workerFactory: PluginWorkerFactory
-  private readonly initialRenderSeq: number
-  private readonly initialIntentSeq: number
   private readonly contributionConfigAssetId: string | null
   private readonly now: () => Date
   private readonly options: PluginWorkerHostOptions
@@ -133,8 +147,19 @@ export class PluginWorkerHost {
   private hasStarted = false
 
   constructor(options: PluginWorkerHostOptions) {
-    const initialSession = options.session ?? new PluginUiSession(options.identity)
+    const configuredRenderSeq = configuredHighWater(options.initialRenderSeq, 'worker_host_initial_render_seq')
+    const configuredIntentSeq = configuredHighWater(options.initialIntentSeq, 'worker_host_initial_intent_seq')
+    const initialSession = options.session ?? new PluginUiSession(options.identity, {
+      initialRenderSeq: configuredRenderSeq ?? 0,
+      initialIntentSeq: configuredIntentSeq ?? 0,
+    })
     if (!sameIdentity(initialSession.identity, options.identity)) throw new Error('worker_host_session_identity_mismatch')
+    if (configuredRenderSeq !== undefined && configuredRenderSeq !== initialSession.renderHighWater) {
+      throw new Error('worker_host_session_render_high_water_mismatch')
+    }
+    if (configuredIntentSeq !== undefined && configuredIntentSeq !== initialSession.intentHighWater) {
+      throw new Error('worker_host_session_intent_high_water_mismatch')
+    }
     this.identity = initialSession.identity
     this.sessionValue = initialSession
     const parsedWorkerUrl = parsePluginWorkerUrl(options.workerUrl, {
@@ -146,17 +171,9 @@ export class PluginWorkerHost {
     this.workerReleaseId = parsedWorkerUrl.releaseId
     this.workerBundleHash = parsedWorkerUrl.bundleHash
     this.workerFactory = options.workerFactory ?? defaultWorkerFactory
-    this.initialRenderSeq = options.initialRenderSeq ?? 0
-    this.initialIntentSeq = options.initialIntentSeq ?? 0
     this.contributionConfigAssetId = options.contributionConfigAssetId ?? null
     this.now = options.now ?? (() => new Date())
     this.options = options
-    if (!Number.isSafeInteger(this.initialRenderSeq) || this.initialRenderSeq < 0) {
-      throw new Error('worker_host_initial_render_seq_invalid')
-    }
-    if (!Number.isSafeInteger(this.initialIntentSeq) || this.initialIntentSeq < 0) {
-      throw new Error('worker_host_initial_intent_seq_invalid')
-    }
     if (options.watchdog !== undefined) {
       this.watchdog = options.watchdog
     } else {
@@ -184,7 +201,12 @@ export class PluginWorkerHost {
 
   start(): PluginWorkerLike {
     if (this.lifecycle !== null) throw new Error('worker_host_already_running')
-    if (this.hasStarted) this.sessionValue = new PluginUiSession(this.identity)
+    if (this.hasStarted) {
+      this.sessionValue = new PluginUiSession(this.identity, {
+        initialRenderSeq: this.sessionValue.renderHighWater,
+        initialIntentSeq: this.sessionValue.intentHighWater,
+      })
+    }
     this.hasStarted = true
     this.outboundMessageSeq = 0
     this.inboundMessageSeq = 0
@@ -247,8 +269,14 @@ export class PluginWorkerHost {
     return this.stop(reason)
   }
 
-  sendEvent(body: Readonly<ValidatedPluginUiEventBody>): ValidatedPluginUiMessage {
-    return this.sendHostMessage('intent', body)
+  sendEvent(input: PluginUiHostEventInput): ValidatedPluginUiEventMessage {
+    const body = this.sessionValue.createHostEvent(input)
+    return this.sendHostMessage('intent', body) as ValidatedPluginUiEventMessage
+  }
+
+  sendValidatedEvent(body: Readonly<ValidatedPluginUiEventBody>): ValidatedPluginUiEventMessage {
+    const validated = this.sessionValue.validateHostEvent(body)
+    return this.sendHostMessage('intent', validated) as ValidatedPluginUiEventMessage
   }
 
   sendAck(
@@ -293,8 +321,8 @@ export class PluginWorkerHost {
     const body: ValidatedPluginUiInitBody = {
       schema: 'plugin-ui-init/v1',
       ui_session_id: this.identity.uiSessionId,
-      initial_render_seq: this.initialRenderSeq,
-      initial_intent_seq: this.initialIntentSeq,
+      initial_render_seq: this.sessionValue.renderHighWater,
+      initial_intent_seq: this.sessionValue.intentHighWater,
       contribution_config_asset_id: this.contributionConfigAssetId,
     }
     this.sendHostMessage('init', body, lifecycle)
@@ -411,46 +439,52 @@ export class PluginWorkerHost {
       this.notifyAck(ackBody, ack)
       return
     }
-    if (this.options.onIntent === undefined) return
+    if (decision.kind === 'pending') return
+    if (this.options.onIntent === undefined) {
+      this.completeIntentFailure(lifecycle, decision.intent, new Error('plugin_intent_handler_unavailable'))
+      return
+    }
     let result: IntentHandlerResult
     try {
       result = this.options.onIntent(decision.intent, message)
     } catch (error) {
-      this.completeIntentFailure(lifecycle, decision.intent, message, asError(error, 'plugin_intent_handler_failed'))
+      this.completeIntentFailure(lifecycle, decision.intent, asError(error, 'plugin_intent_handler_failed'))
       return
     }
     if (isPromiseLike(result)) {
       void result.then(
-        value => this.completeIntentResult(lifecycle, decision.intent, message, value),
-        error => this.completeIntentFailure(lifecycle, decision.intent, message, asError(error, 'plugin_intent_handler_failed')),
+        value => this.completeIntentResult(lifecycle, decision.intent, value),
+        error => this.completeIntentFailure(lifecycle, decision.intent, asError(error, 'plugin_intent_handler_failed')),
       )
     } else {
-      this.completeIntentResult(lifecycle, decision.intent, message, result)
+      this.completeIntentResult(lifecycle, decision.intent, result)
     }
   }
 
   private completeIntentResult(
     lifecycle: WorkerLifecycle,
     intent: Readonly<PluginUIIntent>,
-    message: ValidatedPluginUiMessage,
     result: unknown,
   ): void {
     if (this.lifecycle !== lifecycle) return
-    if (result === undefined) return
+    if (result === undefined) {
+      this.completeIntentFailure(lifecycle, intent, new Error('plugin_intent_handler_result_missing'))
+      return
+    }
     try {
       const ack = isRecordedAck(result) ? toPluginUiAck(result) : ingestPluginUiAck(result)
-      this.sessionValue.recordValidatedAck(intent, ack)
-      const sent = this.sendAck(ack, lifecycle)
-      this.notifyAck(ack, sent)
+      const completed = this.sessionValue.completeValidatedIntent(intent, ack)
+      const ackBody = toPluginUiAck(completed)
+      const sent = this.sendAck(ackBody, lifecycle)
+      this.notifyAck(ackBody, sent)
     } catch (error) {
-      this.completeIntentFailure(lifecycle, intent, message, asError(error, 'plugin_intent_ack_invalid'))
+      this.completeIntentFailure(lifecycle, intent, asError(error, 'plugin_intent_ack_invalid'))
     }
   }
 
   private completeIntentFailure(
     lifecycle: WorkerLifecycle,
     intent: Readonly<PluginUIIntent>,
-    message: ValidatedPluginUiMessage,
     error: Error,
   ): void {
     if (this.lifecycle !== lifecycle) return
@@ -462,8 +496,8 @@ export class PluginWorkerHost {
       jobId: null,
     })
     try {
-      this.sessionValue.recordValidatedAck(intent, ack)
-      const ackBody = toPluginUiAck(ack)
+      const completed = this.sessionValue.completeValidatedIntent(intent, ack)
+      const ackBody = toPluginUiAck(completed)
       const sent = this.sendAck(ackBody, lifecycle)
       this.notifyAck(ackBody, sent)
     } catch (ackError) {
@@ -474,7 +508,6 @@ export class PluginWorkerHost {
     } catch (handlerError) {
       this.notify(asError(handlerError, 'plugin_intent_error_handler_failed'), false)
     }
-    void message
   }
 
   private notifyAck(ack: Readonly<PluginUIAck>, message: ValidatedPluginUiMessage): void {

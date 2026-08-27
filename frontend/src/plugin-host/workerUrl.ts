@@ -11,7 +11,7 @@ export interface PluginWorkerUrlValidationOptions {
 }
 
 export interface ParsedPluginWorkerUrl {
-  /** The exact relative path or the URL-normalized absolute URL accepted by the gate. */
+  /** The accepted root-relative or same-origin absolute primitive string. */
   url: string
   /** The URL origin when available; relative paths have a null origin. */
   origin: string | null
@@ -83,8 +83,8 @@ export function parsePluginWorkerUrl(
   value: unknown,
   options: PluginWorkerUrlValidationOptions = {},
 ): ParsedPluginWorkerUrl {
-  if (typeof value !== 'string' && !(value instanceof URL)) reject('plugin_worker_url_type_invalid')
-  const raw = typeof value === 'string' ? value : value.href
+  if (typeof value !== 'string') reject('plugin_worker_url_type_invalid')
+  const raw = value
   if (raw.length === 0) reject('plugin_worker_url_empty')
   if (/[\u0000-\u0020\u007f]/u.test(raw)) reject('plugin_worker_url_whitespace')
   if (raw.includes('%')) reject('plugin_worker_url_encoding_forbidden')

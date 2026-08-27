@@ -4,6 +4,7 @@
 
 - Branch: `codex/ppa-04b-plugin-host`
 - Exact base: `1b352be671e70a2ce443b10499060982e93d64b7`
+- Remediation parent: `5a85cc4801d245f81a5d3a970ac471cde1bd6895`
 - Source candidate head: the single source-only commit produced with this
   handoff; the exact hash is returned with the delivery status
 - Donor-local push: `DISABLED`
@@ -11,10 +12,10 @@
 
 ## Review boundary
 
-This handoff records implementation evidence only. Luna has not reviewed its
-own work, closed a Finding, or granted merge eligibility. Sol must independently
-review the source diff, exact base, tests and boundary claims before P0
-integration.
+This handoff records implementation evidence only. The remediation author has
+not closed a Finding or granted merge eligibility. The frozen manifest remains
+subject to per-ID re-review by the same reviewer task
+`01a0436d-6d77-7a83-8f8b-fe54fb8bcf51` before any P0 integration decision.
 
 ## P0 contract use
 
@@ -51,7 +52,8 @@ append a separate evidence-only commit.
 
 1. Confirm the candidate remains based on
    `1b352be671e70a2ce443b10499060982e93d64b7`.
-2. Have Sol review the complete source diff and re-run the applicable gates.
+2. Have reviewer task `01a0436d-6d77-7a83-8f8b-fe54fb8bcf51` re-review
+   `P4B-SOL-F-001` through `P4B-SOL-F-004` and re-run the applicable gates.
 3. If accepted, P0 performs the prescribed `no-ff` merge. Do not force-push,
    move tags, or modify donor-local.
 4. Keep Core route publication and parent P4 final UI wiring as explicit

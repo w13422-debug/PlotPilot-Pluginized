@@ -3,6 +3,7 @@
 - Project: P4B / PPA-04B-Plugin-Host
 - Branch: `codex/ppa-04b-plugin-host`
 - Exact base: `1b352be671e70a2ce443b10499060982e93d64b7`
+- Remediation parent: `5a85cc4801d245f81a5d3a970ac471cde1bd6895`
 - Delivery kind: source candidate (implementation, tests and delivery evidence
   are kept in one source commit; no evidence-only HEAD)
 - Donor-local push: disabled
@@ -19,10 +20,12 @@
    returns only the host-normalized `ValidatedPluginUiMessage` view.
 3. The existing renderer/session model receives a host-local projection of the
    P0 tree; it does not introduce a second tree, intent or ACK wire DTO.
-4. `workerUrl.ts` accepts only the exact root-relative or same-origin route
+4. `workerUrl.ts` accepts only primitive strings containing the exact
+   root-relative or canonical same-origin route
    `/__plotpilot/plugin-worker/<64hex release_id>/<64hex bundle_hash>/worker.js`.
-   Blob/data URLs, cross-origin URLs, query/fragment, encoding, path
-   normalization and case/shape deviations are rejected.
+   URL objects are rejected before normalization. Blob/data URLs,
+   cross-origin strings, query/fragment, encoding, path normalization and
+   case/shape deviations are rejected.
 5. `workerHost.ts` creates a module Dedicated Worker, sends formal init and
    dispose envelopes, validates `MessageEvent.data` as `unknown` through
    `ingestPluginUiMessage`, fences identity/message sequence/message IDs,
@@ -30,6 +33,30 @@
    workers.
 6. `watchdog.ts` is an identity-fenced per-Slot timer. Re-arming a Slot
    cannot allow an old timer to terminate its replacement Worker.
+
+## Bounded remediation evidence
+
+The frozen Finding Manifest is
+`p4b-finding-manifest-20260827.json` with SHA-256
+`1fb985e2c8f3d5fdbe02f878d1cf870ab1b6b457b13df9afce4859db5be57bdf`.
+This candidate provides implementation and test evidence for only its four
+listed IDs:
+
+- `P4B-SOL-F-001`: Host-created events derive the current installed-tree
+  `render_seq` and session freshness, while both constructed and explicitly
+  validated event bodies are gated by the installed tree and declared
+  action/component event rules.
+- `P4B-SOL-F-002`: render and intent high-water marks start from the init
+  baselines, require strictly greater incoming sequences, must agree with a
+  supplied session, and carry into a replacement Worker session.
+- `P4B-SOL-F-003`: the intent ledger has an explicit pending state; an
+  identical in-flight duplicate is coalesced, and atomic completion stores one
+  immutable ACK for exact replay.
+- `P4B-SOL-F-004`: the Worker URL gate rejects every non-primitive-string
+  input before URL parsing or normalization.
+
+These statements are candidate evidence, not Finding adjudication. The same
+reviewer task `01a0436d-6d77-7a83-8f8b-fe54fb8bcf51` must re-review every ID.
 
 ## Authority and boundary
 
@@ -62,7 +89,7 @@ The final staged-path audit is recorded in
 
 | Check | Result |
 |---|---|
-| `node --experimental-strip-types --test tests/p4-webui/plugin-host/*.test.mts` | 10 passed, 0 failed |
+| `node --experimental-strip-types --test tests/p4-webui/plugin-host/*.test.mts` | 13 passed, 0 failed |
 | `node --experimental-strip-types --test tests/p4-webui/*.test.mts` | 13 passed, 0 failed |
 | Direct existing TypeScript 5.9 compiler check of all `frontend/src/plugin-host/*.ts` and imports | exit 0 |
 | `git diff --check` | pass before source commit |
@@ -81,5 +108,6 @@ dependency, not a source or contract change.
   policy before product runtime wiring can start a real plugin bundle.
 - Parent P4 retains final Slot mounting, fixed navigation and view/component
   wiring.
-- Sol review, Finding adjudication and P0 `no-ff` merge eligibility remain
-  outside this Luna implementation candidate.
+- Finding adjudication and P0 `no-ff` merge eligibility remain pending the
+  same reviewer task `01a0436d-6d77-7a83-8f8b-fe54fb8bcf51`; this Sol
+  remediation candidate does not grant either status.

@@ -5,6 +5,7 @@ import {
   PluginWorkerHost,
   type PluginWorkerLike,
 } from '../../../frontend/src/plugin-host/workerHost.ts'
+import { PluginUiSession } from '../../../frontend/src/plugin-host/uiSession.ts'
 import { buildPluginWorkerUrl, parsePluginWorkerUrl } from '../../../frontend/src/plugin-host/workerUrl.ts'
 import { PluginSlotWatchdog, type SlotWatchdogOptions } from '../../../frontend/src/plugin-host/watchdog.ts'
 
@@ -227,6 +228,189 @@ test('late events from a released Worker cannot affect its replacement', () => {
   assert.equal(host.state, 'running')
 })
 
+test('P4B-SOL-F-001 gates Host events by installed tree, exact freshness and declared action', () => {
+  const worker = new FakeWorker()
+  const host = newHost(worker)
+  host.start()
+  const event = {
+    eventId: 'event-1',
+    eventSeq: 1,
+    actionId: 'click',
+    eventType: 'click' as const,
+    payloadAssetId: null,
+  }
+
+  assert.throws(() => host.sendEvent(event), /host_event_tree_not_installed/)
+  worker.emit(workerMessage('render', tree, 1))
+  const sent = host.sendEvent(event)
+  assert.equal(worker.posted.length, 2)
+  assert.deepEqual(sent.body, {
+    schema: 'plugin-ui-event/v1',
+    event_id: 'event-1',
+    event_seq: 1,
+    render_seq: 1,
+    action_id: 'click',
+    event_type: 'click',
+    payload_asset_id: null,
+    freshness: intent.freshness,
+  })
+
+  const stale = structuredClone(sent.body)
+  stale.render_seq = 0
+  assert.throws(() => host.sendValidatedEvent(stale), /host_event_render_seq_stale/)
+  const wrongIdentity = structuredClone(sent.body)
+  wrongIdentity.freshness.generation_id = 'old-generation'
+  assert.throws(() => host.sendValidatedEvent(wrongIdentity), /host_event_freshness_mismatch/)
+  assert.throws(
+    () => host.sendEvent({ ...event, eventId: 'event-2', actionId: 'undeclared' }),
+    /host_event_action_not_declared/,
+  )
+  assert.throws(
+    () => host.sendEvent({ ...event, eventId: 'event-3', eventType: 'change' }),
+    /host_event_action_not_declared/,
+  )
+  assert.equal(worker.posted.length, 2)
+})
+
+test('P4B-SOL-F-002 enforces nonzero high-water, custom-session consistency and restart replay fencing', () => {
+  const renderBaselineSession = new PluginUiSession(identity, { initialRenderSeq: 5, initialIntentSeq: 9 })
+  assert.throws(
+    () => renderBaselineSession.installValidatedTree({ ...tree, tree_id: 'tree-5', render_seq: 5 }),
+    /stale_render_seq/,
+  )
+  const mismatchedSession = new PluginUiSession(identity, { initialRenderSeq: 5, initialIntentSeq: 9 })
+  assert.throws(
+    () => newHost(new FakeWorker(), new TimerHarness(), {
+      session: mismatchedSession,
+      initialRenderSeq: 4,
+      initialIntentSeq: 9,
+    }),
+    /session_render_high_water_mismatch/,
+  )
+  assert.throws(
+    () => newHost(new FakeWorker(), new TimerHarness(), {
+      session: mismatchedSession,
+      initialRenderSeq: 5,
+      initialIntentSeq: 8,
+    }),
+    /session_intent_high_water_mismatch/,
+  )
+
+  const session = new PluginUiSession(identity, { initialRenderSeq: 5, initialIntentSeq: 9 })
+  const worker = new FakeWorker()
+  const host = newHost(worker, new TimerHarness(), {
+    session,
+    initialRenderSeq: 5,
+    initialIntentSeq: 9,
+    onIntent: value => ({
+      intentId: value.intent_id,
+      accepted: true,
+      errorCode: null,
+      coreEventSeq: 10,
+      jobId: null,
+    }),
+  })
+  host.start()
+  assert.deepEqual((worker.posted[0] as Record<string, any>).body, {
+    schema: 'plugin-ui-init/v1',
+    ui_session_id: identity.uiSessionId,
+    initial_render_seq: 5,
+    initial_intent_seq: 9,
+    contribution_config_asset_id: null,
+  })
+
+  const tree6 = { ...tree, tree_id: 'tree-6', render_seq: 6 }
+  worker.emit(workerMessage('render', tree6, 1))
+  const baselineIntent: PluginUIIntent = {
+    ...intent,
+    intent_id: 'intent-baseline',
+    intent_seq: 9,
+    render_seq: 6,
+  }
+  worker.emit(workerMessage('intent', baselineIntent, 2))
+  assert.equal((worker.posted[1] as Record<string, any>).body.error_code, '1010')
+  const nextIntent: PluginUIIntent = {
+    ...baselineIntent,
+    intent_id: 'intent-10',
+    intent_seq: 10,
+    operation_key: 'operation-10',
+  }
+  worker.emit(workerMessage('intent', nextIntent, 3))
+  assert.equal((worker.posted[2] as Record<string, any>).body.accepted, true)
+  assert.equal(host.session.renderHighWater, 6)
+  assert.equal(host.session.intentHighWater, 10)
+
+  host.stop()
+  const replacement = new FakeWorker()
+  ;(host as unknown as { workerFactory: (url: string) => FakeWorker }).workerFactory = () => replacement
+  host.start()
+  assert.equal((replacement.posted[0] as Record<string, any>).body.initial_render_seq, 6)
+  assert.equal((replacement.posted[0] as Record<string, any>).body.initial_intent_seq, 10)
+  replacement.emit(workerMessage('render', tree6, 1))
+  assert.equal(replacement.terminated, 1)
+  assert.equal(host.state, 'failed')
+})
+
+test('P4B-SOL-F-003 coalesces identical pending intents and replays one immutable ACK', async () => {
+  const worker = new FakeWorker()
+  let dispatches = 0
+  let resolveIntent!: (value: {
+    intentId: string
+    accepted: boolean
+    errorCode: null
+    coreEventSeq: number
+    jobId: null
+  }) => void
+  const pending = new Promise<{
+    intentId: string
+    accepted: boolean
+    errorCode: null
+    coreEventSeq: number
+    jobId: null
+  }>(resolve => {
+    resolveIntent = resolve
+  })
+  const host = newHost(worker, new TimerHarness(), {
+    onIntent: () => {
+      dispatches += 1
+      return pending
+    },
+  })
+  host.start()
+  worker.emit(workerMessage('render', tree, 1))
+  worker.emit(workerMessage('intent', intent, 2))
+  worker.emit(workerMessage('intent', intent, 3))
+  assert.equal(dispatches, 1)
+  assert.equal(host.session.isIntentPending(intent.intent_id), true)
+  assert.equal(worker.posted.length, 1)
+
+  resolveIntent({
+    intentId: intent.intent_id,
+    accepted: true,
+    errorCode: null,
+    coreEventSeq: 12,
+    jobId: null,
+  })
+  await Promise.resolve()
+  await Promise.resolve()
+  assert.equal(host.session.isIntentPending(intent.intent_id), false)
+  assert.equal(worker.posted.length, 2)
+  const completedBody = (worker.posted[1] as Record<string, any>).body
+
+  worker.emit(workerMessage('intent', intent, 4))
+  assert.equal(dispatches, 1)
+  assert.equal(worker.posted.length, 3)
+  assert.deepEqual((worker.posted[2] as Record<string, any>).body, completedBody)
+  const firstReplay = host.session.decideValidatedIntent(intent)
+  const secondReplay = host.session.decideValidatedIntent(intent)
+  assert.equal(firstReplay.kind, 'ack')
+  assert.equal(secondReplay.kind, 'ack')
+  if (firstReplay.kind === 'ack' && secondReplay.kind === 'ack') {
+    assert.strictEqual(firstReplay.ack, secondReplay.ack)
+    assert.equal(Object.isFrozen(firstReplay.ack), true)
+  }
+})
+
 test('watchdog timeout terminates the current Worker once and remains Slot-local', () => {
   const first = new FakeWorker()
   const firstTimer = new TimerHarness()
@@ -262,7 +446,7 @@ test('the standalone watchdog identity-fences replacement workers', () => {
   assert.equal(second.terminated, 1)
 })
 
-test('accepts only the immutable same-origin release/hash Worker route', () => {
+test('P4B-SOL-F-004 accepts only primitive canonical same-origin release/hash Worker strings', () => {
   const path = buildPluginWorkerUrl(releaseId, bundleHash)
   const absolute = buildPluginWorkerUrl(releaseId, bundleHash, 'https://plotpilot.test')
   assert.equal(parsePluginWorkerUrl(path, { expectedOrigin: 'https://plotpilot.test' }).releaseId, releaseId)
@@ -278,4 +462,19 @@ test('accepts only the immutable same-origin release/hash Worker route', () => {
   ]) {
     assert.throws(() => parsePluginWorkerUrl(candidate, { expectedOrigin: 'https://plotpilot.test' }))
   }
+  const normalizationString = absolute.replace('/__plotpilot/', '/ignored/../__plotpilot/')
+  const normalizedObject = new URL(normalizationString)
+  assert.equal(normalizedObject.href, absolute)
+  assert.throws(
+    () => parsePluginWorkerUrl(normalizationString, { expectedOrigin: 'https://plotpilot.test' }),
+    /path_invalid|path_normalized/,
+  )
+  assert.throws(
+    () => parsePluginWorkerUrl(normalizedObject, { expectedOrigin: 'https://plotpilot.test' }),
+    /plugin_worker_url_type_invalid/,
+  )
+  assert.throws(
+    () => parsePluginWorkerUrl(new URL(absolute), { expectedOrigin: 'https://plotpilot.test' }),
+    /plugin_worker_url_type_invalid/,
+  )
 })
