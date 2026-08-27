@@ -1,6 +1,6 @@
 {
   "schema": "contract-delta/v1",
-  "status": "raised",
+  "status": "p0_adjudication_in_progress",
   "delta_id": "PPA-01-CD-001",
   "raised_by_project": "P1",
   "affected_contract_ids": [

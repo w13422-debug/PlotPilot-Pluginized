@@ -1,0 +1,63 @@
+{
+  "schema": "ppa-integration-ready/v1",
+  "project_id": "P1",
+  "batch_id": "PPA-01-BATCH-01",
+  "status": "integration_ready",
+  "base_sha": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+  "head_sha": "d6d354b6b116885dbe3e737fe9f2d973dce137bd",
+  "commits": [
+    "752e2b6b feat(core): add immutable asset store foundation",
+    "d6d354b6 feat(core): establish SQLite authority and publication CAS"
+  ],
+  "delivered": [
+    "fail-closed transactional hash migrations with deterministic internal receipts",
+    "single-writer SQLite Workspace/Document/Node/Relation authority",
+    "immutable Revision history with current-pointer CAS and restart recovery",
+    "content-addressed immutable Asset put/read/range with metadata and tamper detection",
+    "candidate-item/v1 document staging without formal-content mutation",
+    "Core-native internal Publication CAS and operation-key idempotency"
+  ],
+  "migration_ids": ["0001-core-authority", "0002-candidate-publication"],
+  "verification": [
+    {
+      "command": "python -B -m pytest -q tests/p1-core",
+      "exit_code": 0,
+      "result": "6 passed in 0.61s"
+    },
+    {
+      "command": "python -B -m compileall -q backend/plotpilot_core/domain backend/plotpilot_core/repositories backend/plotpilot_core/assets backend/plotpilot_core/candidates backend/plotpilot_core/publication",
+      "exit_code": 0,
+      "result": "no diagnostics"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "result": "clean"
+    }
+  ],
+  "write_set_proof": {
+    "out_of_set_paths": [],
+    "allowed_roots": [
+      "backend/plotpilot_core/domain/",
+      "backend/plotpilot_core/repositories/",
+      "backend/plotpilot_core/assets/",
+      "backend/plotpilot_core/candidates/",
+      "backend/plotpilot_core/publication/",
+      "tests/p1-core/",
+      "docs/deliveries/PPA-01/",
+      "coordination/PPA-01/"
+    ]
+  },
+  "contract_delta": {
+    "id": "PPA-01-CD-001",
+    "status": "p0_adjudication_in_progress",
+    "stopped": ["public Core HTTP DTOs", "plugin-callable Publication method", "public Asset metadata DTO"],
+    "unaffected": ["internal Core authority", "internal migration receipt", "Asset domain/store", "candidate-item/v1 staging", "Core-native internal Publication"]
+  },
+  "remaining_dependencies": [
+    "P0 adjudication and publication of missing external Core/Publication contracts",
+    "P3 Job/Attempt/provenance/outbox transaction port for the full candidate completion transaction",
+    "P2 release/package identity for deletion-after-publication integration tests"
+  ],
+  "rollback": "Revert the two listed commits; no pre-existing schema or user data is migrated by this construction batch."
+}
