@@ -409,6 +409,7 @@
         </div>
       </div>
     </n-modal>
+    <TaskDrawer />
   </div>
 </template>
 
@@ -419,6 +420,7 @@ import { useMessage, NIcon } from 'naive-ui'
 import { novelApi, type NovelDTO } from '../api/novel'
 import { isWizardCompleted } from '@/utils/wizardStageCache'
 import StatsSidebar from '@/components/stats/StatsSidebar.vue'
+import TaskDrawer from '@/components/jobs/TaskDrawer.vue'
 import { useAppSettingsShellStore } from '@/stores/appSettingsShellStore'
 import { parseGenreWorldFromPremise } from '@/utils/premisePresets'
 import { useStatsStore } from '@/stores/statsStore'
