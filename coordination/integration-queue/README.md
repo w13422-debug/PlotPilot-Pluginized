@@ -66,6 +66,29 @@ P1 Batch 01 已以 no-ff merge commit `0239ea6cf3d94b1991c68b9ef9671b33319c2bc0`
 登记不等于入队：P0 只处理落入本目录、状态为 `ready=true` 的真实 `integration-ready/v1` submission；分支存在、下游 task 状态或 commit 本身都不能替代 submission。
 验证通过后才由 P0 按矩阵依赖使用 `git merge --no-ff`，合并后重跑受影响门禁并记录 receipt。
 
+## Current blocked intake — P3/P4/P5
+
+`coordination/integration-queue/P3-P4-P5-blocked-intake-20260827.json`
+freezes the first-slice BLOCK decisions and content-addresses the controller
+Finding Manifests.  The queue must not merge these projects:
+
+- P3: reviewed/current `597f45548005269776259d18a193c32758f3536b`,
+  7 findings, manifest SHA-256
+  `3031dac166ad6936b00d09d746e8e82e506759de50133cd146e971a9be9a86c3`.
+- P4: reviewed `88ae83c08f176446ce5030e28e780851ec85a496`,
+  current `26c44f7672a413c13a30fad181dfd21bc7f3a5c5`, 7 findings;
+  the Batch 004 range is not covered by the earlier review.  Manifest SHA-256
+  `c1dee193e528513182d697d0697644d5ecf15bd4fb9c534cefddfbb557b7a74c`.
+- P5: reviewed/current `80c94cb95530d9d07ff6b2eaee43521e25e50b06`,
+  8 findings, manifest SHA-256
+  `06f27355169d00e511691d20b4254fd0d19f3f9bd5b349a83516074534cc701a`.
+
+Each project has one bounded remediation round.  Requeue requires the same
+reviewer to return targeted PASS for every frozen finding and a valid
+`integration-ready/v1` submission bound to that cumulative reviewed head.
+Branch movement, self-reported tests, or a remediation commit alone cannot
+open the merge gate.  P1 remains the only accepted downstream submission.
+
 ## PPA-01-CD-001 adjudication
 
 `PPA-01-CD-001` is accepted as a scoped public-contract gap by

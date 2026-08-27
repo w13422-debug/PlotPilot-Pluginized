@@ -336,7 +336,7 @@
     "new_tag": "M0-OPEN-R4"
   },
   "gate": "P1-P6 creation is forbidden until M0-OPEN is committed and tagged.",
-  "in_progress": "P1 Batch 01 internal authority is integrated by no-ff merge 0239ea6cf3d94b1991c68b9ef9671b33319c2bc0. PPA-01-CD-001 remains accepted_with_scoped_public_contract; ADR-041 public Core HTTP/Publication/Asset families are not yet published and affected public slices remain stopped.",
+  "in_progress": "P1 exact submission remains integrated. P3/P4/P5 first-slice reviews are BLOCK with frozen finding manifests; one bounded remediation has been issued and no merge is allowed until the same reviewer returns targeted PASS and a valid integration-ready/v1 submission exists.",
   "known_blockers": [
     {
       "acceptance": "project-specific P1-P6 write sets; real commit ancestry/diff/hash/evidence; first-party root; real creation gate; positive/negative submission tests",
@@ -409,6 +409,51 @@
       "scope": "tools/integration/fresh_m0_review.py child gate result aggregation",
       "acceptance": "every nonzero child exit or non-passed child status yields structured finding, verdict=failed and nonzero main exit",
       "closure_evidence": "docs/deliveries/PPA-00/evidence/fresh-readonly-review.json"
+    },
+    {
+      "id": "P3-FIRST-SLICE-BLOCK",
+      "project_id": "P3",
+      "severity": "BLOCK",
+      "status": "open",
+      "finding_count": 7,
+      "reviewed_head": "597f45548005269776259d18a193c32758f3536b",
+      "current_head": "597f45548005269776259d18a193c32758f3536b",
+      "merge_allowed": false,
+      "finding_manifest": {
+        "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p3-first-slice-finding-manifest-20260827.json",
+        "sha256": "3031dac166ad6936b00d09d746e8e82e506759de50133cd146e971a9be9a86c3"
+      },
+      "closure_gate": "same reviewer targeted PASS plus valid integration-ready/v1 submission"
+    },
+    {
+      "id": "P4-FIRST-SLICE-BLOCK",
+      "project_id": "P4",
+      "severity": "BLOCK",
+      "status": "open",
+      "finding_count": 7,
+      "reviewed_head": "88ae83c08f176446ce5030e28e780851ec85a496",
+      "current_head": "26c44f7672a413c13a30fad181dfd21bc7f3a5c5",
+      "merge_allowed": false,
+      "finding_manifest": {
+        "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p4-first-slice-finding-manifest-20260827.json",
+        "sha256": "c1dee193e528513182d697d0697644d5ecf15bd4fb9c534cefddfbb557b7a74c"
+      },
+      "closure_gate": "same reviewer targeted PASS plus valid integration-ready/v1 submission"
+    },
+    {
+      "id": "P5-FIRST-SLICE-BLOCK",
+      "project_id": "P5",
+      "severity": "BLOCK",
+      "status": "open",
+      "finding_count": 8,
+      "reviewed_head": "80c94cb95530d9d07ff6b2eaee43521e25e50b06",
+      "current_head": "80c94cb95530d9d07ff6b2eaee43521e25e50b06",
+      "merge_allowed": false,
+      "finding_manifest": {
+        "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p5-first-slice-finding-manifest-20260827.json",
+        "sha256": "06f27355169d00e511691d20b4254fd0d19f3f9bd5b349a83516074534cc701a"
+      },
+      "closure_gate": "same reviewer targeted PASS plus valid integration-ready/v1 submission"
     }
   ],
   "milestones": {
@@ -421,10 +466,10 @@
     "M0.7": "passed"
   },
   "next_steps": [
-    "P0 按 ADR-041 在当前 integration head 发布并聚焦验收 core-authority-command-query/v1、publication-command-result/v1、asset-metadata/v1；",
-    "P1/P4/P5/P6 在公共合同发布前不得恢复受影响 public API/Publication 切片；P1 internal authority 批次已可作为后续依赖基线。",
-    "等待真实 integration-ready/v1 submission；按 project-matrix 依赖顺序逐批核验 base、实际 diff、P0 当前合同 manifest 和绑定测试证据后再 no-ff。",
-    "不构建桌面端/EXE/安装器，不重跑已通过 M0 浏览器/Unicode 审计。"
+    "P3/P4/P5 完成一次受限整改后，由各自原 reviewer 对冻结 finding IDs 做逐项定向复核；任一 finding 未 PASS 均不得重新入队。",
+    "P4 必须以包含 Batch 004 的 cumulative head 接受同一 reviewer 复核，不能复用 88ae83c0 的旧审查结论。",
+    "P3/P4/P5 还必须提供与最终 reviewed cumulative head 绑定的有效 integration-ready/v1 submission；branch/head/task/test 自报不能替代。",
+    "P1 exact submission 77e836d 已集成，不重复合并；PPA-01-CD-001 三个 public families 仍未发布，相关切片继续停止。"
   ],
   "prohibitions": [
     "P1-P6 branch/worktree/project creation before M0-OPEN",
@@ -669,7 +714,7 @@
   "schema": "ppa-project-state/v1",
   "status": "in_progress",
   "target": "PPA-01-CD-001",
-  "task_id": "PPA-01-CD-001",
+  "task_id": "PPA-M1-QUEUE-BLOCK-P3-P4-P5-01",
   "updated_at": "2026-08-27T00:00:00Z",
   "validation_runs": [
     {
@@ -1063,6 +1108,22 @@
         "closure_evidence_sha256": "d2080ccdb7ca9501f71be481165c8f603196b5979412c36a26d5a802b9b515df",
         "receipt": "coordination/integration-queue/PPA-01-BATCH-01-merge-receipt.json"
       }
+    },
+    {
+      "command": "P3/P4/P5 blocked intake manifest freeze and queue projection",
+      "exit_code": 0,
+      "status": "passed",
+      "result": {
+        "blocked_intake_manifest": "coordination/integration-queue/P3-P4-P5-blocked-intake-20260827.json",
+        "sha256": "75e93b31c3d8a597f8af4c555214d7a2d294f8e6074732fdfcd0830179a1ca0e",
+        "P3": 7,
+        "P4": 7,
+        "P5": 8,
+        "accepted_submissions": [
+          "P1"
+        ],
+        "merge_allowed": false
+      }
     }
   ],
   "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized",
@@ -1145,6 +1206,59 @@
       "changed_paths_count": 17,
       "out_of_set_paths": [],
       "closure_evidence_sha256": "d2080ccdb7ca9501f71be481165c8f603196b5979412c36a26d5a802b9b515df"
+    }
+  ],
+  "downstream_queue_blocks": [
+    {
+      "project_id": "P3",
+      "reviewed_head": "597f45548005269776259d18a193c32758f3536b",
+      "current_head": "597f45548005269776259d18a193c32758f3536b",
+      "finding_count": 7,
+      "finding_manifest_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p3-first-slice-finding-manifest-20260827.json",
+      "finding_manifest_sha256": "3031dac166ad6936b00d09d746e8e82e506759de50133cd146e971a9be9a86c3",
+      "review_agent_id": "01a04179-bc91-7480-ba9d-89fe225e2c02",
+      "verdict": "BLOCK",
+      "merge_allowed": false,
+      "remediation_round": 1,
+      "remediation_status": "bounded_remediation_issued",
+      "required_rereview": "same_reviewer_targeted_PASS",
+      "valid_submission_required": true,
+      "queue_block_manifest": "coordination/integration-queue/P3-P4-P5-blocked-intake-20260827.json",
+      "queue_block_manifest_sha256": "75e93b31c3d8a597f8af4c555214d7a2d294f8e6074732fdfcd0830179a1ca0e"
+    },
+    {
+      "project_id": "P4",
+      "reviewed_head": "88ae83c08f176446ce5030e28e780851ec85a496",
+      "current_head": "26c44f7672a413c13a30fad181dfd21bc7f3a5c5",
+      "finding_count": 7,
+      "finding_manifest_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p4-first-slice-finding-manifest-20260827.json",
+      "finding_manifest_sha256": "c1dee193e528513182d697d0697644d5ecf15bd4fb9c534cefddfbb557b7a74c",
+      "review_agent_id": "01a04179-bd8e-7c71-b3a8-416a92b77c4c",
+      "verdict": "BLOCK",
+      "merge_allowed": false,
+      "remediation_round": 1,
+      "remediation_status": "bounded_remediation_issued",
+      "required_rereview": "same_reviewer_targeted_PASS",
+      "valid_submission_required": true,
+      "queue_block_manifest": "coordination/integration-queue/P3-P4-P5-blocked-intake-20260827.json",
+      "queue_block_manifest_sha256": "75e93b31c3d8a597f8af4c555214d7a2d294f8e6074732fdfcd0830179a1ca0e"
+    },
+    {
+      "project_id": "P5",
+      "reviewed_head": "80c94cb95530d9d07ff6b2eaee43521e25e50b06",
+      "current_head": "80c94cb95530d9d07ff6b2eaee43521e25e50b06",
+      "finding_count": 8,
+      "finding_manifest_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p5-first-slice-finding-manifest-20260827.json",
+      "finding_manifest_sha256": "06f27355169d00e511691d20b4254fd0d19f3f9bd5b349a83516074534cc701a",
+      "review_agent_id": "01a04179-beca-7f00-aa18-96ff8c1ad46c",
+      "verdict": "BLOCK",
+      "merge_allowed": false,
+      "remediation_round": 1,
+      "remediation_status": "bounded_remediation_issued",
+      "required_rereview": "same_reviewer_targeted_PASS",
+      "valid_submission_required": true,
+      "queue_block_manifest": "coordination/integration-queue/P3-P4-P5-blocked-intake-20260827.json",
+      "queue_block_manifest_sha256": "75e93b31c3d8a597f8af4c555214d7a2d294f8e6074732fdfcd0830179a1ca0e"
     }
   ]
 }

@@ -1,0 +1,152 @@
+{
+  "schema": "p0-blocked-intake-manifest/v1",
+  "task_id": "PPA-M1-QUEUE-BLOCK-P3-P4-P5-01",
+  "queue_owner": "P0",
+  "phase": "M1-M7",
+  "status": "BLOCKED_NO_MERGE",
+  "source_case": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826",
+  "review_policy": "one bounded remediation already issued; only the same reviewer may close each frozen finding by targeted PASS",
+  "projects": [
+    {
+      "project_id": "P3",
+      "verdict": "BLOCK",
+      "merge_allowed": false,
+      "reviewed_head": "597f45548005269776259d18a193c32758f3536b",
+      "current_head": "597f45548005269776259d18a193c32758f3536b",
+      "reviewed_head_equals_current": true,
+      "finding_count": 7,
+      "severity_counts": {
+        "P1": 4,
+        "P2": 3
+      },
+      "finding_ids": [
+        "P3-AUDIT-P1-LEDGER-FENCE-001",
+        "P3-AUDIT-P1-DELTA-002",
+        "P3-AUDIT-P1-QUEUE-003",
+        "P3-AUDIT-P2-FRAME-004",
+        "P3-AUDIT-P2-DURABILITY-005",
+        "P3-AUDIT-P2-ERROR-006",
+        "P3-CTRL-P1-MIGRATION-007"
+      ],
+      "finding_manifest": {
+        "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p3-first-slice-finding-manifest-20260827.json",
+        "bytes": 3518,
+        "sha256": "3031dac166ad6936b00d09d746e8e82e506759de50133cd146e971a9be9a86c3"
+      },
+      "review_agent_id": "01a04179-bc91-7480-ba9d-89fe225e2c02",
+      "remediation_policy": "one bounded remediation, then same-reviewer per-finding re-review",
+      "remediation_round": 1,
+      "remediation_status": "bounded_remediation_issued",
+      "required_for_requeue": [
+        "same reviewer targeted PASS for every frozen finding",
+        "valid integration-ready/v1 submission bound to the reviewed cumulative head and durable evidence"
+      ],
+      "residual_gates": [
+        "P1 authoritative Job/aggregate/Event/Receipt transaction port",
+        "atomic request-key create/find at the P1 port",
+        "P0 canonical context_identity decision",
+        "P2 worker runtime and lease allocator/CAS",
+        "full cancel/restart/SSE/stream/terminal matrix"
+      ],
+      "passed_boundaries": []
+    },
+    {
+      "project_id": "P4",
+      "verdict": "BLOCK",
+      "merge_allowed": false,
+      "reviewed_head": "88ae83c08f176446ce5030e28e780851ec85a496",
+      "current_head": "26c44f7672a413c13a30fad181dfd21bc7f3a5c5",
+      "reviewed_head_equals_current": false,
+      "finding_count": 7,
+      "severity_counts": {
+        "P0": 2,
+        "P1": 5
+      },
+      "finding_ids": [
+        "P4-MERGE-P0-001",
+        "P4-MERGE-P0-002",
+        "P4-UI-P1-001",
+        "P4-UI-P1-002",
+        "P4-UI-P1-003",
+        "P4-CTRL-P1-WIRE-TYPES-004",
+        "P4-CTRL-P1-BATCH004-005"
+      ],
+      "finding_manifest": {
+        "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p4-first-slice-finding-manifest-20260827.json",
+        "bytes": 3141,
+        "sha256": "c1dee193e528513182d697d0697644d5ecf15bd4fb9c534cefddfbb557b7a74c"
+      },
+      "review_agent_id": "01a04179-bd8e-7c71-b3a8-416a92b77c4c",
+      "remediation_policy": "one bounded remediation, then same-reviewer per-finding re-review",
+      "remediation_round": 1,
+      "remediation_status": "bounded_remediation_issued",
+      "required_for_requeue": [
+        "same reviewer targeted PASS for every frozen finding",
+        "valid integration-ready/v1 submission bound to the reviewed cumulative head and durable evidence"
+      ],
+      "residual_gates": [],
+      "passed_boundaries": [
+        "No PPA-01-CD-001 Core HTTP/Publication/Asset implementation was invented in the reviewed range."
+      ]
+    },
+    {
+      "project_id": "P5",
+      "verdict": "BLOCK",
+      "merge_allowed": false,
+      "reviewed_head": "80c94cb95530d9d07ff6b2eaee43521e25e50b06",
+      "current_head": "80c94cb95530d9d07ff6b2eaee43521e25e50b06",
+      "reviewed_head_equals_current": true,
+      "finding_count": 8,
+      "severity_counts": {
+        "P0": 1,
+        "P1": 6,
+        "P2": 1
+      },
+      "finding_ids": [
+        "P5-MQ-001",
+        "P5-PLN-001",
+        "P5-PLN-002",
+        "P5-PLN-003",
+        "P5-STATE-001",
+        "P5-STATE-002",
+        "P5-TEST-001",
+        "P5-CTRL-P1-PACKAGE-002"
+      ],
+      "finding_manifest": {
+        "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p5-first-slice-finding-manifest-20260827.json",
+        "bytes": 3666,
+        "sha256": "06f27355169d00e511691d20b4254fd0d19f3f9bd5b349a83516074534cc701a"
+      },
+      "review_agent_id": "01a04179-beca-7f00-aa18-96ff8c1ad46c",
+      "remediation_policy": "one bounded remediation, then same-reviewer per-finding re-review",
+      "remediation_round": 1,
+      "remediation_status": "bounded_remediation_issued",
+      "required_for_requeue": [
+        "same reviewer targeted PASS for every frozen finding",
+        "valid integration-ready/v1 submission bound to the reviewed cumulative head and durable evidence"
+      ],
+      "residual_gates": [
+        "P1 Candidate/Publication and Revision/Relation ports",
+        "P2 runtime/release packaging",
+        "P3 Job/Broker/Provider/Receipt",
+        "P4 UI/Core controls",
+        "P6 published Story State consumer"
+      ],
+      "passed_boundaries": []
+    }
+  ],
+  "p1_control": {
+    "status": "integrated",
+    "exact_submission_head": "77e836d126e5be525e95b34f2f396ac7b9f864a1",
+    "reviewed_implementation_head": "93a34093e25603c3e2553ff72bfd6469e033de4a",
+    "merge_commit": "0239ea6cf3d94b1991c68b9ef9671b33319c2bc0",
+    "no_repeat_merge": true
+  },
+  "assertions": [
+    "P3/P4/P5 are not accepted submissions and must not be merged.",
+    "A branch head, remediation commit, task status or self-reported test result cannot replace same-reviewer PASS plus a valid integration-ready/v1 submission.",
+    "P4 current head includes an unreviewed range after reviewed_head; cumulative same-reviewer review is mandatory.",
+    "P1 remains the only accepted downstream submission in the queue."
+  ],
+  "recorded_at": "2026-08-27T00:00:00Z"
+}

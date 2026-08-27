@@ -1,6 +1,6 @@
 {
   "schema": "ppa-downstream-registry/v1",
-  "status": "p1-batch-01-integrated-awaiting-p0-contract-publication",
+  "status": "p1-integrated-p3-p4-p5-blocked",
   "phase": "M1-M7",
   "owner": {
     "project_key": "P0",
@@ -152,10 +152,24 @@
       "first_party_plugins": [
         "com.plotpilot.provider.openai-compatible"
       ],
-      "observed_head": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+      "observed_head": "597f45548005269776259d18a193c32758f3536b",
       "observed_head_is_accepted_base": true,
       "registration_status": "registered",
-      "submission_status": "awaiting-integration-ready/v1"
+      "submission_status": "blocked-awaiting-same-reviewer-targeted-pass",
+      "reviewed_head": "597f45548005269776259d18a193c32758f3536b",
+      "merge_allowed": false,
+      "finding_count": 7,
+      "finding_manifest": {
+        "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p3-first-slice-finding-manifest-20260827.json",
+        "sha256": "3031dac166ad6936b00d09d746e8e82e506759de50133cd146e971a9be9a86c3"
+      },
+      "review_agent_id": "01a04179-bc91-7480-ba9d-89fe225e2c02",
+      "remediation_round": 1,
+      "remediation_status": "bounded_remediation_issued",
+      "required_for_requeue": [
+        "same reviewer targeted PASS for all frozen findings",
+        "valid integration-ready/v1 submission for the reviewed cumulative head"
+      ]
     },
     {
       "project_key": "P4",
@@ -191,10 +205,24 @@
         "coordination/PPA-04/**"
       ],
       "first_party_plugins": [],
-      "observed_head": "ff7566c2f6d7d30c07db978ad64311f79d3a9c6b",
+      "observed_head": "26c44f7672a413c13a30fad181dfd21bc7f3a5c5",
       "observed_head_is_accepted_base": false,
       "registration_status": "registered",
-      "submission_status": "awaiting-integration-ready/v1"
+      "submission_status": "blocked-awaiting-same-reviewer-targeted-pass",
+      "reviewed_head": "88ae83c08f176446ce5030e28e780851ec85a496",
+      "merge_allowed": false,
+      "finding_count": 7,
+      "finding_manifest": {
+        "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p4-first-slice-finding-manifest-20260827.json",
+        "sha256": "c1dee193e528513182d697d0697644d5ecf15bd4fb9c534cefddfbb557b7a74c"
+      },
+      "review_agent_id": "01a04179-bd8e-7c71-b3a8-416a92b77c4c",
+      "remediation_round": 1,
+      "remediation_status": "bounded_remediation_issued",
+      "required_for_requeue": [
+        "same reviewer targeted PASS for all frozen findings",
+        "valid integration-ready/v1 submission for the reviewed cumulative head"
+      ]
     },
     {
       "project_key": "P5",
@@ -229,7 +257,21 @@
       "observed_head": "80c94cb95530d9d07ff6b2eaee43521e25e50b06",
       "observed_head_is_accepted_base": false,
       "registration_status": "registered",
-      "submission_status": "awaiting-integration-ready/v1"
+      "submission_status": "blocked-awaiting-same-reviewer-targeted-pass",
+      "reviewed_head": "80c94cb95530d9d07ff6b2eaee43521e25e50b06",
+      "merge_allowed": false,
+      "finding_count": 8,
+      "finding_manifest": {
+        "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p5-first-slice-finding-manifest-20260827.json",
+        "sha256": "06f27355169d00e511691d20b4254fd0d19f3f9bd5b349a83516074534cc701a"
+      },
+      "review_agent_id": "01a04179-beca-7f00-aa18-96ff8c1ad46c",
+      "remediation_round": 1,
+      "remediation_status": "bounded_remediation_issued",
+      "required_for_requeue": [
+        "same reviewer targeted PASS for all frozen findings",
+        "valid integration-ready/v1 submission for the reviewed cumulative head"
+      ]
     },
     {
       "project_key": "P6",
@@ -353,7 +395,60 @@
       }
     ],
     "pending_dependency_deltas": [],
-    "intake_status": "p1-batch-01-integrated-awaiting-p0-public-contract-publication"
+    "intake_status": "p1-integrated-p3-p4-p5-blocked-awaiting-same-reviewer-pass",
+    "blocked_submissions": [
+      {
+        "project_id": "P3",
+        "reviewed_head": "597f45548005269776259d18a193c32758f3536b",
+        "current_head": "597f45548005269776259d18a193c32758f3536b",
+        "finding_count": 7,
+        "finding_manifest_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p3-first-slice-finding-manifest-20260827.json",
+        "finding_manifest_sha256": "3031dac166ad6936b00d09d746e8e82e506759de50133cd146e971a9be9a86c3",
+        "review_agent_id": "01a04179-bc91-7480-ba9d-89fe225e2c02",
+        "verdict": "BLOCK",
+        "merge_allowed": false,
+        "remediation_round": 1,
+        "remediation_status": "bounded_remediation_issued",
+        "required_rereview": "same_reviewer_targeted_PASS",
+        "valid_submission_required": true,
+        "queue_block_manifest": "coordination/integration-queue/P3-P4-P5-blocked-intake-20260827.json",
+        "queue_block_manifest_sha256": "75e93b31c3d8a597f8af4c555214d7a2d294f8e6074732fdfcd0830179a1ca0e"
+      },
+      {
+        "project_id": "P4",
+        "reviewed_head": "88ae83c08f176446ce5030e28e780851ec85a496",
+        "current_head": "26c44f7672a413c13a30fad181dfd21bc7f3a5c5",
+        "finding_count": 7,
+        "finding_manifest_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p4-first-slice-finding-manifest-20260827.json",
+        "finding_manifest_sha256": "c1dee193e528513182d697d0697644d5ecf15bd4fb9c534cefddfbb557b7a74c",
+        "review_agent_id": "01a04179-bd8e-7c71-b3a8-416a92b77c4c",
+        "verdict": "BLOCK",
+        "merge_allowed": false,
+        "remediation_round": 1,
+        "remediation_status": "bounded_remediation_issued",
+        "required_rereview": "same_reviewer_targeted_PASS",
+        "valid_submission_required": true,
+        "queue_block_manifest": "coordination/integration-queue/P3-P4-P5-blocked-intake-20260827.json",
+        "queue_block_manifest_sha256": "75e93b31c3d8a597f8af4c555214d7a2d294f8e6074732fdfcd0830179a1ca0e"
+      },
+      {
+        "project_id": "P5",
+        "reviewed_head": "80c94cb95530d9d07ff6b2eaee43521e25e50b06",
+        "current_head": "80c94cb95530d9d07ff6b2eaee43521e25e50b06",
+        "finding_count": 8,
+        "finding_manifest_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p5-first-slice-finding-manifest-20260827.json",
+        "finding_manifest_sha256": "06f27355169d00e511691d20b4254fd0d19f3f9bd5b349a83516074534cc701a",
+        "review_agent_id": "01a04179-beca-7f00-aa18-96ff8c1ad46c",
+        "verdict": "BLOCK",
+        "merge_allowed": false,
+        "remediation_round": 1,
+        "remediation_status": "bounded_remediation_issued",
+        "required_rereview": "same_reviewer_targeted_PASS",
+        "valid_submission_required": true,
+        "queue_block_manifest": "coordination/integration-queue/P3-P4-P5-blocked-intake-20260827.json",
+        "queue_block_manifest_sha256": "75e93b31c3d8a597f8af4c555214d7a2d294f8e6074732fdfcd0830179a1ca0e"
+      }
+    ]
   },
   "observed_at": "2026-08-27T04:14:51.721862Z",
   "last_integrated_submission": {
@@ -381,5 +476,20 @@
     "merge_receipt": "coordination/integration-queue/PPA-01-BATCH-01-merge-receipt.json"
   },
   "last_merge_receipt": "coordination/integration-queue/PPA-01-BATCH-01-merge-receipt.json",
-  "next_batch_base_sha": "0239ea6cf3d94b1991c68b9ef9671b33319c2bc0"
+  "next_batch_base_sha": "0239ea6cf3d94b1991c68b9ef9671b33319c2bc0",
+  "last_queue_update": {
+    "type": "finding-manifest-freeze",
+    "status": "BLOCKED_NO_MERGE",
+    "projects": [
+      "P3",
+      "P4",
+      "P5"
+    ],
+    "blocked_intake_manifest": "coordination/integration-queue/P3-P4-P5-blocked-intake-20260827.json",
+    "blocked_intake_manifest_sha256": "75e93b31c3d8a597f8af4c555214d7a2d294f8e6074732fdfcd0830179a1ca0e",
+    "accepted_submissions_unchanged": [
+      "PPA-01-BATCH-01-77e836d1"
+    ],
+    "at": "2026-08-27T00:00:00Z"
+  }
 }
