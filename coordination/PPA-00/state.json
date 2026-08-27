@@ -86,7 +86,10 @@
     "R3 Unicode frozen UCD 15.0.0 NFC/casefold parity passed: composition success branches do not update blocking CCC; Hangul and all-scalar NFD regression mismatch count is zero",
     "R3 contract manifest/license closure passed: 123 content-addressed contract files include contracts/unicode-casefold-v1.json and Unicode Data Files and Software License/UCD 15.0.0 provenance",
     "R3 content-addressed closure, delivery, parity, ledger and fresh-review artifacts regenerated after final source changes",
-    "M0-OPEN-R3 release candidate committed/tagged; clean post-commit delivery and merge gates passed"
+    "M0-OPEN-R3 release candidate committed/tagged; clean post-commit delivery and merge gates passed",
+    "NF-01 fresh review child gate fail-closed remediation passed: every child exit_code/status is included in verdict and structured finding",
+    "NF-01 executable regression passed: five child nonzero-exit cases, five non-passed-status cases, success path and invalid merge JSON path",
+    "M0-OPEN-R4 content-addressed contract-golden, integration-test ledger, fresh review raw evidence and release metadata regenerated without browser/Unicode rerun"
   ],
   "contract_delta": [],
   "deliverables": [
@@ -173,22 +176,22 @@
     {
       "bytes": 42035,
       "path": "docs/deliveries/PPA-00/contract-golden-manifest.json",
-      "sha256": "152aa49ee8b050045f5c2b053a464761a9df4eac7877dd8ed47edb95d8c3398d"
+      "sha256": "460c0da7c597ab4daec529b535ca05ede71d4761ae96d78829edf313194a2abf"
     },
     {
-      "bytes": 11409,
+      "bytes": 11440,
       "path": "docs/deliveries/PPA-00/evidence/fresh-readonly-review.json",
-      "sha256": "becda64a8adfbde4d4472dd49ad469e76fde2745b53db7c35fcda4fcf4f1a18a"
+      "sha256": "a46a1e3a02ab7076d1585c1060014d284abd23105213f432c1c2e7008faac20b"
     },
     {
       "bytes": 6921,
       "path": "docs/deliveries/PPA-00/evidence/m0.2-identity-runtime.json",
-      "sha256": "b7fe36a4e3916086f7242a445ea254bcaf3597cac86fb22006286cb2e5bcdf2e"
+      "sha256": "baf91c634cc53aacf0f488eb5e7ff1a5a1c1fffa12ca8419d20788f1bfdbc1f4"
     },
     {
       "bytes": 8396,
       "path": "docs/deliveries/PPA-00/integration-test-ledger.json",
-      "sha256": "24b0730bd5e57db10339ddbfbf8cf5c9ecbeb09b81140f8396fc77a0fc80cd59"
+      "sha256": "8cea605b8d15c9db7077323327e29601de6bfe7bf18b6ee4fb8832eceb9e32be"
     },
     {
       "bytes": 87669,
@@ -198,7 +201,7 @@
     {
       "bytes": 9119,
       "path": "docs/deliveries/PPA-00/m0-open-manifest.json",
-      "sha256": "bd03171fc7bf79d1b38148f043db7ea0b52a87c8986afda47cefa13a63fa156e"
+      "sha256": "91da158712f4afdfddc7bbdddc26249275c3adf61e9289ce864bb2442ef9d49a"
     },
     {
       "bytes": 14549,
@@ -231,9 +234,9 @@
       "sha256": "da43b837d12c775b64a0a5d061afc9698523b6c463bc155c1bbbac2913b8e8d2"
     },
     {
-      "bytes": 15083,
+      "bytes": 17269,
       "path": "tools/integration/fresh_m0_review.py",
-      "sha256": "1cd37cb41bcf4dd60a7c92943dd8e67caf078fb6adb51e3e12cc4fc48d99aa5d"
+      "sha256": "e52c3f826fd60d5186c256b64f801f9c09d2cb647b857b307256f621b4539cd3"
     },
     {
       "bytes": 20392,
@@ -294,14 +297,15 @@
     "old_tag_peeled": "786986a02219973a69a0d1c1114191149924d7f7",
     "old_tags_unchanged": true,
     "p1_p6_absent": true,
-    "previous_commit_ref": "36ca847d8b328e3f4f7791c836e0530e8a5ea5b3",
-    "previous_tag": "M0-OPEN-R2",
-    "previous_tag_peeled": "36ca847d8b328e3f4f7791c836e0530e8a5ea5b3",
+    "previous_commit_ref": "b6e20df15de9eb4b25de1acfe4e8a8f9e7080bde",
+    "previous_tag": "M0-OPEN-R3",
+    "previous_tag_peeled": "b6e20df15de9eb4b25de1acfe4e8a8f9e7080bde",
     "release_commit_is_tag_peeled_target": true,
-    "release_tag": "M0-OPEN-R3",
-    "rule": "old M0-OPEN and M0-OPEN-R2 are immutable; create exactly one new release commit and one annotated tag after all R3 gates pass",
+    "release_tag": "M0-OPEN-R4",
+    "rule": "old M0-OPEN, M0-OPEN-R2 and M0-OPEN-R3 are immutable; create exactly one new release commit and one annotated tag after NF-01 gates pass",
     "status": "complete",
-    "target_tag": "M0-OPEN-R3"
+    "target_tag": "M0-OPEN-R4",
+    "new_tag": "M0-OPEN-R4"
   },
   "gate": "P1-P6 creation is forbidden until M0-OPEN is committed and tagged.",
   "in_progress": null,
@@ -369,6 +373,14 @@
       "scope": "pytest asyncio_mode warning",
       "severity": "LOW",
       "status": "closed"
+    },
+    {
+      "id": "NF-01",
+      "severity": "BLOCKER",
+      "status": "closed",
+      "scope": "tools/integration/fresh_m0_review.py child gate result aggregation",
+      "acceptance": "every nonzero child exit or non-passed child status yields structured finding, verdict=failed and nonzero main exit",
+      "closure_evidence": "docs/deliveries/PPA-00/evidence/fresh-readonly-review.json"
     }
   ],
   "milestones": {
@@ -444,9 +456,9 @@
       "sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90"
     },
     "contract_golden_manifest": {
-      "bytes": 42035,
       "path": "docs/deliveries/PPA-00/contract-golden-manifest.json",
-      "sha256": "152aa49ee8b050045f5c2b053a464761a9df4eac7877dd8ed47edb95d8c3398d"
+      "bytes": 42035,
+      "sha256": "460c0da7c597ab4daec529b535ca05ede71d4761ae96d78829edf313194a2abf"
     },
     "contract_manifest": {
       "bytes": 45544,
@@ -469,14 +481,14 @@
       "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
     },
     "fresh_readonly_review": {
-      "bytes": 11409,
       "path": "docs/deliveries/PPA-00/evidence/fresh-readonly-review.json",
-      "sha256": "becda64a8adfbde4d4472dd49ad469e76fde2745b53db7c35fcda4fcf4f1a18a"
+      "bytes": 11440,
+      "sha256": "a46a1e3a02ab7076d1585c1060014d284abd23105213f432c1c2e7008faac20b"
     },
     "integration_test_ledger": {
-      "bytes": 8396,
       "path": "docs/deliveries/PPA-00/integration-test-ledger.json",
-      "sha256": "24b0730bd5e57db10339ddbfbf8cf5c9ecbeb09b81140f8396fc77a0fc80cd59"
+      "bytes": 8396,
+      "sha256": "8cea605b8d15c9db7077323327e29601de6bfe7bf18b6ee4fb8832eceb9e32be"
     },
     "license_ledger": {
       "bytes": 87669,
@@ -484,9 +496,9 @@
       "sha256": "b287942341be4eb4309efcac9de2dd6fbc422d3dc79fae4447908ca83b0d6e3c"
     },
     "m0_open_manifest": {
-      "bytes": 9119,
       "path": "docs/deliveries/PPA-00/m0-open-manifest.json",
-      "sha256": "bd03171fc7bf79d1b38148f043db7ea0b52a87c8986afda47cefa13a63fa156e"
+      "bytes": 9119,
+      "sha256": "91da158712f4afdfddc7bbdddc26249275c3adf61e9289ce864bb2442ef9d49a"
     },
     "parity_ledger": {
       "bytes": 131303,
@@ -605,21 +617,27 @@
   },
   "review": {
     "evidence": {
-      "bytes": 11409,
       "path": "docs/deliveries/PPA-00/evidence/fresh-readonly-review.json",
-      "sha256": "becda64a8adfbde4d4472dd49ad469e76fde2745b53db7c35fcda4fcf4f1a18a"
+      "bytes": 11440,
+      "sha256": "a46a1e3a02ab7076d1585c1060014d284abd23105213f432c1c2e7008faac20b"
     },
-    "finding_manifest_id": "PPA-00-M0-OPEN-R2-INDEP-SOL-20260827-03",
-    "findings": [],
-    "reviewer": "fresh read-only review runner",
+    "finding_manifest_id": "PPA-00-M0-OPEN-R3-INDEP-SOL-20260827-04",
+    "findings": [
+      {
+        "id": "NF-01",
+        "status": "closed",
+        "closure": "fresh review child-gate regression and R4 fresh review"
+      }
+    ],
+    "reviewer": "fresh_m0_review.py with executable NF-01 regression",
     "status": "passed_pre_commit",
     "verdict": "passed_pre_commit"
   },
   "schema": "ppa-project-state/v1",
   "status": "complete",
-  "target": "M0-OPEN-R3",
-  "task_id": "PPA-M0-REMEDIATION-03",
-  "updated_at": "2026-08-27T02:16:09.025768+00:00",
+  "target": "M0-OPEN-R4",
+  "task_id": "PPA-M0-REMEDIATION-04",
+  "updated_at": "2026-08-27T03:12:54.997546+00:00",
   "validation_runs": [
     {
       "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe tools/integration/generate_contract_manifest.py --check",
@@ -963,9 +981,102 @@
       "exit_code": 0,
       "result": "out_of_set_paths=[], P1-P6 absent, donor push DISABLED",
       "status": "passed"
+    },
+    {
+      "command": "python -B -m pytest -q tests/acceptance/test_fresh_m0_review_child_gates.py",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "12 passed: five nonzero-exit child cases, five non-passed-status cases, success and invalid merge JSON"
+    },
+    {
+      "command": "python -B tools/integration/capture_m0_test_ledger.py",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "8/8 bounded commands passed; pytest contract/acceptance 42 passed; browser evidence reused"
+    },
+    {
+      "command": "python -B tools/integration/generate_m0_delivery.py",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "contract-golden and M0 delivery metadata regenerated for M0-OPEN-R4"
+    },
+    {
+      "command": "python -B tools/integration/fresh_m0_review.py",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "five child gates all exit_code=0/status=passed; verdict=passed_pre_commit; findings=0; no browser rerun"
+    },
+    {
+      "command": "python -B tools/integration/validate_merge_gate.py --json",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "out_of_set_paths=[], P1-P6 absent, donor push DISABLED; pre-commit worktree dirty only within P0 set"
     }
   ],
   "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized",
   "write_set_hash": "076541384c643d879e8552737f94a9ce2ed9134dba3e0d448f2c4a0b58297656",
-  "write_set_source": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized七项目任务书-2026-08-26\\project-matrix.json"
+  "write_set_source": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized七项目任务书-2026-08-26\\project-matrix.json",
+  "head": "b6e20df15de9eb4b25de1acfe4e8a8f9e7080bde",
+  "r4_remediation": {
+    "task_id": "PPA-M0-REMEDIATION-04",
+    "status": "closed",
+    "finding_manifest_id": "PPA-00-M0-OPEN-R3-INDEP-SOL-20260827-04",
+    "finding_manifest_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\m0-sol-gate-review-r3-04.json",
+    "finding_manifest_sha256": "505557f6d1487c40800f24aca8ae398e7e6dbf3d4bc292c80889aab9972c6913",
+    "finding_ids": [
+      "NF-01"
+    ],
+    "baseline_commit": "b6e20df15de9eb4b25de1acfe4e8a8f9e7080bde",
+    "new_tag": "M0-OPEN-R4",
+    "fix": "fresh_m0_review now fail-closes on every child exit_code/status, emits command_id/command/exit_code/status findings, and handles invalid merge JSON without losing structured failure evidence",
+    "child_gate_ids": [
+      "python-contracts-all",
+      "cross-language-goldens",
+      "node-contracts-all",
+      "delivery-record-check",
+      "merge-gate"
+    ],
+    "regression": {
+      "nonzero_exit_each_child": true,
+      "nonpassed_status_each_child": true,
+      "all_passed_verdict": "passed_pre_commit",
+      "invalid_merge_json": "failed"
+    },
+    "evidence": {
+      "fresh_review": {
+        "path": "docs/deliveries/PPA-00/evidence/fresh-readonly-review.json",
+        "bytes": 11440,
+        "sha256": "a46a1e3a02ab7076d1585c1060014d284abd23105213f432c1c2e7008faac20b"
+      },
+      "integration_test_ledger": {
+        "path": "docs/deliveries/PPA-00/integration-test-ledger.json",
+        "bytes": 8396,
+        "sha256": "8cea605b8d15c9db7077323327e29601de6bfe7bf18b6ee4fb8832eceb9e32be"
+      },
+      "contract_golden_manifest": {
+        "path": "docs/deliveries/PPA-00/contract-golden-manifest.json",
+        "bytes": 42035,
+        "sha256": "460c0da7c597ab4daec529b535ca05ede71d4761ae96d78829edf313194a2abf"
+      },
+      "m0_open_manifest": {
+        "path": "docs/deliveries/PPA-00/m0-open-manifest.json",
+        "bytes": 9119,
+        "sha256": "91da158712f4afdfddc7bbdddc26249275c3adf61e9289ce864bb2442ef9d49a"
+      }
+    },
+    "reused_passed_evidence": [
+      "docs/deliveries/PPA-00/evidence/browser-smoke.json",
+      "docs/deliveries/PPA-00/parity-ledger.json",
+      "docs/deliveries/PPA-00/evidence/finding-closure.json",
+      "docs/contracts/finding-closure-v1.json"
+    ],
+    "prohibitions_preserved": [
+      "no browser rerun",
+      "no Unicode rerun",
+      "no donor mutation",
+      "no P1-P6 creation",
+      "old tags immutable"
+    ],
+    "updated_at": "2026-08-27T03:12:54.997546+00:00"
+  }
 }

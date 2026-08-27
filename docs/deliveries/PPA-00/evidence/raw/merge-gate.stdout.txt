@@ -204,7 +204,6 @@
     "docs/deliveries/PPA-00/parity/screenshots/07-generation-pause-cancel.png",
     "docs/deliveries/PPA-00/parity/screenshots/08-workbench-foreshadow-ledger.png",
     "docs/deliveries/PPA-00/parity/screenshots/08-workbench-story-evolution-bible.png",
-    "docs/deliveries/PPA-00/parity/screenshots/08-workbench-writing-support.png",
     "docs/deliveries/PPA-00/parity/screenshots/09-checkpoint-recovery.png",
     "docs/deliveries/PPA-00/parity/screenshots/10-workbench-export-menu.png",
     "docs/deliveries/PPA-00/runtime-toolchain-lock.json",
@@ -217,6 +216,7 @@
     "pnpm-lock.yaml",
     "pnpm-workspace.yaml",
     "tests/acceptance/test_contract_manifest.py",
+    "tests/acceptance/test_fresh_m0_review_child_gates.py",
     "tests/acceptance/test_merge_gate_remediation.py",
     "tests/contract/test_84_13.py",
     "tests/contract/test_cli_cp936.py",
@@ -333,7 +333,7 @@
     }
   ],
   "donor_local_push": "DISABLED",
-  "head": "36ca847d8b328e3f4f7791c836e0530e8a5ea5b3",
+  "head": "b6e20df15de9eb4b25de1acfe4e8a8f9e7080bde",
   "out_of_set_paths": [],
   "p0_write_set": [
     "contracts/**",

@@ -11,7 +11,7 @@
     "id": "browser-smoke-headful",
     "status": "passed"
   },
-  "captured_at": "2026-08-27T02:09:23Z",
+  "captured_at": "2026-08-27T03:08:56Z",
   "commands": [
     {
       "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe tools/integration/generate_contract_manifest.py --check",
@@ -60,11 +60,11 @@
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "stdout": {
-        "bytes": 1391,
+        "bytes": 1472,
         "first_line": "============================= test session starts =============================",
-        "last_line": "============================= 30 passed in 18.70s =============================",
+        "last_line": "============================= 42 passed in 23.44s =============================",
         "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\pytest-contract-acceptance.stdout.txt",
-        "sha256": "3a579d51d957ecd84d50cbe6042f394ca12cfa3bf7a80bdc475d349c9476155b"
+        "sha256": "e96c653bf86f4dcc6945666629b624fcdb8e27bea920b6d2b43c23d3189c41a3"
       }
     },
     {
@@ -150,11 +150,11 @@
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "stdout": {
-        "bytes": 18037,
+        "bytes": 18015,
         "first_line": "{",
         "last_line": "}",
         "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\merge-gate.stdout.txt",
-        "sha256": "7d1f8ce67a0115fd37dbfa3deb84d62a435b89cb3a3e2f56c6812bea557fb333"
+        "sha256": "3e5e6630c3b56da13f285202f5a278ff272883e17fda3465a1400a303fb9c2f6"
       }
     }
   ],
@@ -167,7 +167,7 @@
   },
   "git": {
     "branch": "codex/ppa-00-integration",
-    "head": "36ca847d8b328e3f4f7791c836e0530e8a5ea5b3"
+    "head": "b6e20df15de9eb4b25de1acfe4e8a8f9e7080bde"
   },
   "root": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized",
   "schema": "plotpilot-integration-test-ledger/v1",

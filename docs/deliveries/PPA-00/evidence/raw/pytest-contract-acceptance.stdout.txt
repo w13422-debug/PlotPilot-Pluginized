@@ -4,18 +4,19 @@ rootdir: C:\Users\Administrator\Desktop\写作资料汇总\PlotPilot-Pluginized
 configfile: pytest.ini
 plugins: asyncio-0.26.0, anyio-4.14.2
 asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collected 30 items
+collected 42 items
 
-tests\contract\test_84_13.py .                                           [  3%]
-tests\contract\test_cli_cp936.py .                                       [  6%]
-tests\contract\test_cross_language_runtime.py .....                      [ 23%]
-tests\contract\test_finding_closure.py .                                 [ 26%]
-tests\contract\test_goldens.py ..                                        [ 33%]
-tests\contract\test_manifest_provenance.py ..                            [ 40%]
-tests\contract\test_rpc_and_sdk.py ....                                  [ 53%]
-tests\contract\test_schema_meta.py ..                                    [ 60%]
-tests\contract\test_verifier_remediation.py ......                       [ 80%]
-tests\acceptance\test_contract_manifest.py .                             [ 83%]
+tests\contract\test_84_13.py .                                           [  2%]
+tests\contract\test_cli_cp936.py .                                       [  4%]
+tests\contract\test_cross_language_runtime.py .....                      [ 16%]
+tests\contract\test_finding_closure.py .                                 [ 19%]
+tests\contract\test_goldens.py ..                                        [ 23%]
+tests\contract\test_manifest_provenance.py ..                            [ 28%]
+tests\contract\test_rpc_and_sdk.py ....                                  [ 38%]
+tests\contract\test_schema_meta.py ..                                    [ 42%]
+tests\contract\test_verifier_remediation.py ......                       [ 57%]
+tests\acceptance\test_contract_manifest.py .                             [ 59%]
+tests\acceptance\test_fresh_m0_review_child_gates.py ............        [ 88%]
 tests\acceptance\test_merge_gate_remediation.py .....                    [100%]
 
-============================= 30 passed in 18.70s =============================
+============================= 42 passed in 23.44s =============================

@@ -743,9 +743,9 @@
         "sha256": "cef3a40e66c36652d5e76febda1072bc320fc64ef132f011b6f7506e6a7bfa24"
       },
       {
-        "bytes": 15083,
+        "bytes": 17269,
         "path": "tools/integration/fresh_m0_review.py",
-        "sha256": "1cd37cb41bcf4dd60a7c92943dd8e67caf078fb6adb51e3e12cc4fc48d99aa5d"
+        "sha256": "e52c3f826fd60d5186c256b64f801f9c09d2cb647b857b307256f621b4539cd3"
       },
       {
         "bytes": 5733,
@@ -780,7 +780,7 @@
       {
         "bytes": 50557,
         "path": "tools/integration/generate_m0_delivery.py",
-        "sha256": "6f78df7796edae3fa10036b14a88f59b30fdbb9520247307de5fdcc98c416290"
+        "sha256": "44f9dc9ebe4cf21f528f95dd23a762551187fa9fa975703ce6b5e7e5da7157e2"
       },
       {
         "bytes": 6518,
@@ -790,7 +790,7 @@
       {
         "bytes": 26666,
         "path": "tools/integration/validate_m0_delivery.py",
-        "sha256": "d2f2f9de0b3f66327316705f2074188733d56109413c71b8a2fe67a8b9ac9649"
+        "sha256": "131ddaf6a181c2d533b1bb17304818e4ad038c15d50b3721609e2a09f23dd80c"
       },
       {
         "bytes": 31418,

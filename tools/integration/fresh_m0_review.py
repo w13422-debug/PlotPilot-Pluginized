@@ -1,4 +1,4 @@
-"""Run a fresh, read-only M0-OPEN-R3 release review.
+"""Run a fresh, read-only M0-OPEN-R4 release review.
 
 This review is deliberately separate from the recorded integration ledger. It
 reruns deterministic contract/delivery/merge checks, verifies the content
@@ -25,7 +25,7 @@ RAW = DELIVERY / "evidence" / "raw"
 REVIEW_PATH = DELIVERY / "evidence" / "fresh-readonly-review.json"
 BASE_SHA = "1c481237b6fa32ef5f85d7f8da4cb16f366cd4f0"
 BRANCH = "codex/ppa-00-integration"
-RELEASE_LABEL = "M0-OPEN-R3"
+RELEASE_LABEL = "M0-OPEN-R4"
 
 
 def sha256_bytes(value: bytes) -> str:
@@ -136,6 +136,34 @@ def content_addressed_records(value: Any) -> list[dict[str, Any]]:
     return records
 
 
+def child_gate_failures(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Return structured failures for every child gate that did not pass.
+
+    The child commands are the executable gates of this review.  Their result
+    metadata must therefore be part of the review verdict, not merely a
+    record in the emitted evidence.  Treat missing or malformed status fields
+    as failures as well; a fresh review must never infer success from an
+    incomplete child result.
+    """
+
+    failures: list[dict[str, Any]] = []
+    for result in results:
+        exit_code = result.get("exit_code")
+        status = result.get("status")
+        if exit_code == 0 and status == "passed":
+            continue
+        failures.append(
+            {
+                "command_id": result.get("id"),
+                "command": result.get("command"),
+                "exit_code": exit_code,
+                "status": status,
+                "reason": "child gate requires exit_code=0 and status=passed",
+            }
+        )
+    return failures
+
+
 def main() -> int:
     python = sys.executable
     commands = [
@@ -146,6 +174,7 @@ def main() -> int:
         ([python, "tools/integration/validate_merge_gate.py", "--json"], "merge-gate"),
     ]
     results = [run(command, label) for command, label in commands]
+    child_failures = child_gate_failures(results)
     m0 = read_json(DELIVERY / "m0-open-manifest.json")
     contract = read_json(DELIVERY / "contract-golden-manifest.json")
     parity = read_json(DELIVERY / "parity-ledger.json")
@@ -153,7 +182,18 @@ def main() -> int:
     closure = read_json(ROOT / "docs" / "contracts" / "finding-closure-v1.json")
     closure_evidence = read_json(DELIVERY / "evidence" / "finding-closure.json")
     state = read_json(ROOT / "coordination" / "PPA-00" / "state.json")
-    merge = json.loads(next(item["_stdout"] for item in results if item["id"] == "merge-gate"))
+    failures: list[str] = []
+    merge_result = next(item for item in results if item.get("id") == "merge-gate")
+    try:
+        parsed_merge = json.loads(str(merge_result.get("_stdout", "")))
+    except (TypeError, json.JSONDecodeError):
+        parsed_merge = {}
+        failures.append("merge-gate returned invalid JSON")
+    if not isinstance(parsed_merge, dict):
+        merge = {}
+        failures.append("merge-gate JSON result is not an object")
+    else:
+        merge = parsed_merge
 
     record_failures: list[dict[str, Any]] = []
     for key, label in (
@@ -166,7 +206,6 @@ def main() -> int:
     record_failures.extend(check_records(parity["evidence_run"]["screenshot_files"], "screenshot"))
     record_failures.extend(check_records(content_addressed_records(closure_evidence), "finding-closure"))
 
-    failures: list[str] = []
     if state.get("schema") != "ppa-project-state/v1":
         failures.append("state schema drift")
     if set(state.get("milestones", {})) != {f"M0.{index}" for index in range(1, 8)}:
@@ -259,9 +298,32 @@ def main() -> int:
         stderr=subprocess.DEVNULL,
         check=False,
     ).returncode == 0
+    review_failures = bool(failures or record_failures or child_failures)
+    findings: list[dict[str, Any]] = [
+        {
+            "severity": "blocker",
+            "id": "F-REVIEW-CHILD-GATE",
+            "command_id": failure["command_id"],
+            "command": failure["command"],
+            "exit_code": failure["exit_code"],
+            "status": failure["status"],
+            "evidence": [failure],
+            "required_action": "修复 child gate 后重新运行 fresh review",
+        }
+        for failure in child_failures
+    ]
+    if failures or record_failures:
+        findings.append(
+            {
+                "severity": "blocker",
+                "id": "F-REVIEW-CHECKS",
+                "evidence": failures + record_failures,
+                "required_action": "修复后重新运行 fresh review",
+            }
+        )
     review = {
         "schema": "plotpilot-m0-fresh-readonly-review/v1",
-        "review_task_id": "PPA-M0-FRESH-REVIEW-R3",
+        "review_task_id": "PPA-M0-FRESH-REVIEW-R4",
         "reviewer": "P0 main control fallback (delegated Sol reviewer returned not_found)",
         "mode": "fresh_read_only_structured_review",
         "reviewed_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
@@ -285,26 +347,23 @@ def main() -> int:
             "contract_record_hashes_match": not record_failures,
             "stub_marker_hits": marker_hits,
             "tag_present_at_review": tag_present,
+            "child_gate_failures": child_failures,
         },
-        "findings": (
-            [{"severity": "blocker", "id": "F-REVIEW-CHECKS", "evidence": failures + record_failures, "required_action": "修复后重新运行 fresh review"}]
-            if failures or record_failures
-            else []
-        ),
+        "findings": findings,
         "m0_gate_matrix": {key: {"status": value["status"], "evidence": value["evidence"]} for key, value in m0["gates"].items()},
         "write_set_check": {
-            "passed": not merge["out_of_set_paths"],
-            "out_of_set_paths": merge["out_of_set_paths"],
-            "changed_paths_count": len(merge["changed_paths"]),
+            "passed": not merge.get("out_of_set_paths", []),
+            "out_of_set_paths": merge.get("out_of_set_paths", []),
+            "changed_paths_count": len(merge.get("changed_paths", [])),
         },
         "p1_p6_gate": {
-            "passed": merge["p1_p6_absent"],
-            "creation_gate": merge["creation_gate"],
+            "passed": bool(merge.get("p1_p6_absent", False)),
+            "creation_gate": merge.get("creation_gate", {}),
             "tag_expected_after_commit": True,
         },
-        "verdict": "passed_pre_commit" if not (failures or record_failures) else "failed",
+        "verdict": "passed_pre_commit" if not review_failures else "failed",
         "limitations": [
-            "review is pre-commit; exact M0-OPEN-R3 tag target is verified in the final close step",
+            "review is pre-commit; exact M0-OPEN-R4 tag target is verified in the final close step",
             "browser smoke was executed as the current R3 headful evidence; this read-only review consumes its exact recorded hash",
         ],
     }

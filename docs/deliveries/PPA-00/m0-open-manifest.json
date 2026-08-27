@@ -3,7 +3,7 @@
     "contract_golden_manifest": {
       "bytes": 42035,
       "path": "docs/deliveries/PPA-00/contract-golden-manifest.json",
-      "sha256": "152aa49ee8b050045f5c2b053a464761a9df4eac7877dd8ed47edb95d8c3398d"
+      "sha256": "460c0da7c597ab4daec529b535ca05ede71d4761ae96d78829edf313194a2abf"
     },
     "dependency_delta": {
       "bytes": 1815,
@@ -18,12 +18,12 @@
     "identity_runtime_evidence": {
       "bytes": 6921,
       "path": "docs/deliveries/PPA-00/evidence/m0.2-identity-runtime.json",
-      "sha256": "b7fe36a4e3916086f7242a445ea254bcaf3597cac86fb22006286cb2e5bcdf2e"
+      "sha256": "baf91c634cc53aacf0f488eb5e7ff1a5a1c1fffa12ca8419d20788f1bfdbc1f4"
     },
     "integration_test_ledger": {
       "bytes": 8396,
       "path": "docs/deliveries/PPA-00/integration-test-ledger.json",
-      "sha256": "24b0730bd5e57db10339ddbfbf8cf5c9ecbeb09b81140f8396fc77a0fc80cd59"
+      "sha256": "8cea605b8d15c9db7077323327e29601de6bfe7bf18b6ee4fb8832eceb9e32be"
     },
     "license_ledger": {
       "bytes": 87669,
@@ -41,7 +41,7 @@
       "sha256": "4a22e1d06b7b39fc82fe52b7df23a0b94bcf8c65a687f35dfc248e22e1048a30"
     }
   },
-  "commit_ref": "M0-OPEN-R3",
+  "commit_ref": "M0-OPEN-R4",
   "constraints": {
     "contract_delta": "none",
     "dependency_delta": "dependency-delta-naive-ui-2.44.1.json",
@@ -149,7 +149,7 @@
     "task": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized七项目任务书-2026-08-26\\PPA-00-Integration.md"
   },
   "status": "open",
-  "tag": "M0-OPEN-R3",
+  "tag": "M0-OPEN-R4",
   "verification": {
     "commands": [
       "python tools/integration/verify_contracts.py --all",
@@ -160,7 +160,7 @@
     ],
     "contract_golden_delivery": {
       "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\contract-golden-manifest.json",
-      "sha256": "152aa49ee8b050045f5c2b053a464761a9df4eac7877dd8ed47edb95d8c3398d"
+      "sha256": "460c0da7c597ab4daec529b535ca05ede71d4761ae96d78829edf313194a2abf"
     },
     "contract_manifest": {
       "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\contracts\\manifest-v1.json",
@@ -172,7 +172,7 @@
     },
     "test_ledger": {
       "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\integration-test-ledger.json",
-      "sha256": "24b0730bd5e57db10339ddbfbf8cf5c9ecbeb09b81140f8396fc77a0fc80cd59"
+      "sha256": "8cea605b8d15c9db7077323327e29601de6bfe7bf18b6ee4fb8832eceb9e32be"
     }
   }
 }

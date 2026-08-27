@@ -17,7 +17,7 @@
     "tauri_build": false
   },
   "captured_branch": "codex/ppa-00-integration",
-  "captured_head": "36ca847d8b328e3f4f7791c836e0530e8a5ea5b3",
+  "captured_head": "b6e20df15de9eb4b25de1acfe4e8a8f9e7080bde",
   "creation_gate": {
     "closed": true,
     "projects": [

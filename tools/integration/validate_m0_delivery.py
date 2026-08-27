@@ -35,7 +35,7 @@ CLOSURE_EVIDENCE = DELIVERY / "evidence" / "finding-closure.json"
 P0_BRANCH = "codex/ppa-00-integration"
 BASE_SHA = "1c481237b6fa32ef5f85d7f8da4cb16f366cd4f0"
 MATRIX_PATH = merge_gate.DEFAULT_MATRIX
-RELEASE_LABEL = "M0-OPEN-R3"
+RELEASE_LABEL = "M0-OPEN-R4"
 
 _ALLOWED_FONT_URLS = {
     "https://fonts.loli.net/css2?family=Inter:wght@400;500;600;700&display=swap",

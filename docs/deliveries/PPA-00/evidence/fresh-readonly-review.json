@@ -85,17 +85,17 @@
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "stdout": {
-        "bytes": 18037,
+        "bytes": 18015,
         "first_line": "{",
         "last_line": "}",
         "path": "docs/deliveries/PPA-00/evidence/raw/fresh-review-merge-gate.stdout.txt",
-        "sha256": "7d1f8ce67a0115fd37dbfa3deb84d62a435b89cb3a3e2f56c6812bea557fb333"
+        "sha256": "3e5e6630c3b56da13f285202f5a278ff272883e17fda3465a1400a303fb9c2f6"
       }
     }
   ],
   "findings": [],
   "limitations": [
-    "review is pre-commit; exact M0-OPEN-R3 tag target is verified in the final close step",
+    "review is pre-commit; exact M0-OPEN-R4 tag target is verified in the final close step",
     "browser smoke was executed as the current R3 headful evidence; this read-only review consumes its exact recorded hash"
   ],
   "m0_gate_matrix": {
@@ -169,6 +169,7 @@
       "FLOW-07-foreshadow-ledger",
       "FLOW-08-story-evolution-bible"
     ],
+    "child_gate_failures": [],
     "contract_record_hashes_match": true,
     "contract_schemas": 48,
     "m0_gates": {
@@ -190,7 +191,7 @@
     "stub_marker_hits": [],
     "tag_present_at_review": true
   },
-  "observed_head": "36ca847d8b328e3f4f7791c836e0530e8a5ea5b3",
+  "observed_head": "b6e20df15de9eb4b25de1acfe4e8a8f9e7080bde",
   "p1_p6_gate": {
     "creation_gate": [
       {
@@ -281,8 +282,8 @@
     "passed": true,
     "tag_expected_after_commit": true
   },
-  "review_task_id": "PPA-M0-FRESH-REVIEW-R3",
-  "reviewed_at": "2026-08-27T02:10:17Z",
+  "review_task_id": "PPA-M0-FRESH-REVIEW-R4",
+  "reviewed_at": "2026-08-27T03:09:23Z",
   "reviewer": "P0 main control fallback (delegated Sol reviewer returned not_found)",
   "root": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized",
   "schema": "plotpilot-m0-fresh-readonly-review/v1",
