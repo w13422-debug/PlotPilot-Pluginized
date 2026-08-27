@@ -1,0 +1,6 @@
+GENERATION=2
+BRANCH=codex/ppa-03b-provider-broker-g2
+BASE=1b352be671e70a2ce443b10499060982e93d64b7
+COMMAND=git diff --cached --check
+GIT_DIFF_CHECK_OK=1
+EXIT_CODE=0

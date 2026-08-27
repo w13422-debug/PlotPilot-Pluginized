@@ -1,0 +1,6 @@
+{
+  "schema": "p3-module-migrations/v1",
+  "module": "plotpilot_provider_openai_compatible",
+  "runner_owner": "P3B",
+  "steps": []
+}

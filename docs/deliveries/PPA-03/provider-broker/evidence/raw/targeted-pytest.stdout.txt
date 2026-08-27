@@ -1,0 +1,19 @@
+GENERATION=2
+BRANCH=codex/ppa-03b-provider-broker-g2
+BASE=1b352be671e70a2ce443b10499060982e93d64b7
+SOURCE_SEED=32ebc76273ce8ef5307ff7cb82b0461435b0be87
+COMMAND=python -B -m pytest -p no:cacheprovider tests/p3-execution/provider-broker -q
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-03B-Provider-Broker
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 35 items
+
+tests\p3-execution\provider-broker\test_broker.py ................       [ 45%]
+tests\p3-execution\provider-broker\test_model_profile.py ......          [ 62%]
+tests\p3-execution\provider-broker\test_provider.py .............        [100%]
+
+============================= 35 passed in 0.74s ==============================
+EXIT_CODE=0

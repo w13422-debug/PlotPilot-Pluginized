@@ -1,0 +1,6 @@
+GENERATION=2
+BRANCH=codex/ppa-03b-provider-broker-g2
+BASE=1b352be671e70a2ce443b10499060982e93d64b7
+COMMAND=python -m compileall -q backend/plotpilot_core/model backend/plotpilot_core/broker first-party-plugins/provider-openai-compatible/backend/src
+COMPILEALL_OK=1
+EXIT_CODE=0

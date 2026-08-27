@@ -1,0 +1,30 @@
+{
+  "backend": {
+    "entrypoint": "plotpilot_provider_openai_compatible:OpenAICompatibleProvider",
+    "max_concurrency": 1,
+    "requirements_lock": "backend/requirements.lock",
+    "wheel": "backend/dist/plotpilot_provider_openai_compatible.whl",
+    "wheelhouse": "backend/wheels"
+  },
+  "capabilities": [],
+  "compatibility": {
+    "core_api": ">=1.0 <2.0",
+    "plugin_rpc": "1",
+    "python": "3.12.*",
+    "ui_host": "1"
+  },
+  "data": null,
+  "display_name": "OpenAI-compatible Provider",
+  "kind": "code",
+  "needs": [],
+  "plugin_id": "com.plotpilot.provider.openai-compatible",
+  "schema": "plotpilot-plugin/v1",
+  "settings": null,
+  "storage": {
+    "migration_manifest": "migrations/manifest.json",
+    "migration_policy": "transactional-shadow",
+    "schema_version": 1
+  },
+  "ui": null,
+  "version": "1.0.0"
+}

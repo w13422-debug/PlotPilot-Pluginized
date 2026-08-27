@@ -1,0 +1,2 @@
+# Source-only provider package: no third-party runtime dependencies.
+# The host supplies plotpilot_plugin_sdk; Python stdlib is sufficient here.
