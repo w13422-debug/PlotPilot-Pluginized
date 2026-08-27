@@ -77,6 +77,7 @@
       :act-title="actPlanningTitle"
       @confirmed="handleChapterUpdated"
     />
+    <TaskDrawer />
   </div>
 </template>
 
@@ -93,6 +94,7 @@ import StatsTopBar from '../components/stats/StatsTopBar.vue'
 import ChapterList from '../components/workbench/ChapterList.vue'
 import WorkArea from '../components/workbench/WorkArea.vue'
 import SettingsPanel from '../components/workbench/SettingsPanel.vue'
+import TaskDrawer from '../components/jobs/TaskDrawer.vue'
 import {
   WORKBENCH_CHAPTER_DESK_CHANGE_EVENT,
   WORKBENCH_OPEN_SETTINGS_PANEL_EVENT,
