@@ -9,27 +9,27 @@
 
 ## 物化范围
 
-`contracts/json-schema/` 中的 48 个 `*.schema.json` 是 Draft 2020-12 closed schemas；
-`rpc-method-matrix.v1.json` 和 `compatibility-matrix.v1.json` 是方法/兼容性机器清单。
-正例 fixture、四组 hash golden、Windows path corpus、compatibility/history corpus 与 14 组
-`84.13` negative corpus 均由 `contracts/manifest-v1.json` 内容寻址。
+`contracts/json-schema/` 中的 53 个 `*.schema.json` 是 Draft 2020-12 closed schemas；
+`rpc-method-matrix.v1.json`、`core-api-method-matrix.v1.json` 和 `compatibility-matrix.v1.json` 是方法/兼容性机器清单。
+正例 fixture、五组 golden、Windows path corpus、compatibility/history corpus、14 组冻结的
+`84.13` negative corpus 与 25 个 additive contract-publication probes 均由 `contracts/manifest-v1.json` 内容寻址。
 
 | 项目 | 数量/规则 |
 |---|---|
-| closed schemas | 48 |
+| closed schemas | 53 |
 | 正例 fixture | 35 个 `contracts/examples/fixtures/*.json`，另有 4 个组合示例 |
-| golden | package、Skill、RunSnapshot/request-key、backup |
-| negative | 14 组、105 个 negative case |
+| golden | package、Skill、RunSnapshot/request-key、backup、contract-publication |
+| negative | M0 14 组/105 case 保持原 bytes；另有 25 个公共合同/TS ingress probes |
 | 哈希 JSON | RFC 8785 JCS、UTF-8、无 BOM；自含 hash 先省略自身字段 |
 | 对象 | `additionalProperties=false`；联合顶层 `unevaluatedProperties=false` |
 
 ## 读取顺序
 
 1. 先读 `surface.md` 固定语义与错误码；
-2. 用 `schema-map.md` 定位 48 个 schema 与 §84 family；
+2. 用 `schema-map.md` 定位 53 个 schema 与 §84/additive family；
 3. 用 `method-matrix.md` 对照 §20 RPC 方法、meta profile、参数和结果；
 4. 用 `negative-golden.md` 运行 14 组故障断言；
-5. 用 `contracts/manifest-v1.json` 和 `docs/deliveries/PPA-00/contract-golden-manifest.json` 校验内容哈希。
+5. 用当前 `contracts/manifest-v1.json` 校验内容哈希；`docs/deliveries/PPA-00/contract-golden-manifest.json` 只保留 M0-OPEN 历史证据，不代表 M1 additive publication。
 
 ## 验收命令
 

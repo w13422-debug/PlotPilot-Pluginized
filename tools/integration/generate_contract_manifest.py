@@ -29,6 +29,12 @@ FAMILY_IDS = [
     "84.12-job-broker-outcome",
     "84.13-negative-golden",
     "84.14-finding-closure",
+    "core-authority-command-query/v1",
+    "publication-command-result/v1",
+    "asset-metadata/v1",
+    "plugin-ui-ingress-validator/v1",
+    "operation-context-identity/v1",
+    "export-current-revisions/v1",
 ]
 
 
@@ -49,14 +55,14 @@ def file_records() -> list[dict[str, Any]]:
     # This is a checked-in runtime contract rather than a schema/example/golden
     # or corpus fixture.  Keep the explicit record here so the Unicode identity
     # rule is content-addressed by the same manifest consumed at runtime.
-    unicode_contract = CONTRACTS / "unicode-casefold-v1.json"
-    if unicode_contract.is_file():
-        records.append({
-            "path": relative(unicode_contract),
-            "bytes": unicode_contract.stat().st_size,
-            "sha256": sha256(unicode_contract),
-        })
-    return records
+    for explicit_contract in (CONTRACTS / "unicode-casefold-v1.json", CONTRACTS / ".gitattributes"):
+        if explicit_contract.is_file():
+            records.append({
+                "path": relative(explicit_contract),
+                "bytes": explicit_contract.stat().st_size,
+                "sha256": sha256(explicit_contract),
+            })
+    return sorted(records, key=lambda item: item["path"].encode("utf-8"))
 
 
 def schema_records() -> list[dict[str, Any]]:
@@ -85,7 +91,7 @@ def negative_records() -> list[dict[str, Any]]:
 
 def golden_vectors() -> dict[str, Any]:
     values: dict[str, Any] = {}
-    for name in ("package", "skill", "run-snapshot", "backup"):
+    for name in ("package", "skill", "run-snapshot", "backup", "contract-publication-v1"):
         expected_path = CONTRACTS / "golden" / name / "expected.json"
         if expected_path.exists():
             values[name] = json.loads(expected_path.read_text(encoding="utf-8"))

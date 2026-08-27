@@ -53,6 +53,18 @@ Skill receipt 具备四级独立归因；Job 的 Attempt/Step/Job terminal 与 B
 `negative-golden.md` 对应 14 组断言；每组至少一个真实负例且由 Python verifier 执行。Finding closure ID 以正式设计 §84.14 为准，
 不能用“页面存在”或单一正例替代合同负例。
 
+## M0 后首次发布的 scoped v1 合同
+
+`PPA-M1-CONTRACT-PUBLICATION-01` 只物化正式设计已有但 M0 尚未公开的窄面，不修改任何 M0 v1 bytes、RPC 方法或旧 tag：
+
+- `core-authority-command-query/v1`：P1/P4 的 Workspace、Document、Node、Relation、Revision closed HTTP command/query/result；写请求带 operation key，Revision/CAS 写带显式 expected/base revision。26 条 route 绑定见 `core-api-method-matrix.v1.json`。
+- `publication-command-result/v1`：Core-native Candidate accept/result。Core 服务与 Core 原生控件是唯一执行权威；Plugin worker、Plugin UI Bundle、Plugin SDK ports 和 RPC method matrix 均没有直接 Publication callable。
+- `asset-metadata/v1`：Core HTTP Asset metadata 与 bounded read-range DTO；现有 `host.asset.read/v1`/`host.asset.create/v1` 不变。
+- `operation-context-identity/v1`：`SHA256("plotpilot-operation-context/v1\n" || JCS(closed_projection))`；request ID、deadline 与 lease epoch 不进入 identity，install/attempt 必须先 fencing。
+- `export-current-revisions/v1`：Core 生成的 ordered immutable JSON Asset；作为 RunSnapshot `parameters_asset_id` 且精确 bytes hash 出现在 `asset_hashes`，worker 仍只用现有 `host.asset.read/v1`。
+
+既有 `job-snapshot/v1` 与 `plugin-ui-tree/intent/ack-v1` wire bytes 不变；`frontend/src/contracts/ingress.ts` 只补 unknown-input closed parser、plain own data-property 检查、组件事件 allowlist、deep clone 与 deep freeze。
+
 ## Error codes
 
 | code | name | code | name |

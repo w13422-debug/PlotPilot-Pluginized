@@ -1,6 +1,6 @@
 # ADR-041：PPA-01-CD-001 的最小 Core HTTP / Publication 合同
 
-- **状态**：Accepted；P0 binding decision；实现尚未发布
+- **状态**：Accepted；随 `PPA-M1-CONTRACT-PUBLICATION-01` 物化，待聚焦发布门
 - **日期**：2026-08-27
 - **Owner**：P0 / PPA-00-Integration
 - **Delta**：`PPA-01-CD-001`
@@ -11,7 +11,7 @@
 
 正式设计 §77 已冻结 `ADR-001` 至 `ADR-040`。当前仓库没有独立 ADR 文件，因此本仓库为该正式设计之后的第一个补充 ADR 使用 `ADR-041`，不是重新占用 `ADR-001`。
 
-裁决基线是 `M0-OPEN-R4` peeled commit `42123d1a5126bb2bef31304b0498e2e7def9183e`。M0 的 `contracts/manifest-v1.json`（SHA-256 `2866b8d0b36ec954ee8cb5c87374e0ca0a0c4acefd1901070cee0b45979d25e7`）、RPC method matrix 和 Plugin SDK ports 已逐项回读。它们只定义插件 RPC 的 Asset/Candidate 等窄面，没有 Core HTTP wire contract；当前 P0 工作树实际 diff 只有下游登记，尚未出现 Luna 的公共合同实现。
+裁决基线是 `M0-OPEN-R4` peeled commit `42123d1a5126bb2bef31304b0498e2e7def9183e`。M0 的 `contracts/manifest-v1.json`（SHA-256 `2866b8d0b36ec954ee8cb5c87374e0ca0a0c4acefd1901070cee0b45979d25e7`）、RPC method matrix 和 Plugin SDK ports 已逐项回读。它们只定义插件 RPC 的 Asset/Candidate 等窄面，没有 Core HTTP wire contract。本 ADR 的实现以 P1 internal authority 已 no-ff 集成后的 P0 HEAD `63ee2b89b719734dd2f9d50bab12cbe0fe10e37e` 为发布基线，不回写 M0 tags。
 
 ## 背景与裁决
 
@@ -104,7 +104,7 @@ P1 的 Core `schema_migration` receipt/DB record 是 P1 自己写集里的 deter
 
 ## 实施与验收门
 
-当前没有 Luna 草案可验收，故公共合同 release verdict 为 **BLOCKED / not implemented**。Luna 只能在 P0 写集内实现本 ADR 规定的 schema、Python/TypeScript DTO/validator、HTTP positive/negative fixtures、P1/P4 typed fakes 和 manifest/compatibility 记录；不能替 P1/P4 写业务、不能改 P0 既有 v1 RPC、不能修改正式设计或下游 worktree。
+本批次已经在 P0 写集内物化 generator-backed closed schema、Python/TypeScript DTO 与 verifier、覆盖 26 条 route 的 HTTP fixtures、P1/P4 typed fakes、golden/negative corpus 和内容寻址 manifest。它只提供 validation/fake surface，不替 P1/P4 写业务，也没有修改 P0 既有 v1 RPC、正式设计或下游 worktree。发布状态在 fresh checkout 与 Sol 聚焦验收完成前仍为 **implemented_pending_focused_review**。
 
 Sol 的接受门必须读取实际 diff，并运行原始输出可追溯的：Python verifier、真实 `frontend/src/contracts/verifier.ts`、cross-language fixtures、HTTP fixture 正负例和 schema/manifest checks；证明插件 SDK/RPC 没有 Publication callable，证明 stale/cross-workspace/unknown-field/idempotency/partial-publication/Asset-range negative 全部 fail-closed。实现缺一项都不进入 P0 发布基线。
 
@@ -115,4 +115,3 @@ Sol 的接受门必须读取实际 diff，并运行原始输出可追溯的：Py
 3. P0 发布本 ADR 对应的三组 v1 contract，并经 Sol 聚焦复核。
 4. P1/P4 在 clean worktree 上对新的 P0 integration head 使用 `git merge --ff-only`，之后才能恢复 public Core API/Publication 消费。
 5. 任一实现若需要改变已冻结 v1 语义，停止切片并重新提交 Contract Delta；不得在业务代码中临时兼容。
-

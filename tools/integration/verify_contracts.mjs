@@ -116,7 +116,7 @@ function verifyBackup() {
 
 function verifyInventory() {
   const schemaFiles = readdirSync(SCHEMAS).filter((name) => name.endsWith('.schema.json')).sort()
-  if (schemaFiles.length !== 48) throw new Error(`expected 48 schemas, got ${schemaFiles.length}`)
+  if (schemaFiles.length !== 53) throw new Error(`expected 53 schemas, got ${schemaFiles.length}`)
   for (const name of schemaFiles) {
     const schema = readJson(join(SCHEMAS, name))
     if (schema.$schema !== 'https://json-schema.org/draft/2020-12/schema') throw new Error(`schema dialect drift: ${name}`)

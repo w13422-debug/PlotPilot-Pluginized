@@ -14,7 +14,7 @@ SCHEMA_DIR = ROOT / "contracts" / "json-schema"
 @pytest.mark.integration
 def test_all_generated_schemas_are_draft_2020_12_and_closed() -> None:
     paths = sorted(SCHEMA_DIR.glob("*.schema.json"))
-    assert len(paths) == 48
+    assert len(paths) == 53
     for path in paths:
         schema = json.loads(path.read_text(encoding="utf-8"))
         Draft202012Validator.check_schema(schema)

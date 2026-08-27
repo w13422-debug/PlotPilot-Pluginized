@@ -1,0 +1,90 @@
+{
+  "schema": "contract-delta-decision/v1",
+  "decision_id": "PPA-00-CD-DECISION-003",
+  "delta_id": "P3-CD-CONTEXT-IDENTITY-001",
+  "status": "accepted_with_canonical_derived_identity",
+  "binding_owner": "P0",
+  "decision_date": "2026-08-27",
+  "baseline": {
+    "branch": "codex/ppa-00-integration",
+    "head": "63ee2b89b719734dd2f9d50bab12cbe0fe10e37e",
+    "formal_design_sections": [
+      "20.3",
+      "20.5",
+      "84.8"
+    ],
+    "formal_design_sha256": "e70f450b75cfa753148cf620d13855d0073f7d61294e7599ea9cc98f3e612b7b",
+    "delta_source": {
+      "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-03-Execution\\coordination\\PPA-03\\contract-delta-context-identity-v1.json",
+      "sha256": "7be49715fbad8babc446ca990fc6a891f6892989d524a0c0909d5a65ed89790a"
+    }
+  },
+  "classification": {
+    "contract_gap": true,
+    "new_rpc_field_required": false,
+    "new_rpc_method_required": false,
+    "reason": "§20.5 freezes the ledger key tuple but M0 left context_identity opaque."
+  },
+  "decision": {
+    "adr": "docs/contracts/adr-042-post-m0-ingress-context-export-v1.md",
+    "contract_id": "operation-context-identity/v1",
+    "domain_separator": "plotpilot-operation-context/v1\n",
+    "formula": "SHA256(domain_separator || JCS(closed_projection))",
+    "projection_profiles": {
+      "control": [
+        "schema",
+        "protocol_version",
+        "context",
+        "generation_id",
+        "plugin_release_id"
+      ],
+      "install": [
+        "schema",
+        "protocol_version",
+        "context",
+        "generation_id",
+        "plugin_release_id",
+        "install_operation_id"
+      ],
+      "attempt": [
+        "schema",
+        "protocol_version",
+        "context",
+        "generation_id",
+        "plugin_release_id",
+        "job_id",
+        "step_id",
+        "attempt_id"
+      ]
+    },
+    "excluded_from_identity": [
+      "deadline_at",
+      "operation_id",
+      "install_lease_epoch",
+      "lease_epoch"
+    ],
+    "fencing_order": "validate current install/attempt epoch before deriving identity or reading OperationLedger",
+    "rpc_envelope_changed": false,
+    "rpc_method_matrix_changed": false
+  },
+  "publication": {
+    "batch_id": "PPA-M1-CONTRACT-PUBLICATION-01",
+    "schema_path": "contracts/json-schema/operation-context-identity-v1.schema.json",
+    "golden_path": "contracts/golden/contract-publication-v1/context-identity.json",
+    "contract_manifest_sha256": "cbe9d02fc42409332151cd7905e387a46537b330b039a2d3d6798f48cbfcc024",
+    "status": "implemented_pending_focused_review"
+  },
+  "resume_gate": {
+    "affected_slice": "P3 durable Host mutation RPC adapter composition",
+    "may_resume_after": [
+      "P0 focused Sol PASS",
+      "P0 publication commit",
+      "P3 syncs exact P0 accepted head and calls P0 derive_operation_context_identity"
+    ],
+    "forbidden": [
+      "P3 local string concatenation",
+      "epoch inside identity",
+      "ledger lookup before stale-epoch fencing"
+    ]
+  }
+}

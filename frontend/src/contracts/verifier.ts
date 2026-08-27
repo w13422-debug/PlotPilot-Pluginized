@@ -623,6 +623,95 @@ function validateMeta(meta: JsonObject, context: string): void {
   if (meta.protocol_version !== '1' || meta.context !== context) fail('RPC meta protocol/context mismatch')
 }
 
+const CONTEXT_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/
+const CONTEXT_DEADLINE = /^(?:[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z|[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.(?!000)[0-9]{3}Z)$/
+
+function strictMetaObject(value: unknown): JsonObject {
+  const meta = asObject(value, 'operation context meta')
+  const prototype = Object.getPrototypeOf(meta)
+  if (prototype !== Object.prototype && prototype !== null) fail('operation context meta must be a plain object')
+  if (Object.getOwnPropertySymbols(meta).length !== 0) fail('operation context meta cannot contain symbol properties')
+  for (const key of Object.getOwnPropertyNames(meta)) {
+    const descriptor = Object.getOwnPropertyDescriptor(meta, key)
+    if (descriptor == null || !('value' in descriptor) || descriptor.get !== undefined || descriptor.set !== undefined || !descriptor.enumerable) {
+      fail(`operation context meta property ${key} must be an enumerable data property`)
+    }
+  }
+  return meta
+}
+
+function contextId(meta: JsonObject, field: string): string {
+  const value = meta[field]
+  if (typeof value !== 'string' || !CONTEXT_ID.test(value)) fail(`operation context ${field} is not a valid ID`)
+  return value
+}
+
+function contextHash(meta: JsonObject, field: string): string {
+  const value = meta[field]
+  if (typeof value !== 'string' || !HASH.test(value)) fail(`operation context ${field} is not a lowercase SHA-256`)
+  return value
+}
+
+function contextEpoch(meta: JsonObject, field: string): number {
+  const value = meta[field]
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 1) fail(`operation context ${field} must be a positive integer`)
+  return value
+}
+
+/**
+ * Return the exact identity projection used by the cross-runtime context
+ * identity hash.  Request IDs, deadlines and all lease epochs are fencing
+ * inputs, not identity inputs, and are intentionally absent from this object.
+ */
+export function operationContextIdentityProjection(metaValue: unknown, expectedLeaseEpoch?: number): JsonObject {
+  const meta = strictMetaObject(metaValue)
+  const context = meta.context
+  if (context !== 'control' && context !== 'install' && context !== 'attempt') fail('operation context profile is unknown')
+  validateMeta(meta, context)
+  if (meta.protocol_version !== '1') fail('operation context protocol version is not 1')
+  contextId(meta, 'generation_id')
+  contextHash(meta, 'plugin_release_id')
+  contextId(meta, 'operation_id')
+  if (typeof meta.deadline_at !== 'string' || !CONTEXT_DEADLINE.test(meta.deadline_at)) fail('operation context deadline_at is not a frozen UTC timestamp')
+
+  if (expectedLeaseEpoch !== undefined && (!Number.isSafeInteger(expectedLeaseEpoch) || expectedLeaseEpoch < 1)) fail('expected lease epoch must be a positive integer')
+  if (context === 'control') {
+    if (expectedLeaseEpoch !== undefined) fail('control context has no lease epoch to fence')
+  } else if (context === 'install') {
+    contextId(meta, 'install_operation_id')
+    const leaseEpoch = contextEpoch(meta, 'install_lease_epoch')
+    if (expectedLeaseEpoch === undefined) fail('install context derivation requires the current lease epoch')
+    if (leaseEpoch !== expectedLeaseEpoch) fail('install context lease epoch is stale')
+  } else {
+    contextId(meta, 'job_id')
+    contextId(meta, 'step_id')
+    contextId(meta, 'attempt_id')
+    const leaseEpoch = contextEpoch(meta, 'lease_epoch')
+    if (expectedLeaseEpoch === undefined) fail('attempt context derivation requires the current lease epoch')
+    if (leaseEpoch !== expectedLeaseEpoch) fail('attempt context lease epoch is stale')
+  }
+
+  const projection: JsonObject = {
+    schema: 'operation-context-identity/v1',
+    protocol_version: '1',
+    context,
+    generation_id: meta.generation_id,
+    plugin_release_id: meta.plugin_release_id,
+  }
+  if (context === 'install') projection.install_operation_id = meta.install_operation_id
+  if (context === 'attempt') {
+    projection.job_id = meta.job_id
+    projection.step_id = meta.step_id
+    projection.attempt_id = meta.attempt_id
+  }
+  return projection
+}
+
+/** SHA-256(UTF8("plotpilot-operation-context/v1\n" || JCS(projection))). */
+export async function deriveOperationContextIdentity(meta: unknown, expectedLeaseEpoch?: number): Promise<string> {
+  return hashJcs('plotpilot-operation-context/v1', operationContextIdentityProjection(meta, expectedLeaseEpoch))
+}
+
 export function validateRpcRequest(request: JsonObject, expectedLeaseEpoch?: number): void {
   const method = request.method
   const definition = RPC_METHOD_MATRIX[method]

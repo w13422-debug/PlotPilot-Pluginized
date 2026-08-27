@@ -1,0 +1,66 @@
+{
+  "schema": "contract-delta-decision/v1",
+  "decision_id": "PPA-00-CD-DECISION-002",
+  "delta_id": "PPA-04-CD-001",
+  "status": "accepted_existing_v1_executable_materialization",
+  "binding_owner": "P0",
+  "decision_date": "2026-08-27",
+  "baseline": {
+    "branch": "codex/ppa-00-integration",
+    "head": "63ee2b89b719734dd2f9d50bab12cbe0fe10e37e",
+    "contract_manifest_before_sha256": "2866b8d0b36ec954ee8cb5c87374e0ca0a0c4acefd1901070cee0b45979d25e7",
+    "formal_design_version": "v1.2",
+    "formal_design_sha256": "e70f450b75cfa753148cf620d13855d0073f7d61294e7599ea9cc98f3e612b7b",
+    "delta_source": {
+      "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-04-WebUI\\coordination\\PPA-04\\PPA-04-CD-001-plugin-ui-ts-ingress-validator.json",
+      "sha256": "c8f7eb0dc53988445941f0b7e08331253faf201fc63b1ea45e5f26243e116315"
+    }
+  },
+  "classification": {
+    "wire_schema_gap": false,
+    "executable_sdk_gap": true,
+    "internal_implementation_detail": false,
+    "reason": "The four v1 wire schemas already exist, but P0 did not publish unknown-input closed TypeScript parsers or Tree/Ack DTOs."
+  },
+  "decision": {
+    "adr": "docs/contracts/adr-042-post-m0-ingress-context-export-v1.md",
+    "wire_contracts_unchanged": [
+      "job-snapshot/v1",
+      "plugin-ui-tree/v1",
+      "plugin-ui-intent/v1",
+      "plugin-ui-ack/v1"
+    ],
+    "implementation_family": "plugin-ui-ingress-validator/v1",
+    "required_parsers": [
+      "parseJobSnapshotV1",
+      "parsePluginUiTreeV1",
+      "parsePluginUiIntentV1",
+      "parsePluginUiAckV1"
+    ],
+    "runtime_rules": [
+      "plain own data properties only",
+      "closed exact keys and recursive discriminators",
+      "component event allowlist",
+      "deep-cloned and deep-frozen result"
+    ],
+    "plugin_ui_publication_authority": false
+  },
+  "publication": {
+    "batch_id": "PPA-M1-CONTRACT-PUBLICATION-01",
+    "contract_manifest_sha256": "cbe9d02fc42409332151cd7905e387a46537b330b039a2d3d6798f48cbfcc024",
+    "status": "implemented_pending_focused_review"
+  },
+  "resume_gate": {
+    "affected_slice": "P4 unknown worker/UI ingress and removal of private wire DTOs",
+    "may_resume_after": [
+      "P0 focused Sol PASS",
+      "P0 publication commit",
+      "P4 syncs the exact accepted P0 head"
+    ],
+    "may_not_do": [
+      "invent private wire DTO",
+      "accept prototype-backed ingress",
+      "map Plugin UI intent directly to Publication"
+    ]
+  }
+}

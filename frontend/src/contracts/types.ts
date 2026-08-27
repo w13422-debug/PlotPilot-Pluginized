@@ -251,3 +251,651 @@ export interface BackupBundle {
   verification: { databases_valid: boolean; assets_valid: boolean; files_valid: boolean; compatible: boolean; verified_at: string }
   bundle_hash: Hash
 }
+
+/* ------------------------------------------------------------------------- *
+ * M1 public Core/UI contracts
+ * ------------------------------------------------------------------------- */
+
+export type JobState =
+  | 'queued'
+  | 'running'
+  | 'waiting_user'
+  | 'paused'
+  | 'cancelling'
+  | 'succeeded'
+  | 'partial'
+  | 'failed'
+  | 'cancelled'
+  | 'needs_attention'
+
+export interface JobSnapshotStep {
+  step_id: Id
+  state: string
+  revision: number
+}
+
+export interface JobSnapshotAttempt {
+  attempt_id: Id
+  state: string
+  lease_epoch: number
+}
+
+export interface JobSnapshotStreamHighWater {
+  stream_id: Id
+  step_id: Id
+  output_role: string
+  target: Target
+  acked_prefix_seq: number
+  acked_bytes: number
+  acked_prefix_hash: Hash
+}
+
+export interface JobSnapshot {
+  schema: 'job-snapshot/v1'
+  job_id: Id
+  workspace_id: Id
+  job_state: JobState
+  job_revision: number
+  steps: JobSnapshotStep[]
+  attempts: JobSnapshotAttempt[]
+  candidate_ids: Id[]
+  current_checkpoint_id: Id | null
+  stream_high_waters: JobSnapshotStreamHighWater[]
+  core_event_high_water: number
+  job_event_high_water: number
+  created_at: string
+  snapshot_hash: Hash
+}
+
+export type PluginUIComponent =
+  | 'stack'
+  | 'text'
+  | 'input'
+  | 'textarea'
+  | 'select'
+  | 'button'
+  | 'table'
+  | 'tabs'
+  | 'diff'
+  | 'tree'
+  | 'graph'
+  | 'progress'
+  | 'candidate_preview'
+
+export interface PluginUINodeBase<C extends PluginUIComponent, P> {
+  component: C
+  key: Id
+  props: P
+  children: PluginUINode[]
+  event_ids: Id[]
+}
+
+export interface PluginUIStackProps { direction: 'horizontal' | 'vertical'; row_gap: number }
+export interface PluginUITextProps { text: string; tone: string }
+export interface PluginUIInputProps { label: string; value: string; placeholder: string; disabled: boolean }
+export interface PluginUITextareaProps { label: string; value: string; rows: number; disabled: boolean }
+export interface PluginUISelectProps { label: string; value: string; options_asset_id: Id; disabled: boolean }
+export interface PluginUIButtonProps { label: string; tone: string; disabled: boolean }
+export interface PluginUITableProps { columns_asset_id: Id; rows_asset_id: Id; empty_text: string }
+export interface PluginUITabsProps { active_tab: string; tabs_asset_id: Id }
+export interface PluginUIDiffProps { before_asset_id: Id; after_asset_id: Id; language: string }
+export interface PluginUITreeProps { nodes_asset_id: Id; selected_id: Id | null }
+export interface PluginUIGraphProps { graph_asset_id: Id; layout: string }
+export interface PluginUIProgressProps { label: string; completed: number; total: number | null; state: string }
+export interface PluginUICandidatePreviewProps { candidate_id: Id; view_mode: string }
+
+export type PluginUIStack = PluginUINodeBase<'stack', PluginUIStackProps>
+export type PluginUIText = PluginUINodeBase<'text', PluginUITextProps>
+export type PluginUIInput = PluginUINodeBase<'input', PluginUIInputProps>
+export type PluginUITextarea = PluginUINodeBase<'textarea', PluginUITextareaProps>
+export type PluginUISelect = PluginUINodeBase<'select', PluginUISelectProps>
+export type PluginUIButton = PluginUINodeBase<'button', PluginUIButtonProps>
+export type PluginUITable = PluginUINodeBase<'table', PluginUITableProps>
+export type PluginUITabs = PluginUINodeBase<'tabs', PluginUITabsProps>
+export type PluginUIDiff = PluginUINodeBase<'diff', PluginUIDiffProps>
+export type PluginUITreeNode = PluginUINodeBase<'tree', PluginUITreeProps>
+export type PluginUIGraph = PluginUINodeBase<'graph', PluginUIGraphProps>
+export type PluginUIProgress = PluginUINodeBase<'progress', PluginUIProgressProps>
+export type PluginUICandidatePreview = PluginUINodeBase<'candidate_preview', PluginUICandidatePreviewProps>
+
+/** The closed 13-component discriminator union from formal design §84.10. */
+export type PluginUINode =
+  | PluginUIStack
+  | PluginUIText
+  | PluginUIInput
+  | PluginUITextarea
+  | PluginUISelect
+  | PluginUIButton
+  | PluginUITable
+  | PluginUITabs
+  | PluginUIDiff
+  | PluginUITreeNode
+  | PluginUIGraph
+  | PluginUIProgress
+  | PluginUICandidatePreview
+
+export interface PluginUITree {
+  schema: 'plugin-ui-tree/v1'
+  tree_id: Id
+  render_seq: number
+  root: PluginUINode
+}
+
+export interface PluginUIAck {
+  schema: 'plugin-ui-ack/v1'
+  intent_id: Id
+  accepted: boolean
+  error_code: string | null
+  core_event_seq: number | null
+  job_id: Id | null
+}
+
+export type CoreEntityKind = 'document' | 'node' | 'relation' | 'workspace'
+
+export interface CoreWorkspace {
+  schema: 'core-workspace/v1'
+  workspace_id: Id
+  workspace_kind: string
+  title: string
+  status: string
+  current_plan_revision_id: Id | null
+  created_at: string
+  updated_at: string
+  revision: number
+}
+
+export interface CoreDocument {
+  schema: 'core-document/v1'
+  document_id: Id
+  workspace_id: Id
+  document_type: string
+  title: string
+  current_revision_id: Id | null
+  created_at: string
+  updated_at: string
+  revision: number
+}
+
+export interface CoreNode {
+  schema: 'core-node/v1'
+  node_id: Id
+  workspace_id: Id
+  document_id: Id | null
+  node_type: string
+  title: string
+  parent_node_id: Id | null
+  position: number
+  current_revision_id: Id | null
+  created_at: string
+  updated_at: string
+  revision: number
+}
+
+export interface CoreRelation {
+  schema: 'core-relation/v1'
+  relation_id: Id
+  workspace_id: Id
+  relation_type: string
+  source_id: Id
+  target_id: Id
+  revision_id: Id | null
+  created_at: string
+}
+
+export interface CoreRevision {
+  schema: 'core-revision/v1'
+  revision_id: Id
+  workspace_id: Id
+  document_id: Id | null
+  node_id: Id | null
+  parent_revision_id: Id | null
+  content_hash: Hash
+  created_by: Id
+  source_candidate_id: Id | null
+  created_at: string
+  revision_number: number
+  payload_schema: Id | null
+}
+
+export type CoreAuthorityEntity = CoreWorkspace | CoreDocument | CoreNode | CoreRelation | CoreRevision
+
+export interface CorePage<T, S extends string = string> {
+  schema: S
+  items: T[]
+  offset: number
+  limit: number
+  total: number
+  next_offset: number | null
+}
+
+export interface CoreRevisionContentPage {
+  schema: 'core-revision-content-page/v1'
+  revision_id: Id
+  offset: number
+  length: number
+  total_length: number
+  text: string
+  next_offset: number | null
+}
+
+export interface CoreWorkspacePage extends CorePage<CoreWorkspace, 'core-workspace-page/v1'> {}
+export interface CoreDocumentPage extends CorePage<CoreDocument, 'core-document-page/v1'> {}
+export interface CoreNodePage extends CorePage<CoreNode, 'core-node-page/v1'> {}
+export interface CoreRelationPage extends CorePage<CoreRelation, 'core-relation-page/v1'> {}
+export interface CoreRevisionPage extends CorePage<CoreRevision, 'core-revision-page/v1'> {}
+
+export interface CoreWorkspaceQuery {
+  schema: 'core-workspace-query/v1'
+  workspace_id: Id | null
+  offset: number
+  limit: number
+}
+
+export interface CoreWorkspaceGetQuery {
+  schema: 'core-workspace-get-query/v1'
+  workspace_id: Id
+}
+
+export interface CoreDocumentQuery {
+  schema: 'core-document-query/v1'
+  workspace_id: Id
+  document_id: Id | null
+  offset: number
+  limit: number
+}
+
+export interface CoreDocumentGetQuery {
+  schema: 'core-document-get-query/v1'
+  workspace_id: Id
+  document_id: Id
+}
+
+export interface CoreNodeQuery {
+  schema: 'core-node-query/v1'
+  workspace_id: Id
+  node_id: Id | null
+  document_id: Id | null
+  parent_node_id: Id | null
+  offset: number
+  limit: number
+}
+
+export interface CoreNodeGetQuery {
+  schema: 'core-node-get-query/v1'
+  workspace_id: Id
+  node_id: Id
+}
+
+export interface CoreRelationQuery {
+  schema: 'core-relation-query/v1'
+  workspace_id: Id
+  relation_id: Id | null
+  source_id: Id | null
+  target_id: Id | null
+  relation_type: Id | null
+  offset: number
+  limit: number
+}
+
+export interface CoreDocumentRevisionQuery {
+  schema: 'core-document-revision-query/v1'
+  workspace_id: Id
+  document_id: Id
+  revision_id: Id | null
+  offset: number
+  limit: number
+}
+
+export interface CoreNodeRevisionQuery {
+  schema: 'core-node-revision-query/v1'
+  workspace_id: Id
+  node_id: Id
+  revision_id: Id | null
+  offset: number
+  limit: number
+}
+
+export interface CoreRevisionGetQuery {
+  schema: 'core-revision-get-query/v1'
+  workspace_id: Id
+  revision_id: Id
+}
+
+export interface CoreContentQuery {
+  schema: 'core-revision-content-query/v1'
+  workspace_id: Id
+  revision_id: Id
+  offset: number
+  length: number
+}
+
+export interface CoreWorkspaceCreateCommand {
+  schema: 'core-workspace-create-command/v1'
+  operation_key: Id
+  workspace_id: Id
+  workspace_kind: string
+  title: string
+}
+
+export interface CoreWorkspaceUpdateCommand {
+  schema: 'core-workspace-update-command/v1'
+  operation_key: Id
+  workspace_id: Id
+  expected_revision: number
+  title: string | null
+  status: string | null
+}
+
+export interface CoreWorkspaceDeleteCommand {
+  schema: 'core-workspace-delete-command/v1'
+  operation_key: Id
+  workspace_id: Id
+  expected_revision: number
+}
+
+export interface CoreDocumentCreateCommand {
+  schema: 'core-document-create-command/v1'
+  operation_key: Id
+  document_id: Id
+  workspace_id: Id
+  document_type: string
+  title: string
+}
+
+export interface CoreDocumentUpdateCommand {
+  schema: 'core-document-update-command/v1'
+  operation_key: Id
+  document_id: Id
+  workspace_id: Id
+  expected_revision: number
+  title: string
+}
+
+export interface CoreNodeCreateCommand {
+  schema: 'core-node-create-command/v1'
+  operation_key: Id
+  node_id: Id
+  workspace_id: Id
+  document_id: Id | null
+  node_type: string
+  title: string
+  parent_node_id: Id | null
+  position: number
+}
+
+export interface CoreNodeUpdateCommand {
+  schema: 'core-node-update-command/v1'
+  operation_key: Id
+  node_id: Id
+  workspace_id: Id
+  expected_revision: number
+  title: string
+  parent_node_id: Id | null
+  position: number
+}
+
+export interface CoreNodeDeleteCommand {
+  schema: 'core-node-delete-command/v1'
+  operation_key: Id
+  node_id: Id
+  workspace_id: Id
+  expected_revision: number
+}
+
+export interface CoreRelationCreateCommand {
+  schema: 'core-relation-create-command/v1'
+  operation_key: Id
+  relation_id: Id
+  workspace_id: Id
+  relation_type: string
+  source_id: Id
+  target_id: Id
+  revision_id: Id | null
+}
+
+export interface CoreRelationDeleteCommand {
+  schema: 'core-relation-delete-command/v1'
+  operation_key: Id
+  relation_id: Id
+  workspace_id: Id
+  expected_revision_id: Id | null
+}
+
+export interface CoreDocumentRevisionCreateCommand {
+  schema: 'core-document-revision-create-command/v1'
+  operation_key: Id
+  revision_id: Id
+  workspace_id: Id
+  document_id: Id
+  base_revision_id: Id | null
+  content: string
+  created_by: Id
+  source_candidate_id: Id | null
+  payload_schema: Id | null
+}
+
+export interface CoreNodeRevisionCreateCommand {
+  schema: 'core-node-revision-create-command/v1'
+  operation_key: Id
+  revision_id: Id
+  workspace_id: Id
+  node_id: Id
+  base_revision_id: Id | null
+  content: string
+  created_by: Id
+  source_candidate_id: Id | null
+  payload_schema: Id | null
+}
+
+export interface CoreDeleteResult {
+  schema: 'core-delete-result/v1'
+  operation_key: Id
+  workspace_id: Id
+  entity_kind: 'workspace' | 'node' | 'relation'
+  entity_id: Id
+  previous_revision: number | null
+  deleted: true
+  idempotent: boolean
+}
+
+export type CoreAuthorityCommandQuery =
+  | CoreAuthorityEntity
+  | CoreWorkspacePage
+  | CoreDocumentPage
+  | CoreNodePage
+  | CoreRelationPage
+  | CoreRevisionPage
+  | CoreWorkspaceQuery
+  | CoreWorkspaceGetQuery
+  | CoreDocumentQuery
+  | CoreDocumentGetQuery
+  | CoreNodeQuery
+  | CoreNodeGetQuery
+  | CoreRelationQuery
+  | CoreDocumentRevisionQuery
+  | CoreNodeRevisionQuery
+  | CoreRevisionGetQuery
+  | CoreContentQuery
+  | CoreRevisionContentPage
+  | CoreWorkspaceCreateCommand
+  | CoreWorkspaceUpdateCommand
+  | CoreWorkspaceDeleteCommand
+  | CoreDocumentCreateCommand
+  | CoreDocumentUpdateCommand
+  | CoreNodeCreateCommand
+  | CoreNodeUpdateCommand
+  | CoreNodeDeleteCommand
+  | CoreRelationCreateCommand
+  | CoreRelationDeleteCommand
+  | CoreDocumentRevisionCreateCommand
+  | CoreNodeRevisionCreateCommand
+  | CoreDeleteResult
+
+export interface CoreAuthorityValidationOptions {
+  expectedWorkspaceId?: Id
+}
+
+export interface PublicationCommand {
+  schema: 'publication-command/v1'
+  publication_operation_key: Id
+  workspace_id: Id
+  candidate_id: Id
+  accepted_by: Id
+}
+
+export interface CoreRevisionRef {
+  revision_id: Id
+  workspace_id: Id
+  entity_kind: EntityKind
+  entity_id: Id
+  content_hash: Hash
+  revision_number: number
+}
+
+export interface PublicationResult {
+  schema: 'publication-result/v1'
+  publication_id: Id
+  candidate_id: Id
+  workspace_id: Id
+  entity_kind: EntityKind
+  entity_id: Id
+  resulting_revision: CoreRevisionRef
+  idempotent: boolean
+}
+
+export type PublicationCommandResult = PublicationCommand | PublicationResult
+
+export type CoreHttpErrorCode =
+  | 'unknown_reference'
+  | 'cross_workspace'
+  | 'stale_cas'
+  | 'operation_key_reuse'
+  | 'incomplete_publication'
+
+export interface CoreHttpError {
+  schema: 'core-http-error/v1'
+  error_code: CoreHttpErrorCode
+  message: string
+  retryable: boolean
+}
+
+export interface PublicationValidationOptions {
+  expectedWorkspaceId?: Id
+  command?: PublicationCommand
+}
+
+export interface AssetMetadata {
+  schema: 'asset-metadata/v1'
+  asset_id: Id
+  sha256: Hash
+  mime: string
+  size: number
+  logical_role: string
+  provenance: string
+  rebuildable: boolean
+}
+
+export interface AssetQuery {
+  schema: 'asset-query/v1'
+  asset_id: Id
+}
+
+export interface AssetReadRangeQuery {
+  schema: 'asset-read-range-query/v1'
+  asset_id: Id
+  offset: number
+  length: number
+}
+
+export interface AssetReadRange {
+  schema: 'asset-read-range/v1'
+  asset_id: Id
+  offset: number
+  length: number
+  total_size: number
+  base64_chunk: string
+  next_offset: number | null
+  content_hash: Hash
+}
+
+export type AssetMetadataResponse = AssetQuery | AssetReadRangeQuery | AssetMetadata | AssetReadRange
+
+export interface ExportCurrentRevision {
+  ordinal: number
+  document_id: Id
+  document_type: string
+  title: string
+  revision_id: Id
+  content_asset_id: Id
+  content_hash: Hash
+  mime: string
+  encoding: string
+}
+
+export interface ExportCurrentRevisions {
+  schema: 'export-current-revisions/v1'
+  workspace_id: Id
+  core_snapshot_revision: number
+  ordered_revisions: ExportCurrentRevision[]
+  generated_at: string
+}
+
+export interface ExportValidationOptions {
+  expectedWorkspaceId?: Id
+  runSnapshot?: Pick<RunSnapshot, 'workspace_id' | 'input_revisions' | 'parameters_asset_id' | 'asset_hashes' | 'snapshot_hash'>
+}
+
+export interface ExportAssetValidationOptions {
+  /** Optional assertion for the Asset ID already frozen in RunSnapshot. */
+  assetId?: Id
+}
+
+export type CoreHttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE'
+
+export interface CoreHttpRouteFixture<TRequest = unknown, TResponse = unknown> {
+  method: CoreHttpMethod
+  path: string
+  request?: TRequest
+  status: number
+  response: TResponse
+  headers?: Record<string, string>
+}
+
+export interface CoreHttpExchange<TRequest = unknown, TResponse = unknown> {
+  request: TRequest
+  status: number
+  response: TResponse
+}
+
+/** Data-only typed fixture; it intentionally exposes no plugin or Publication method. */
+export class CoreHttpContractFixture<TRequest = unknown, TResponse = unknown> {
+  readonly method: CoreHttpMethod
+  readonly path: string
+  readonly request: TRequest | undefined
+  readonly status: number
+  readonly response: TResponse
+  readonly headers: Record<string, string> | undefined
+
+  constructor(route: CoreHttpRouteFixture<TRequest, TResponse>) {
+    this.method = route.method
+    this.path = route.path
+    this.request = route.request
+    this.status = route.status
+    this.response = route.response
+    this.headers = route.headers
+  }
+}
+
+export type OperationContext = 'control' | 'install' | 'attempt'
+
+export interface OperationContextIdentityBase {
+  schema: 'operation-context-identity/v1'
+  protocol_version: '1'
+  generation_id: Id
+  plugin_release_id: Hash
+}
+
+export interface ControlOperationContextIdentity extends OperationContextIdentityBase { context: 'control' }
+export interface InstallOperationContextIdentity extends OperationContextIdentityBase { context: 'install'; install_operation_id: Id }
+export interface AttemptOperationContextIdentity extends OperationContextIdentityBase { context: 'attempt'; job_id: Id; step_id: Id; attempt_id: Id }
+export type OperationContextIdentity = ControlOperationContextIdentity | InstallOperationContextIdentity | AttemptOperationContextIdentity

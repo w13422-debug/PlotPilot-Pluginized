@@ -29,12 +29,23 @@
       "path": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized正式设计规划-2026-08-25-v1.md",
       "version": "v1.2",
       "sha256": "e70f450b75cfa753148cf620d13855d0073f7d61294e7599ea9cc98f3e612b7b",
-      "sections": ["2.1", "5", "8", "10", "84.8"]
+      "sections": [
+        "2.1",
+        "5",
+        "8",
+        "10",
+        "84.8"
+      ]
     },
     "delta_source": {
       "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-01-Core\\coordination\\PPA-01\\contract-delta-core-publication-v1.json",
       "sha256": "39814f851d01ee3f24991cc439665d153f5df5fa74329253b0878bc1ed41d843",
-      "affected_slice_stopped": true
+      "affected_slice_stopped": true,
+      "current_rebinding": {
+        "sha256": "7f88790f0cecc68700cb3f0724aa13c59d187886f35a553a71fba34423d4a99c",
+        "observed_status": "accepted_with_scoped_public_contract",
+        "reason": "P1 evidence-only Batch 01 closure updated the Delta after the binding P0 decision; the original decision-time hash remains preserved above."
+      }
     },
     "triage": {
       "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p1-contract-delta-001-triage.json",
@@ -48,18 +59,38 @@
       "verdict": "confirmed_contract_gap",
       "scope": "Core HTTP Workspace/Document/Node/Relation/Revision command and query wire contracts",
       "disposition": "publish_core_authority_command_query_v1",
-      "affected_projects": ["P1", "P4"],
-      "blocked_until_p0_publish": ["P1 public Core API implementation", "P4 Core HTTP client consumption"],
-      "allowed_while_blocked": ["P1 internal authority/domain/repository/asset behavior", "P1 internal migration runner", "P4 shell and route work using no private Core schema"]
+      "affected_projects": [
+        "P1",
+        "P4"
+      ],
+      "blocked_until_p0_publish": [
+        "P1 public Core API implementation",
+        "P4 Core HTTP client consumption"
+      ],
+      "allowed_while_blocked": [
+        "P1 internal authority/domain/repository/asset behavior",
+        "P1 internal migration runner",
+        "P4 shell and route work using no private Core schema"
+      ]
     },
     {
       "finding_id": "CD-001-B",
       "verdict": "confirmed_contract_gap",
       "scope": "Core-native typed Candidate Publication accept/result",
       "disposition": "publish_publication_command_result_v1",
-      "affected_projects": ["P1", "P4", "P5", "P6"],
-      "blocked_until_p0_publish": ["public Publication HTTP route", "P4/P5/P6 public accept integration"],
-      "allowed_while_blocked": ["P1 internal Candidate/Publication authority tests that consume no external wire schema"],
+      "affected_projects": [
+        "P1",
+        "P4",
+        "P5",
+        "P6"
+      ],
+      "blocked_until_p0_publish": [
+        "public Publication HTTP route",
+        "P4/P5/P6 public accept integration"
+      ],
+      "allowed_while_blocked": [
+        "P1 internal Candidate/Publication authority tests that consume no external wire schema"
+      ],
       "safety_boundary": "Only Core-native service and Core-rendered UI controls may perform accept. Plugin worker, Plugin UI Bundle, Plugin SDK and plugin RPC expose no direct Publication callable. Plugin UI intent may request a Core operation or candidate preview only; it cannot carry a publication mutation."
     },
     {
@@ -67,9 +98,18 @@
       "verdict": "confirmed_contract_gap",
       "scope": "Core HTTP Asset metadata and bounded read-range DTO",
       "disposition": "publish_asset_metadata_v1",
-      "affected_projects": ["P1", "P4"],
-      "blocked_until_p0_publish": ["P1 public Asset HTTP adapter", "P4 Asset metadata/range client"],
-      "allowed_while_blocked": ["P1 internal immutable AssetStore behavior", "existing plugin host.asset.read/v1 and host.asset.create/v1 use unchanged"],
+      "affected_projects": [
+        "P1",
+        "P4"
+      ],
+      "blocked_until_p0_publish": [
+        "P1 public Asset HTTP adapter",
+        "P4 Asset metadata/range client"
+      ],
+      "allowed_while_blocked": [
+        "P1 internal immutable AssetStore behavior",
+        "existing plugin host.asset.read/v1 and host.asset.create/v1 use unchanged"
+      ],
       "compatibility_rule": "Existing host Asset RPC remains byte- and field-compatible; this is a separate Core HTTP DTO, not a new plugin method."
     },
     {
@@ -123,13 +163,25 @@
         "POST /api/v1/core/workspaces/{workspace_id}/relations: create; DELETE /api/v1/core/relations/{relation_id}: typed delete result",
         "POST /api/v1/core/documents/{document_id}/revisions and POST /api/v1/core/nodes/{node_id}/revisions: explicit CAS revision write returning the typed resulting Revision"
       ],
-      "non_goals": ["generic query language", "arbitrary JSON patch", "search/index API", "asset upload API", "plugin RPC aliases"]
+      "non_goals": [
+        "generic query language",
+        "arbitrary JSON patch",
+        "search/index API",
+        "asset upload API",
+        "plugin RPC aliases"
+      ]
     },
     "publication": {
       "command": "POST /api/v1/core/publications/accept",
       "request": "publication-command/v1: publication_operation_key, workspace_id, candidate_id, accepted_by",
       "result": "publication-result/v1: publication_id, candidate_id, workspace_id, entity_kind, entity_id, resulting_revision, idempotent",
-      "required_server_checks": ["rehydrate durable Candidate", "verify payload hash, RunSnapshot/provenance/release identity, target/mutation/base/write-set and parent closure", "perform Core transaction CAS", "write Publication receipt and revision.published event", "same key and payload returns the first result; different payload fails"],
+      "required_server_checks": [
+        "rehydrate durable Candidate",
+        "verify payload hash, RunSnapshot/provenance/release identity, target/mutation/base/write-set and parent closure",
+        "perform Core transaction CAS",
+        "write Publication receipt and revision.published event",
+        "same key and payload returns the first result; different payload fails"
+      ],
       "direct_plugin_access": false
     },
     "asset": {
@@ -156,10 +208,11 @@
     ],
     "release_verdict_before_implementation": "BLOCKED",
     "luna_review": {
-      "status": "not_applicable_no_draft_observed",
+      "status": "execution_draft_integrated_by_p0_pending_sol",
       "findings": [],
-      "rule": "A future Luna implementation is an execution draft only; Sol must inspect the actual diff and raw test output before P0 accepts it."
-    }
+      "rule": "Luna output is not acceptance; P0 reruns the real Python/TypeScript/fresh-checkout gates and Sol reviews the exact staged diff."
+    },
+    "release_verdict_current": "IMPLEMENTED_PENDING_FRESH_CHECKOUT_AND_SOL_FOCUSED_REVIEW"
   },
   "sync_order": [
     "P1 may submit an integration-ready/v1 batch limited to internal authority/domain/repository/assets/candidates/backup and deterministic internal migration; public Core API/Publication slice stays stopped.",
@@ -168,12 +221,40 @@
     "P1 and P4 update clean worktrees with git merge --ff-only to the new P0 integration head; only then may P1 implement the public Core API/Publication adapter and P4 consume the HTTP DTOs.",
     "P1/P4 must stop and raise a new Contract Delta if an implementation request changes any frozen v1 field, method, hash, error or CAS meaning."
   ],
-  "immutable_tags": ["M0-OPEN", "M0-OPEN-R2", "M0-OPEN-R3", "M0-OPEN-R4"],
+  "immutable_tags": [
+    "M0-OPEN",
+    "M0-OPEN-R2",
+    "M0-OPEN-R3",
+    "M0-OPEN-R4"
+  ],
   "prohibitions": [
     "Do not modify formal design v1.2 or project-matrix.json.",
     "Do not modify P1/P4 worktrees or donor.",
     "Do not add Publication to backend/plotpilot_plugin_sdk/ports.py or rpc-method-matrix.v1.json.",
     "Do not create P1-P6 branches/worktrees/projects or first-party plugins beyond those already registered.",
     "Do not build desktop/Tauri/EXE/installer or run broad browser regression for this adjudication."
-  ]
+  ],
+  "publication": {
+    "batch_id": "PPA-M1-CONTRACT-PUBLICATION-01",
+    "baseline_head": "63ee2b89b719734dd2f9d50bab12cbe0fe10e37e",
+    "contract_manifest_sha256": "cbe9d02fc42409332151cd7905e387a46537b330b039a2d3d6798f48cbfcc024",
+    "families": [
+      {
+        "contract_id": "core-authority-command-query/v1",
+        "schema_path": "contracts/json-schema/core-authority-command-query-v1.schema.json"
+      },
+      {
+        "contract_id": "publication-command-result/v1",
+        "schema_path": "contracts/json-schema/publication-command-result-v1.schema.json"
+      },
+      {
+        "contract_id": "asset-metadata/v1",
+        "schema_path": "contracts/json-schema/asset-metadata-v1.schema.json"
+      }
+    ],
+    "method_matrix": "contracts/json-schema/core-api-method-matrix.v1.json",
+    "golden_root": "contracts/golden/contract-publication-v1",
+    "negative_corpus": "contracts/corpus/contract-publication-v1/negative.json",
+    "status": "implemented_pending_focused_review"
+  }
 }

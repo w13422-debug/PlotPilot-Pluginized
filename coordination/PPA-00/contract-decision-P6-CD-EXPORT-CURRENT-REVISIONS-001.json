@@ -1,0 +1,61 @@
+{
+  "schema": "contract-delta-decision/v1",
+  "decision_id": "PPA-00-CD-DECISION-004",
+  "delta_id": "P6-CD-EXPORT-CURRENT-REVISIONS-001",
+  "status": "accepted_with_structural_simplification",
+  "binding_owner": "P0",
+  "decision_date": "2026-08-27",
+  "baseline": {
+    "branch": "codex/ppa-00-integration",
+    "head": "63ee2b89b719734dd2f9d50bab12cbe0fe10e37e",
+    "formal_design_sections": [
+      "2.1",
+      "2.2",
+      "5",
+      "8.4",
+      "20.2",
+      "71"
+    ],
+    "formal_design_sha256": "e70f450b75cfa753148cf620d13855d0073f7d61294e7599ea9cc98f3e612b7b",
+    "delta_source": {
+      "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-06-Writing\\coordination\\PPA-06\\contract-delta-export-current-revisions-v1.json",
+      "sha256": "4a1832dbbeb2aed66935b5ee955bf828b921e195aecd857e9efca0c7ec355fe4"
+    }
+  },
+  "classification": {
+    "ordered_read_gap": true,
+    "proposed_host_method_accepted": false,
+    "reason": "Export must read Core current revisions, but §20.2 already freezes the v1 Host method list and workers cannot call Core HTTP."
+  },
+  "decision": {
+    "adr": "docs/contracts/adr-042-post-m0-ingress-context-export-v1.md",
+    "contract_id": "export-current-revisions/v1",
+    "transport": "Core-created immutable JSON Asset bound as RunSnapshot parameters_asset_id and asset_hashes",
+    "content_read_method": "host.asset.read/v1",
+    "host.current-revisions.read/v1": "rejected_not_published",
+    "raw_bytes_private_dto": false,
+    "ordering": "ordinal starts at zero and is contiguous; document_id, revision_id and content_asset_id are unique",
+    "authority": "Core alone resolves current pointers and freezes the ordered list",
+    "plugin_is_writer": false
+  },
+  "publication": {
+    "batch_id": "PPA-M1-CONTRACT-PUBLICATION-01",
+    "schema_path": "contracts/json-schema/export-current-revisions-v1.schema.json",
+    "golden_path": "contracts/golden/contract-publication-v1/export-current-revisions.json",
+    "run_snapshot_fixture": "contracts/golden/contract-publication-v1/export-run-snapshot.json",
+    "contract_manifest_sha256": "cbe9d02fc42409332151cd7905e387a46537b330b039a2d3d6798f48cbfcc024",
+    "status": "implemented_pending_focused_review"
+  },
+  "resume_gate": {
+    "contract_consumer_work_may_resume_after": [
+      "P0 focused Sol PASS",
+      "P0 publication commit",
+      "P6 syncs exact P0 accepted head"
+    ],
+    "runtime_remains_stopped_until": [
+      "P1 real Asset/current-pointer snapshot builder integrated",
+      "P2/P3 real framed runtime integrated",
+      "P6 returns verified artifact-bundle/v1 without raw private protocol"
+    ]
+  }
+}

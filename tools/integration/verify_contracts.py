@@ -30,6 +30,19 @@ from plotpilot_plugin_sdk.canonical import canonical_bytes, sha256_hex  # noqa: 
 from plotpilot_plugin_sdk.errors import ContractError, ContractValidationError, ErrorCode  # noqa: E402
 from plotpilot_plugin_sdk.fake_provider import FakeProvider  # noqa: E402
 from plotpilot_plugin_sdk.fixtures import PluginUIHostFixture  # noqa: E402
+from plotpilot_plugin_sdk.context_identity import (  # noqa: E402
+    derive_operation_context_identity,
+    operation_context_projection,
+)
+from plotpilot_plugin_sdk.core_api import (  # noqa: E402
+    CoreHttpContractFixture,
+    parse_asset_contract,
+    parse_core_authority,
+    parse_export_current_revisions,
+    parse_publication,
+    verify_export_current_revisions_asset,
+    verify_asset_metadata_range_pair,
+)
 from plotpilot_plugin_sdk.package import build_files_sha256, normalize_relative_path, package_hash  # noqa: E402
 from plotpilot_plugin_sdk.rpc import (  # noqa: E402
     ChunkUploadLedger,
@@ -612,8 +625,8 @@ def verify_schemas() -> dict[str, Any]:
     if check.returncode:
         raise AssertionError(check.stdout + check.stderr)
     paths = sorted(SCHEMA_DIR.glob("*.schema.json"))
-    if len(paths) != 48:
-        raise AssertionError(f"expected 48 Draft 2020-12 schemas, found {len(paths)}")
+    if len(paths) != 53:
+        raise AssertionError(f"expected 53 Draft 2020-12 schemas, found {len(paths)}")
     for path in paths:
         schema = load_strict_json(path)
         Draft202012Validator.check_schema(schema)
@@ -629,7 +642,7 @@ def verify_schemas() -> dict[str, Any]:
                     walk(child)
 
         walk(schema)
-    for name in ("plugin-manifest-v1.schema.json", "rpc-request-v1.schema.json", "rpc-envelope-v1.schema.json", "plugin-ui-message-v1.schema.json"):
+    for name in ("plugin-manifest-v1.schema.json", "rpc-request-v1.schema.json", "rpc-envelope-v1.schema.json", "plugin-ui-message-v1.schema.json", "core-authority-command-query-v1.schema.json", "publication-command-result-v1.schema.json", "asset-metadata-v1.schema.json", "operation-context-identity-v1.schema.json"):
         schema = load_strict_json(SCHEMA_DIR / name)
         if "oneOf" in schema and schema.get("unevaluatedProperties") is not False:
             raise AssertionError(f"union root {name} must set unevaluatedProperties:false")
@@ -666,7 +679,7 @@ def verify_contract_manifest() -> dict[str, Any]:
         seen.add(record["path"])
         if path.stat().st_size != record["bytes"] or hashlib.sha256(path.read_bytes()).hexdigest() != record["sha256"]:
             raise AssertionError(f"contract manifest hash drift: {record['path']}")
-    if manifest["inventory"]["schema_count"] != 48 or manifest["inventory"]["negative_group_count"] != 14:
+    if manifest["inventory"]["schema_count"] != 53 or manifest["inventory"]["negative_group_count"] != 14:
         raise AssertionError("contract manifest inventory does not cover the full M0 contract set")
     return {"files": len(records), "schemas": manifest["inventory"]["schema_count"], "negative_groups": manifest["inventory"]["negative_group_count"], "generator_check": check.stdout.strip()}
 
@@ -2262,6 +2275,416 @@ def verify_remediation_probes() -> dict[str, Any]:
     }
 
 
+def _publication_fixture(reference: str) -> Any:
+    path_text, _, fragment = reference.partition("#")
+    path = ROOT / path_text if path_text.startswith("contracts/") else GOLDEN_DIR / "contract-publication-v1" / path_text
+    value = load_strict_json(path)
+    if fragment:
+        for token in fragment.lstrip("/").split("/"):
+            if not token:
+                continue
+            value = value[int(token)] if isinstance(value, list) else value[token]
+    return copy.deepcopy(value)
+
+
+def _publication_mutation(value: Any, mutation: Mapping[str, Any]) -> Any:
+    op = mutation.get("op")
+    if op == "noop":
+        return copy.deepcopy(value)
+    if op == "raw_variant":
+        if not isinstance(value, Mapping):
+            raise AssertionError("raw publication variant requires an object fixture")
+        raw = canonical_bytes(value)
+        variant = mutation.get("variant")
+        if variant == "bom":
+            return b"\xef\xbb\xbf" + raw
+        if variant == "whitespace":
+            return b" " + raw
+        if variant == "duplicate_key":
+            marker = b'{"core_snapshot_revision":'
+            if marker not in raw:
+                raise AssertionError("export golden layout no longer supports duplicate-key probe")
+            return raw.replace(marker, b'{"schema":"export-current-revisions/v1","core_snapshot_revision":', 1)
+        raise AssertionError(f"unsupported raw publication variant: {mutation}")
+    if op not in {"set", "delete"}:
+        raise AssertionError(f"unsupported publication corpus mutation: {mutation}")
+    result = copy.deepcopy(value)
+    target = result
+    path = list(mutation["path"])
+    if not path:
+        raise AssertionError(f"publication corpus mutation path is empty: {mutation}")
+    for token in path[:-1]:
+        target = target[token]
+    if op == "delete":
+        del target[path[-1]]
+    else:
+        target[path[-1]] = copy.deepcopy(mutation["value"])
+    return result
+
+
+def verify_contract_publication() -> dict[str, Any]:
+    """Verify the additive P0 contract-publication families and corpus."""
+
+    golden = GOLDEN_DIR / "contract-publication-v1"
+    http = load_strict_json(golden / "core-http.json")
+    expected = load_strict_json(golden / "expected.json")
+    context = load_strict_json(golden / "context-identity.json")
+    export_value = load_strict_json(golden / "export-current-revisions.json")
+    export_snapshot = load_strict_json(golden / "export-run-snapshot.json")
+
+    for value in http["authority_payloads"]:
+        parse_core_authority(value, expected_workspace_id="ws-1")
+    command = http["publication"]["command"]
+    publication_result = http["publication"]["result"]
+    parse_publication(command, expected_workspace_id="ws-1")
+    parse_publication(publication_result, expected_workspace_id="ws-1", command=command)
+    for value in http["assets"].values():
+        parse_asset_contract(value)
+    verify_asset_metadata_range_pair(http["assets"]["metadata"], http["assets"]["range"])
+
+    fixture = CoreHttpContractFixture()
+    matrix = load_strict_json(SCHEMA_DIR / "core-api-method-matrix.v1.json")
+    expected_route_ids = {route["route_id"] for route in matrix["routes"]}
+    observed_route_ids = {exchange["route_id"] for exchange in http["exchanges"]}
+    if observed_route_ids != expected_route_ids or any(
+        not any(item["route_id"] == route_id and item["status"] in matrix_route["success_statuses"] for item in http["exchanges"])
+        for route_id, matrix_route in ((route["route_id"], route) for route in matrix["routes"])
+    ):
+        raise AssertionError(
+            f"Core HTTP fixtures must cover each matrix route with a success exchange: "
+            f"missing={sorted(expected_route_ids - observed_route_ids)}, extra={sorted(observed_route_ids - expected_route_ids)}"
+        )
+    for exchange in http["exchanges"]:
+        fixture.add(exchange["route_id"], exchange["request"], exchange["status"], exchange["response"])
+        status, response = fixture.request(exchange["route_id"], exchange["request"])
+        if status != exchange["status"] or canonical_bytes(response) != canonical_bytes(exchange["response"]):
+            raise AssertionError("Core HTTP typed fixture changed the frozen exchange")
+    update_exchange = next(exchange for exchange in http["exchanges"] if exchange["route_id"] == "workspace.update")
+    stale_request = copy.deepcopy(update_exchange["request"])
+    stale_request["expected_revision"] += 1
+    _expect_failure(lambda: fixture.request("workspace.update", stale_request))
+    reused_key = copy.deepcopy(update_exchange["request"])
+    reused_key["title"] = "Unfrozen payload under the same operation key"
+    _expect_failure(lambda: fixture.request("workspace.update", reused_key))
+    for exchange in http["exchanges"]:
+        if exchange["status"] < 400:
+            continue
+        status, response = fixture.request(exchange["route_id"], exchange["request"])
+        if status != exchange["status"] or response != exchange["response"]:
+            raise AssertionError(f"Core HTTP typed failure exchange drifted: {exchange['route_id']}")
+        if exchange["route_id"] == "publication.accept":
+            expected_code = "incomplete_publication"
+        elif exchange["request"].get("workspace_id") == "ws-other":
+            expected_code = "cross_workspace"
+        elif exchange["request"].get("document_id") == "doc-unknown":
+            expected_code = "unknown_reference"
+        elif exchange["request"].get("expected_revision") == 99:
+            expected_code = "stale_cas"
+        else:
+            expected_code = "operation_key_reuse"
+        if response.get("error_code") != expected_code:
+            raise AssertionError(f"Core HTTP failure code drifted for {exchange['route_id']}: {response}")
+
+    identities: dict[str, str] = {}
+    for vector in context["vectors"]:
+        if vector["profile"] == "control":
+            projection = operation_context_projection(vector["meta"])
+            identity = derive_operation_context_identity(vector["meta"])
+        else:
+            projection = operation_context_projection(
+                vector["meta"], expected_lease_epoch=vector["expected_lease_epoch"]
+            )
+            identity = derive_operation_context_identity(
+                vector["meta"], expected_lease_epoch=vector["expected_lease_epoch"]
+            )
+        assert_valid("operation-context-identity/v1", projection)
+        if projection != vector["projection"] or identity != vector["context_identity"]:
+            raise AssertionError("operation context identity golden mismatch")
+        identities[vector["profile"]] = identity
+    if identities != expected["context_identities"]:
+        raise AssertionError("operation context identity inventory mismatch")
+
+    export_bytes = (golden / "export-current-revisions.json").read_bytes()
+    if hashlib.sha256(export_bytes).hexdigest() != expected["export_asset_sha256"]:
+        raise AssertionError("export-current-revisions Asset bytes drifted")
+    verify_export_current_revisions_asset(
+        export_bytes,
+        export_snapshot,
+        asset_id="asset-export-current-revisions",
+    )
+
+    corpus = load_strict_json(CORPUS_DIR / "contract-publication-v1" / "negative.json")
+    executed: list[str] = []
+    for case in corpus["cases"]:
+        validator = case["validator"]
+        if validator.startswith("typescript_"):
+            continue
+        value = _publication_mutation(_publication_fixture(case["fixture"]), case["mutation"])
+
+        def action() -> None:
+            if validator == "core_authority":
+                parse_core_authority(value)
+            elif validator == "core_authority_expected_workspace":
+                parse_core_authority(value, expected_workspace_id="ws-1")
+            elif validator == "publication":
+                parse_publication(value)
+            elif validator == "publication_expected_workspace":
+                parse_publication(value, expected_workspace_id="ws-1")
+            elif validator == "publication_command_binding":
+                parse_publication(value, command=command)
+            elif validator == "asset":
+                parse_asset_contract(value)
+            elif validator == "asset_pair":
+                verify_asset_metadata_range_pair(http["assets"]["metadata"], value)
+            elif validator == "asset_pair_metadata":
+                verify_asset_metadata_range_pair(value, http["assets"]["range"])
+            elif validator == "http_fixture_request":
+                fixture.request(case["route_id"], value)
+            elif validator == "context_projection_schema":
+                assert_valid("operation-context-identity/v1", value)
+            elif validator == "context_stale_epoch":
+                derive_operation_context_identity(value, expected_lease_epoch=9)
+            elif validator == "context_missing_expected_epoch":
+                derive_operation_context_identity(value)
+            elif validator == "context_identity":
+                derive_operation_context_identity(value)
+            elif validator == "export":
+                parse_export_current_revisions(value)
+            elif validator == "export_expected_workspace":
+                parse_export_current_revisions(value, expected_workspace_id="ws-1")
+            elif validator == "export_snapshot_binding":
+                verify_export_current_revisions_asset(canonical_bytes(value), export_snapshot, asset_id="asset-export-current-revisions")
+            elif validator == "export_snapshot_record":
+                verify_export_current_revisions_asset(export_bytes, value, asset_id="asset-export-current-revisions")
+            elif validator == "export_raw_variant":
+                raw = value if isinstance(value, (bytes, bytearray, memoryview)) else canonical_bytes(value)
+                verify_export_current_revisions_asset(raw, export_snapshot, asset_id="asset-export-current-revisions")
+            elif validator == "export_object_caller_hash":
+                parse_export_current_revisions(
+                    value,
+                    expected_workspace_id="ws-1",
+                    asset_id="asset-export-current-revisions",
+                    asset_sha256=expected["export_asset_sha256"],
+                )
+            else:
+                raise AssertionError(f"unknown publication negative validator: {validator}")
+
+        expected_code = ErrorCode.STALE_LEASE if validator == "context_stale_epoch" else None
+        _expect_failure(action, expected_code)
+        executed.append(case["case_id"])
+
+    from plotpilot_plugin_sdk.ports import CoreAuthorityPort
+
+    forbidden = {name for name in dir(CoreAuthorityPort) if "publication" in name.lower() or name.lower() in {"accept", "publish"}}
+    if forbidden or any("publication" in method for method in (*EXPECTED_WORKER_METHODS, *EXPECTED_HOST_METHODS)):
+        raise AssertionError(f"plugin SDK/RPC exposed direct Publication authority: {sorted(forbidden)}")
+    return {
+        "authority_payloads": len(http["authority_payloads"]),
+        "http_exchanges": len(http["exchanges"]),
+        "http_matrix_routes": len(matrix["routes"]),
+        "context_profiles": sorted(identities),
+        "python_negative_cases": executed,
+        "export_items": len(export_value["ordered_revisions"]),
+        "plugin_publication_callable": False,
+    }
+
+
+def verify_typescript_contract_publication() -> dict[str, Any]:
+    """Execute the real P0 TypeScript ingress and every additive corpus case."""
+
+    script = r'''
+import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
+
+const core = await import(pathToFileURL(process.env.PLOTPILOT_TS_CORE_API).href)
+const ingress = await import(pathToFileURL(process.env.PLOTPILOT_TS_INGRESS).href)
+const verifier = await import(pathToFileURL(process.env.PLOTPILOT_TS_VERIFIER).href)
+const readJson = path => JSON.parse(readFileSync(path, 'utf8'))
+const goldenDir = process.env.PLOTPILOT_PUBLICATION_GOLDEN
+const http = readJson(resolve(goldenDir, 'core-http.json'))
+const context = readJson(resolve(goldenDir, 'context-identity.json'))
+const expected = readJson(resolve(goldenDir, 'expected.json'))
+const exportValue = readJson(resolve(goldenDir, 'export-current-revisions.json'))
+const exportRaw = new Uint8Array(readFileSync(resolve(goldenDir, 'export-current-revisions.json')))
+const exportSnapshot = readJson(resolve(goldenDir, 'export-run-snapshot.json'))
+const ui = readJson(resolve(goldenDir, 'ui-ingress.json'))
+const corpus = readJson(process.env.PLOTPILOT_PUBLICATION_CORPUS)
+
+const fixtureValue = reference => {
+  const [rawPath, fragment = ''] = reference.split('#', 2)
+  const path = rawPath.startsWith('contracts/') ? resolve(process.cwd(), rawPath) : resolve(goldenDir, rawPath)
+  let value = readJson(path)
+  for (const token of fragment.replace(/^\//, '').split('/').filter(Boolean)) {
+    value = Array.isArray(value) ? value[Number(token)] : value[token]
+  }
+  return structuredClone(value)
+}
+const mutate = (value, mutation) => {
+  if (mutation.op === 'noop') return structuredClone(value)
+  if (mutation.op === 'raw_variant') {
+    const raw = new TextEncoder().encode(JSON.stringify(value))
+    if (mutation.variant === 'bom') return new Uint8Array([0xef, 0xbb, 0xbf, ...raw])
+    if (mutation.variant === 'whitespace') return new TextEncoder().encode(` ${new TextDecoder().decode(raw)}`)
+    if (mutation.variant === 'duplicate_key') {
+      const text = new TextDecoder().decode(raw)
+      return new TextEncoder().encode(text.replace('{"core_snapshot_revision":', '{"schema":"export-current-revisions/v1","core_snapshot_revision":'))
+    }
+    throw new Error(`unsupported raw variant ${JSON.stringify(mutation)}`)
+  }
+  if (mutation.op !== 'set' && mutation.op !== 'delete') throw new Error(`unsupported mutation ${JSON.stringify(mutation)}`)
+  const output = structuredClone(value)
+  let target = output
+  for (const token of mutation.path.slice(0, -1)) target = target[token]
+  if (mutation.op === 'delete') delete target[mutation.path.at(-1)]
+  else target[mutation.path.at(-1)] = structuredClone(mutation.value)
+  return output
+}
+const rejected = async action => {
+  try { await action(); return false } catch (_) { return true }
+}
+const deepFrozen = (value, seen = new WeakSet()) => {
+  if (value === null || typeof value !== 'object') return true
+  if (seen.has(value)) return true
+  seen.add(value)
+  if (!Object.isFrozen(value)) return false
+  return Reflect.ownKeys(value).every(key => deepFrozen(value[key], seen))
+}
+
+for (const value of http.authority_payloads) core.parseCoreAuthorityCommandQueryV1(value, { expectedWorkspaceId: 'ws-1' })
+const publicationCommand = core.parsePublicationCommandResultV1(http.publication.command, { expectedWorkspaceId: 'ws-1' })
+core.parsePublicationCommandResultV1(http.publication.result, { expectedWorkspaceId: 'ws-1', command: publicationCommand })
+for (const value of Object.values(http.assets)) core.parseAssetMetadataV1(value)
+core.verifyAssetMetadataRangePair(http.assets.metadata, http.assets.range)
+
+const fake = new core.CoreHttpContractFake()
+for (const exchange of http.exchanges) {
+  fake.add(exchange.route_id, exchange.request, exchange.status, exchange.response)
+  const [status, response] = fake.request(exchange.route_id, exchange.request)
+  if (status !== exchange.status || JSON.stringify(response) !== JSON.stringify(exchange.response)) throw new Error(`Core HTTP fixture drift ${exchange.route_id}`)
+}
+for (const exchange of http.exchanges.filter(item => item.status >= 400)) {
+  const [status, response] = fake.request(exchange.route_id, exchange.request)
+  if (status !== exchange.status || JSON.stringify(response) !== JSON.stringify(exchange.response)) throw new Error(`Core HTTP failure exchange drift ${exchange.route_id}`)
+  const expectedCode = exchange.route_id === 'publication.accept'
+    ? 'incomplete_publication'
+    : exchange.request.workspace_id === 'ws-other'
+      ? 'cross_workspace'
+      : exchange.request.document_id === 'doc-unknown'
+        ? 'unknown_reference'
+        : exchange.request.expected_revision === 99
+          ? 'stale_cas'
+          : 'operation_key_reuse'
+  if (response.error_code !== expectedCode) throw new Error(`Core HTTP error code drift ${exchange.route_id}`)
+}
+
+const identities = {}
+for (const vector of context.vectors) {
+  const expectedEpoch = vector.profile === 'control' ? undefined : vector.expected_lease_epoch
+  const projection = verifier.operationContextIdentityProjection(vector.meta, expectedEpoch)
+  core.parseOperationContextIdentityV1(projection)
+  const identity = await verifier.deriveOperationContextIdentity(vector.meta, expectedEpoch)
+  if (identity !== vector.context_identity) throw new Error(`context parity drift ${vector.profile}`)
+  identities[vector.profile] = identity
+}
+if (Object.keys(expected.context_identities).some(profile => identities[profile] !== expected.context_identities[profile])) throw new Error('context identity inventory drift')
+
+await core.verifyExportCurrentRevisionsAssetV1(exportRaw, exportSnapshot, 'asset-export-current-revisions')
+
+const parsedTree = ingress.parsePluginUiTreeV1(ui.tree)
+await ingress.parseJobSnapshotV1(ui.job_snapshot)
+ingress.parsePluginUiIntentV1(ui.intent)
+ingress.parsePluginUiAckV1(ui.ack)
+const originalLabel = parsedTree.root.children[0].props.label
+ui.tree.root.children[0].props.label = 'mutated after parse'
+if (parsedTree.root.children[0].props.label !== originalLabel || !deepFrozen(parsedTree)) throw new Error('UI ingress is not an independent deep-frozen value')
+
+const executed = []
+for (const testCase of corpus.cases) {
+  const validator = testCase.validator
+  let action
+  if (validator === 'typescript_runtime_probe') {
+    if (testCase.mutation.op === 'prototype') {
+      action = () => ingress.parsePluginUiIntentV1(Object.assign(Object.create({ inherited: true }), ui.intent))
+    } else if (testCase.mutation.op === 'getter') {
+      action = () => {
+        const value = { ...ui.intent }
+        Object.defineProperty(value, 'intent_id', { enumerable: true, get() { return 'intent-getter' } })
+        return ingress.parsePluginUiIntentV1(value)
+      }
+    } else throw new Error(`unknown runtime probe ${testCase.case_id}`)
+  } else {
+    const value = mutate(fixtureValue(testCase.fixture), testCase.mutation)
+    if (validator === 'core_authority') action = () => core.parseCoreAuthorityCommandQueryV1(value)
+    else if (validator === 'core_authority_expected_workspace') action = () => core.parseCoreAuthorityCommandQueryV1(value, { expectedWorkspaceId: 'ws-1' })
+    else if (validator === 'publication') action = () => core.parsePublicationCommandResultV1(value)
+    else if (validator === 'publication_expected_workspace') action = () => core.parsePublicationCommandResultV1(value, { expectedWorkspaceId: 'ws-1' })
+    else if (validator === 'publication_command_binding') action = () => core.parsePublicationCommandResultV1(value, { command: http.publication.command })
+    else if (validator === 'asset') action = () => core.parseAssetMetadataV1(value)
+    else if (validator === 'asset_pair') action = () => core.verifyAssetMetadataRangePair(http.assets.metadata, value)
+    else if (validator === 'asset_pair_metadata') action = () => core.verifyAssetMetadataRangePair(value, http.assets.range)
+    else if (validator === 'context_projection_schema') action = () => core.parseOperationContextIdentityV1(value)
+    else if (validator === 'context_stale_epoch') action = () => verifier.deriveOperationContextIdentity(value, 9)
+    else if (validator === 'context_missing_expected_epoch') action = () => verifier.deriveOperationContextIdentity(value)
+    else if (validator === 'context_identity') action = () => verifier.deriveOperationContextIdentity(value)
+    else if (validator === 'export') action = () => core.parseExportCurrentRevisionsV1(value)
+    else if (validator === 'export_expected_workspace') action = () => core.parseExportCurrentRevisionsV1(value, { expectedWorkspaceId: 'ws-1' })
+    else if (validator === 'export_snapshot_binding') action = () => core.verifyExportCurrentRevisionsAssetV1(new TextEncoder().encode(JSON.stringify(value)), exportSnapshot, 'asset-export-current-revisions')
+    else if (validator === 'export_snapshot_record') action = () => core.verifyExportCurrentRevisionsAssetV1(exportRaw, value, 'asset-export-current-revisions')
+    else if (validator === 'export_raw_variant') action = () => core.verifyExportCurrentRevisionsAssetV1(value instanceof Uint8Array ? value : new TextEncoder().encode(JSON.stringify(value)), exportSnapshot, 'asset-export-current-revisions')
+    else if (validator === 'export_object_caller_hash') action = () => core.parseExportCurrentRevisionsV1(value, { expectedWorkspaceId: 'ws-1', exportAssetId: 'asset-export-current-revisions', exportAssetSha256: expected.export_asset_sha256 })
+    else if (validator === 'http_fixture_request') action = () => fake.request(testCase.route_id, value)
+    else if (validator === 'typescript_plugin_ui_tree') action = () => ingress.parsePluginUiTreeV1(value)
+    else if (validator === 'typescript_plugin_ui_intent') action = () => ingress.parsePluginUiIntentV1(value)
+    else if (validator === 'typescript_job_snapshot') action = () => ingress.parseJobSnapshotV1(value)
+    else throw new Error(`unknown TypeScript publication validator ${validator}`)
+  }
+  if (!(await rejected(action))) throw new Error(`TypeScript false-accepted ${testCase.case_id}`)
+  executed.push(testCase.case_id)
+}
+
+console.log(JSON.stringify({
+  status: 'ok',
+  authority_payloads: http.authority_payloads.length,
+  http_exchanges: http.exchanges.length,
+  context_profiles: Object.keys(identities).sort(),
+  negative_cases: executed,
+  ui_deep_frozen: true,
+}))
+'''
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "NODE_NO_WARNINGS": "1",
+            "PLOTPILOT_TS_CORE_API": str(ROOT / "frontend" / "src" / "contracts" / "core-api.ts"),
+            "PLOTPILOT_TS_INGRESS": str(ROOT / "frontend" / "src" / "contracts" / "ingress.ts"),
+            "PLOTPILOT_TS_VERIFIER": str(ROOT / "frontend" / "src" / "contracts" / "verifier.ts"),
+            "PLOTPILOT_PUBLICATION_GOLDEN": str(GOLDEN_DIR / "contract-publication-v1"),
+            "PLOTPILOT_PUBLICATION_CORPUS": str(CORPUS_DIR / "contract-publication-v1" / "negative.json"),
+        }
+    )
+    completed = subprocess.run(
+        ["node", "--experimental-strip-types", "--input-type=module", "-e", script],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=environment,
+        check=False,
+    )
+    if completed.returncode:
+        raise AssertionError(f"TypeScript contract-publication runtime failed:\n{completed.stdout}\n{completed.stderr}")
+    try:
+        result = json.loads(completed.stdout)
+    except json.JSONDecodeError as exc:
+        raise AssertionError(f"TypeScript contract-publication gate emitted invalid JSON: {completed.stdout!r}") from exc
+    expected_case_ids = [case["case_id"] for case in load_strict_json(CORPUS_DIR / "contract-publication-v1" / "negative.json")["cases"]]
+    if result.get("status") != "ok" or result.get("negative_cases") != expected_case_ids or result.get("ui_deep_frozen") is not True:
+        raise AssertionError(f"unexpected TypeScript contract-publication result: {result}")
+    return result
+
+
 def verify_typescript_verifier() -> dict[str, Any]:
     """Run the actual frontend TypeScript verifier under Node's TS loader."""
     script = r'''
@@ -2338,6 +2761,8 @@ def verify_all() -> dict[str, Any]:
         "negative": verify_negative_groups(),
         "negative_cases": verify_negative_cases(),
         "remediation": verify_remediation_probes(),
+        "contract_publication": verify_contract_publication(),
+        "contract_publication_typescript": verify_typescript_contract_publication(),
         "typescript": verify_typescript_verifier(),
         "rpc_methods": {"worker": list(EXPECTED_WORKER_METHODS), "host": list(EXPECTED_HOST_METHODS), "error_codes": EXPECTED_ERROR_CODES},
     }

@@ -606,6 +606,286 @@ def plan_schemas() -> dict[str, dict[str, Any]]:
     return {"plugin-plan-v1": plan, "plugin-generation-v1": generation, "settings-revision-v1": settings_revision, "settings-validation-receipt-v1": settings_receipt, "settings-migration-manifest-v1": migration_manifest, "plugin-lifecycle-transition-v1": lifecycle, "release-retirement-v1": retirement, "release-pin-v1": pin}
 
 
+def core_api_schemas() -> dict[str, dict[str, Any]]:
+    """First-publication Core HTTP and scoped post-M0 contract families.
+
+    These families are additive: they do not change the frozen plugin RPC
+    method matrix or expose a Publication callable to plugin workers.  The
+    HTTP matrix below is consumed by P1/P4; the Export input is a Core-created
+    immutable Asset consumed through the already-frozen host.asset.read/v1.
+    """
+
+    workspace = obj(
+        {
+            "schema": const("core-workspace/v1"),
+            "workspace_id": ID,
+            "workspace_kind": ID,
+            "title": NONEMPTY,
+            "status": ID,
+            "current_plan_revision_id": nullable(ID),
+            "created_at": UTC,
+            "updated_at": UTC,
+            "revision": NONNEG_INT,
+        },
+        ("schema", "workspace_id", "workspace_kind", "title", "status", "current_plan_revision_id", "created_at", "updated_at", "revision"),
+    )
+    document_value = obj(
+        {
+            "schema": const("core-document/v1"),
+            "document_id": ID,
+            "workspace_id": ID,
+            "document_type": ID,
+            "title": NONEMPTY,
+            "current_revision_id": nullable(ID),
+            "created_at": UTC,
+            "updated_at": UTC,
+            "revision": NONNEG_INT,
+        },
+        ("schema", "document_id", "workspace_id", "document_type", "title", "current_revision_id", "created_at", "updated_at", "revision"),
+    )
+    node = obj(
+        {
+            "schema": const("core-node/v1"),
+            "node_id": ID,
+            "workspace_id": ID,
+            "document_id": nullable(ID),
+            "node_type": ID,
+            "title": NONEMPTY,
+            "parent_node_id": nullable(ID),
+            "position": NONNEG_INT,
+            "current_revision_id": nullable(ID),
+            "created_at": UTC,
+            "updated_at": UTC,
+            "revision": NONNEG_INT,
+        },
+        ("schema", "node_id", "workspace_id", "document_id", "node_type", "title", "parent_node_id", "position", "current_revision_id", "created_at", "updated_at", "revision"),
+    )
+    relation = obj(
+        {
+            "schema": const("core-relation/v1"),
+            "relation_id": ID,
+            "workspace_id": ID,
+            "relation_type": ID,
+            "source_id": ID,
+            "target_id": ID,
+            "revision_id": nullable(ID),
+            "created_at": UTC,
+        },
+        ("schema", "relation_id", "workspace_id", "relation_type", "source_id", "target_id", "revision_id", "created_at"),
+    )
+    revision = obj(
+        {
+            "schema": const("core-revision/v1"),
+            "revision_id": ID,
+            "workspace_id": ID,
+            "document_id": nullable(ID),
+            "node_id": nullable(ID),
+            "parent_revision_id": nullable(ID),
+            "content_hash": HASH,
+            "created_by": ID,
+            "source_candidate_id": nullable(ID),
+            "created_at": UTC,
+            "revision_number": POS_INT,
+            "payload_schema": nullable(ID),
+        },
+        ("schema", "revision_id", "workspace_id", "document_id", "node_id", "parent_revision_id", "content_hash", "created_by", "source_candidate_id", "created_at", "revision_number", "payload_schema"),
+    )
+
+    def page(schema_name: str, item_ref: str) -> dict[str, Any]:
+        return obj(
+            {
+                "schema": const(schema_name),
+                "items": array({"$ref": f"#/$defs/{item_ref}"}),
+                "offset": NONNEG_INT,
+                "limit": {"type": "integer", "minimum": 1, "maximum": 200},
+                "total": NONNEG_INT,
+                "next_offset": nullable(NONNEG_INT),
+            },
+            ("schema", "items", "offset", "limit", "total", "next_offset"),
+        )
+
+    workspace_query = obj({"schema": const("core-workspace-query/v1"), "workspace_id": nullable(ID), "offset": NONNEG_INT, "limit": {"type": "integer", "minimum": 1, "maximum": 200}}, ("schema", "workspace_id", "offset", "limit"))
+    workspace_get_query = obj({"schema": const("core-workspace-get-query/v1"), "workspace_id": ID}, ("schema", "workspace_id"))
+    document_query = obj({"schema": const("core-document-query/v1"), "workspace_id": ID, "document_id": nullable(ID), "offset": NONNEG_INT, "limit": {"type": "integer", "minimum": 1, "maximum": 200}}, ("schema", "workspace_id", "document_id", "offset", "limit"))
+    document_get_query = obj({"schema": const("core-document-get-query/v1"), "workspace_id": ID, "document_id": ID}, ("schema", "workspace_id", "document_id"))
+    node_query = obj({"schema": const("core-node-query/v1"), "workspace_id": ID, "node_id": nullable(ID), "document_id": nullable(ID), "parent_node_id": nullable(ID), "offset": NONNEG_INT, "limit": {"type": "integer", "minimum": 1, "maximum": 200}}, ("schema", "workspace_id", "node_id", "document_id", "parent_node_id", "offset", "limit"))
+    node_get_query = obj({"schema": const("core-node-get-query/v1"), "workspace_id": ID, "node_id": ID}, ("schema", "workspace_id", "node_id"))
+    relation_query = obj({"schema": const("core-relation-query/v1"), "workspace_id": ID, "relation_id": nullable(ID), "source_id": nullable(ID), "target_id": nullable(ID), "relation_type": nullable(ID), "offset": NONNEG_INT, "limit": {"type": "integer", "minimum": 1, "maximum": 200}}, ("schema", "workspace_id", "relation_id", "source_id", "target_id", "relation_type", "offset", "limit"))
+    document_revision_query = obj({"schema": const("core-document-revision-query/v1"), "workspace_id": ID, "document_id": ID, "revision_id": nullable(ID), "offset": NONNEG_INT, "limit": {"type": "integer", "minimum": 1, "maximum": 200}}, ("schema", "workspace_id", "document_id", "revision_id", "offset", "limit"))
+    node_revision_query = obj({"schema": const("core-node-revision-query/v1"), "workspace_id": ID, "node_id": ID, "revision_id": nullable(ID), "offset": NONNEG_INT, "limit": {"type": "integer", "minimum": 1, "maximum": 200}}, ("schema", "workspace_id", "node_id", "revision_id", "offset", "limit"))
+    revision_get_query = obj({"schema": const("core-revision-get-query/v1"), "workspace_id": ID, "revision_id": ID}, ("schema", "workspace_id", "revision_id"))
+    content_query = obj({"schema": const("core-revision-content-query/v1"), "workspace_id": ID, "revision_id": ID, "offset": NONNEG_INT, "length": {"type": "integer", "minimum": 0, "maximum": 65536}}, ("schema", "workspace_id", "revision_id", "offset", "length"))
+    content_page = obj({"schema": const("core-revision-content-page/v1"), "revision_id": ID, "offset": NONNEG_INT, "length": NONNEG_INT, "total_length": NONNEG_INT, "text": STR, "next_offset": nullable(NONNEG_INT)}, ("schema", "revision_id", "offset", "length", "total_length", "text", "next_offset"))
+
+    commands = {
+        "workspace_create": obj({"schema": const("core-workspace-create-command/v1"), "operation_key": ID, "workspace_id": ID, "workspace_kind": ID, "title": NONEMPTY}, ("schema", "operation_key", "workspace_id", "workspace_kind", "title")),
+        "workspace_update": obj({"schema": const("core-workspace-update-command/v1"), "operation_key": ID, "workspace_id": ID, "expected_revision": NONNEG_INT, "title": nullable(NONEMPTY), "status": nullable(ID)}, ("schema", "operation_key", "workspace_id", "expected_revision", "title", "status")),
+        "workspace_delete": obj({"schema": const("core-workspace-delete-command/v1"), "operation_key": ID, "workspace_id": ID, "expected_revision": NONNEG_INT}, ("schema", "operation_key", "workspace_id", "expected_revision")),
+        "document_create": obj({"schema": const("core-document-create-command/v1"), "operation_key": ID, "document_id": ID, "workspace_id": ID, "document_type": ID, "title": NONEMPTY}, ("schema", "operation_key", "document_id", "workspace_id", "document_type", "title")),
+        "document_update": obj({"schema": const("core-document-update-command/v1"), "operation_key": ID, "document_id": ID, "workspace_id": ID, "expected_revision": NONNEG_INT, "title": NONEMPTY}, ("schema", "operation_key", "document_id", "workspace_id", "expected_revision", "title")),
+        "node_create": obj({"schema": const("core-node-create-command/v1"), "operation_key": ID, "node_id": ID, "workspace_id": ID, "document_id": nullable(ID), "node_type": ID, "title": NONEMPTY, "parent_node_id": nullable(ID), "position": NONNEG_INT}, ("schema", "operation_key", "node_id", "workspace_id", "document_id", "node_type", "title", "parent_node_id", "position")),
+        "node_update": obj({"schema": const("core-node-update-command/v1"), "operation_key": ID, "node_id": ID, "workspace_id": ID, "expected_revision": NONNEG_INT, "title": NONEMPTY, "parent_node_id": nullable(ID), "position": NONNEG_INT}, ("schema", "operation_key", "node_id", "workspace_id", "expected_revision", "title", "parent_node_id", "position")),
+        "node_delete": obj({"schema": const("core-node-delete-command/v1"), "operation_key": ID, "node_id": ID, "workspace_id": ID, "expected_revision": NONNEG_INT}, ("schema", "operation_key", "node_id", "workspace_id", "expected_revision")),
+        "relation_create": obj({"schema": const("core-relation-create-command/v1"), "operation_key": ID, "relation_id": ID, "workspace_id": ID, "relation_type": ID, "source_id": ID, "target_id": ID, "revision_id": nullable(ID)}, ("schema", "operation_key", "relation_id", "workspace_id", "relation_type", "source_id", "target_id", "revision_id")),
+        "relation_delete": obj({"schema": const("core-relation-delete-command/v1"), "operation_key": ID, "relation_id": ID, "workspace_id": ID, "expected_revision_id": nullable(ID)}, ("schema", "operation_key", "relation_id", "workspace_id", "expected_revision_id")),
+        "document_revision_create": obj({"schema": const("core-document-revision-create-command/v1"), "operation_key": ID, "revision_id": ID, "workspace_id": ID, "document_id": ID, "base_revision_id": nullable(ID), "content": {"type": "string", "maxLength": 8388608}, "created_by": ID, "source_candidate_id": nullable(ID), "payload_schema": nullable(ID)}, ("schema", "operation_key", "revision_id", "workspace_id", "document_id", "base_revision_id", "content", "created_by", "source_candidate_id", "payload_schema")),
+        "node_revision_create": obj({"schema": const("core-node-revision-create-command/v1"), "operation_key": ID, "revision_id": ID, "workspace_id": ID, "node_id": ID, "base_revision_id": nullable(ID), "content": {"type": "string", "maxLength": 8388608}, "created_by": ID, "source_candidate_id": nullable(ID), "payload_schema": nullable(ID)}, ("schema", "operation_key", "revision_id", "workspace_id", "node_id", "base_revision_id", "content", "created_by", "source_candidate_id", "payload_schema")),
+    }
+    delete_result = obj({"schema": const("core-delete-result/v1"), "operation_key": ID, "workspace_id": ID, "entity_kind": enum("workspace", "node", "relation"), "entity_id": ID, "previous_revision": nullable(NONNEG_INT), "deleted": const(True), "idempotent": BOOL}, ("schema", "operation_key", "workspace_id", "entity_kind", "entity_id", "previous_revision", "deleted", "idempotent"))
+
+    defs: dict[str, Any] = {
+        "workspace": workspace,
+        "document": document_value,
+        "node": node,
+        "relation": relation,
+        "revision": revision,
+        "workspace_page": page("core-workspace-page/v1", "workspace"),
+        "document_page": page("core-document-page/v1", "document"),
+        "node_page": page("core-node-page/v1", "node"),
+        "relation_page": page("core-relation-page/v1", "relation"),
+        "revision_page": page("core-revision-page/v1", "revision"),
+        "workspace_query": workspace_query,
+        "workspace_get_query": workspace_get_query,
+        "document_query": document_query,
+        "document_get_query": document_get_query,
+        "node_query": node_query,
+        "node_get_query": node_get_query,
+        "relation_query": relation_query,
+        "document_revision_query": document_revision_query,
+        "node_revision_query": node_revision_query,
+        "revision_get_query": revision_get_query,
+        "content_query": content_query,
+        "content_page": content_page,
+        **commands,
+        "delete_result": delete_result,
+    }
+    core_http_error = obj(
+        {
+            "schema": const("core-http-error/v1"),
+            "error_code": enum("unknown_reference", "cross_workspace", "stale_cas", "operation_key_reuse", "incomplete_publication"),
+            "message": NONEMPTY,
+            "retryable": BOOL,
+        },
+        ("schema", "error_code", "message", "retryable"),
+    )
+    defs["http_error"] = core_http_error
+    authority = {"oneOf": [{"$ref": f"#/$defs/{name}"} for name in defs], "$defs": defs, "unevaluatedProperties": False}
+
+    revision_ref = obj({"revision_id": ID, "workspace_id": ID, "entity_kind": enum("document", "node_structure", "relation_set"), "entity_id": ID, "content_hash": HASH, "revision_number": POS_INT}, ("revision_id", "workspace_id", "entity_kind", "entity_id", "content_hash", "revision_number"))
+    publication_command = obj({"schema": const("publication-command/v1"), "publication_operation_key": ID, "workspace_id": ID, "candidate_id": ID, "accepted_by": ID}, ("schema", "publication_operation_key", "workspace_id", "candidate_id", "accepted_by"))
+    publication_result = obj({"schema": const("publication-result/v1"), "publication_id": ID, "candidate_id": ID, "workspace_id": ID, "entity_kind": enum("document", "node_structure", "relation_set"), "entity_id": ID, "resulting_revision": revision_ref, "idempotent": BOOL}, ("schema", "publication_id", "candidate_id", "workspace_id", "entity_kind", "entity_id", "resulting_revision", "idempotent"))
+    publication = {"oneOf": [publication_command, publication_result], "unevaluatedProperties": False}
+
+    mime = {"type": "string", "pattern": r"^[^\s/]+/[^\s/]+$"}
+    asset_query = obj({"schema": const("asset-query/v1"), "asset_id": ID}, ("schema", "asset_id"))
+    asset_range_query = obj({"schema": const("asset-read-range-query/v1"), "asset_id": ID, "offset": NONNEG_INT, "length": {"type": "integer", "minimum": 0, "maximum": 1048576}}, ("schema", "asset_id", "offset", "length"))
+    asset_metadata = obj({"schema": const("asset-metadata/v1"), "asset_id": ID, "sha256": HASH, "mime": mime, "size": NONNEG_INT, "logical_role": ID, "provenance": NONEMPTY, "rebuildable": BOOL}, ("schema", "asset_id", "sha256", "mime", "size", "logical_role", "provenance", "rebuildable"))
+    asset_range = obj({"schema": const("asset-read-range/v1"), "asset_id": ID, "offset": NONNEG_INT, "length": {"type": "integer", "minimum": 0, "maximum": 1048576}, "total_size": NONNEG_INT, "base64_chunk": {"type": "string", "pattern": r"^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"}, "next_offset": nullable(NONNEG_INT), "content_hash": HASH}, ("schema", "asset_id", "offset", "length", "total_size", "base64_chunk", "next_offset", "content_hash"))
+    asset = {"oneOf": [asset_query, asset_range_query, asset_metadata, asset_range], "unevaluatedProperties": False}
+
+    context_common = {"schema": const("operation-context-identity/v1"), "protocol_version": const("1"), "generation_id": ID, "plugin_release_id": HASH}
+    context_identity = {
+        "oneOf": [
+            obj({**context_common, "context": const("control")}, ("schema", "protocol_version", "context", "generation_id", "plugin_release_id")),
+            obj({**context_common, "context": const("install"), "install_operation_id": ID}, ("schema", "protocol_version", "context", "generation_id", "plugin_release_id", "install_operation_id")),
+            obj({**context_common, "context": const("attempt"), "job_id": ID, "step_id": ID, "attempt_id": ID}, ("schema", "protocol_version", "context", "generation_id", "plugin_release_id", "job_id", "step_id", "attempt_id")),
+        ],
+        "unevaluatedProperties": False,
+    }
+
+    export_item = obj({"ordinal": NONNEG_INT, "document_id": ID, "document_type": ID, "title": NONEMPTY, "revision_id": ID, "content_asset_id": ID, "content_hash": HASH, "mime": const("text/plain"), "encoding": const("utf-8")}, ("ordinal", "document_id", "document_type", "title", "revision_id", "content_asset_id", "content_hash", "mime", "encoding"))
+    ordered = array(export_item, min_items=1)
+    ordered["maxItems"] = 10000
+    export_current = obj({"schema": const("export-current-revisions/v1"), "workspace_id": ID, "core_snapshot_revision": NONNEG_INT, "ordered_revisions": ordered, "generated_at": UTC}, ("schema", "workspace_id", "core_snapshot_revision", "ordered_revisions", "generated_at"))
+
+    return {
+        "core-authority-command-query-v1": authority,
+        "publication-command-result-v1": publication,
+        "asset-metadata-v1": asset,
+        "operation-context-identity-v1": context_identity,
+        "export-current-revisions-v1": export_current,
+    }
+
+
+def core_api_method_matrix() -> dict[str, Any]:
+    """The minimal P1/P4 Core HTTP adapter surface from ADR-041."""
+
+    def route(
+        route_id: str,
+        method: str,
+        path: str,
+        request: str,
+        result: str,
+        statuses: tuple[int, ...] = (200,),
+        *,
+        path_identity: tuple[str, ...] = (),
+        path_entity_kind: str | None = None,
+        result_entity_kind: str | None = None,
+        failures: tuple[tuple[int, tuple[str, ...]], ...] = ((404, ("unknown_reference",)),),
+    ) -> dict[str, Any]:
+        return {
+            "route_id": route_id,
+            "method": method,
+            "path_template": path,
+            "path_identity": list(path_identity),
+            "path_entity_kind": path_entity_kind,
+            "result_entity_kind": result_entity_kind,
+            "request_schema": request,
+            "result_schema": result,
+            "success_statuses": list(statuses),
+            "error_schema": "core-http-error/v1",
+            "failure_statuses": [
+                {"status": status, "error_codes": list(codes)} for status, codes in failures
+            ],
+        }
+
+    query_failures = ((404, ("unknown_reference", "cross_workspace")),)
+    mutation_failures = (
+        (404, ("unknown_reference", "cross_workspace")),
+        (409, ("stale_cas", "operation_key_reuse")),
+    )
+    publication_failures = (
+        (404, ("unknown_reference", "cross_workspace")),
+        (409, ("stale_cas", "operation_key_reuse")),
+        (422, ("incomplete_publication",)),
+    )
+
+    return {
+        "schema": "core-api-method-matrix/v1",
+        "core_api_compatibility": ">=1.0 <2.0",
+        "plugin_rpc_unchanged": True,
+        "plugin_ui_bundle_direct_http": False,
+        "routes": [
+            route("workspace.list", "GET", "/api/v1/core/workspaces", "core-workspace-query/v1", "core-workspace-page/v1", result_entity_kind="workspace", failures=query_failures),
+            route("workspace.get", "GET", "/api/v1/core/workspaces/{workspace_id}", "core-workspace-get-query/v1", "core-workspace/v1", path_identity=("workspace_id",), path_entity_kind="workspace", result_entity_kind="workspace", failures=query_failures),
+            route("workspace.create", "POST", "/api/v1/core/workspaces", "core-workspace-create-command/v1", "core-workspace/v1", (201,), result_entity_kind="workspace", failures=mutation_failures),
+            route("workspace.update", "PATCH", "/api/v1/core/workspaces/{workspace_id}", "core-workspace-update-command/v1", "core-workspace/v1", path_identity=("workspace_id",), path_entity_kind="workspace", result_entity_kind="workspace", failures=mutation_failures),
+            route("workspace.delete", "DELETE", "/api/v1/core/workspaces/{workspace_id}", "core-workspace-delete-command/v1", "core-delete-result/v1", path_identity=("workspace_id",), path_entity_kind="workspace", result_entity_kind="workspace", failures=mutation_failures),
+            route("document.list", "GET", "/api/v1/core/workspaces/{workspace_id}/documents", "core-document-query/v1", "core-document-page/v1", path_identity=("workspace_id",), path_entity_kind="workspace", result_entity_kind="document", failures=query_failures),
+            route("document.get", "GET", "/api/v1/core/documents/{document_id}", "core-document-get-query/v1", "core-document/v1", path_identity=("document_id",), path_entity_kind="document", result_entity_kind="document", failures=query_failures),
+            route("document.create", "POST", "/api/v1/core/workspaces/{workspace_id}/documents", "core-document-create-command/v1", "core-document/v1", (201,), path_identity=("workspace_id",), path_entity_kind="workspace", result_entity_kind="document", failures=mutation_failures),
+            route("document.update", "PATCH", "/api/v1/core/documents/{document_id}", "core-document-update-command/v1", "core-document/v1", path_identity=("document_id",), path_entity_kind="document", result_entity_kind="document", failures=mutation_failures),
+            route("node.list", "GET", "/api/v1/core/workspaces/{workspace_id}/nodes", "core-node-query/v1", "core-node-page/v1", path_identity=("workspace_id",), path_entity_kind="workspace", result_entity_kind="node", failures=query_failures),
+            route("node.get", "GET", "/api/v1/core/nodes/{node_id}", "core-node-get-query/v1", "core-node/v1", path_identity=("node_id",), path_entity_kind="node", result_entity_kind="node", failures=query_failures),
+            route("node.create", "POST", "/api/v1/core/workspaces/{workspace_id}/nodes", "core-node-create-command/v1", "core-node/v1", (201,), path_identity=("workspace_id",), path_entity_kind="workspace", result_entity_kind="node", failures=mutation_failures),
+            route("node.update", "PATCH", "/api/v1/core/nodes/{node_id}", "core-node-update-command/v1", "core-node/v1", path_identity=("node_id",), path_entity_kind="node", result_entity_kind="node", failures=mutation_failures),
+            route("node.delete", "DELETE", "/api/v1/core/nodes/{node_id}", "core-node-delete-command/v1", "core-delete-result/v1", path_identity=("node_id",), path_entity_kind="node", result_entity_kind="node", failures=mutation_failures),
+            route("relation.list", "GET", "/api/v1/core/workspaces/{workspace_id}/relations", "core-relation-query/v1", "core-relation-page/v1", path_identity=("workspace_id",), path_entity_kind="workspace", result_entity_kind="relation", failures=query_failures),
+            route("relation.create", "POST", "/api/v1/core/workspaces/{workspace_id}/relations", "core-relation-create-command/v1", "core-relation/v1", (201,), path_identity=("workspace_id",), path_entity_kind="workspace", result_entity_kind="relation", failures=mutation_failures),
+            route("relation.delete", "DELETE", "/api/v1/core/relations/{relation_id}", "core-relation-delete-command/v1", "core-delete-result/v1", path_identity=("relation_id",), path_entity_kind="relation", result_entity_kind="relation", failures=mutation_failures),
+            route("document.revision.list", "GET", "/api/v1/core/documents/{document_id}/revisions", "core-document-revision-query/v1", "core-revision-page/v1", path_identity=("document_id",), path_entity_kind="document", result_entity_kind="revision", failures=query_failures),
+            route("node.revision.list", "GET", "/api/v1/core/nodes/{node_id}/revisions", "core-node-revision-query/v1", "core-revision-page/v1", path_identity=("node_id",), path_entity_kind="node", result_entity_kind="revision", failures=query_failures),
+            route("revision.get", "GET", "/api/v1/core/revisions/{revision_id}", "core-revision-get-query/v1", "core-revision/v1", path_identity=("revision_id",), path_entity_kind="revision", result_entity_kind="revision", failures=query_failures),
+            route("revision.content", "GET", "/api/v1/core/revisions/{revision_id}/content", "core-revision-content-query/v1", "core-revision-content-page/v1", path_identity=("revision_id",), path_entity_kind="revision", result_entity_kind="revision", failures=query_failures),
+            route("document.revision.create", "POST", "/api/v1/core/documents/{document_id}/revisions", "core-document-revision-create-command/v1", "core-revision/v1", (201,), path_identity=("document_id",), path_entity_kind="document", result_entity_kind="revision", failures=mutation_failures),
+            route("node.revision.create", "POST", "/api/v1/core/nodes/{node_id}/revisions", "core-node-revision-create-command/v1", "core-revision/v1", (201,), path_identity=("node_id",), path_entity_kind="node", result_entity_kind="revision", failures=mutation_failures),
+            route("publication.accept", "POST", "/api/v1/core/publications/accept", "publication-command/v1", "publication-result/v1", failures=publication_failures),
+            route("asset.metadata", "GET", "/api/v1/core/assets/{asset_id}", "asset-query/v1", "asset-metadata/v1", path_identity=("asset_id",), path_entity_kind="asset", result_entity_kind="asset", failures=query_failures),
+            route("asset.range", "GET", "/api/v1/core/assets/{asset_id}/range", "asset-read-range-query/v1", "asset-read-range/v1", path_identity=("asset_id",), path_entity_kind="asset", result_entity_kind="asset", failures=query_failures),
+        ],
+    }
+
+
 def ui_schemas() -> dict[str, dict[str, Any]]:
     freshness = obj({"generation_id": ID, "plugin_release_id": HASH, "workspace_id": nullable(ID), "workspace_revision_id": nullable(ID), "plan_revision_id": nullable(ID)}, ("generation_id", "plugin_release_id", "workspace_id", "workspace_revision_id", "plan_revision_id"))
     init = obj({"schema": const("plugin-ui-init/v1"), "ui_session_id": ID, "initial_render_seq": NONNEG_INT, "initial_intent_seq": NONNEG_INT, "contribution_config_asset_id": nullable(ID)}, ("schema", "ui_session_id", "initial_render_seq", "initial_intent_seq", "contribution_config_asset_id"))
@@ -784,6 +1064,7 @@ def schema_inventory() -> dict[str, dict[str, Any]]:
         "provenance-receipt-v1": provenance_receipt(),
         **event_schemas(),
         **plan_schemas(),
+        **core_api_schemas(),
         **ui_schemas(),
         **skill_schemas(),
         **backup_schemas(),
@@ -819,6 +1100,7 @@ def render() -> dict[str, bytes]:
     rendered["rpc-method-matrix.v1.json"] = (json.dumps(matrix, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
     compatibility = {"schema": "compatibility-matrix/v1", "core_api": ">=1.0 <2.0", "plugin_rpc": "1", "ui_host": "1", "python": "3.12.*", "handshake_downgrade": False}
     rendered["compatibility-matrix.v1.json"] = (json.dumps(compatibility, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    rendered["core-api-method-matrix.v1.json"] = (json.dumps(core_api_method_matrix(), ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
     rendered["_common-v1.schema.json"] = (json.dumps(document("common-v1", {"type": "object", "additionalProperties": False, "unevaluatedProperties": False, "properties": {}}), ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
     return rendered
 

@@ -41,6 +41,7 @@ from .verifier import (
     verify_stream_prefix,
 )
 from .rpc import ChunkUploadLedger, OperationLedger
+from .context_identity import derive_operation_context_identity, operation_context_projection
 from .fixtures import HttpSSEFixture, PluginUIHostFixture
 
 __all__ = [
@@ -54,8 +55,10 @@ __all__ = [
     "ChunkUploadLedger",
     "HttpSSEFixture",
     "hash_jcs",
+    "derive_operation_context_identity",
     "load_strict_json",
     "OperationLedger",
+    "operation_context_projection",
     "PluginUIHostFixture",
     "normalize_relative_path",
     "package_hash",

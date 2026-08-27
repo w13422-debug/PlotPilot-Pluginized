@@ -1,4 +1,7 @@
 {
+  "additional_negative_profiles": [
+    "contract-publication-v1/negative.json"
+  ],
   "compatibility": [
     "compatibility/valid.json",
     "compatibility/invalid.json"

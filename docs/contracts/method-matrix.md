@@ -57,3 +57,13 @@
 - 所有 install/attempt mutation 先 fencing，再查 operation ledger；Core mutation 与 operation row 同事务提交。
 - `host.job.complete/v1` 只提交 Attempt 终态；Step/Job 由 Core 聚合。
 - `host.log/v1` 可丢弃但仍先 fencing；`runtime.heartbeat` 不携带业务结果。
+
+## Core HTTP 独立矩阵（非 Plugin RPC）
+
+`contracts/json-schema/core-api-method-matrix.v1.json` 独立冻结 26 条 P1/P4 Core HTTP route 的 method、path template、request schema、result schema、success status 与 typed failure status/code。它不进入上述 29 个 worker/host framed RPC 方法，也不授予 Plugin UI Bundle 直连 HTTP。
+
+- Authority：Workspace 5、Document 4、Node 5、Relation 3、Revision 6 条 route；
+- Core-native Publication：`POST /api/v1/core/publications/accept`；
+- Asset read：metadata 与 bounded range 两条 GET route。
+
+明确不发布 `host.current-revisions.read/v1`，Export 使用 Core-created `export-current-revisions/v1` immutable Asset + 既有 `host.asset.read/v1`。Publication 也不加入 Plugin SDK ports 或 RPC matrix。
