@@ -1,0 +1,15 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-NW-P2-Supervisor
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 47 items
+
+tests\p2-plugin-platform\supervisor\test_lifecycle.py ..............     [ 29%]
+tests\p2-plugin-platform\supervisor\test_lookup.py ..........            [ 51%]
+tests\p2-plugin-platform\supervisor\test_process.py ..                   [ 55%]
+tests\p2-plugin-platform\supervisor\test_rpc.py ..............           [ 85%]
+tests\p2-plugin-platform\supervisor\test_venv.py .......                 [100%]
+
+============================= 47 passed in 1.02s ==============================

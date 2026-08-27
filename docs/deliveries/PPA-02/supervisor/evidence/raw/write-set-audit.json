@@ -1,0 +1,13 @@
+{
+  "schema": "ppa-02-supervisor-write-set-audit/v1",
+  "base": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
+  "changed_path_count": 27,
+  "allowed_prefixes": [
+    "backend/plotpilot_core/supervisor/",
+    "tests/p2-plugin-platform/supervisor/",
+    "docs/deliveries/PPA-02/supervisor/",
+    "coordination/PPA-02/supervisor/"
+  ],
+  "out_of_set": [],
+  "result": "PASS"
+}

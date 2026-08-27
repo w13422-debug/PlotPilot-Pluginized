@@ -1,0 +1,9 @@
+{
+  "schema": "ppa-02-supervisor-validation/v1",
+  "targeted_pytest": 0,
+  "ruff": 0,
+  "compileall": 0,
+  "contract_manifest_check": 0,
+  "git_diff_check": 0,
+  "git_diff_cached_check": 0
+}

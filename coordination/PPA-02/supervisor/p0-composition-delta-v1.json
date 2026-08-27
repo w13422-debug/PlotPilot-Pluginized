@@ -1,0 +1,45 @@
+{
+  "schema": "ppa-02-supervisor-p0-composition-delta/v1",
+  "node_id": "NW-P2-SUPERVISOR-01",
+  "base_commit": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
+  "status": "requires_p0_composition",
+  "ownership": {
+    "source_node": "P2 supervisor",
+    "integration_owner": "P0",
+    "public_contract_change_required": false
+  },
+  "required": [
+    {
+      "id": "production-authority-adapter",
+      "owner": "P0/Core",
+      "requirement": "Compose SupervisorAuthority against the accepted worker-pin/release-retirement and Attempt/install lease CAS authorities; claim, holds, interrupt and release must remain exact and transactional."
+    },
+    {
+      "id": "immutable-runtime-route-source",
+      "owner": "P0/Core",
+      "requirement": "Compose ImmutableRouteSource from the accepted Generation member and verified PackageStore without introducing a mutable route or second truth source."
+    },
+    {
+      "id": "plugin-worker-http-mount",
+      "owner": "P0",
+      "requirement": "Mount only /__plotpilot/plugin-worker/<release_id>/<bundle_hash>/worker.js and serve bytes returned by the live-pinned lookup."
+    },
+    {
+      "id": "ui-pin-response-lifetime",
+      "owner": "P0",
+      "requirement": "Acquire and continuously hold the exact UI/worker release pin across lookup and response completion; release it only after the response can no longer read package bytes."
+    },
+    {
+      "id": "response-policy-and-lifecycle-composition",
+      "owner": "P0",
+      "requirement": "Apply the frozen CSP/media type and compose supervisor tick/start/stop with Core runtime decisions. Do not infer process authority from local timeouts."
+    }
+  ],
+  "prohibited_for_this_node": [
+    "public route mount",
+    "public contract or SDK modification",
+    "root dependency or lock modification",
+    "automatic publication or retirement decision",
+    "central PASS or merge-eligibility claim"
+  ]
+}

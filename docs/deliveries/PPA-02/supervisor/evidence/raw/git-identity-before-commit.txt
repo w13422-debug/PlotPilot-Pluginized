@@ -1,0 +1,5 @@
+branch=codex/nw-p2-supervisor-01
+head_before_commit=7805be2c2566aa1e63d3cdc6784a84f1aea8f463
+base=7805be2c2566aa1e63d3cdc6784a84f1aea8f463
+base_tree=ecf773e49f93b20806ebda5dec2fa14db422a1f4
+donor_push=DISABLED
