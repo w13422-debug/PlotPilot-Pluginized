@@ -9,6 +9,28 @@ from .domain import (
     build_export,
     validate_selection,
 )
+from .integration import (
+    ExportAssetMetadata,
+    ExportPortError,
+    ExportReceipt,
+    ExportResult,
+    ExportToAssetResult,
+    PreparedExport,
+    build_export_from_assets,
+    build_export_from_snapshot,
+    export_asset,
+    export_from_ports,
+    export_to_asset,
+)
+from .ports import (
+    AssetCreatePort,
+    AssetMetadataReadPort,
+    AssetPort,
+    AssetReadPort,
+    AssetReadResult,
+    P1AssetStoreAdapter,
+    P1AssetStorePort,
+)
 
 __all__ = [
     "ChapterRevision",
@@ -17,5 +39,23 @@ __all__ = [
     "ExportPayload",
     "ExportSelection",
     "build_export",
+    "build_export_from_assets",
+    "build_export_from_snapshot",
+    "export_asset",
+    "export_from_ports",
+    "export_to_asset",
+    "ExportAssetMetadata",
+    "ExportPortError",
+    "ExportReceipt",
+    "ExportResult",
+    "ExportToAssetResult",
+    "PreparedExport",
+    "AssetCreatePort",
+    "AssetMetadataReadPort",
+    "AssetPort",
+    "AssetReadPort",
+    "AssetReadResult",
+    "P1AssetStoreAdapter",
+    "P1AssetStorePort",
     "validate_selection",
 ]
