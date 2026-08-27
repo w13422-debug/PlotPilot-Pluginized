@@ -10,7 +10,169 @@ from threading import RLock
 import uuid
 
 from ..domain.entities import Document, Node, Page, Relation, Revision, TextPage, Workspace, utc_now
-from .migrations import MigrationRunner
+from .migrations import Migration, MigrationRunner
+
+
+def _load_p3_job_migrations() -> tuple[Migration, ...]:
+    """Register the accepted P3 ledger DDL without copying a second schema."""
+    root = Path(__file__).parent.parent / "jobs" / "migrations"
+    manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+    if manifest.get("schema") != "p3-module-migrations/v1" or manifest.get("module") != "plotpilot_core.jobs":
+        raise RuntimeError("invalid P3 Job migration manifest identity")
+    steps = manifest.get("steps")
+    if not isinstance(steps, list) or len(steps) != 1:
+        raise RuntimeError("unexpected P3 Job migration manifest")
+    step = steps[0]
+    if step.get("id") != "p3-jobs-001" or step.get("path") != "001_host_operation_ledger.sql" or step.get("transactional") is not True:
+        raise RuntimeError("unexpected P3 Job migration step")
+    raw = (root / step["path"]).read_bytes()
+    if hashlib.sha256(raw).hexdigest() != step.get("sha256"):
+        raise RuntimeError("P3 Job migration hash mismatch")
+    return (Migration(step["id"], raw.decode("utf-8")),)
+
+
+P3_JOB_MIGRATIONS = _load_p3_job_migrations()
+
+
+EXECUTION_MIGRATIONS = (
+    Migration(
+        "0003-execution-authority",
+        """
+CREATE TABLE IF NOT EXISTS execution_job(
+    job_id TEXT PRIMARY KEY,
+    workspace_id TEXT NOT NULL REFERENCES workspace(workspace_id),
+    request_key TEXT NOT NULL,
+    run_intent_id TEXT NOT NULL,
+    run_snapshot_hash TEXT NOT NULL,
+    run_snapshot_asset_id TEXT,
+    run_snapshot_json TEXT NOT NULL,
+    job_state TEXT NOT NULL,
+    job_revision INTEGER NOT NULL,
+    result_bundle_asset_id TEXT,
+    provenance_receipt_id TEXT,
+    core_event_high_water INTEGER NOT NULL DEFAULT 0,
+    job_event_high_water INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE(workspace_id,request_key)
+);
+CREATE TABLE IF NOT EXISTS execution_step(
+    step_id TEXT PRIMARY KEY,
+    job_id TEXT NOT NULL REFERENCES execution_job(job_id),
+    state TEXT NOT NULL,
+    revision INTEGER NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE(job_id,step_id)
+);
+CREATE TABLE IF NOT EXISTS execution_attempt(
+    attempt_id TEXT PRIMARY KEY,
+    job_id TEXT NOT NULL REFERENCES execution_job(job_id),
+    step_id TEXT NOT NULL,
+    state TEXT NOT NULL,
+    lease_epoch INTEGER NOT NULL CHECK(lease_epoch >= 1),
+    worker_run_id TEXT,
+    plugin_id TEXT NOT NULL,
+    release_id TEXT NOT NULL,
+    package_hash TEXT,
+    capability_id TEXT NOT NULL,
+    generation_id TEXT,
+    preallocated_receipt_id TEXT NOT NULL,
+    revision INTEGER NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(job_id,step_id) REFERENCES execution_step(job_id,step_id)
+);
+CREATE TABLE IF NOT EXISTS execution_receipt(
+    receipt_id TEXT PRIMARY KEY,
+    receipt_hash TEXT NOT NULL,
+    receipt_json TEXT NOT NULL,
+    job_id TEXT NOT NULL REFERENCES execution_job(job_id),
+    step_id TEXT NOT NULL REFERENCES execution_step(step_id),
+    attempt_id TEXT NOT NULL REFERENCES execution_attempt(attempt_id),
+    created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS execution_job_event(
+    job_id TEXT NOT NULL REFERENCES execution_job(job_id),
+    job_event_seq INTEGER NOT NULL,
+    event_id TEXT NOT NULL UNIQUE,
+    attempt_id TEXT NOT NULL REFERENCES execution_attempt(attempt_id),
+    local_seq INTEGER NOT NULL,
+    event_json TEXT NOT NULL,
+    PRIMARY KEY(job_id,job_event_seq),
+    UNIQUE(attempt_id,local_seq)
+);
+CREATE TABLE IF NOT EXISTS execution_core_event(
+    core_event_seq INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id TEXT NOT NULL UNIQUE,
+    workspace_id TEXT NOT NULL REFERENCES workspace(workspace_id),
+    aggregate_id TEXT NOT NULL,
+    aggregate_revision INTEGER NOT NULL,
+    event_json TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS execution_outcome(
+    job_id TEXT NOT NULL REFERENCES execution_job(job_id),
+    step_id TEXT NOT NULL REFERENCES execution_step(step_id),
+    attempt_id TEXT PRIMARY KEY REFERENCES execution_attempt(attempt_id),
+    context_identity TEXT NOT NULL,
+    operation_key TEXT NOT NULL,
+    payload_hash TEXT NOT NULL,
+    outcome TEXT NOT NULL,
+    result_bundle_asset_id TEXT,
+    provenance_receipt_id TEXT,
+    response_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE(context_identity,operation_key)
+);
+CREATE TABLE IF NOT EXISTS execution_candidate_binding(
+    job_id TEXT NOT NULL REFERENCES execution_job(job_id),
+    item_id TEXT NOT NULL,
+    candidate_id TEXT NOT NULL REFERENCES candidate(candidate_id),
+    stage_operation_key TEXT NOT NULL,
+    PRIMARY KEY(job_id,item_id),
+    UNIQUE(candidate_id)
+);
+CREATE TABLE IF NOT EXISTS execution_publication_binding(
+    job_id TEXT NOT NULL REFERENCES execution_job(job_id),
+    item_id TEXT NOT NULL,
+    publication_id TEXT NOT NULL REFERENCES publication_receipt(publication_id),
+    PRIMARY KEY(job_id,item_id),
+    UNIQUE(publication_id)
+);
+CREATE TABLE IF NOT EXISTS p3_broker_operation(
+    context_identity TEXT NOT NULL,
+    method TEXT NOT NULL,
+    operation_key TEXT NOT NULL,
+    payload_hash TEXT NOT NULL,
+    envelope_asset_id TEXT,
+    child_creation_json TEXT,
+    response BLOB,
+    PRIMARY KEY(context_identity,method,operation_key),
+    CHECK(child_creation_json IS NULL OR envelope_asset_id IS NOT NULL),
+    CHECK(response IS NULL OR child_creation_json IS NOT NULL)
+);
+CREATE TABLE IF NOT EXISTS p3_broker_child_record(
+    child_job_id TEXT PRIMARY KEY REFERENCES execution_job(job_id),
+    context_identity TEXT NOT NULL,
+    operation_key TEXT NOT NULL,
+    record_json TEXT NOT NULL,
+    UNIQUE(context_identity,operation_key)
+);
+CREATE TABLE IF NOT EXISTS execution_child_creation(
+    context_identity TEXT NOT NULL,
+    operation_key TEXT NOT NULL,
+    request_hash TEXT NOT NULL,
+    child_job_id TEXT NOT NULL UNIQUE REFERENCES execution_job(job_id),
+    result_json TEXT NOT NULL,
+    PRIMARY KEY(context_identity,operation_key)
+);
+CREATE INDEX IF NOT EXISTS execution_attempt_job ON execution_attempt(job_id,step_id,attempt_id);
+CREATE INDEX IF NOT EXISTS execution_event_job ON execution_job_event(job_id,job_event_seq);
+CREATE INDEX IF NOT EXISTS execution_outcome_job ON execution_outcome(job_id,attempt_id);
+CREATE INDEX IF NOT EXISTS execution_core_event_workspace ON execution_core_event(workspace_id,core_event_seq);
+""",
+    ),
+)
 
 
 class ConflictError(RuntimeError): pass
@@ -27,6 +189,8 @@ class CoreAuthorityRepository:
         self._connection.execute("PRAGMA foreign_keys=ON")
         self._connection.execute("PRAGMA journal_mode=WAL")
         MigrationRunner(self._connection).apply()
+        MigrationRunner(self._connection).apply(P3_JOB_MIGRATIONS)
+        MigrationRunner(self._connection).apply(EXECUTION_MIGRATIONS)
 
     def close(self) -> None: self._connection.close()
 

@@ -1,0 +1,6 @@
+COMMAND: git diff --check
+COMMAND: git diff --cached --check
+COMMAND: git diff HEAD --check
+STARTED_AT: 2026-08-28T01:37:37.7542948+08:00
+EXIT_CODES: worktree=0 cached=0 head=0
+FINISHED_AT: 2026-08-28T01:37:38.0193150+08:00

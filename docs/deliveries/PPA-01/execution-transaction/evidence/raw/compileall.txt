@@ -1,0 +1,4 @@
+COMMAND: python -B -m compileall -q backend/plotpilot_core/repositories backend/plotpilot_core/assets backend/plotpilot_core/candidates backend/plotpilot_core/publication
+STARTED_AT: 2026-08-28T01:35:51.4320354+08:00
+EXIT_CODE: 0
+FINISHED_AT: 2026-08-28T01:35:51.5504878+08:00

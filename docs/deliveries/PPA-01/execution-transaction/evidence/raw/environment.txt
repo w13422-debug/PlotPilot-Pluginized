@@ -1,0 +1,2 @@
+Python 3.12.10
+pytest 8.4.2

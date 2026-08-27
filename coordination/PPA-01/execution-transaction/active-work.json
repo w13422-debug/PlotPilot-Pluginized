@@ -1,0 +1,107 @@
+{
+  "schema": "active-work/v1",
+  "revision": 2,
+  "status": "completed_in_containing_source_commit",
+  "node_id": "NW-P1-EXECUTION-TX-01",
+  "objective": "Atomic Job terminal transaction across bundle/assets/candidate/publication/receipt/event/outcome, including durable reservation and create_or_recover_child adapters inside P1 authority.",
+  "identity": {
+    "branch": "codex/nw-p1-execution-tx-01",
+    "base_head": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
+    "base_tree": "ecf773e49f93b20806ebda5dec2fa14db422a1f4",
+    "donor_push": "DISABLED",
+    "source_commit": "containing commit"
+  },
+  "worktree_protection": "Exact base was clean before work; all changed paths are inside the exclusive write set.",
+  "reuse_decision": {
+    "local_knowledge": "reviewed kb-novel-agent-phase1-chapter-lifecycle-20260811, SHA-256 a1615b62add208d6279957de6c2d8de2796204eaf3577a4df0c822ed0ca2267d",
+    "source_library": "No relevant SQLite transaction helper; candidates were unrelated.",
+    "github": "Skipped because current accepted P1/P3/P3B implementation is exact and external code adds no reuse benefit.",
+    "decision": "Thin-adapt current repository implementation; no dependency added."
+  },
+  "tasks": [
+    {
+      "task_id": "NW-P1-EXECUTION-TX-01-ARCH-AUDIT",
+      "agent": "/root/architecture_audit",
+      "write_set": [],
+      "status": "completed",
+      "output": "agent final read-only architecture report",
+      "model": "gpt-5.6-sol/high"
+    },
+    {
+      "task_id": "NW-P1-EXECUTION-TX-01-RESERVATION-AUDIT",
+      "agent": "/root/reservation_audit",
+      "write_set": [],
+      "status": "completed",
+      "output": "agent final read-only reservation report",
+      "model": "gpt-5.6-sol/high"
+    },
+    {
+      "task_id": "NW-P1-EXECUTION-TX-01-TEST-AUDIT",
+      "agent": "/root/test_audit",
+      "write_set": [],
+      "status": "completed",
+      "output": "agent final read-only test report",
+      "model": "gpt-5.6-sol/high"
+    }
+  ],
+  "completed": [
+    "Recovered and verified AGENTS.override.md, root checkpoint, task book, H_B acceptance hash, branch/base/tree and parent state.",
+    "Registered exact accepted P3 Job ledger migration by manifest/hash.",
+    "Implemented authoritative terminal UoW, multi-Step aggregation, immutable receipt/event/outcome replay, Candidate visibility and Publication consistency.",
+    "Implemented durable P3B reservation/child records/atomic create_or_recover_child plus child worker start package binding.",
+    "Added decisive failure-window, drift, restart, concurrency and consistency tests.",
+    "Captured raw validation evidence and P0 composition dependencies."
+  ],
+  "in_progress": null,
+  "next_steps": [
+    "Containing source commit must be verified for exact head/tree/clean status.",
+    "Dispatch fresh gpt-5.6-sol/max central source review; this source task does not self-accept.",
+    "P0 applies PARENT-STATE-UPDATE-REQUEST.json and composes the accepted adapters only after review."
+  ],
+  "validation": [
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/execution-transaction -q",
+      "result": "47 passed in 2.22s",
+      "exit_code": 0,
+      "raw": "docs/deliveries/PPA-01/execution-transaction/evidence/raw/pytest-execution-transaction.txt"
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p3-execution/test_job_execution.py tests/p3-execution/provider-broker -q",
+      "result": "39 passed in 0.94s",
+      "exit_code": 0,
+      "raw": "docs/deliveries/PPA-01/execution-transaction/evidence/raw/pytest-p3-p3b-regression.txt"
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core -q",
+      "result": "54 passed in 2.84s",
+      "exit_code": 0,
+      "raw": "docs/deliveries/PPA-01/execution-transaction/evidence/raw/pytest-p1-core-regression.txt"
+    },
+    {
+      "command": "python -B -m compileall -q backend/plotpilot_core/repositories backend/plotpilot_core/assets backend/plotpilot_core/candidates backend/plotpilot_core/publication",
+      "result": "exit 0",
+      "exit_code": 0,
+      "raw": "docs/deliveries/PPA-01/execution-transaction/evidence/raw/compileall.txt"
+    },
+    {
+      "command": "git diff --check; git diff --cached --check; git diff HEAD --check",
+      "result": "all exit 0",
+      "exit_code": 0,
+      "raw": "docs/deliveries/PPA-01/execution-transaction/evidence/raw/git-diff-check.txt"
+    }
+  ],
+  "blockers": [],
+  "external_delivery": {
+    "report": "docs/deliveries/PPA-01/execution-transaction/README.md",
+    "verification": "docs/deliveries/PPA-01/execution-transaction/evidence/verification-summary.json",
+    "p0_dependencies": "coordination/PPA-01/execution-transaction/P0-COMPOSITION-DEPENDENCIES.json",
+    "parent_state_request": "coordination/PPA-01/execution-transaction/PARENT-STATE-UPDATE-REQUEST.json"
+  },
+  "prohibitions": [
+    "No writes outside the exclusive write set.",
+    "No public contract or P0 runtime wiring.",
+    "No final Windows artifacts or unrelated full builds.",
+    "No self-acceptance."
+  ],
+  "updated_at": "2026-08-28T01:37:53.6029621+08:00"
+}

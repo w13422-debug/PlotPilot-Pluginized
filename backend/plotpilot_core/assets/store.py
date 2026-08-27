@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 from typing import BinaryIO
+import uuid
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,13 +58,42 @@ class AssetStore:
             raise OSError("existing asset bytes do not match content address")
         return meta
 
+    def create_asset(self, content: bytes, *, mime: str) -> str:
+        """Production Core Asset port used by internal execution adapters."""
+        return self.put(
+            content,
+            mime=mime,
+            logical_role="core_internal",
+            provenance="core:execution",
+            rebuildable=False,
+        ).asset_id
+
+    def read_asset(self, asset_id: str) -> bytes:
+        return self.read(asset_id)
+
+    def require(
+        self,
+        asset_id: str,
+        *,
+        sha256: str | None = None,
+        mime: str | None = None,
+    ) -> AssetMetadata:
+        """Verify metadata and complete object bytes before authority references them."""
+        meta = self.describe(asset_id)
+        if sha256 is not None and meta.sha256 != sha256:
+            raise OSError("asset hash does not match the authoritative reference")
+        if mime is not None and meta.mime != mime:
+            raise OSError("asset mime does not match the authoritative reference")
+        self.read(asset_id)
+        return meta
+
     @staticmethod
     def _publish_nonreplace(path: Path, data: bytes) -> None:
         if path.exists():
             if path.read_bytes() != data:
                 raise OSError(f"content-address collision at {path}")
             return
-        temp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+        temp = path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
         try:
             with temp.open("xb") as stream:
                 stream.write(data)

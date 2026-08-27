@@ -1,0 +1,20 @@
+COMMAND: python -B -m pytest -p no:cacheprovider tests/p1-core/execution-transaction -q
+STARTED_AT: 2026-08-28T01:35:42.1015255+08:00
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-NW-P1-Execution-TX
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 47 items
+
+tests\p1-core\execution-transaction\test_broker_persistence.py ......... [ 19%]
+.......                                                                  [ 34%]
+tests\p1-core\execution-transaction\test_terminal_failure_windows.py ... [ 40%]
+...........                                                              [ 63%]
+tests\p1-core\execution-transaction\test_terminal_transaction.py ....... [ 78%]
+..........                                                               [100%]
+
+============================= 47 passed in 2.22s ==============================
+EXIT_CODE: 0
+FINISHED_AT: 2026-08-28T01:35:45.6006502+08:00
