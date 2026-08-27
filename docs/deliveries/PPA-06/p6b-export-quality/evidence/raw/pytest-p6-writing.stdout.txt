@@ -1,0 +1,24 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\写作资料汇总\PlotPilot-Pluginized-worktrees\PPA-06B-Export-Quality
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 47 items
+
+tests\p6-writing\p6b-export-quality\test_export_ports.py ............... [ 31%]
+...                                                                      [ 38%]
+tests\p6-writing\p6b-export-quality\test_quality_bundles.py ..........   [ 59%]
+tests\p6-writing\test_dependency_free_domains.py .....                   [ 70%]
+tests\p6-writing\test_export_suite.py ..............                     [100%]
+
+============================== warnings summary ===============================
+tests/p6-writing/test_export_suite.py::test_binary_legacy_formats_are_real_files[pdf-.pdf-application/pdf-%PDF]
+tests/p6-writing/test_export_suite.py::test_binary_formats_contain_chinese_in_current_revision_order
+tests/p6-writing/test_export_suite.py::test_repeated_render_is_byte_and_sha256_deterministic_for_every_format
+tests/p6-writing/test_export_suite.py::test_repeated_render_is_byte_and_sha256_deterministic_for_every_format
+  C:\Users\Administrator\Desktop\写作资料汇总\PlotPilot-Pluginized-worktrees\PPA-06B-Export-Quality\first-party-plugins\export-suite\backend\src\plotpilot_export_suite\domain.py:206: DeprecationWarning: "uni" parameter is deprecated since v2.5.1 and will be removed in a future release
+    pdf.add_font("PlotExportCJK", "", str(candidate), uni=True)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 47 passed, 4 warnings in 5.00s ========================

@@ -1,0 +1,41 @@
+{
+  "schema": "dependency-delta/v1",
+  "status": "raised",
+  "delta_id": "P6B-DD-RUNTIME-PORTS-001",
+  "raised_by_project": "P6B",
+  "scope": "export-runtime-and-quality-runtime",
+  "accepted_base": "1b352be671e70a2ce443b10499060982e93d64b7",
+  "observed_state": {
+    "p0_sdk": {
+      "path": "backend/plotpilot_plugin_sdk/ports.py",
+      "available": ["read_asset", "create_asset", "stage_candidate", "commit_checkpoint"],
+      "missing": ["typed current-pointer/export snapshot builder", "runtime callback binding"]
+    },
+    "p1": {
+      "available": ["internal CoreAuthorityRepository current_revision_id CAS", "internal AssetStore read/put/describe"],
+      "missing": ["integrated plugin-callable export snapshot/current-pointer adapter"]
+    },
+    "p2_p3": {
+      "missing": ["installable P6B package", "framed worker/runtime route", "durable Job/Attempt/provenance callback path"]
+    }
+  },
+  "independent_completion": [
+    "Export domain adapter consumes a caller-supplied immutable export-current-revisions/v1 Asset and RunSnapshot through injected Asset read/create ports.",
+    "Quality domain emits deterministic diagnostic and candidate proposal bundles without a publish callable or正文 mutation path.",
+    "Legacy four-format renderer parity remains available and is covered by repeated-byte tests."
+  ],
+  "affected_slice_stopped": "installable plugin manifest, wheel, worker, UI/download route, durable Job integration and automatic staging/publication",
+  "required_owner_actions": [
+    "P1 must expose the real current-pointer-to-export-current-revisions/v1 snapshot construction and host Asset metadata/read semantics.",
+    "P2/P3 must expose the real package/Generation/framed Job/Attempt/provenance path before runtime packaging is added.",
+    "P0 remains the only owner of any public contract or SDK change and the only merge writer."
+  ],
+  "evidence": [
+    "backend/plotpilot_plugin_sdk/ports.py",
+    "backend/plotpilot_plugin_sdk/core_api.py",
+    "backend/plotpilot_core/assets/store.py",
+    "backend/plotpilot_core/repositories/authority.py",
+    "docs/contracts/adr-042-post-m0-ingress-context-export-v1.md"
+  ],
+  "decision": "P6B delivers the injected, validation-only domain seam and stops the runtime slice; no contract, SDK, P1, P2, P3 or UI path is changed by this submission."
+}

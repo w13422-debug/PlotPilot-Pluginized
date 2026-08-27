@@ -1,0 +1,11 @@
+warning: in the working copy of 'docs/deliveries/PPA-06/p6b-export-quality/delivery-record-v1.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/changed-paths.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/pytest-p6-writing.stdout.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/pytest-p6b.stdout.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/repeated-render-probe.stdout.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/validation-exit-codes.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/deliveries/PPA-06/p6b-export-quality/source-candidate-v1.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'first-party-plugins/export-suite/backend/src/plotpilot_export_suite/integration.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'first-party-plugins/quality-suite/backend/src/plotpilot_quality_suite/bundles.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p6-writing/p6b-export-quality/test_export_ports.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p6-writing/p6b-export-quality/test_quality_bundles.py', LF will be replaced by CRLF the next time Git touches it

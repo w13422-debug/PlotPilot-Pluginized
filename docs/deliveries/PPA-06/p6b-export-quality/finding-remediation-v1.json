@@ -1,0 +1,94 @@
+{
+  "schema": "p6b-finding-remediation/v1",
+  "status": "awaiting-same-sol-reviewer",
+  "round": 1,
+  "blocked_parent_sha": "3081b2ee60c87ec0e421aa4a6ec3f85c3063ce93",
+  "candidate_head_sha": null,
+  "candidate_head_note": "Reported from Git after this source remediation commit; intentionally non-self-referential.",
+  "finding_manifest": {
+    "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p6b-finding-manifest-20260827.json",
+    "sha256": "23fd82242ed3441a493a1654de26b82b4ac2f931f809188c9387b1a85412d216"
+  },
+  "same_reviewer": {
+    "agent_id": "01a0435e-2920-7093-a31e-b016aed32fd0",
+    "model": "gpt-5.6-sol/max",
+    "mode": "targeted-read-only-rereview"
+  },
+  "remediation_changed_paths": [
+    "docs/deliveries/PPA-06/p6b-export-quality/delivery-record-v1.md",
+    "docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/changed-paths.txt",
+    "docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/git-diff-check.stderr.txt",
+    "docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/pytest-p6-writing.stdout.txt",
+    "docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/pytest-p6b.stdout.txt",
+    "docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/repeated-render-probe.stdout.txt",
+    "docs/deliveries/PPA-06/p6b-export-quality/finding-remediation-v1.json",
+    "docs/deliveries/PPA-06/p6b-export-quality/source-candidate-v1.json",
+    "first-party-plugins/export-suite/backend/src/plotpilot_export_suite/integration.py",
+    "first-party-plugins/quality-suite/backend/src/plotpilot_quality_suite/bundles.py",
+    "tests/p6-writing/p6b-export-quality/test_export_ports.py",
+    "tests/p6-writing/p6b-export-quality/test_quality_bundles.py"
+  ],
+  "out_of_set": [],
+  "findings": [
+    {
+      "finding_id": "P6B-SOL-REVIEW-02-F001",
+      "remediation": "QualityBundle construction now invokes closed validation; candidate items require the exact field set and fixed schema/action/status/publication fencing.",
+      "test": "test_candidate_item_tampering_is_rejected_after_bundle_id_recalculation"
+    },
+    {
+      "finding_id": "P6B-SOL-REVIEW-02-F002",
+      "remediation": "Declared source MIME is restricted to text/plain and all root/nested/asset aliases must agree before source freezing.",
+      "test": "test_quality_rejects_non_text_mime_and_conflicting_provenance_aliases"
+    },
+    {
+      "finding_id": "P6B-SOL-REVIEW-02-F003",
+      "remediation": "Rich create metadata now validates optional schema and requires strict asset_id/hash/MIME/non-bool-int size; plain string IDs remain supported.",
+      "test": "test_rich_create_metadata_is_strictly_validated"
+    },
+    {
+      "finding_id": "P6B-SOL-REVIEW-02-F004",
+      "remediation": "Output strings must be strict UTF-8 and expected domain/render failures are wrapped as ExportPortError with their cause.",
+      "tests": [
+        "test_output_strings_reject_surrogates_as_export_port_errors",
+        "test_missing_and_ambiguous_document_selection_are_wrapped_with_causes"
+      ]
+    },
+    {
+      "finding_id": "P6B-SOL-REVIEW-02-F005",
+      "remediation": "The three affected stdout files were recaptured as strict UTF-8 without BOM and with LF line endings.",
+      "evidence": [
+        "evidence/raw/pytest-p6b.stdout.txt",
+        "evidence/raw/pytest-p6-writing.stdout.txt",
+        "evidence/raw/repeated-render-probe.stdout.txt"
+      ]
+    }
+  ],
+  "validation": [
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p6-writing/p6b-export-quality -q",
+      "result": "28 passed",
+      "exit_code": 0
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p6-writing -q",
+      "result": "47 passed, 4 warnings",
+      "exit_code": 0
+    },
+    {
+      "command": "python -m compileall -q first-party-plugins/export-suite/backend/src first-party-plugins/quality-suite/backend/src",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    {
+      "command": "python -B docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/repeated-render-probe.py",
+      "result": "REPEATED_RENDER_PROBE=PASS",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --check",
+      "result": "PASS",
+      "exit_code": 0
+    }
+  ],
+  "review_authority": "Only the same Sol reviewer may close findings or decide merge eligibility."
+}

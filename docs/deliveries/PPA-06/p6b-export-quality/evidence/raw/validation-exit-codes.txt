@@ -1,0 +1,5 @@
+pytest-p6b=0
+pytest-p6-writing=0
+compileall=0
+repeated-render-probe=0
+git-diff-check=0
