@@ -10,29 +10,15 @@ export type JobState =
   | 'cancelled'
   | 'needs_attention'
 
-export interface JobSnapshotV1 {
-  schema: 'job-snapshot/v1'
+/** Host-only drawer view model. It is not a Core wire DTO. */
+export interface JobDrawerItem {
   job_id: string
   workspace_id: string
   job_state: JobState
   job_revision: number
   steps: Array<{ step_id: string; state: string; revision: number }>
   attempts: Array<{ attempt_id: string; state: string; lease_epoch: number }>
-  candidate_ids: string[]
-  current_checkpoint_id: string | null
-  stream_high_waters: Array<{
-    stream_id: string
-    step_id: string
-    output_role: string
-    target: { workspace_id: string; entity_kind: 'document' | 'node_structure' | 'relation_set'; entity_id: string }
-    acked_prefix_seq: number
-    acked_bytes: number
-    acked_prefix_hash: string
-  }>
-  core_event_high_water: number
   job_event_high_water: number
-  created_at: string
-  snapshot_hash: string
 }
 
 export type CapabilityStatus = 'ready' | 'running' | 'disabled' | 'missing' | 'error'
@@ -70,7 +56,7 @@ export function presentJobState(state: JobState): StatusPresentation {
   }
 }
 
-export function jobProgress(snapshot: JobSnapshotV1): { completed: number; total: number } {
+export function jobProgress(snapshot: JobDrawerItem): { completed: number; total: number } {
   const completedStates = new Set(['succeeded', 'partial', 'failed', 'cancelled'])
   return {
     completed: snapshot.steps.filter(step => completedStates.has(step.state)).length,

@@ -3,18 +3,18 @@ import { onErrorCaptured, ref, watch } from 'vue'
 import { NAlert, NCard, NSpin, NTag } from 'naive-ui'
 import PluginTreeNodeRenderer from './PluginTreeNodeRenderer.vue'
 import { presentCapabilityStatus, type CapabilityStatus } from '../../core/jobPresentation.ts'
-import type { PluginUiTreeV1, PluginUiSlot } from '../../plugin-host/slotHost.ts'
+import type { PluginUiSlot, ValidatedHostTree } from '../../plugin-host/slotHost.ts'
 
 const props = withDefaults(defineProps<{
   slot: PluginUiSlot
   status: CapabilityStatus
-  tree?: PluginUiTreeV1 | null
+  tree?: ValidatedHostTree | null
   interactive?: boolean
 }>(), { tree: null, interactive: false })
 const emit = defineEmits<{ event: [event: { actionId: string; eventType: string }] }>()
 const renderError = ref<string | null>(null)
 
-watch(() => props.tree?.tree_id, () => { renderError.value = null })
+watch(() => [props.tree?.treeId, props.tree?.renderSeq], () => { renderError.value = null })
 onErrorCaptured(error => {
   renderError.value = error instanceof Error ? error.message : 'Slot render failed'
   return false

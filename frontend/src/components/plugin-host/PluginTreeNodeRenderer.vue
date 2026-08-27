@@ -2,15 +2,15 @@
 import { computed } from 'vue'
 import { NAlert, NButton, NInput, NProgress, NSpace, NText } from 'naive-ui'
 import { describeRenderer } from '../../plugin-host/rendererModel.ts'
-import type { PluginUiTreeNode } from '../../plugin-host/slotHost.ts'
+import type { HostRenderNode } from '../../plugin-host/slotHost.ts'
 
-const props = withDefaults(defineProps<{ node: PluginUiTreeNode; interactive?: boolean }>(), { interactive: false })
+const props = withDefaults(defineProps<{ node: HostRenderNode; interactive?: boolean }>(), { interactive: false })
 const emit = defineEmits<{ event: [event: { actionId: string; eventType: string }] }>()
 const descriptor = computed(() => describeRenderer(props.node))
 const p = computed(() => props.node.props)
 
 function emitFirst(eventType: string) {
-  const actionId = props.node.event_ids.find(id => id === eventType)
+  const actionId = props.node.event_ids[0]
   if (actionId) emit('event', { actionId, eventType })
 }
 </script>
@@ -40,6 +40,7 @@ function emitFirst(eventType: string) {
     :placeholder="String(p.placeholder)"
     :disabled="Boolean(p.disabled) || !interactive"
     :aria-label="String(p.label)"
+    @update:value="emitFirst('change')"
   />
 
   <n-input
@@ -49,6 +50,7 @@ function emitFirst(eventType: string) {
     :rows="Number(p.rows)"
     :disabled="Boolean(p.disabled) || !interactive"
     :aria-label="String(p.label)"
+    @update:value="emitFirst('change')"
   />
 
   <n-button

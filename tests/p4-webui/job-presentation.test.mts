@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import {
   canCancelJob,
@@ -7,17 +6,15 @@ import {
   jobProgress,
   presentCapabilityStatus,
   presentJobState,
-  type JobSnapshotV1,
+  type JobDrawerItem,
 } from '../../frontend/src/core/jobPresentation.ts'
 
-const fixturePath = new URL('../../contracts/examples/fixtures/job-snapshot.json', import.meta.url)
-
-test('consumes the P0 typed job snapshot fixture without reinterpretation', async () => {
-  const fixture = JSON.parse(await readFile(fixturePath, 'utf8')) as JobSnapshotV1
-  assert.equal(fixture.schema, 'job-snapshot/v1')
-  assert.deepEqual(jobProgress(fixture), { completed: 0, total: 1 })
-  assert.equal(presentJobState(fixture.job_state).label, '等待中')
-  assert.equal(canCancelJob(fixture.job_state), true)
+test('calculates progress from the Host-only drawer view model', () => {
+  const item: JobDrawerItem = { job_id: 'job-1', workspace_id: 'ws-1', job_state: 'queued', job_revision: 1,
+    steps: [{ step_id: 'step-1', state: 'pending', revision: 1 }], attempts: [], job_event_high_water: 0 }
+  assert.deepEqual(jobProgress(item), { completed: 0, total: 1 })
+  assert.equal(presentJobState(item.job_state).label, '等待中')
+  assert.equal(canCancelJob(item.job_state), true)
 })
 
 test('presents every fixed capability state explicitly', () => {

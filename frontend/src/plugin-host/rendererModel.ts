@@ -1,4 +1,4 @@
-import type { PluginUiComponent, PluginUiTreeNode } from './slotHost.ts'
+import type { HostRenderNode, PluginUiComponent } from './slotHost.ts'
 
 export type RendererKind = 'layout' | 'display' | 'form' | 'asset' | 'core_native'
 
@@ -16,7 +16,7 @@ export interface RenderDescriptor {
   requiresCoreNativeControl: boolean
 }
 
-export function describeRenderer(node: PluginUiTreeNode): RenderDescriptor {
+export function describeRenderer(node: HostRenderNode): RenderDescriptor {
   const component = node.component as PluginUiComponent
   const kind = RENDERER_KINDS[component]
   if (!kind) throw new Error(`unknown_component:${node.component}`)

@@ -7,10 +7,10 @@ import {
   jobProgress,
   presentCapabilityStatus,
   presentJobState,
-  type JobSnapshotV1,
+  type JobDrawerItem,
 } from '../../core/jobPresentation'
 
-const props = withDefaults(defineProps<{ jobs?: JobSnapshotV1[] }>(), { jobs: () => [] })
+const props = withDefaults(defineProps<{ jobs?: JobDrawerItem[] }>(), { jobs: () => [] })
 const emit = defineEmits<{
   cancel: [jobId: string]
   resume: [jobId: string]

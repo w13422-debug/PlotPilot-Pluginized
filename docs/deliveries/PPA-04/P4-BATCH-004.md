@@ -34,4 +34,3 @@ exit 0
 Changed paths are confined to `frontend/src/plugin-host/**`,
 `frontend/src/components/plugin-host/**`, `tests/p4-webui/**`,
 `docs/deliveries/PPA-04/**`, and `coordination/PPA-04/**`.
-

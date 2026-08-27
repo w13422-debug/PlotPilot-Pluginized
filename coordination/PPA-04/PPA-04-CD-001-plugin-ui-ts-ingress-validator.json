@@ -1,0 +1,27 @@
+{
+  "schema": "contract-delta/v1",
+  "status": "pending",
+  "delta_id": "PPA-04-CD-001",
+  "raised_by_project": "P4",
+  "affected_contract_ids": [
+    "job-snapshot/v1",
+    "plugin-ui-tree/v1",
+    "plugin-ui-intent/v1",
+    "plugin-ui-ack/v1"
+  ],
+  "formal_design_version": "v1.2",
+  "formal_design_sha256": "e70f450b75cfa753148cf620d13855d0073f7d61294e7599ea9cc98f3e612b7b",
+  "observed_mismatch": "P0 materialized PluginUIIntent and verifyJobSnapshot, but no P0-owned executable closed TypeScript validators for plugin-ui-tree/v1, plugin-ui-intent/v1 or plugin-ui-ack/v1, no P0 tree/ack DTO exports, and verifyJobSnapshot does not expose a typed DTO/parser result suitable for unknown browser ingress. P4 cannot safely accept unknown wire values without recreating the closed schemas.",
+  "evidence": [
+    "frontend/src/contracts/types.ts:220-232 exports PluginUIIntent only",
+    "frontend/src/contracts/verifier.ts exports verifyJobSnapshot but no plugin-ui tree/intent/ack validator",
+    "contracts/json-schema/plugin-ui-tree-v1.schema.json",
+    "contracts/json-schema/plugin-ui-intent-v1.schema.json",
+    "contracts/json-schema/plugin-ui-ack-v1.schema.json",
+    "P4 finding manifest c1dee193e528513182d697d0697644d5ecf15bd4fb9c534cefddfbb557b7a74c"
+  ],
+  "affected_slice_stopped": true,
+  "proposed_v2_or_adr": "P0 should publish generated TypeScript DTOs plus unknown-input closed validators/parsers for JobSnapshot, Plugin UI Tree, Intent and Ack. Validators must enforce own properties with Object.hasOwn, reject non-plain/prototype-backed objects, exact keys, recursive component discriminators, types, patterns, enums and array uniqueness, and return deep-cloned immutable values or a documented safe ownership contract.",
+  "p0_decision": "pending",
+  "decision_evidence": null
+}

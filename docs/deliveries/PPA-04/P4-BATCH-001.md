@@ -34,4 +34,3 @@ reverted; direct use of the installed binary then passed with no output.
 
 - P3/P0 real Job snapshot, SSE recovery and command routes.
 - Shared frontend test-runner decision (`P4-DEP-001`).
-
