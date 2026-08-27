@@ -1,0 +1,32 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 85 items
+
+tests\p1-core\test_asset_store.py ..                                     [  2%]
+tests\p1-core\test_candidate_publication.py ..                           [  4%]
+tests\p1-core\test_core_authority.py ...                                 [  8%]
+tests\p2-plugin-platform\test_generation_settings.py .....               [ 14%]
+tests\p2-plugin-platform\test_install_package.py ...                     [ 17%]
+tests\p2-plugin-platform\test_package_backend_remediation.py ........... [ 30%]
+.........                                                                [ 41%]
+tests\p2-plugin-platform\test_prompt_skill_runtime.py ....               [ 45%]
+tests\p3-execution\test_job_execution.py ....                            [ 50%]
+tests\p5-planning\test_planning_slice.py ...................             [ 72%]
+tests\p6-writing\test_dependency_free_domains.py .....                   [ 78%]
+tests\p6-writing\test_export_suite.py ..............                     [ 95%]
+tests\contract\test_contract_publication.py ....                         [100%]
+
+============================== warnings summary ===============================
+tests/p6-writing/test_export_suite.py::test_binary_legacy_formats_are_real_files[pdf-.pdf-application/pdf-%PDF]
+tests/p6-writing/test_export_suite.py::test_binary_formats_contain_chinese_in_current_revision_order
+tests/p6-writing/test_export_suite.py::test_repeated_render_is_byte_and_sha256_deterministic_for_every_format
+tests/p6-writing/test_export_suite.py::test_repeated_render_is_byte_and_sha256_deterministic_for_every_format
+  C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized\first-party-plugins\export-suite\backend\src\plotpilot_export_suite\domain.py:206: DeprecationWarning: "uni" parameter is deprecated since v2.5.1 and will be removed in a future release
+    pdf.add_font("PlotExportCJK", "", str(candidate), uni=True)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 85 passed, 4 warnings in 4.84s ========================

@@ -1,0 +1,131 @@
+{
+  "schema": "p0-downstream-merge-candidate-receipt/v1",
+  "task_id": "PPA-M1-INTEGRATION-CANDIDATE-P2-P6-01",
+  "project_id": "P5",
+  "status": "integration_candidate_pending_fresh_sol",
+  "merge_method": "git merge --no-ff --no-commit; git commit",
+  "accepted_source_base": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+  "pre_merge_p0_head": "4f49279108122d8a9f2450894aff32f12a4936d6",
+  "source_head": "0d9de43acef1ba4d83ed37dbc0e0b6eb44c1ad15",
+  "source_parent": "80c94cb95530d9d07ff6b2eaee43521e25e50b06",
+  "source_tree": "afb13016da01cc0245b3478170321f8a71738ea1",
+  "merge_commit": "8825337bb25b20a3567184892bb4de80259b7f8e",
+  "merge_parents": [
+    "4f49279108122d8a9f2450894aff32f12a4936d6",
+    "0d9de43acef1ba4d83ed37dbc0e0b6eb44c1ad15"
+  ],
+  "merge_tree": "1692b17c05abded7d12167295eb63e7e5720a38b",
+  "changed_paths": [
+    "coordination/PPA-05/INTEGRATION-GATES.md",
+    "docs/deliveries/PPA-05/M4-DEPENDENCY-READY-SLICE-01.md",
+    "first-party-plugins/project-planner/src/plotpilot_project_planner/__init__.py",
+    "first-party-plugins/project-planner/src/plotpilot_project_planner/domain.py",
+    "first-party-plugins/story-state/src/plotpilot_story_state/__init__.py",
+    "first-party-plugins/story-state/src/plotpilot_story_state/domain.py",
+    "tests/p5-planning/conftest.py",
+    "tests/p5-planning/test_planning_slice.py"
+  ],
+  "changed_paths_count": 8,
+  "write_set": [
+    "first-party-plugins/project-planner/**",
+    "first-party-plugins/story-state/**",
+    "tests/p5-planning/**",
+    "docs/deliveries/PPA-05/**",
+    "coordination/PPA-05/**"
+  ],
+  "out_of_set_paths": [],
+  "contract_identity": {
+    "current_manifest_sha256": "cbe9d02fc42409332151cd7905e387a46537b330b039a2d3d6798f48cbfcc024",
+    "source_git_manifest_sha256": "2866b8d0b36ec954ee8cb5c87374e0ca0a0c4acefd1901070cee0b45979d25e7",
+    "source_changed_contract_paths": [],
+    "current_manifest_retained_after_merge": true
+  },
+  "central_closure": {
+    "path": "C:/Users/Administrator/Desktop/Novel-Agent- (2)/novel-agent/cases/plotpilot-pluginized-seven-project-construction-20260826/evidence/p5-first-slice-final-closure-20260827.json",
+    "bytes": 1522,
+    "sha256": "e6d11864a91b5ece46a02b1ed88aad91dea96ed51b9ab5618f102aa9d8aa1019",
+    "verdict": "PASS"
+  },
+  "submission_identity_observation": {
+    "source_submission_binding": "stored_only_in_forbidden_evidence_commit",
+    "detail": "The source-specific submission exists only in forbidden evidence-only commit 1262c2fd; that commit was not merged. The central closure binds source 0d9de43a."
+  },
+  "forbidden_evidence_only": {
+    "commit": "1262c2fda32b357596ce67d1ff3cdcc406ac13b5",
+    "is_ancestor_of_implementation_head": false
+  },
+  "validation": [
+    {
+      "id": "pytest",
+      "command": "python -B -m pytest -p no:cacheprovider tests/p5-planning -q",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "19 passed in 0.37s",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P5/pytest.stdout.txt",
+        "bytes": 591,
+        "sha256": "2febcbee417ebb66ea3ce4cbfd4c1004b6da26f2082a3115d07d14a40dacaa1b"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P5/pytest.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "compileall",
+      "command": "python -B -m compileall -q first-party-plugins/project-planner/src first-party-plugins/story-state/src",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "no diagnostics",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P5/compileall.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P5/compileall.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "diff-check-index",
+      "command": "git diff --check --cached",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "no diagnostics",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P5/diff-check-index.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P5/diff-check-index.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "diff-check-source",
+      "command": "git diff --check 42123d1a5126bb2bef31304b0498e2e7def9183e 0d9de43acef1ba4d83ed37dbc0e0b6eb44c1ad15",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "no diagnostics",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P5/diff-check-source.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P5/diff-check-source.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ],
+  "post_merge_status": "clean",
+  "independent_acceptance": "not_performed_by_integration_writer",
+  "fresh_sol_review_required": true,
+  "harness_note": "retry-01 reused the original MERGE_HEAD after a PowerShell output-statement syntax error; the Git merge was not repeated"
+}

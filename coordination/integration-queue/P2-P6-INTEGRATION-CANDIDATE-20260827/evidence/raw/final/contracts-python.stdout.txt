@@ -1,0 +1,1633 @@
+{
+  "contract_publication": {
+    "authority_payloads": 35,
+    "context_profiles": [
+      "attempt",
+      "control",
+      "install"
+    ],
+    "export_items": 2,
+    "http_exchanges": 31,
+    "http_matrix_routes": 26,
+    "plugin_publication_callable": false,
+    "python_negative_cases": [
+      "core-authority-extra-field",
+      "core-workspace-update-noop",
+      "core-revision-two-targets",
+      "core-cross-workspace",
+      "publication-cross-workspace",
+      "publication-revision-target-mismatch",
+      "publication-command-result-candidate-mismatch",
+      "asset-range-self-hash-tamper",
+      "asset-partial-range-self-hash-tamper",
+      "asset-range-next-offset-tamper",
+      "asset-metadata-range-identity-mismatch",
+      "asset-metadata-range-hash-mismatch",
+      "core-http-stale-cas-request",
+      "core-http-operation-key-payload-reuse",
+      "core-relation-delete-cas-required",
+      "operation-context-projection-epoch",
+      "operation-context-stale-epoch",
+      "operation-context-install-missing-current-epoch",
+      "operation-context-attempt-missing-current-epoch",
+      "operation-context-invalid-deadline",
+      "export-noncontiguous-ordinal",
+      "export-duplicate-document",
+      "export-cross-workspace",
+      "export-revision-not-in-snapshot",
+      "export-title-tamper-raw-asset",
+      "export-raw-bom",
+      "export-raw-whitespace",
+      "export-raw-duplicate-key",
+      "export-asset-hash-not-frozen",
+      "export-object-caller-hash-is-not-binding"
+    ]
+  },
+  "contract_publication_typescript": {
+    "authority_payloads": 35,
+    "context_profiles": [
+      "attempt",
+      "control",
+      "install"
+    ],
+    "http_exchanges": 31,
+    "negative_cases": [
+      "core-authority-extra-field",
+      "core-workspace-update-noop",
+      "core-revision-two-targets",
+      "core-cross-workspace",
+      "publication-cross-workspace",
+      "publication-revision-target-mismatch",
+      "publication-command-result-candidate-mismatch",
+      "asset-range-self-hash-tamper",
+      "asset-partial-range-self-hash-tamper",
+      "asset-range-next-offset-tamper",
+      "asset-metadata-range-identity-mismatch",
+      "asset-metadata-range-hash-mismatch",
+      "core-http-stale-cas-request",
+      "core-http-operation-key-payload-reuse",
+      "core-relation-delete-cas-required",
+      "operation-context-projection-epoch",
+      "operation-context-stale-epoch",
+      "operation-context-install-missing-current-epoch",
+      "operation-context-attempt-missing-current-epoch",
+      "operation-context-invalid-deadline",
+      "export-noncontiguous-ordinal",
+      "export-duplicate-document",
+      "export-cross-workspace",
+      "export-revision-not-in-snapshot",
+      "export-title-tamper-raw-asset",
+      "export-raw-bom",
+      "export-raw-whitespace",
+      "export-raw-duplicate-key",
+      "export-asset-hash-not-frozen",
+      "export-object-caller-hash-is-not-binding",
+      "plugin-ui-tree-event-outside-component",
+      "plugin-ui-intent-extra-field",
+      "job-snapshot-extra-field",
+      "typescript-prototype-backed-ingress",
+      "typescript-getter-ingress"
+    ],
+    "status": "ok",
+    "ui_deep_frozen": true
+  },
+  "corpus": {
+    "compatibility_invalid": 3,
+    "history": "raw-bytes-preserved",
+    "path_invalid": 13,
+    "path_valid": 3
+  },
+  "goldens": {
+    "backup_hash": "cb26bba0a85711962d2d6f44115b2c186bd9db0aa3514b58dcecc9c0083fbaf8",
+    "package_hash": "987e80013fe0cddd463eb8976fd75b62dbabef4f8e0e321ae6ad82a54f09b068",
+    "request_key": "5e346b6254626cb314a0d4040a64e8a9797c0a890537ce07e9920a911a525e61",
+    "skill_package_hash": "5cf3df6acea3c792ee36fa3c0c5757f87c8219aba88cfc568bd4a67738983b7f",
+    "snapshot_hash": "5a7e60677a5ced4803c96f7b7db657409051ba8f3f5b18aa8ac28978e2b4a1d2"
+  },
+  "manifest": {
+    "files": 137,
+    "generator_check": "contract manifest is deterministic (137 files)",
+    "negative_groups": 14,
+    "schemas": 53
+  },
+  "negative": {
+    "84.13-01": 6,
+    "84.13-02": 9,
+    "84.13-03": 9,
+    "84.13-04": 8,
+    "84.13-05": 7,
+    "84.13-06": 7,
+    "84.13-07": 11,
+    "84.13-08": 4,
+    "84.13-09": 7,
+    "84.13-10": 5,
+    "84.13-11": 7,
+    "84.13-12": 9,
+    "84.13-13": 6,
+    "84.13-14": 10
+  },
+  "negative_cases": {
+    "case_count": 105,
+    "group_count": 14,
+    "groups": {
+      "84.13-01": {
+        "case_count": 6,
+        "cases": [
+          {
+            "case_id": "snapshot-set-permutation",
+            "outcome": "set_like_permutation_accepted",
+            "passed": true
+          },
+          {
+            "case_id": "skill-order-permutation",
+            "outcome": "ordered_hash_changed",
+            "passed": true
+          },
+          {
+            "case_id": "package-golden-self-check",
+            "outcome": "package_golden_verified",
+            "passed": true
+          },
+          {
+            "case_id": "run-snapshot-golden-self-check",
+            "outcome": "run_snapshot_golden_verified",
+            "passed": true
+          },
+          {
+            "case_id": "skill-golden-self-check",
+            "outcome": "skill_golden_verified",
+            "passed": true
+          },
+          {
+            "case_id": "package-crlf",
+            "outcome": "package_hash_changed",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive": [
+          {
+            "fixture_id": "package-golden",
+            "outcome": "package_golden_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "skill-golden",
+            "outcome": "skill_golden_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "run-snapshot-golden",
+            "outcome": "run_snapshot_verified",
+            "passed": true
+          }
+        ],
+        "positive_count": 3,
+        "positive_fixture_ids": [
+          "package-golden",
+          "skill-golden",
+          "run-snapshot-golden"
+        ],
+        "title": "JCS set/ordered permutation and independent Package/RunSnapshot/Skill goldens"
+      },
+      "84.13-02": {
+        "case_count": 9,
+        "cases": [
+          {
+            "case_id": "result-profile-mismatch",
+            "evidence": "1011: result bundle item profile does not match contract",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "result-item-schema-mismatch",
+            "evidence": "1011: result-bundle/v1: {'base': {'content_hash': '1111111111111111111111111111111111111111111111111111111111111111', 'revision_id': 'rev-a'}, 'item_id': 'candidate-item-1', 'item_kind': 'document', 'mutation': {'mode': 'replace', 'payload_hash': 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd', 'payload_schema': 'core/document-text/v1'}, 'parent_candidate_ids': [], 'payload_asset_id': 'asset-candidate-payload', 'schema': 'artifact-item/v1', 'source_refs': [], 'status': 'complete', 'target': {'entity_id': 'doc-a', 'entity_kind': 'document', 'workspace_id': 'ws-1'}, 'write_set': [{'content_hash': '1111111111111111111111111111111111111111111111111111111111111111', 'entity_id': 'doc-a', 'entity_kind': 'document', 'revision_id': 'rev-a', 'workspace_id': 'ws-1'}]} is not valid under any of the given schemas at /items/0",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "candidate-target-outside-write-set",
+            "evidence": "1011: candidate target is not present in write_set",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "candidate-mutation-mismatch",
+            "evidence": "1011: candidate item kind/mutation does not match target",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "candidate-base-mismatch",
+            "evidence": "1011: candidate base does not match target write_set entry",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "candidate-cross-workspace-source",
+            "evidence": "1011: candidate write_set crosses the snapshot workspace",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "candidate-parent-cycle",
+            "evidence": "1011: candidate parent cycle detected",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "candidate-item-mapping-mismatch",
+            "evidence": "1011: Skill reference points at an unknown item",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "candidate-base-write-set-positive",
+            "outcome": "result_bundle_verified",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive": [
+          {
+            "fixture_id": "result-bundle",
+            "outcome": "result_bundle_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "candidate-item",
+            "outcome": "candidate_item_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "provenance-receipt",
+            "outcome": "provenance_receipt_verified",
+            "passed": true
+          }
+        ],
+        "positive_count": 3,
+        "positive_fixture_ids": [
+          "result-bundle",
+          "candidate-item",
+          "provenance-receipt"
+        ],
+        "title": "Result profile/bundle/item and Candidate target/mutation/base/write-set/parent/cross-workspace mapping"
+      },
+      "84.13-03": {
+        "case_count": 9,
+        "cases": [
+          {
+            "case_id": "broker-ack-loss",
+            "outcome": "exact_response_replayed",
+            "passed": true
+          },
+          {
+            "case_id": "broker-different-input-same-key",
+            "evidence": "1008: operation key reused with a different payload",
+            "observed_error_code": 1008,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "child-cancel-propagation",
+            "outcome": "child_cancelled",
+            "passed": true
+          },
+          {
+            "case_id": "cancel-after-child-terminal",
+            "evidence": "1010: terminal provider run cannot be cancelled",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "receipt-propagation-mismatch",
+            "evidence": "1011: publication bundle did not propagate its provenance receipt",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "unsupported-data-format",
+            "evidence": "1012: no interpreter for unsupported-format/v1",
+            "observed_error_code": 1012,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "snapshot-parameters-not-in-assets",
+            "evidence": "1011: request_key mismatch: expected 5e346b6254626cb314a0d4040a64e8a9797c0a890537ce07e9920a911a525e61, got 9f8903a166816aeb842135884668ca91e22209e03fdc691fb61ffdab968dc7d6",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "plan-snapshot-mismatch",
+            "evidence": "1011: plan revision is not bound to the RunSnapshot",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "data-interpreter-mismatch",
+            "evidence": "1011: data binding is not backed by the interpreter descriptor",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive": [
+          {
+            "fixture_id": "broker-invocation",
+            "outcome": "broker_invocation_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "broker-child-record",
+            "outcome": "broker_child_record_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "run-snapshot",
+            "outcome": "run_snapshot_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "plugin-plan",
+            "outcome": "plugin_plan_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "provenance-receipt",
+            "outcome": "provenance_receipt_verified",
+            "passed": true
+          }
+        ],
+        "positive_count": 5,
+        "positive_fixture_ids": [
+          "broker-invocation",
+          "broker-child-record",
+          "run-snapshot",
+          "plugin-plan",
+          "provenance-receipt"
+        ],
+        "title": "Broker ACK-loss/child cancel/receipt propagation and Data format/interpreter/Plan/Snapshot mismatch"
+      },
+      "84.13-04": {
+        "case_count": 8,
+        "cases": [
+          {
+            "case_id": "operation-ack-loss",
+            "outcome": "exact_response_replayed",
+            "passed": true
+          },
+          {
+            "case_id": "same-key-different-payload",
+            "evidence": "1008: operation key reused with a different payload",
+            "observed_error_code": 1008,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "upload-first-retry",
+            "outcome": "upload_recovered",
+            "passed": true
+          },
+          {
+            "case_id": "upload-middle-retry",
+            "outcome": "upload_recovered",
+            "passed": true
+          },
+          {
+            "case_id": "upload-final-retry",
+            "outcome": "upload_recovered",
+            "passed": true
+          },
+          {
+            "case_id": "upload-status-recovery",
+            "outcome": "upload_recovered",
+            "passed": true
+          },
+          {
+            "case_id": "upload-offset-ahead",
+            "evidence": "1005: upload chunk is outside total size",
+            "observed_error_code": 1005,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "upload-final-hash-mismatch",
+            "evidence": "1005: final upload hash or size mismatch",
+            "observed_error_code": 1005,
+            "outcome": "rejected",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive": [
+          {
+            "fixture_id": "rpc-upload",
+            "outcome": "rpc_upload_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "rpc-success",
+            "outcome": "rpc_success_verified",
+            "passed": true
+          }
+        ],
+        "positive_count": 2,
+        "positive_fixture_ids": [
+          "rpc-upload",
+          "rpc-success"
+        ],
+        "title": "Operation-key ACK-loss, first/middle/final upload retry, status recovery and same-key payload"
+      },
+      "84.13-05": {
+        "case_count": 7,
+        "cases": [
+          {
+            "case_id": "attempt-cancel-complete-race",
+            "evidence": "1010: terminal provider run cannot be cancelled",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "fresh-resume",
+            "outcome": "fresh_resume_created",
+            "passed": true
+          },
+          {
+            "case_id": "checkpoint-backward",
+            "evidence": "1014: checkpoint sequence moved backwards",
+            "observed_error_code": 1014,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "checkpoint-different-snapshot",
+            "evidence": "1014: checkpoint belongs to another RunSnapshot",
+            "observed_error_code": 1014,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "shadow-lease-stale",
+            "evidence": "1002: RPC lease epoch is stale",
+            "observed_error_code": 1002,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "stale-attempt-lease",
+            "evidence": "1002: RPC lease epoch is stale",
+            "observed_error_code": 1002,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "terminal-attempt-resume",
+            "evidence": "1010: terminal provider run cannot be resumed",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive": [
+          {
+            "fixture_id": "checkpoint",
+            "outcome": "checkpoint_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "job-snapshot",
+            "outcome": "job_snapshot_verified",
+            "passed": true
+          }
+        ],
+        "positive_count": 2,
+        "positive_fixture_ids": [
+          "checkpoint",
+          "job-snapshot"
+        ],
+        "title": "Attempt cancel/complete race, fresh resume, checkpoint monotonic/binding and shadow lease stale"
+      },
+      "84.13-06": {
+        "case_count": 7,
+        "cases": [
+          {
+            "case_id": "bundle-producer-mismatch",
+            "evidence": "1011: result-bundle/v1: 'not-a-sha256' does not match '^[0-9a-f]{64}$' at /producer/release_id",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "bundle-snapshot-mismatch",
+            "evidence": "1011: bundle input snapshot does not match current snapshot",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "bundle-lease-mismatch",
+            "evidence": "1002: result bundle lease epoch is stale",
+            "observed_error_code": 1002,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "bundle-receipt-mismatch",
+            "evidence": "1011: publication bundle did not propagate its provenance receipt",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "staging-incomplete",
+            "evidence": "1011: complete result bundle cannot contain partial/failed/skipped items",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "outcome-transaction-mismatch",
+            "evidence": "1011: complete result bundle cannot contain partial/failed/skipped items",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "complete-transaction-positive",
+            "outcome": "result_bundle_verified",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive": [
+          {
+            "fixture_id": "result-bundle",
+            "outcome": "result_bundle_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "provenance-receipt",
+            "outcome": "provenance_receipt_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "settings-validation-receipt",
+            "outcome": "settings_validation_verified",
+            "passed": true
+          }
+        ],
+        "positive_count": 3,
+        "positive_fixture_ids": [
+          "result-bundle",
+          "provenance-receipt",
+          "settings-validation-receipt"
+        ],
+        "title": "Bundle producer/snapshot/lease/receipt/staging/outcome transaction boundaries"
+      },
+      "84.13-07": {
+        "case_count": 11,
+        "cases": [
+          {
+            "case_id": "concurrent-install-base-changed",
+            "evidence": "1010: install CAS base generation changed",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "install-crash-before-prepare",
+            "evidence": "1010: safe-mode exit requires reconciliation",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "install-crash-after-staging",
+            "evidence": "1010: safe-mode exit requires reconciliation",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "install-crash-after-activate",
+            "evidence": "1010: safe-mode exit requires reconciliation",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "install-crash-after-settings",
+            "evidence": "1010: safe-mode exit requires reconciliation",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "install-crash-after-projection",
+            "evidence": "1010: safe-mode exit requires reconciliation",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "rollback-second-attempt",
+            "evidence": "1010: rollback is one-shot",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "safe-mode-exit-without-reconciliation",
+            "evidence": "1010: safe-mode exit requires reconciliation",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "safe-mode-exit-after-reconciliation",
+            "outcome": "safe_mode_reconciled",
+            "passed": true
+          },
+          {
+            "case_id": "invalid-settings-validator",
+            "evidence": "1006: settings validator rejected the revision",
+            "observed_error_code": 1006,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "settings-binding-mismatch",
+            "evidence": "1011: settings validation receipt is not bound to the release",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive": [
+          {
+            "fixture_id": "plugin-lifecycle-transition",
+            "outcome": "lifecycle_transition_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "settings-validation-receipt",
+            "outcome": "settings_validation_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "settings-migration-manifest",
+            "outcome": "settings_migration_verified",
+            "passed": true
+          }
+        ],
+        "positive_count": 3,
+        "positive_fixture_ids": [
+          "plugin-lifecycle-transition",
+          "settings-validation-receipt",
+          "settings-migration-manifest"
+        ],
+        "title": "Concurrent install CAS, every durable crash point, rollback once, safe-mode exit and settings validator"
+      },
+      "84.13-08": {
+        "case_count": 4,
+        "cases": [
+          {
+            "case_id": "pin-while-retiring",
+            "evidence": "1013: release is retiring and cannot receive a new pin",
+            "observed_error_code": 1013,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "retire-with-recoverable-attempt",
+            "evidence": "1013: recoverable references block retirement",
+            "observed_error_code": 1013,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "package-delete-publication",
+            "evidence": "1011: publication requires retained provenance after package deletion",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "publication-after-package-delete-valid",
+            "outcome": "publication_provenance_backed",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive": [
+          {
+            "fixture_id": "release-retirement",
+            "outcome": "release_retirement_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "release-pin",
+            "outcome": "release_pin_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "publication-after-package-delete",
+            "outcome": "publication_provenance_backed",
+            "passed": true
+          }
+        ],
+        "positive_count": 3,
+        "positive_fixture_ids": [
+          "release-retirement",
+          "release-pin",
+          "publication-after-package-delete"
+        ],
+        "title": "Retire/new-pin race, recoverable Attempt barrier and package deletion before Publication"
+      },
+      "84.13-09": {
+        "case_count": 7,
+        "cases": [
+          {
+            "case_id": "aggregate-event-crash",
+            "evidence": "1010: Core Event transaction is not durably committed",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "event-crash-after-core-write",
+            "evidence": "1010: Core Event transaction is not durably committed",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "job-cursor-on-core-stream",
+            "evidence": "1010: core event recovery cannot carry an aggregate job ID",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "cursor-ahead",
+            "evidence": "1010: SSE cursor is ahead of the durable high-water mark",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "gap-without-snapshot",
+            "evidence": "1011: SSE snapshot_required must equal gap",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "event-snapshot-convergence",
+            "outcome": "snapshot_converged",
+            "passed": true
+          },
+          {
+            "case_id": "core-job-cursor-mix",
+            "evidence": "1010: core event recovery cannot carry an aggregate job ID",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive": [
+          {
+            "fixture_id": "core-event",
+            "outcome": "core_event_committed",
+            "passed": true
+          },
+          {
+            "fixture_id": "plugin-job-event",
+            "outcome": "plugin_job_event_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "sse-recovery",
+            "outcome": "sse_recovery_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "core-snapshot",
+            "outcome": "core_snapshot_verified",
+            "passed": true
+          }
+        ],
+        "positive_count": 4,
+        "positive_fixture_ids": [
+          "core-event",
+          "plugin-job-event",
+          "sse-recovery",
+          "core-snapshot"
+        ],
+        "title": "Aggregate/Event crash, SSE gap/cursor ahead/snapshot convergence and Core/Job cursor domains"
+      },
+      "84.13-10": {
+        "case_count": 5,
+        "cases": [
+          {
+            "case_id": "raw-stream-over-ack",
+            "evidence": "1011: stream prefix moved backwards",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "cancel-crash-race",
+            "evidence": "1010: terminal provider run cannot be cancelled",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "duplicate-incomplete-candidate",
+            "evidence": "1010: only one incomplete stream Candidate is allowed per target",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "terminal-hydration",
+            "outcome": "terminal_view_hydrated",
+            "passed": true
+          },
+          {
+            "case_id": "terminal-hydration-missing",
+            "evidence": "1011: result-bundle/v1: {'base': {'content_hash': '1111111111111111111111111111111111111111111111111111111111111111', 'revision_id': 'rev-a'}, 'item_id': 'candidate-item-1', 'item_kind': 'document', 'mutation': {'mode': 'replace', 'payload_hash': 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd', 'payload_schema': 'core/document-text/v1'}, 'parent_candidate_ids': [], 'payload_asset_id': None, 'schema': 'candidate-item/v1', 'source_refs': [], 'status': 'complete', 'target': {'entity_id': 'doc-a', 'entity_kind': 'document', 'workspace_id': 'ws-1'}, 'write_set': [{'content_hash': '1111111111111111111111111111111111111111111111111111111111111111', 'entity_id': 'doc-a', 'entity_kind': 'document', 'revision_id': 'rev-a', 'workspace_id': 'ws-1'}]} is not valid under any of the given schemas at /items/0",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive": [
+          {
+            "fixture_id": "stream-prefix",
+            "outcome": "stream_prefix_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "job-snapshot",
+            "outcome": "job_snapshot_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "result-bundle",
+            "outcome": "result_bundle_verified",
+            "passed": true
+          }
+        ],
+        "positive_count": 3,
+        "positive_fixture_ids": [
+          "stream-prefix",
+          "job-snapshot",
+          "result-bundle"
+        ],
+        "title": "Raw stream ACK boundary, cancel/crash race, unique incomplete Candidate and terminal hydration"
+      },
+      "84.13-11": {
+        "case_count": 7,
+        "cases": [
+          {
+            "case_id": "executed-receipt-positive",
+            "outcome": "executed_receipt_verified",
+            "passed": true
+          },
+          {
+            "case_id": "failed-bundleless-receipt",
+            "outcome": "bundleless_failure_verified",
+            "passed": true
+          },
+          {
+            "case_id": "skipped-participated",
+            "evidence": "1011: skipped Skill step cannot be participated or verified",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "model-claim-without-evidence",
+            "evidence": "1011: model_claimed requires claim evidence",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "verified-patch-without-proof",
+            "evidence": "1011: verified_patch requires a verified patch",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "tampered-patch",
+            "evidence": "1011: receipt_hash mismatch: expected afdfd520f837e24c66c72863c0d65ba6400dd2f9b972c56a6a310c1a8c1b2ac4, got f5cac81dae1cda6a29149ab7230facf230e22b6e51310ef298bc60502e77a917",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "patch-range-inverted",
+            "evidence": "1011: Skill patch range is inverted",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive": [
+          {
+            "fixture_id": "skill-run-receipt",
+            "outcome": "skill_receipt_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "skill-chain-result",
+            "outcome": "skill_chain_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "failed-bundleless-receipt",
+            "outcome": "bundleless_failure_verified",
+            "passed": true
+          }
+        ],
+        "positive_count": 3,
+        "positive_fixture_ids": [
+          "skill-run-receipt",
+          "skill-chain-result",
+          "failed-bundleless-receipt"
+        ],
+        "title": "Skill executed/failed/skipped/model claim/verified patch combinations and patch tamper"
+      },
+      "84.13-12": {
+        "case_count": 9,
+        "cases": [
+          {
+            "case_id": "immutable-worker-url",
+            "evidence": "1011: worker URL is immutable for a generation",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "worker-csp-tamper",
+            "evidence": "1011: worker CSP is immutable",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "stale-intent",
+            "evidence": "1010: stale UI intent was rejected",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "duplicate-intent-different-payload",
+            "evidence": "1008: UI intent ID reused with a different payload",
+            "observed_error_code": 1008,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "unknown-component",
+            "evidence": "1011: plugin-ui-tree/v1: {'children': [], 'component': 'unknown-component', 'event_ids': ['click'], 'key': 'run', 'props': {'disabled': False, 'label': 'Run', 'tone': 'primary'}} is not valid under any of the given schemas at /root",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "unknown-prop",
+            "evidence": "1011: plugin-ui-tree/v1: {'children': [], 'component': 'button', 'event_ids': ['click'], 'key': 'run', 'props': {'disabled': False, 'label': 'Run', 'tone': 'primary', 'unknown_prop': True}} is not valid under any of the given schemas at /root",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "unknown-event",
+            "evidence": "1011: UI intent is not declared by the installed tree",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "navigation-watchdog",
+            "outcome": "navigation_acknowledged",
+            "passed": true
+          },
+          {
+            "case_id": "navigation-watchdog-loop",
+            "evidence": "1010: UI navigation watchdog stopped a render loop",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive": [
+          {
+            "fixture_id": "plugin-ui-tree",
+            "outcome": "ui_tree_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "plugin-ui-intent",
+            "outcome": "ui_intent_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "plugin-ui-message",
+            "outcome": "ui_message_verified",
+            "passed": true
+          }
+        ],
+        "positive_count": 3,
+        "positive_fixture_ids": [
+          "plugin-ui-tree",
+          "plugin-ui-intent",
+          "plugin-ui-message"
+        ],
+        "title": "Immutable Worker URL/CSP, stale/duplicate intent, unknown component/prop/event and navigation watchdog"
+      },
+      "84.13-13": {
+        "case_count": 6,
+        "cases": [
+          {
+            "case_id": "backup-mode-package",
+            "evidence": "1011: bundle_hash mismatch: expected cb26bba0a85711962d2d6f44115b2c186bd9db0aa3514b58dcecc9c0083fbaf8, got 240ee3792d2a6a02a587a0d8f091c3f8ede3bbf98d5990048c838e9af68ad497",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "backup-manifest-tamper",
+            "evidence": "1011: bundle_hash mismatch: expected cb26bba0a85711962d2d6f44115b2c186bd9db0aa3514b58dcecc9c0083fbaf8, got 913bcb1ee070f30b82a88f215a4d99460f68bffca36a85acf8e67f914c65daf1",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "crash-staging",
+            "evidence": "1010: restore staging requires recovery before switching",
+            "observed_error_code": 1010,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "restore-new-root",
+            "outcome": "restore_target_is_distinct",
+            "passed": true
+          },
+          {
+            "case_id": "projection-rebuild",
+            "outcome": "projection_rebuilt",
+            "passed": true
+          },
+          {
+            "case_id": "restore-missing-projection",
+            "evidence": "1011: restore omitted required projection rebuild",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive": [
+          {
+            "fixture_id": "backup-golden",
+            "outcome": "backup_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "restore-report",
+            "outcome": "restore_report_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "restore-new-root",
+            "outcome": "restore_new_root_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "projection-rebuild",
+            "outcome": "projection_rebuilt",
+            "passed": true
+          }
+        ],
+        "positive_count": 4,
+        "positive_fixture_ids": [
+          "backup-golden",
+          "restore-report",
+          "restore-new-root",
+          "projection-rebuild"
+        ],
+        "title": "Backup mode, manifest/hash, crash staging, restore to new root and projection rebuild"
+      },
+      "84.13-14": {
+        "case_count": 10,
+        "cases": [
+          {
+            "case_id": "compatibility-valid",
+            "outcome": "compatibility_verified",
+            "passed": true
+          },
+          {
+            "case_id": "compatibility-or",
+            "evidence": "1011: compatibility does not match the v1 canonical matrix",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "compatibility-missing-python",
+            "evidence": "1011: compatibility does not match the v1 canonical matrix",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "history-raw-reader",
+            "outcome": "raw_bytes_preserved",
+            "passed": true
+          },
+          {
+            "case_id": "history-reserialized",
+            "evidence": "1011: v1 history reader changed raw Asset bytes",
+            "observed_error_code": 1011,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "reserved-device-name",
+            "evidence": "1005: Windows reserved device name is forbidden at CON.txt",
+            "observed_error_code": 1005,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "ads-path",
+            "evidence": "1005: forbidden Windows path character at data/file.txt:stream",
+            "observed_error_code": 1005,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "trailing-dot-space",
+            "evidence": "1005: trailing dot/space is forbidden at data/name. ",
+            "observed_error_code": 1005,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "unicode-casefold-collision",
+            "evidence": "1005: casefold path collision at strasse.txt",
+            "observed_error_code": 1005,
+            "outcome": "rejected",
+            "passed": true
+          },
+          {
+            "case_id": "unicode-casefold-decomposed-collision",
+            "evidence": "1005: casefold path collision at caf\u00e9.txt",
+            "observed_error_code": 1005,
+            "outcome": "rejected",
+            "passed": true
+          }
+        ],
+        "passed": true,
+        "positive": [
+          {
+            "fixture_id": "compatibility-valid",
+            "outcome": "compatibility_verified",
+            "passed": true
+          },
+          {
+            "fixture_id": "history-v1",
+            "outcome": "raw_bytes_preserved",
+            "passed": true
+          },
+          {
+            "fixture_id": "windows-casefold-valid",
+            "outcome": "windows_casefold_unique",
+            "passed": true
+          }
+        ],
+        "positive_count": 3,
+        "positive_fixture_ids": [
+          "compatibility-valid",
+          "history-v1",
+          "windows-casefold-valid"
+        ],
+        "title": "Compatibility valid/invalid, historical v1 raw bytes and complete Windows path corpus"
+      }
+    },
+    "positive": [
+      {
+        "fixture_id": "package-golden",
+        "group_id": "84.13-01",
+        "outcome": "package_golden_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "skill-golden",
+        "group_id": "84.13-01",
+        "outcome": "skill_golden_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "run-snapshot-golden",
+        "group_id": "84.13-01",
+        "outcome": "run_snapshot_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "result-bundle",
+        "group_id": "84.13-02",
+        "outcome": "result_bundle_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "candidate-item",
+        "group_id": "84.13-02",
+        "outcome": "candidate_item_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "provenance-receipt",
+        "group_id": "84.13-02",
+        "outcome": "provenance_receipt_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "broker-invocation",
+        "group_id": "84.13-03",
+        "outcome": "broker_invocation_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "broker-child-record",
+        "group_id": "84.13-03",
+        "outcome": "broker_child_record_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "run-snapshot",
+        "group_id": "84.13-03",
+        "outcome": "run_snapshot_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "plugin-plan",
+        "group_id": "84.13-03",
+        "outcome": "plugin_plan_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "provenance-receipt",
+        "group_id": "84.13-03",
+        "outcome": "provenance_receipt_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "rpc-upload",
+        "group_id": "84.13-04",
+        "outcome": "rpc_upload_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "rpc-success",
+        "group_id": "84.13-04",
+        "outcome": "rpc_success_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "checkpoint",
+        "group_id": "84.13-05",
+        "outcome": "checkpoint_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "job-snapshot",
+        "group_id": "84.13-05",
+        "outcome": "job_snapshot_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "result-bundle",
+        "group_id": "84.13-06",
+        "outcome": "result_bundle_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "provenance-receipt",
+        "group_id": "84.13-06",
+        "outcome": "provenance_receipt_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "settings-validation-receipt",
+        "group_id": "84.13-06",
+        "outcome": "settings_validation_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "plugin-lifecycle-transition",
+        "group_id": "84.13-07",
+        "outcome": "lifecycle_transition_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "settings-validation-receipt",
+        "group_id": "84.13-07",
+        "outcome": "settings_validation_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "settings-migration-manifest",
+        "group_id": "84.13-07",
+        "outcome": "settings_migration_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "release-retirement",
+        "group_id": "84.13-08",
+        "outcome": "release_retirement_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "release-pin",
+        "group_id": "84.13-08",
+        "outcome": "release_pin_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "publication-after-package-delete",
+        "group_id": "84.13-08",
+        "outcome": "publication_provenance_backed",
+        "passed": true
+      },
+      {
+        "fixture_id": "core-event",
+        "group_id": "84.13-09",
+        "outcome": "core_event_committed",
+        "passed": true
+      },
+      {
+        "fixture_id": "plugin-job-event",
+        "group_id": "84.13-09",
+        "outcome": "plugin_job_event_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "sse-recovery",
+        "group_id": "84.13-09",
+        "outcome": "sse_recovery_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "core-snapshot",
+        "group_id": "84.13-09",
+        "outcome": "core_snapshot_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "stream-prefix",
+        "group_id": "84.13-10",
+        "outcome": "stream_prefix_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "job-snapshot",
+        "group_id": "84.13-10",
+        "outcome": "job_snapshot_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "result-bundle",
+        "group_id": "84.13-10",
+        "outcome": "result_bundle_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "skill-run-receipt",
+        "group_id": "84.13-11",
+        "outcome": "skill_receipt_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "skill-chain-result",
+        "group_id": "84.13-11",
+        "outcome": "skill_chain_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "failed-bundleless-receipt",
+        "group_id": "84.13-11",
+        "outcome": "bundleless_failure_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "plugin-ui-tree",
+        "group_id": "84.13-12",
+        "outcome": "ui_tree_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "plugin-ui-intent",
+        "group_id": "84.13-12",
+        "outcome": "ui_intent_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "plugin-ui-message",
+        "group_id": "84.13-12",
+        "outcome": "ui_message_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "backup-golden",
+        "group_id": "84.13-13",
+        "outcome": "backup_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "restore-report",
+        "group_id": "84.13-13",
+        "outcome": "restore_report_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "restore-new-root",
+        "group_id": "84.13-13",
+        "outcome": "restore_new_root_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "projection-rebuild",
+        "group_id": "84.13-13",
+        "outcome": "projection_rebuilt",
+        "passed": true
+      },
+      {
+        "fixture_id": "compatibility-valid",
+        "group_id": "84.13-14",
+        "outcome": "compatibility_verified",
+        "passed": true
+      },
+      {
+        "fixture_id": "history-v1",
+        "group_id": "84.13-14",
+        "outcome": "raw_bytes_preserved",
+        "passed": true
+      },
+      {
+        "fixture_id": "windows-casefold-valid",
+        "group_id": "84.13-14",
+        "outcome": "windows_casefold_unique",
+        "passed": true
+      }
+    ],
+    "positive_count": 44,
+    "positive_fixture_ids": [
+      "backup-golden",
+      "broker-child-record",
+      "broker-invocation",
+      "candidate-item",
+      "checkpoint",
+      "compatibility-valid",
+      "core-event",
+      "core-snapshot",
+      "failed-bundleless-receipt",
+      "history-v1",
+      "job-snapshot",
+      "package-golden",
+      "plugin-job-event",
+      "plugin-lifecycle-transition",
+      "plugin-plan",
+      "plugin-ui-intent",
+      "plugin-ui-message",
+      "plugin-ui-tree",
+      "projection-rebuild",
+      "provenance-receipt",
+      "publication-after-package-delete",
+      "release-pin",
+      "release-retirement",
+      "restore-new-root",
+      "restore-report",
+      "result-bundle",
+      "rpc-success",
+      "rpc-upload",
+      "run-snapshot",
+      "run-snapshot-golden",
+      "settings-migration-manifest",
+      "settings-validation-receipt",
+      "skill-chain-result",
+      "skill-golden",
+      "skill-run-receipt",
+      "sse-recovery",
+      "stream-prefix",
+      "windows-casefold-valid"
+    ],
+    "registry": {
+      "corpus_cases": 105,
+      "corpus_groups": 14,
+      "registered_cases": 105
+    }
+  },
+  "positive": {
+    "fixtures": 35,
+    "self_hashes": 9,
+    "semantic": 17
+  },
+  "remediation": {
+    "bundleless_failed_receipt": "accepted",
+    "capability_ui_refs": "unknown refs rejected",
+    "heartbeat_fencing": "stale rejected/current accepted",
+    "nfc_casefold_collision": "stra\u00dfe.txt/strasse.txt rejected",
+    "rpc_method_result_binding": "wrong branch rejected/correct branch accepted",
+    "self_hash_profiles": 9
+  },
+  "rpc_methods": {
+    "error_codes": {
+      "1001": "incompatible_generation",
+      "1002": "stale_lease",
+      "1003": "cancelled",
+      "1004": "deadline_exceeded",
+      "1005": "asset_error",
+      "1006": "settings_invalid",
+      "1007": "migration_failed",
+      "1008": "duplicate_request",
+      "1009": "uncertain_external_effect",
+      "1010": "invalid_transition",
+      "1011": "result_contract_mismatch",
+      "1012": "data_interpreter_unavailable",
+      "1013": "release_retiring",
+      "1014": "checkpoint_invalid"
+    },
+    "host": [
+      "host.asset.read/v1",
+      "host.asset.create/v1",
+      "host.asset.upload.status/v1",
+      "host.model.invoke/v1",
+      "host.capability.invoke/v1",
+      "host.capability.poll/v1",
+      "host.capability.cancel/v1",
+      "host.candidate.stage/v1",
+      "host.checkpoint.commit/v1",
+      "host.stream.commit/v1",
+      "host.job.event/v1",
+      "host.job.await_user/v1",
+      "host.job.complete/v1",
+      "host.log/v1",
+      "host.migration.lease.renew/v1",
+      "host.migration.lease.release/v1"
+    ],
+    "worker": [
+      "runtime.handshake",
+      "runtime.health",
+      "runtime.heartbeat",
+      "capability.describe",
+      "settings.validate",
+      "migration.plan",
+      "migration.apply",
+      "migration.verify",
+      "job.start",
+      "job.resume",
+      "job.pause",
+      "job.cancel",
+      "runtime.shutdown"
+    ]
+  },
+  "schemas": {
+    "generator_check": "generated artifacts are deterministic (56 files)",
+    "schemas": 53
+  },
+  "typescript": {
+    "collision_rejected": true,
+    "status": "ok",
+    "workspace_id": "ws-1"
+  }
+}

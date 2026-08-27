@@ -1,0 +1,140 @@
+{
+  "schema": "p0-downstream-merge-candidate-receipt/v1",
+  "task_id": "PPA-M1-INTEGRATION-CANDIDATE-P2-P6-01",
+  "project_id": "P3",
+  "status": "integration_candidate_pending_fresh_sol",
+  "merge_method": "git merge --no-ff --no-commit; git commit",
+  "accepted_source_base": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+  "pre_merge_p0_head": "e753506c94b5310d0ec3f70c5dbd7a95ca5f761a",
+  "source_head": "3196aa7cccc9af279107885cc4cea8c26a785020",
+  "source_parent": "b5b5fb816ae2588d47f38d5c18c4d5e5ec939f15",
+  "source_tree": "ae1a4192a36892a26cd1236308a109d796f4c7a1",
+  "merge_commit": "9979fa544932d9c947f8fa9e163c79a1b502c132",
+  "merge_parents": [
+    "e753506c94b5310d0ec3f70c5dbd7a95ca5f761a",
+    "3196aa7cccc9af279107885cc4cea8c26a785020"
+  ],
+  "merge_tree": "1e9a458f6055f7ff8056ba48067b70fcdcc17278",
+  "changed_paths": [
+    "backend/plotpilot_core/jobs/__init__.py",
+    "backend/plotpilot_core/jobs/ledger.py",
+    "backend/plotpilot_core/jobs/migrations/001_host_operation_ledger.sql",
+    "backend/plotpilot_core/jobs/migrations/manifest.json",
+    "backend/plotpilot_core/jobs/ports.py",
+    "backend/plotpilot_core/jobs/states.py",
+    "coordination/PPA-03/CONTRACT-DELTA-CONTEXT-IDENTITY.md",
+    "coordination/PPA-03/P1-EXECUTION-AUTHORITY-INTEGRATION.md",
+    "coordination/PPA-03/contract-delta-context-identity-v1.json",
+    "coordination/PPA-03/evidence/p3-first-slice-remediation-validation.json",
+    "coordination/PPA-03/evidence/raw/git-diff-check.stdout.txt",
+    "coordination/PPA-03/evidence/raw/targeted-tests.stdout.txt",
+    "coordination/PPA-03/finding-closure-20260827.json",
+    "coordination/PPA-03/p3-first-slice-remediation-integration-ready-v1.json",
+    "docs/deliveries/PPA-03/2026-08-27-first-execution-slice.md",
+    "tests/p3-execution/test_job_execution.py"
+  ],
+  "changed_paths_count": 16,
+  "write_set": [
+    "backend/plotpilot_core/jobs/**",
+    "backend/plotpilot_core/events/**",
+    "backend/plotpilot_core/model/**",
+    "backend/plotpilot_core/broker/**",
+    "backend/plotpilot_core/api/v1/jobs/**",
+    "backend/plotpilot_core/api/v1/models/**",
+    "first-party-plugins/provider-openai-compatible/**",
+    "tests/p3-execution/**",
+    "docs/deliveries/PPA-03/**",
+    "coordination/PPA-03/**"
+  ],
+  "out_of_set_paths": [],
+  "contract_identity": {
+    "current_manifest_sha256": "cbe9d02fc42409332151cd7905e387a46537b330b039a2d3d6798f48cbfcc024",
+    "source_git_manifest_sha256": "2866b8d0b36ec954ee8cb5c87374e0ca0a0c4acefd1901070cee0b45979d25e7",
+    "source_changed_contract_paths": [],
+    "current_manifest_retained_after_merge": true
+  },
+  "central_closure": {
+    "path": "C:/Users/Administrator/Desktop/Novel-Agent- (2)/novel-agent/cases/plotpilot-pluginized-seven-project-construction-20260826/evidence/p3-first-slice-final-closure-20260827.json",
+    "bytes": 1696,
+    "sha256": "a93c54b3e895c58e37e888152b51e56ca82bd21275e8ae3eb885882663d218e6",
+    "verdict": "PASS"
+  },
+  "submission_identity_observation": {
+    "source_submission_binding": "superseded_by_external_exact_head_closure",
+    "detail": "The source-contained submission names b5b5fb81 and 14 paths; external exact-head binding/closure names 3196aa7c and 16 paths. The old file is preserved, not treated as current submission evidence."
+  },
+  "forbidden_evidence_only": null,
+  "validation": [
+    {
+      "id": "pytest",
+      "command": "python -B -m pytest -p no:cacheprovider tests/p3-execution/test_job_execution.py tests/contract/test_rpc_and_sdk.py -q",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "8 passed in 0.47s",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P3/pytest.stdout.txt",
+        "bytes": 671,
+        "sha256": "9b55cd981e292e3a14d4e47c21b9c40d49ce12ffc3fc4e317f9c73b4bbefbcce"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P3/pytest.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "compileall",
+      "command": "python -B -m compileall -q backend/plotpilot_core/jobs",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "no diagnostics",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P3/compileall.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P3/compileall.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "diff-check-index",
+      "command": "git diff --check --cached",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "no diagnostics",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P3/diff-check-index.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P3/diff-check-index.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "diff-check-source",
+      "command": "git diff --check 42123d1a5126bb2bef31304b0498e2e7def9183e 3196aa7cccc9af279107885cc4cea8c26a785020",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "no diagnostics",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P3/diff-check-source.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P3/diff-check-source.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ],
+  "post_merge_status": "clean",
+  "independent_acceptance": "not_performed_by_integration_writer",
+  "fresh_sol_review_required": true
+}

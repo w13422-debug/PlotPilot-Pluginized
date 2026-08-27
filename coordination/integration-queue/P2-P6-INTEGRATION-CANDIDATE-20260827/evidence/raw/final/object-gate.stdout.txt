@@ -1,0 +1,120 @@
+{
+  "schema": "p0-p2-p6-object-write-set-gate/v1",
+  "passed": true,
+  "implementation_head": "63f8a0e863afe77e70aef3d0f6687039c6cfb7ec",
+  "implementation_tree": "d82a222f451ee6afeaae9cb32cf0a7111eae70ae",
+  "publication_head": "745ba10c7c714b29ef43289a9096d2e64b2eb5bd",
+  "base": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+  "matrix_sha256": "076541384c643d879e8552737f94a9ce2ed9134dba3e0d448f2c4a0b58297656",
+  "contract_manifest_sha256": "cbe9d02fc42409332151cd7905e387a46537b330b039a2d3d6798f48cbfcc024",
+  "integrated_changed_paths": 95,
+  "union_matches_sources": true,
+  "source_path_overlap_count": 0,
+  "batches": [
+    {
+      "project_id": "P2",
+      "source": "5daece82633a700876474b6468f9948f62d466d7",
+      "source_tree": "b9137aa86c58b2299972ede7b3b38ce06be00277",
+      "source_changed_paths": 20,
+      "out_of_set_paths": [],
+      "merge_commit": "e753506c94b5310d0ec3f70c5dbd7a95ca5f761a",
+      "merge_parents": [
+        "745ba10c7c714b29ef43289a9096d2e64b2eb5bd",
+        "5daece82633a700876474b6468f9948f62d466d7"
+      ],
+      "merge_tree": "4b55ea5e25afae991dd8492a1a8ff287a43950cf"
+    },
+    {
+      "project_id": "P3",
+      "source": "3196aa7cccc9af279107885cc4cea8c26a785020",
+      "source_tree": "ae1a4192a36892a26cd1236308a109d796f4c7a1",
+      "source_changed_paths": 16,
+      "out_of_set_paths": [],
+      "merge_commit": "9979fa544932d9c947f8fa9e163c79a1b502c132",
+      "merge_parents": [
+        "e753506c94b5310d0ec3f70c5dbd7a95ca5f761a",
+        "3196aa7cccc9af279107885cc4cea8c26a785020"
+      ],
+      "merge_tree": "1e9a458f6055f7ff8056ba48067b70fcdcc17278"
+    },
+    {
+      "project_id": "P4",
+      "source": "86208cc2b6bcd421767eea206532f62cdff36800",
+      "source_tree": "968782dfe23bea0b7427aba1363d6dba38415fbd",
+      "source_changed_paths": 26,
+      "out_of_set_paths": [],
+      "merge_commit": "4f49279108122d8a9f2450894aff32f12a4936d6",
+      "merge_parents": [
+        "9979fa544932d9c947f8fa9e163c79a1b502c132",
+        "86208cc2b6bcd421767eea206532f62cdff36800"
+      ],
+      "merge_tree": "a949ff3b8660e8773c117be85835416435481dba"
+    },
+    {
+      "project_id": "P5",
+      "source": "0d9de43acef1ba4d83ed37dbc0e0b6eb44c1ad15",
+      "source_tree": "afb13016da01cc0245b3478170321f8a71738ea1",
+      "source_changed_paths": 8,
+      "out_of_set_paths": [],
+      "merge_commit": "8825337bb25b20a3567184892bb4de80259b7f8e",
+      "merge_parents": [
+        "4f49279108122d8a9f2450894aff32f12a4936d6",
+        "0d9de43acef1ba4d83ed37dbc0e0b6eb44c1ad15"
+      ],
+      "merge_tree": "1692b17c05abded7d12167295eb63e7e5720a38b"
+    },
+    {
+      "project_id": "P6",
+      "source": "b603b40635f174b984efade18add7afd40ed3db9",
+      "source_tree": "fa766c749800f57671751534fb86076d733042d7",
+      "source_changed_paths": 25,
+      "out_of_set_paths": [],
+      "merge_commit": "63f8a0e863afe77e70aef3d0f6687039c6cfb7ec",
+      "merge_parents": [
+        "8825337bb25b20a3567184892bb4de80259b7f8e",
+        "b603b40635f174b984efade18add7afd40ed3db9"
+      ],
+      "merge_tree": "d82a222f451ee6afeaae9cb32cf0a7111eae70ae"
+    }
+  ],
+  "forbidden_evidence_only": {
+    "P2": {
+      "commit": "be9e7273ed697d25a05454c17810b0872a8fe3cf",
+      "is_ancestor": false
+    },
+    "P4": {
+      "commit": "2bbdc0efca047e388494b59bbe4ff4fcd34fcec6",
+      "is_ancestor": false
+    },
+    "P5": {
+      "commit": "1262c2fda32b357596ce67d1ff3cdcc406ac13b5",
+      "is_ancestor": false
+    },
+    "P6": {
+      "commit": "90929ea91b944cc5e22483d21631d806f9aed208",
+      "is_ancestor": false
+    }
+  },
+  "p1_merge_ancestor": true,
+  "p1_source_parent_use_count": 1,
+  "old_tags": {
+    "M0-OPEN": {
+      "tag_object": "0a527454a2e9d20e353c41391d53d734a6dd62dc",
+      "peeled_commit": "786986a02219973a69a0d1c1114191149924d7f7"
+    },
+    "M0-OPEN-R2": {
+      "tag_object": "2b375224ec4762b9b25bca10cb80035f715b0b6f",
+      "peeled_commit": "36ca847d8b328e3f4f7791c836e0530e8a5ea5b3"
+    },
+    "M0-OPEN-R3": {
+      "tag_object": "9c7dbb76b0ce63c55b922e7ee629f25d229b9269",
+      "peeled_commit": "b6e20df15de9eb4b25de1acfe4e8a8f9e7080bde"
+    },
+    "M0-OPEN-R4": {
+      "tag_object": "385bc499032910195081e83a270b59c539f33539",
+      "peeled_commit": "42123d1a5126bb2bef31304b0498e2e7def9183e"
+    }
+  },
+  "donor_push": "DISABLED",
+  "worktree_clean": true
+}

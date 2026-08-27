@@ -1,0 +1,6 @@
+/evidence/raw/** -text -diff
+/evidence/closures/** -text -diff
+/evidence/*.py text eol=lf
+/*.json text eol=lf
+/receipts/*.json text eol=lf
+/*.md text eol=lf

@@ -1,0 +1,163 @@
+{
+  "schema": "p0-downstream-merge-candidate-receipt/v1",
+  "task_id": "PPA-M1-INTEGRATION-CANDIDATE-P2-P6-01",
+  "project_id": "P2",
+  "status": "integration_candidate_pending_fresh_sol",
+  "merge_method": "git merge --no-ff --no-commit; git commit",
+  "accepted_source_base": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+  "pre_merge_p0_head": "745ba10c7c714b29ef43289a9096d2e64b2eb5bd",
+  "source_head": "5daece82633a700876474b6468f9948f62d466d7",
+  "source_parent": "c170bd2180acc8ccbc5919e3a1b53d749fb5821b",
+  "source_tree": "b9137aa86c58b2299972ede7b3b38ce06be00277",
+  "merge_commit": "e753506c94b5310d0ec3f70c5dbd7a95ca5f761a",
+  "merge_parents": [
+    "745ba10c7c714b29ef43289a9096d2e64b2eb5bd",
+    "5daece82633a700876474b6468f9948f62d466d7"
+  ],
+  "merge_tree": "4b55ea5e25afae991dd8492a1a8ff287a43950cf",
+  "changed_paths": [
+    "backend/plotpilot_core/plugins/__init__.py",
+    "backend/plotpilot_core/plugins/generation.py",
+    "backend/plotpilot_core/plugins/install.py",
+    "backend/plotpilot_core/plugins/package.py",
+    "backend/plotpilot_core/plugins/settings.py",
+    "backend/plotpilot_core/plugins/store.py",
+    "coordination/PPA-02/P0-GOLDEN-MATERIALIZATION-BLOCKER.md",
+    "docs/deliveries/PPA-02/evidence/raw/pytest-slice1.txt",
+    "docs/deliveries/PPA-02/slice-1.md",
+    "first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/__init__.py",
+    "first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/chain.py",
+    "first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/domain.py",
+    "first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/package.py",
+    "first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/ports.py",
+    "first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/versions.py",
+    "tests/p2-plugin-platform/conftest.py",
+    "tests/p2-plugin-platform/test_generation_settings.py",
+    "tests/p2-plugin-platform/test_install_package.py",
+    "tests/p2-plugin-platform/test_package_backend_remediation.py",
+    "tests/p2-plugin-platform/test_prompt_skill_runtime.py"
+  ],
+  "changed_paths_count": 20,
+  "write_set": [
+    "backend/plotpilot_core/plugins/**",
+    "backend/plotpilot_core/supervisor/**",
+    "backend/plotpilot_core/api/v1/plugins/**",
+    "first-party-plugins/prompt-skill-runtime/**",
+    "tests/p2-plugin-platform/**",
+    "docs/deliveries/PPA-02/**",
+    "coordination/PPA-02/**"
+  ],
+  "out_of_set_paths": [],
+  "contract_identity": {
+    "current_manifest_sha256": "cbe9d02fc42409332151cd7905e387a46537b330b039a2d3d6798f48cbfcc024",
+    "source_git_manifest_sha256": "2866b8d0b36ec954ee8cb5c87374e0ca0a0c4acefd1901070cee0b45979d25e7",
+    "source_changed_contract_paths": [],
+    "current_manifest_retained_after_merge": true
+  },
+  "central_closure": {
+    "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/closures/P2-central-closure-active-work.json",
+    "bytes": 70403,
+    "sha256": "fd4aeacd934fd0e6e7cfd06fb8c1d8325db6a813b95eed4be81429123c105f84",
+    "json_pointer": "/tasks/task_id=PPA-P2-P2S1-IMPL-001-SAME-SOL-REREVIEW-37",
+    "reviewer_agent_id": "01a0424d-7474-7c42-adbc-ce22a7a7875b",
+    "reviewer_role": "same-reviewer finding-scoped closure",
+    "verdict": "PASS",
+    "merge_eligible": true,
+    "git_blob": {
+      "repository": "C:/Users/Administrator/Desktop/Novel-Agent- (2)/novel-agent",
+      "object": "87158ac51355e5e072c8d000c6fdd6a2be58d72e",
+      "bytes": 70403,
+      "sha256": "fd4aeacd934fd0e6e7cfd06fb8c1d8325db6a813b95eed4be81429123c105f84"
+    }
+  },
+  "submission_identity_observation": {
+    "source_submission_binding": "absent",
+    "detail": "The source tree has only the null integration-ready template and a slice document; exact-source eligibility is bound by the controller checkpoint task PPA-P2-P2S1-IMPL-001-SAME-SOL-REREVIEW-37 and the exact user instruction."
+  },
+  "forbidden_evidence_only": {
+    "commit": "be9e7273ed697d25a05454c17810b0872a8fe3cf",
+    "is_ancestor_of_implementation_head": false
+  },
+  "validation": [
+    {
+      "id": "pytest",
+      "command": "python -B -m pytest -p no:cacheprovider tests/p2-plugin-platform -q",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "32 passed in 0.61s",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P2/pytest.stdout.txt",
+        "bytes": 915,
+        "sha256": "8795a7b751191cb70fa3ba499cb4a4731ef6b722f0507ab2add26e447419f6c6"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P2/pytest.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "compileall",
+      "command": "python -B -m compileall -q backend/plotpilot_core/plugins first-party-plugins/prompt-skill-runtime/src",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "no diagnostics",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P2/compileall.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P2/compileall.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "diff-check-index",
+      "command": "git diff --check --cached",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "no diagnostics",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P2/diff-check-index.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P2/diff-check-index.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "diff-check-source",
+      "command": "git diff --check 42123d1a5126bb2bef31304b0498e2e7def9183e 5daece82633a700876474b6468f9948f62d466d7",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "no diagnostics",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P2/diff-check-source.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P2/diff-check-source.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ],
+  "post_merge_status": "clean",
+  "independent_acceptance": "not_performed_by_integration_writer",
+  "fresh_sol_review_required": true,
+  "evidence_remediation": {
+    "finding_id": "P2P6-SOL-FINAL-001",
+    "task_id": "PPA-P0-P2P6-SOL-FINAL-001-REMEDIATION-40",
+    "kind": "evidence-only",
+    "implementation_head": "63f8a0e863afe77e70aef3d0f6687039c6cfb7ec",
+    "old_candidate_head": "8646812681e7b9af89a86070a7ec875b603a1b72",
+    "central_closure_binding": "candidate-local plus pinned Novel-Agent Git blob",
+    "independent_review_required": true
+  }
+}

@@ -1,0 +1,15 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 32 items
+
+tests\p2-plugin-platform\test_generation_settings.py .....               [ 15%]
+tests\p2-plugin-platform\test_install_package.py ...                     [ 25%]
+tests\p2-plugin-platform\test_package_backend_remediation.py ........... [ 59%]
+.........                                                                [ 87%]
+tests\p2-plugin-platform\test_prompt_skill_runtime.py ....               [100%]
+
+============================= 32 passed in 0.61s ==============================

@@ -1,0 +1,151 @@
+{
+  "schema": "p0-downstream-merge-candidate-receipt/v1",
+  "task_id": "PPA-M1-INTEGRATION-CANDIDATE-P2-P6-01",
+  "project_id": "P4",
+  "status": "integration_candidate_pending_fresh_sol",
+  "merge_method": "git merge --no-ff --no-commit; git commit",
+  "accepted_source_base": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+  "pre_merge_p0_head": "9979fa544932d9c947f8fa9e163c79a1b502c132",
+  "source_head": "86208cc2b6bcd421767eea206532f62cdff36800",
+  "source_parent": "26c44f7672a413c13a30fad181dfd21bc7f3a5c5",
+  "source_tree": "968782dfe23bea0b7427aba1363d6dba38415fbd",
+  "merge_commit": "4f49279108122d8a9f2450894aff32f12a4936d6",
+  "merge_parents": [
+    "9979fa544932d9c947f8fa9e163c79a1b502c132",
+    "86208cc2b6bcd421767eea206532f62cdff36800"
+  ],
+  "merge_tree": "a949ff3b8660e8773c117be85835416435481dba",
+  "changed_paths": [
+    "coordination/PPA-04/P4-DEP-001-frontend-test-runner.md",
+    "coordination/PPA-04/P4-INT-001-job-drawer-api-gate.md",
+    "coordination/PPA-04/P4-INT-002-plugin-worker-route-gate.md",
+    "coordination/PPA-04/P4-INT-003-core-api-contract-version-gate.md",
+    "coordination/PPA-04/P4-INT-004-p0-binding-adjudication-wait.md",
+    "coordination/PPA-04/PPA-04-CD-001-plugin-ui-ts-ingress-validator.json",
+    "docs/deliveries/PPA-04/P4-BATCH-001.md",
+    "docs/deliveries/PPA-04/P4-BATCH-002.md",
+    "docs/deliveries/PPA-04/P4-BATCH-003.md",
+    "docs/deliveries/PPA-04/P4-BATCH-004.md",
+    "frontend/src/components/jobs/TaskDrawer.vue",
+    "frontend/src/components/plugin-host/PluginSlotFrame.vue",
+    "frontend/src/components/plugin-host/PluginTreeNodeRenderer.vue",
+    "frontend/src/core/jobPresentation.ts",
+    "frontend/src/plugin-host/rendererModel.ts",
+    "frontend/src/plugin-host/slotHost.ts",
+    "frontend/src/plugin-host/uiSession.ts",
+    "frontend/src/plugin-host/wireIngress.ts",
+    "frontend/src/views/Home.vue",
+    "frontend/src/views/Workbench.vue",
+    "tests/p4-webui/job-presentation.test.mts",
+    "tests/p4-webui/renderer-model.test.mts",
+    "tests/p4-webui/route-slot-isolation.test.mts",
+    "tests/p4-webui/slot-host.test.mts",
+    "tests/p4-webui/ui-session.test.mts",
+    "tests/p4-webui/wire-ingress.test.mts"
+  ],
+  "changed_paths_count": 26,
+  "write_set": [
+    "frontend/src/core/**",
+    "frontend/src/views/**",
+    "frontend/src/components/**",
+    "frontend/src/plugin-host/**",
+    "frontend/tests/**",
+    "tests/p4-webui/**",
+    "docs/deliveries/PPA-04/**",
+    "coordination/PPA-04/**"
+  ],
+  "out_of_set_paths": [],
+  "contract_identity": {
+    "current_manifest_sha256": "cbe9d02fc42409332151cd7905e387a46537b330b039a2d3d6798f48cbfcc024",
+    "source_git_manifest_sha256": "2866b8d0b36ec954ee8cb5c87374e0ca0a0c4acefd1901070cee0b45979d25e7",
+    "source_changed_contract_paths": [],
+    "current_manifest_retained_after_merge": true
+  },
+  "central_closure": {
+    "path": "C:/Users/Administrator/Desktop/Novel-Agent- (2)/novel-agent/cases/plotpilot-pluginized-seven-project-construction-20260826/evidence/p4-first-slice-final-closure-20260827.json",
+    "bytes": 1742,
+    "sha256": "a5a8645b882a0acaa1cb473281bc64df330284767216a20fa410d79dc49ba312",
+    "verdict": "PASS"
+  },
+  "submission_identity_observation": {
+    "source_submission_binding": "stored_only_in_forbidden_evidence_commit",
+    "detail": "The source-specific submission exists only in forbidden evidence-only commit 2bbdc0ef; that commit was not merged. The central closure binds source 86208cc2."
+  },
+  "forbidden_evidence_only": {
+    "commit": "2bbdc0efca047e388494b59bbe4ff4fcd34fcec6",
+    "is_ancestor_of_implementation_head": false
+  },
+  "validation": [
+    {
+      "id": "node-tests",
+      "command": "node --experimental-strip-types --test tests/p4-webui/*.test.mts",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "13 passed, 0 failed",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P4/node-tests.stdout.txt",
+        "bytes": 1177,
+        "sha256": "c20103f5bd2e8cf1c31e388880fb8d1f37ed0503223ca99add6f7c73dec46a6d"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P4/node-tests.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "vue-tsc",
+      "command": "frontend/node_modules/.bin/vue-tsc.cmd --noEmit -p frontend/tsconfig.app.json",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "no diagnostics",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P4/vue-tsc.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P4/vue-tsc.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "diff-check-index",
+      "command": "git diff --check --cached",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "no diagnostics",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P4/diff-check-index.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P4/diff-check-index.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "diff-check-source",
+      "command": "git diff --check 42123d1a5126bb2bef31304b0498e2e7def9183e 86208cc2b6bcd421767eea206532f62cdff36800",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "no diagnostics",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P4/diff-check-source.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P4/diff-check-source.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ],
+  "post_merge_status": "clean",
+  "independent_acceptance": "not_performed_by_integration_writer",
+  "fresh_sol_review_required": true
+}

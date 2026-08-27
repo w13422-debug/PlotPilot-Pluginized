@@ -1,0 +1,149 @@
+{
+  "schema": "p0-downstream-merge-candidate-receipt/v1",
+  "task_id": "PPA-M1-INTEGRATION-CANDIDATE-P2-P6-01",
+  "project_id": "P6",
+  "status": "integration_candidate_pending_fresh_sol",
+  "merge_method": "git merge --no-ff --no-commit; git commit",
+  "accepted_source_base": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+  "pre_merge_p0_head": "8825337bb25b20a3567184892bb4de80259b7f8e",
+  "source_head": "b603b40635f174b984efade18add7afd40ed3db9",
+  "source_parent": "fe11e2af9e7964649bf91d9351a031d62d8a6e78",
+  "source_tree": "fa766c749800f57671751534fb86076d733042d7",
+  "merge_commit": "63f8a0e863afe77e70aef3d0f6687039c6cfb7ec",
+  "merge_parents": [
+    "8825337bb25b20a3567184892bb4de80259b7f8e",
+    "b603b40635f174b984efade18add7afd40ed3db9"
+  ],
+  "merge_tree": "d82a222f451ee6afeaae9cb32cf0a7111eae70ae",
+  "changed_paths": [
+    "coordination/PPA-06/contract-delta-export-current-revisions-v1.json",
+    "coordination/PPA-06/first-batch-integration-readiness.md",
+    "docs/deliveries/PPA-06/P6-first-batch.md",
+    "docs/deliveries/PPA-06/evidence/raw/changed-paths.txt",
+    "docs/deliveries/PPA-06/evidence/raw/commits.txt",
+    "docs/deliveries/PPA-06/evidence/raw/final-git-diff-check.stdout.txt",
+    "docs/deliveries/PPA-06/evidence/raw/final-pytest-p6-writing.stdout.txt",
+    "docs/deliveries/PPA-06/evidence/raw/git-status-before-delivery.txt",
+    "docs/deliveries/PPA-06/evidence/raw/pytest-p6-writing.stdout.txt",
+    "docs/deliveries/PPA-06/integration-ready-v1.json",
+    "docs/deliveries/PPA-06/review-closure.json",
+    "first-party-plugins/autopilot/backend/src/plotpilot_autopilot/__init__.py",
+    "first-party-plugins/autopilot/backend/src/plotpilot_autopilot/dag.py",
+    "first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow/__init__.py",
+    "first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow/planning.py",
+    "first-party-plugins/export-suite/LICENSE",
+    "first-party-plugins/export-suite/README.md",
+    "first-party-plugins/export-suite/backend/src/plotpilot_export_suite/__init__.py",
+    "first-party-plugins/export-suite/backend/src/plotpilot_export_suite/domain.py",
+    "first-party-plugins/export-suite/schemas/export-request-v1.schema.json",
+    "first-party-plugins/quality-suite/backend/src/plotpilot_quality_suite/__init__.py",
+    "first-party-plugins/quality-suite/backend/src/plotpilot_quality_suite/rules.py",
+    "tests/p6-writing/conftest.py",
+    "tests/p6-writing/test_dependency_free_domains.py",
+    "tests/p6-writing/test_export_suite.py"
+  ],
+  "changed_paths_count": 25,
+  "write_set": [
+    "first-party-plugins/chapter-workflow/**",
+    "first-party-plugins/autopilot/**",
+    "first-party-plugins/quality-suite/**",
+    "first-party-plugins/export-suite/**",
+    "tests/p6-writing/**",
+    "docs/deliveries/PPA-06/**",
+    "coordination/PPA-06/**"
+  ],
+  "out_of_set_paths": [],
+  "contract_identity": {
+    "current_manifest_sha256": "cbe9d02fc42409332151cd7905e387a46537b330b039a2d3d6798f48cbfcc024",
+    "source_git_manifest_sha256": "2866b8d0b36ec954ee8cb5c87374e0ca0a0c4acefd1901070cee0b45979d25e7",
+    "source_changed_contract_paths": [],
+    "current_manifest_retained_after_merge": true
+  },
+  "central_closure": {
+    "path": "C:/Users/Administrator/Desktop/Novel-Agent- (2)/novel-agent/cases/plotpilot-pluginized-seven-project-construction-20260826/evidence/p6-first-slice-final-closure-20260827.json",
+    "bytes": 1918,
+    "sha256": "aead7fb974590b95999d855b61b92c8c15ba92cd70c5e1a0c42439784d4dc40c",
+    "verdict": "PASS"
+  },
+  "submission_identity_observation": {
+    "source_submission_binding": "source_file_head_is_stale",
+    "detail": "The source-contained integration-ready file names 859e3db8; the central closure binds b603b406. The corrected evidence-only commit 90929ea9 was intentionally not merged."
+  },
+  "forbidden_evidence_only": {
+    "commit": "90929ea91b944cc5e22483d21631d806f9aed208",
+    "is_ancestor_of_implementation_head": false
+  },
+  "validation": [
+    {
+      "id": "pytest",
+      "command": "python -B -m pytest -p no:cacheprovider tests/p6-writing -q",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "19 passed, 4 DeprecationWarning in 3.88s",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P6/pytest.stdout.txt",
+        "bytes": 1600,
+        "sha256": "44bd5eece6c43338ca2ae314b65b1979c6e709dd9979cffb861b5592d4b9ae2c"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P6/pytest.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "compileall",
+      "command": "python -B -m compileall -q first-party-plugins/export-suite/backend/src first-party-plugins/chapter-workflow/backend/src first-party-plugins/autopilot/backend/src first-party-plugins/quality-suite/backend/src",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "no diagnostics",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P6/compileall.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P6/compileall.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "diff-check-index",
+      "command": "git diff --check --cached",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "no diagnostics",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P6/diff-check-index.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P6/diff-check-index.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "diff-check-source",
+      "command": "git diff --check 42123d1a5126bb2bef31304b0498e2e7def9183e b603b40635f174b984efade18add7afd40ed3db9",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "no diagnostics",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P6/diff-check-source.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/P6/diff-check-source.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ],
+  "post_merge_status": "clean",
+  "independent_acceptance": "not_performed_by_integration_writer",
+  "fresh_sol_review_required": true
+}

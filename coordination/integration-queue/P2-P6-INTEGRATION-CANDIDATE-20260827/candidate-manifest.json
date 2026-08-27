@@ -1,0 +1,300 @@
+{
+  "schema": "p0-p2-p6-integration-candidate/v1",
+  "task_id": "PPA-M1-INTEGRATION-CANDIDATE-P2-P6-01",
+  "status": "integration_candidate_ready_pending_fresh_sol",
+  "branch": "codex/ppa-00-integration-candidate-r2",
+  "accepted_publication_head": "745ba10c7c714b29ef43289a9096d2e64b2eb5bd",
+  "tested_implementation_head": "63f8a0e863afe77e70aef3d0f6687039c6cfb7ec",
+  "tested_implementation_tree": "d82a222f451ee6afeaae9cb32cf0a7111eae70ae",
+  "candidate_evidence_commit": "the commit containing this manifest; resolve with git at review time",
+  "contract_manifest_sha256": "cbe9d02fc42409332151cd7905e387a46537b330b039a2d3d6798f48cbfcc024",
+  "matrix": {
+    "path": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized七项目任务书-2026-08-26\\project-matrix.json",
+    "sha256": "076541384c643d879e8552737f94a9ce2ed9134dba3e0d448f2c4a0b58297656"
+  },
+  "merge_order": [
+    "P2",
+    "P3",
+    "P4",
+    "P5",
+    "P6"
+  ],
+  "batch_receipts": [
+    {
+      "project_id": "P2",
+      "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/receipts/P2.json",
+      "bytes": 7630,
+      "sha256": "67e3fcfd750235c4269536ec90aeed6637e9ab8131259c594279a8a3af44d058"
+    },
+    {
+      "project_id": "P3",
+      "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/receipts/P3.json",
+      "bytes": 6428,
+      "sha256": "db065538fb166b1ea423ea79de1d4035c3adf60ef6f5bc2d65a8c57c407609a1"
+    },
+    {
+      "project_id": "P4",
+      "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/receipts/P4.json",
+      "bytes": 6691,
+      "sha256": "0d9a016dce66570f818f1e8b4f1f6cc81a09b16551a1f45f5a258a8268b482ba"
+    },
+    {
+      "project_id": "P5",
+      "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/receipts/P5.json",
+      "bytes": 5950,
+      "sha256": "3a6c67f59c6f0cb3116ed4f58e3e49b00f89300b333f257ed6853d8d5ed8a4d9"
+    },
+    {
+      "project_id": "P6",
+      "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/receipts/P6.json",
+      "bytes": 7219,
+      "sha256": "bae0b86edb07208a4cf655c9c64898f7fd00e8e2d0281ead20464f545b525904"
+    }
+  ],
+  "merged_source_changed_paths_total": 95,
+  "source_path_overlap_count": 0,
+  "p1": {
+    "already_integrated_merge": "0239ea6cf3d94b1991c68b9ef9671b33319c2bc0",
+    "source_parent_use_count": 1,
+    "remerged": false
+  },
+  "forbidden_evidence_only": {
+    "P2": {
+      "commit": "be9e7273ed697d25a05454c17810b0872a8fe3cf",
+      "is_ancestor_of_tested_head": false
+    },
+    "P4": {
+      "commit": "2bbdc0efca047e388494b59bbe4ff4fcd34fcec6",
+      "is_ancestor_of_tested_head": false
+    },
+    "P5": {
+      "commit": "1262c2fda32b357596ce67d1ff3cdcc406ac13b5",
+      "is_ancestor_of_tested_head": false
+    },
+    "P6": {
+      "commit": "90929ea91b944cc5e22483d21631d806f9aed208",
+      "is_ancestor_of_tested_head": false
+    }
+  },
+  "submission_and_manifest_observations": {
+    "legacy_declared_worktree_hash": "5bc9b65e3ce3ffbcfd059e2a43521b2c8b6eb3e31661a1647fe8d3eff77db62c",
+    "legacy_source_git_blob_hash": "2866b8d0b36ec954ee8cb5c87374e0ca0a0c4acefd1901070cee0b45979d25e7",
+    "current_manifest_hash": "cbe9d02fc42409332151cd7905e387a46537b330b039a2d3d6798f48cbfcc024",
+    "policy": "Old downstream evidence is preserved and not rewritten; current P0 receipts bind real Git diffs, current contract identity and new command evidence without claiming the old submissions matched the current manifest."
+  },
+  "final_validation": [
+    {
+      "id": "python-integrated",
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core tests/p2-plugin-platform tests/p3-execution tests/p5-planning tests/p6-writing tests/contract/test_contract_publication.py -q",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "85 passed, 4 DeprecationWarning in 4.84s",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/final/python-integrated.stdout.txt",
+        "bytes": 2491,
+        "sha256": "7f2fc85a96f2c8aba5d9cc853e1c392e76123bb2739c8c85e832fcfc3fb2f47d"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/final/python-integrated.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "p4-node",
+      "command": "node --experimental-strip-types --test tests/p4-webui/*.test.mts",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "13 passed, 0 failed",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/final/p4-node.stdout.txt",
+        "bytes": 1177,
+        "sha256": "4f9248cfe618d860dbc0a7cf12865c04952aa39bd7d522f685c08bef979e65bb"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/final/p4-node.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "p4-vue-tsc",
+      "command": "frontend/node_modules/.bin/vue-tsc.cmd --noEmit -p frontend/tsconfig.app.json",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "no diagnostics",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/final/p4-vue-tsc.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/final/p4-vue-tsc.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "manifest-check",
+      "command": "python -B tools/integration/generate_contract_manifest.py --check",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "contract manifest deterministic: 137 files",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/final/manifest-check.stdout.txt",
+        "bytes": 48,
+        "sha256": "e9dd7fc9defb72d61d64aac2906a107a80ea6dd52d438126a8d7571b410968ff"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/final/manifest-check.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "contracts-python",
+      "command": "python -B tools/integration/verify_contracts.py --all",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "53 schemas; 14 groups/105 cases; 35 positive fixtures; public contract Python/TS gates ok",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/final/contracts-python.stdout.txt",
+        "bytes": 55140,
+        "sha256": "7c8f906ea58007d418a7d5dd0651ff62b46b4b960831ba4f6df4d519e1bfa4f5"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/final/contracts-python.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "contracts-node",
+      "command": "node tools/integration/verify_contracts.mjs --all",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "53 schemas; 14 negative groups",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/final/contracts-node.stdout.txt",
+        "bytes": 798,
+        "sha256": "1497e4f9286e8787106dc2da61c8a32c10b51f5616df0489f9ef15adf70ca64e"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/final/contracts-node.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "contracts-cross",
+      "command": "python -B tools/integration/verify_cross_language_goldens.py",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "Python/Node status ok",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/final/contracts-cross.stdout.txt",
+        "bytes": 1322,
+        "sha256": "731b8bfc7340cfc09230a6d0bf750d77f02c2b07ff982d8e381565ff74a17b40"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/final/contracts-cross.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "final-diff-check",
+      "command": "git diff --check 745ba10c7c714b29ef43289a9096d2e64b2eb5bd HEAD",
+      "exit_code": 0,
+      "status": "passed",
+      "result": "no diagnostics",
+      "stdout": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/final/final-diff-check.stdout.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/final/final-diff-check.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ],
+  "object_and_write_set_gate": {
+    "command": "python -B coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/object-and-write-set-gate.py",
+    "exit_code": 0,
+    "status": "passed",
+    "script": {
+      "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/object-and-write-set-gate.py",
+      "bytes": 6924,
+      "sha256": "fa41c176cc52a5aa123ce9f0611bc18ae5ee581a7ecfa72c63bbdf4d4a5164fe"
+    },
+    "stdout": {
+      "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/final/object-gate.stdout.txt",
+      "bytes": 4444,
+      "sha256": "27e3a3f4539251b49ea1fc7dcab3067db6bda711e2948f881c26dd7bbab948e8"
+    },
+    "stderr": {
+      "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/raw/final/object-gate.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "old_tags": {
+    "M0-OPEN": {
+      "tag_object": "0a527454a2e9d20e353c41391d53d734a6dd62dc",
+      "peeled_commit": "786986a02219973a69a0d1c1114191149924d7f7"
+    },
+    "M0-OPEN-R2": {
+      "tag_object": "2b375224ec4762b9b25bca10cb80035f715b0b6f",
+      "peeled_commit": "36ca847d8b328e3f4f7791c836e0530e8a5ea5b3"
+    },
+    "M0-OPEN-R3": {
+      "tag_object": "9c7dbb76b0ce63c55b922e7ee629f25d229b9269",
+      "peeled_commit": "b6e20df15de9eb4b25de1acfe4e8a8f9e7080bde"
+    },
+    "M0-OPEN-R4": {
+      "tag_object": "385bc499032910195081e83a270b59c539f33539",
+      "peeled_commit": "42123d1a5126bb2bef31304b0498e2e7def9183e"
+    }
+  },
+  "donor_push": "DISABLED",
+  "implementation_worktree_status_before_evidence": "clean",
+  "warnings": [
+    "P6 PDF tests emit four fpdf2 DeprecationWarning messages for the uni parameter; tests pass and the warning is retained in raw evidence.",
+    "P5 evidence capture used retry-01 after a PowerShell print-statement syntax error; MERGE_HEAD was verified and the merge itself was not repeated.",
+    "This is integration-writer evidence only. A fresh gpt-5.6-sol review must decide acceptance.",
+    "P2P6-SOL-FINAL-001 remediation is evidence-only; the candidate-local closure is pending same-Sol targeted re-review and is not declared closed by the integration writer."
+  ],
+  "generated_at": "2026-08-27T11:06:07+00:00",
+  "post_commit_candidate_gate": {
+    "command": "python -B coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/verify-candidate-descendant.py",
+    "status": "required_after_evidence_commit",
+    "script": {
+      "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/verify-candidate-descendant.py",
+      "bytes": 12096,
+      "sha256": "f2e48c8626c77aef07c882c2566ece6e5bd992af23df2b35b6abb53f5f07e7b8"
+    }
+  },
+  "evidence_remediation": {
+    "finding_id": "P2P6-SOL-FINAL-001",
+    "task_id": "PPA-P0-P2P6-SOL-FINAL-001-REMEDIATION-40",
+    "kind": "evidence-only",
+    "old_candidate_head": "8646812681e7b9af89a86070a7ec875b603a1b72",
+    "sole_parent_required": "63f8a0e863afe77e70aef3d0f6687039c6cfb7ec",
+    "product_implementation_unchanged": true,
+    "central_closure": {
+      "receipt_path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/receipts/P2.json",
+      "path": "coordination/integration-queue/P2-P6-INTEGRATION-CANDIDATE-20260827/evidence/closures/P2-central-closure-active-work.json",
+      "bytes": 70403,
+      "sha256": "fd4aeacd934fd0e6e7cfd06fb8c1d8325db6a813b95eed4be81429123c105f84",
+      "git_blob": {
+        "repository": "C:/Users/Administrator/Desktop/Novel-Agent- (2)/novel-agent",
+        "object": "87158ac51355e5e072c8d000c6fdd6a2be58d72e",
+        "bytes": 70403,
+        "sha256": "fd4aeacd934fd0e6e7cfd06fb8c1d8325db6a813b95eed4be81429123c105f84"
+      }
+    },
+    "finding_status": "pending_same_sol_rereview"
+  }
+}
