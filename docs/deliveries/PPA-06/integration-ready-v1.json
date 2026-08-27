@@ -74,7 +74,9 @@
       "P6-F07",
       "P6-F08"
     ],
-    "closure_artifact": "docs/deliveries/PPA-06/review-closure.json"
+    "closure_artifact": "docs/deliveries/PPA-06/review-closure.json",
+    "result": "APPROVE",
+    "reviewed_head": "701c1e3a"
   },
   "ready": true
 }
