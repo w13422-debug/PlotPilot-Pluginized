@@ -1,0 +1,126 @@
+{
+  "schema": "ppa-finding-manifest/v1",
+  "node_id": "NW-P1-BACKUP-DATA-01",
+  "review_task_id": "NW-P1-BACKUP-DATA-01-FRESH-REVIEW-v1",
+  "reviewer": "fresh gpt-5.6-sol/max",
+  "verdict": "APPROVE",
+  "counts": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 0
+  },
+  "findings": [
+    {
+      "id": "BDP-F-001",
+      "severity": "P1",
+      "status": "closed",
+      "summary": "CoreSnapshot/P2/P3 Asset roots are absent from closure.",
+      "evidence": [
+        "BackupDataPlane._populate_backup_stage contributor-first root union",
+        "BackupDataPlane._verify_asset_closure artifact-derived root replay",
+        "test_all_contributor_and_plugin_database_asset_roots_enter_closure",
+        "test_missing_contributor_asset_fails_closed"
+      ],
+      "closed_by": "same fresh gpt-5.6-sol/max targeted re-review"
+    },
+    {
+      "id": "BDP-F-002",
+      "severity": "P1",
+      "status": "closed",
+      "summary": "Package files are not exactly bound to plugin release/package identities.",
+      "evidence": [
+        "PluginBackupFile release_id/package_hash binding",
+        "BackupDataPlane._validate_release_packages",
+        "BackupDataPlane._verify_package_bindings",
+        "test_package_release_binding_failures_are_closed",
+        "test_full_backup_binds_one_package_to_one_release"
+      ],
+      "closed_by": "same fresh gpt-5.6-sol/max targeted re-review"
+    },
+    {
+      "id": "BDP-F-003",
+      "severity": "P1",
+      "status": "closed",
+      "summary": "Asset object manifest hash is not explicitly required to equal content-address digest.",
+      "evidence": [
+        "BackupDataPlane._verify_asset_closure object_item sha256 equals Asset ID digest",
+        "test_content_address_binding_survives_outer_hash_recomputation"
+      ],
+      "closed_by": "same fresh gpt-5.6-sol/max targeted re-review"
+    },
+    {
+      "id": "BDP-F-004",
+      "severity": "P1",
+      "status": "closed",
+      "summary": "Completed restore replay does not bind source/target bundle hash and all report derivations.",
+      "evidence": [
+        "BackupDataPlane._restore_report_for exact derivation",
+        "BackupDataPlane.stage_restore source/target bundle, receipt, marker, and report comparison",
+        "test_restore_replay_rejects_same_backup_id_with_different_bundle",
+        "test_restore_replay_rejects_canonical_tampered_report"
+      ],
+      "closed_by": "same fresh gpt-5.6-sol/max targeted re-review"
+    },
+    {
+      "id": "BDP-F-005",
+      "severity": "P1",
+      "status": "closed",
+      "summary": "Deterministic shared staging permits concurrent deletion and marker removal creates an unrecoverable publish window.",
+      "evidence": [
+        "BackupDataPlane._new_stage_path unique generation",
+        "retained publication marker and explicit cleanup_restore_staging",
+        "reparse-point refusal in _remove_owned_stage",
+        "test_concurrent_same_restore_id_never_deletes_another_generation",
+        "test_publish_window_interruption_is_replayable",
+        "test_target_creation_race_preserves_foreign_target",
+        "test_cleanup_rejects_reparse_content_and_preserves_external_file"
+      ],
+      "closed_by": "same fresh gpt-5.6-sol/max targeted re-review"
+    },
+    {
+      "id": "BDP-F-006",
+      "severity": "P1",
+      "status": "closed",
+      "summary": "Workspace snapshot and compatibility are asserted without injected authority evidence.",
+      "evidence": [
+        "fixed Core contract 1.2.0",
+        "CoreSnapshotCapture authoritative workspace_snapshot_hash and compatible evidence",
+        "GenerationSnapshot/PluginDataSnapshot mandatory compatible evidence",
+        "test_incompatible_authority_fails_closed",
+        "test_unknown_core_version_and_workspace_snapshot_mismatch_fail_closed"
+      ],
+      "closed_by": "same fresh gpt-5.6-sol/max targeted re-review"
+    }
+  ],
+  "central_pass_claimed": false,
+  "remediation_status": "closed_by_same_reviewer",
+  "remediation_round": 1,
+  "remediation_validation": {
+    "targeted": "32 passed in 3.54s",
+    "p1_regression": "39 passed in 3.79s",
+    "compileall": "exit 0",
+    "ruff": "All checks passed!",
+    "cached_diff_check": "exit 0; no stdout"
+  },
+  "initial_verdict": "CHANGES_REQUESTED",
+  "initial_counts": {
+    "P0": 0,
+    "P1": 6,
+    "P2": 0
+  },
+  "targeted_re_review_task_id": "NW-P1-BACKUP-DATA-01-FRESH-REVIEW-v1-R1",
+  "targeted_re_review": {
+    "closed": [
+      "BDP-F-001",
+      "BDP-F-002",
+      "BDP-F-003",
+      "BDP-F-004",
+      "BDP-F-005",
+      "BDP-F-006"
+    ],
+    "open": [],
+    "new_p0_p1_blockers": [],
+    "write_set": "PASS",
+    "central_pass_claimed": false
+  }
+}

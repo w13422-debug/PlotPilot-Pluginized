@@ -1,0 +1,53 @@
+{
+  "schema": "ppa-01-backup-data-plane-validation/v1",
+  "node_id": "NW-P1-BACKUP-DATA-01",
+  "base": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
+  "recorded_at": "2026-08-28T01:48:36+08:00",
+  "scope": [
+    "SQLite online backup and frozen-copy reads",
+    "contributor-first CoreSnapshot/P2/P3 Asset closure including staged plugin SQLite",
+    "exact release/package/file binding and mode enforcement",
+    "content-address object identity after outer hash recomputation",
+    "authoritative Core 1.2.0/workspace snapshot/compatibility evidence",
+    "canonical manifest, receipt, and exact restore replay",
+    "unique-generation staging, retained publication marker, concurrent/race/interruption recovery",
+    "reparse-safe explicit cleanup and mandatory P0/P2/P3 composition"
+  ],
+  "commands": [
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/backup-data-plane -q",
+      "status": "passed",
+      "result": "32 passed in 3.54s"
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core -q",
+      "status": "passed",
+      "result": "39 passed in 3.79s"
+    },
+    {
+      "command": "python -B -m compileall -q backend/plotpilot_core/backup",
+      "status": "passed",
+      "result": "exit 0; no stdout"
+    },
+    {
+      "command": "python -B -m ruff check backend/plotpilot_core/backup tests/p1-core/backup-data-plane",
+      "status": "passed",
+      "result": "All checks passed!"
+    },
+    {
+      "command": "git diff --cached --check",
+      "status": "passed",
+      "result": "exit 0; no stdout"
+    }
+  ],
+  "prohibited_gates_run": [],
+  "central_pass_claimed": false,
+  "review": {
+    "reviewer": "same fresh gpt-5.6-sol/max",
+    "task_id": "NW-P1-BACKUP-DATA-01-FRESH-REVIEW-v1-R1",
+    "verdict": "APPROVE",
+    "closed": 6,
+    "open": 0,
+    "central_pass_claimed": false
+  }
+}

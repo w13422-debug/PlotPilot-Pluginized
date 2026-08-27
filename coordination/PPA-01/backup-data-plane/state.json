@@ -1,0 +1,30 @@
+{
+  "schema": "ppa-node-state/v1",
+  "node_id": "NW-P1-BACKUP-DATA-01",
+  "branch": "codex/nw-p1-backup-data-01",
+  "base": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
+  "status": "source_complete_reviewer_approved",
+  "outcome": "SQLite online backup, contributor-first Core/P2/P3 Asset closure, exact package binding, and verified restore-to-new-root staging",
+  "public_contract_changes": [],
+  "dependency_changes": [],
+  "composition_dependencies": [
+    "P0/P3 must provide a durable monotonic BackupBarrierPort implementation.",
+    "P0/P1 must compose a CoreSnapshotPort backed by real Core event high-water and aggregate state Assets.",
+    "P0/P2 must compose durable current/LKG generation, release, package, and projection state through GenerationBackupPort.",
+    "P0/P3 must compose quiesced independent SQLite/files through PluginDataBackupPort."
+  ],
+  "fail_closed": [
+    "missing, mismatched, or incompatible barrier/CoreSnapshot/P2/P3 contributor",
+    "unknown Core contract version or workspace snapshot mismatch",
+    "workspace scope mismatch",
+    "SQLite integrity or foreign-key failure",
+    "missing/tampered Asset object, metadata, declared root, or plugin-DB reference",
+    "missing, wrong-hash, orphaned, or wrong-mode package",
+    "manifest, receipt, Core snapshot, compatibility evidence, or file-set mismatch",
+    "unowned/reparse interrupted staging generation",
+    "existing, overlapping, raced, or bundle-conflicting restore root"
+  ],
+  "source_review": "same_fresh_sol_max_approved_6_closed_0_open",
+  "central_pass_claimed": false,
+  "donor_push": "DISABLED"
+}
