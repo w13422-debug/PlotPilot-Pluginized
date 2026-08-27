@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import sha256
 import json
+from types import MappingProxyType
 from typing import Any, Mapping, Sequence
 
 
@@ -56,14 +57,50 @@ class CandidateDraft:
     target_role: str
     payload: Mapping[str, Any]
     parent_candidate_ids: tuple[str, ...] = ()
+    source_refs: tuple[Any, ...] = ()
+    result_mode: str = "separate"
+    status: str = "complete"
+    partial: bool = False
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "payload", _freeze(self.payload))
+        object.__setattr__(self, "parent_candidate_ids", tuple(self.parent_candidate_ids))
+        object.__setattr__(self, "source_refs", tuple(_freeze(item) for item in self.source_refs))
+        if self.result_mode not in {"separate", "synthesize"}:
+            raise ValueError("result_mode must be separate or synthesize")
+        if self.result_mode == "synthesize" and len(self.parent_candidate_ids) < 2:
+            raise ValueError("synthesize requires at least two ordered parents")
+        if self.status not in {"complete", "partial"}:
+            raise ValueError("status must be complete or partial")
+        if self.partial != (self.status == "partial"):
+            raise ValueError("partial must agree with status")
 
 
 _ROLES = ("bible", "characters", "world", "items", "foreshadowing", "story_evolution")
 
 
 def _canonical_hash(value: Mapping[str, Any]) -> str:
-    encoded = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    encoded = json.dumps(_thaw(value), ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return sha256(encoded).hexdigest()
+
+
+def _freeze(value: Any) -> Any:
+    """Canonical deep-copy into recursively immutable, JSON-compatible values."""
+    if isinstance(value, Mapping):
+        return MappingProxyType({str(key): _freeze(item) for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))})
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze(item) for item in value)
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    raise ValueError(f"unsupported payload value: {type(value).__name__}")
+
+
+def _thaw(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {key: _thaw(item) for key, item in value.items()}
+    if isinstance(value, tuple):
+        return [_thaw(item) for item in value]
+    return value
 
 
 def build_candidate_drafts(
@@ -73,10 +110,20 @@ def build_candidate_drafts(
     *,
     run_id: str,
     parent_candidate_ids: Sequence[str] = (),
+    source_refs: Sequence[Any] = (),
+    result_mode: str = "separate",
+    status: str = "complete",
+    partial: bool = False,
 ) -> tuple[CandidateDraft, ...]:
     """Normalize one generation attempt without overwriting earlier attempts."""
     run_id = _required(run_id, "run_id")
-    parents = tuple(dict.fromkeys(_required(x, "parent_candidate_id") for x in parent_candidate_ids))
+    parents = tuple(_required(x, "parent_candidate_id") for x in parent_candidate_ids)
+    if len(set(parents)) != len(parents):
+        raise ValueError("parent_candidate_ids must be unique")
+    frozen_sources = tuple(_freeze(item) for item in source_refs)
+    unknown = sorted(set(generated) - set(_ROLES))
+    if unknown:
+        raise ValueError(f"unsupported planning sections: {', '.join(unknown)}")
     common = {
         "planning_input": {
             "premise": planning_input.premise,
@@ -90,8 +137,19 @@ def build_candidate_drafts(
     for role in _ROLES:
         if role not in generated:
             continue
-        payload = {**common, "role": role, "content": generated[role]}
-        drafts.append(CandidateDraft(f"{run_id}:{role}:{_canonical_hash(payload)}", role, payload, parents))
+        payload = _freeze({**common, "role": role, "content": generated[role]})
+        identity = _freeze({
+            "payload": payload,
+            "parents": parents,
+            "sources": frozen_sources,
+            "result_mode": result_mode,
+            "status": status,
+            "partial": partial,
+        })
+        drafts.append(CandidateDraft(
+            f"{run_id}:{role}:{_canonical_hash(identity)}", role, payload, parents,
+            frozen_sources, result_mode, status, partial,
+        ))
     if not drafts:
         raise ValueError("generated output has no supported planning sections")
     return tuple(drafts)
