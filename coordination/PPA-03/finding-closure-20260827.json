@@ -1,0 +1,65 @@
+{
+  "schema": "finding-closure/v1",
+  "project_id": "P3",
+  "finding_manifest_sha256": "3031dac166ad6936b00d09d746e8e82e506759de50133cd146e971a9be9a86c3",
+  "remediation_head": "6cbb1c327dee9bb6aec1a9061c61da25ab42748b",
+  "reviewer_id": "01a04179-bc91-7480-ba9d-89fe225e2c02",
+  "status": "pending_same_reviewer_rereview",
+  "closures": [
+    {
+      "id": "P3-AUDIT-P1-LEDGER-FENCE-001",
+      "change": "preflight now runs before every lookup/replay",
+      "evidence": [
+        "backend/plotpilot_core/jobs/ledger.py",
+        "tests/p3-execution/test_job_execution.py::test_preflight_precedes_committed_replay_and_current_replay_is_exact"
+      ]
+    },
+    {
+      "id": "P3-AUDIT-P1-DELTA-002",
+      "change": "template-complete machine-readable Delta created; composition stopped",
+      "evidence": [
+        "coordination/PPA-03/contract-delta-context-identity-v1.json"
+      ]
+    },
+    {
+      "id": "P3-AUDIT-P1-QUEUE-003",
+      "change": "integration-ready/v1 submission and raw content-addressed validation are generated in this remediation evidence batch",
+      "evidence": [
+        "coordination/PPA-03/evidence/raw/targeted-tests.stdout.txt",
+        "coordination/PPA-03/evidence/raw/git-diff-check.stdout.txt"
+      ]
+    },
+    {
+      "id": "P3-AUDIT-P2-FRAME-004",
+      "change": "tests and ledger use strict M0 encode_frame/decode_frame; raw frames rejected",
+      "evidence": [
+        "tests/p3-execution/test_job_execution.py"
+      ]
+    },
+    {
+      "id": "P3-AUDIT-P2-DURABILITY-005",
+      "change": "no database default/ownership; file-backed close/reopen replay test",
+      "evidence": [
+        "backend/plotpilot_core/jobs/ledger.py",
+        "tests/p3-execution/test_job_execution.py"
+      ]
+    },
+    {
+      "id": "P3-AUDIT-P2-ERROR-006",
+      "change": "local error table removed; SDK ContractError/ErrorCode reused",
+      "evidence": [
+        "backend/plotpilot_core/jobs/__init__.py",
+        "backend/plotpilot_core/jobs/ports.py"
+      ]
+    },
+    {
+      "id": "P3-CTRL-P1-MIGRATION-007",
+      "change": "constructor DDL/connect removed; deterministic namespaced P3 migration artifact supplied for P1 runner and authoritative connection injected",
+      "evidence": [
+        "backend/plotpilot_core/jobs/migrations/manifest.json",
+        "backend/plotpilot_core/jobs/migrations/001_host_operation_ledger.sql"
+      ],
+      "residual_gate": "P1 contributor registration/transaction adapter remains required; no P3 fallback."
+    }
+  ]
+}

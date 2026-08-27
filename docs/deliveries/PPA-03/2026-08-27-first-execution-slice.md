@@ -43,3 +43,7 @@ All implementation paths are within the P3 matrix write set:
 3. P2 worker/runtime ownership and lease allocator/CAS are required before dispatch, takeover, heartbeat or resume is implemented.
 
 P0 integration must use a no-ff merge and retain both open gate records in `coordination/PPA-03/`.
+
+## Bounded audit remediation
+
+The earlier review claim was superseded by the authoritative BLOCK manifest SHA-256 `3031dac166ad6936b00d09d746e8e82e506759de50133cd146e971a9be9a86c3`. The single bounded remediation is recorded under `coordination/PPA-03/`; only its same-reviewer result is authoritative.
