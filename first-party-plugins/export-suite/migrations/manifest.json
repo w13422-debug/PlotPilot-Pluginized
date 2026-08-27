@@ -1,0 +1,6 @@
+{
+  "schema": "plotpilot-plugin-migrations/v1",
+  "from": 1,
+  "to": 1,
+  "steps": []
+}

@@ -1,0 +1,36 @@
+{
+  "backend": {
+    "entrypoint": "plotpilot_export_suite.worker:build_export_request",
+    "max_concurrency": 1,
+    "requirements_lock": "backend/requirements.lock",
+    "wheel": "backend/plotpilot_export_suite-0.1.0-py3-none-any.whl",
+    "wheelhouse": "backend/wheels"
+  },
+  "capabilities": [
+    {
+      "capability_id": "writing.export/v1",
+      "operations": ["run", "validate"],
+      "result_contract": "artifact-bundle/v1"
+    }
+  ],
+  "compatibility": {
+    "core_api": ">=1.0 <2.0",
+    "plugin_rpc": "1",
+    "python": "3.12.*",
+    "ui_host": "1"
+  },
+  "data": null,
+  "display_name": "PlotPilot Export Suite",
+  "kind": "code",
+  "needs": ["host.asset.read/v1", "host.asset.create/v1"],
+  "plugin_id": "com.plotpilot.export-suite",
+  "schema": "plotpilot-plugin/v1",
+  "settings": null,
+  "storage": {
+    "migration_manifest": "migrations/manifest.json",
+    "migration_policy": "transactional-shadow",
+    "schema_version": 1
+  },
+  "ui": null,
+  "version": "0.1.0"
+}
