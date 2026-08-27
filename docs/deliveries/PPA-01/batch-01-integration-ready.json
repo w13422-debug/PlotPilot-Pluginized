@@ -4,10 +4,13 @@
   "batch_id": "PPA-01-BATCH-01",
   "status": "integration_ready",
   "base_sha": "42123d1a5126bb2bef31304b0498e2e7def9183e",
-  "head_sha": "d6d354b6b116885dbe3e737fe9f2d973dce137bd",
+  "head_sha": "93a34093e25603c3e2553ff72bfd6469e033de4a",
+  "reviewed_implementation_head": "93a34093e25603c3e2553ff72bfd6469e033de4a",
   "commits": [
     "752e2b6b feat(core): add immutable asset store foundation",
-    "d6d354b6 feat(core): establish SQLite authority and publication CAS"
+    "d6d354b6 feat(core): establish SQLite authority and publication CAS",
+    "82dab14c docs(core): record batch 01 integration evidence",
+    "93a34093 fix(core): close batch 01 authority review findings"
   ],
   "delivered": [
     "fail-closed transactional hash migrations with deterministic internal receipts",
@@ -57,14 +60,20 @@
   },
   "contract_delta": {
     "id": "PPA-01-CD-001",
-    "status": "p0_adjudication_in_progress",
+    "status": "accepted_with_scoped_public_contract",
+    "decision_id": "PPA-00-CD-DECISION-001",
+    "public_contract_families": {
+      "core-authority-command-query/v1": "not_published",
+      "publication-command-result/v1": "not_published",
+      "asset-metadata/v1": "not_published"
+    },
     "stopped": ["public Core HTTP DTOs", "plugin-callable Publication method", "public Asset metadata DTO"],
     "unaffected": ["internal Core authority", "internal migration receipt", "Asset domain/store", "candidate-item/v1 staging", "Core-native internal Publication"]
   },
   "remaining_dependencies": [
-    "P0 adjudication and publication of missing external Core/Publication contracts",
+    "P0 publication and focused review of the three accepted but not-yet-published public contract families",
     "P3 Job/Attempt/provenance/outbox transaction port for the full candidate completion transaction",
     "P2 release/package identity for deletion-after-publication integration tests"
   ],
-  "rollback": "Revert the two listed commits; no pre-existing schema or user data is migrated by this construction batch."
+  "rollback": "Revert 93a34093, 82dab14c, d6d354b6, then 752e2b6b in reverse integration order; no pre-existing schema or user data is migrated by this construction batch."
 }
