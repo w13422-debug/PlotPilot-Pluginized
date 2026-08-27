@@ -4,16 +4,18 @@ rootdir: C:\Users\Administrator\Desktop\写作资料汇总\PlotPilot-Pluginized
 configfile: pytest.ini
 plugins: asyncio-0.26.0, anyio-4.14.2
 asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collected 23 items
+collected 30 items
 
-tests\contract\test_84_13.py .                                           [  4%]
-tests\contract\test_cross_language_runtime.py ..                         [ 13%]
-tests\contract\test_finding_closure.py .                                 [ 17%]
-tests\contract\test_goldens.py ..                                        [ 26%]
-tests\contract\test_rpc_and_sdk.py ....                                  [ 43%]
-tests\contract\test_schema_meta.py ..                                    [ 52%]
-tests\contract\test_verifier_remediation.py .....                        [ 73%]
-tests\acceptance\test_contract_manifest.py .                             [ 78%]
+tests\contract\test_84_13.py .                                           [  3%]
+tests\contract\test_cli_cp936.py .                                       [  6%]
+tests\contract\test_cross_language_runtime.py .....                      [ 23%]
+tests\contract\test_finding_closure.py .                                 [ 26%]
+tests\contract\test_goldens.py ..                                        [ 33%]
+tests\contract\test_manifest_provenance.py ..                            [ 40%]
+tests\contract\test_rpc_and_sdk.py ....                                  [ 53%]
+tests\contract\test_schema_meta.py ..                                    [ 60%]
+tests\contract\test_verifier_remediation.py ......                       [ 80%]
+tests\acceptance\test_contract_manifest.py .                             [ 83%]
 tests\acceptance\test_merge_gate_remediation.py .....                    [100%]
 
-============================= 23 passed in 7.33s ==============================
+============================= 30 passed in 18.70s =============================

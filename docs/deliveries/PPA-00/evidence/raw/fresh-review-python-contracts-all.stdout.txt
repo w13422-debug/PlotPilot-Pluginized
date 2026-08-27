@@ -13,8 +13,8 @@
     "snapshot_hash": "5a7e60677a5ced4803c96f7b7db657409051ba8f3f5b18aa8ac28978e2b4a1d2"
   },
   "manifest": {
-    "files": 122,
-    "generator_check": "contract manifest is deterministic (122 files)",
+    "files": 123,
+    "generator_check": "contract manifest is deterministic (123 files)",
     "negative_groups": 14,
     "schemas": 48
   },
@@ -1119,7 +1119,7 @@
           },
           {
             "case_id": "unicode-casefold-decomposed-collision",
-            "evidence": "1005: casefold path collision at café.txt",
+            "evidence": "1005: casefold path collision at caf\u00e9.txt",
             "observed_error_code": 1005,
             "outcome": "rejected",
             "passed": true
@@ -1474,7 +1474,7 @@
     "bundleless_failed_receipt": "accepted",
     "capability_ui_refs": "unknown refs rejected",
     "heartbeat_fencing": "stale rejected/current accepted",
-    "nfc_casefold_collision": "straße.txt/strasse.txt rejected",
+    "nfc_casefold_collision": "stra\u00dfe.txt/strasse.txt rejected",
     "rpc_method_result_binding": "wrong branch rejected/correct branch accepted",
     "self_hash_profiles": 9
   },

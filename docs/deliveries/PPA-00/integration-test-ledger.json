@@ -2,16 +2,16 @@
   "browser_smoke": {
     "command": "node tools/integration/browser_smoke.mjs",
     "evidence": {
-      "bytes": 333714,
+      "bytes": 378324,
       "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-      "sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4"
+      "sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90"
     },
     "execution": "recorded_prior_run_not_repeated",
     "exit_code": 0,
     "id": "browser-smoke-headful",
     "status": "passed"
   },
-  "captured_at": "2026-08-26T17:21:46Z",
+  "captured_at": "2026-08-27T02:09:23Z",
   "commands": [
     {
       "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe tools/integration/generate_contract_manifest.py --check",
@@ -25,10 +25,10 @@
       },
       "stdout": {
         "bytes": 48,
-        "first_line": "contract manifest is deterministic (122 files)",
-        "last_line": "contract manifest is deterministic (122 files)",
+        "first_line": "contract manifest is deterministic (123 files)",
+        "last_line": "contract manifest is deterministic (123 files)",
         "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\contract-manifest-check.stdout.txt",
-        "sha256": "1b5c6f54e25347d08aea3db44498921f7ec4c9cc9edf10170b6cab480cb7a255"
+        "sha256": "7f2cbddd02f6a99cf22649904642eabc8ba9b30d66ac9d34eb18b520bbad13ca"
       }
     },
     {
@@ -42,11 +42,11 @@
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "stdout": {
-        "bytes": 51835,
+        "bytes": 51843,
         "first_line": "{",
         "last_line": "}",
         "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\python-contracts-all.stdout.txt",
-        "sha256": "31192c381756c91f63256bcbe1585b35941e0ba609858923c04a0fbee080b6c5"
+        "sha256": "4bf8b0af9a86ee7ae6d4056de8b797de98ddee2d5bbd538dd4911f4346e6a9f4"
       }
     },
     {
@@ -60,11 +60,11 @@
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "stdout": {
-        "bytes": 1229,
+        "bytes": 1391,
         "first_line": "============================= test session starts =============================",
-        "last_line": "============================= 23 passed in 7.33s ==============================",
+        "last_line": "============================= 30 passed in 18.70s =============================",
         "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\pytest-contract-acceptance.stdout.txt",
-        "sha256": "ae571041a45eac99d7e18765288a2cf3e318f7b43fa66e502a6d534b41b27c22"
+        "sha256": "3a579d51d957ecd84d50cbe6042f394ca12cfa3bf7a80bdc475d349c9476155b"
       }
     },
     {
@@ -136,7 +136,7 @@
         "first_line": "{",
         "last_line": "}",
         "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\delivery-record-check.stdout.txt",
-        "sha256": "c39b7a9fb069cc52b6b624b64a8a0400d3feccc8a6d38a646c5ec10db158b15f"
+        "sha256": "60eb72b6cf37d1385217debf741610460114b48a88a5eac09106122c5459f31d"
       }
     },
     {
@@ -150,11 +150,11 @@
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "stdout": {
-        "bytes": 18364,
+        "bytes": 18037,
         "first_line": "{",
         "last_line": "}",
         "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\raw\\merge-gate.stdout.txt",
-        "sha256": "f09f29d8413646e075e80389f1a0b057430555293429ea66a2c86aec570e46f0"
+        "sha256": "7d1f8ce67a0115fd37dbfa3deb84d62a435b89cb3a3e2f56c6812bea557fb333"
       }
     }
   ],
@@ -167,7 +167,7 @@
   },
   "git": {
     "branch": "codex/ppa-00-integration",
-    "head": "786986a02219973a69a0d1c1114191149924d7f7"
+    "head": "36ca847d8b328e3f4f7791c836e0530e8a5ea5b3"
   },
   "root": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized",
   "schema": "plotpilot-integration-test-ledger/v1",

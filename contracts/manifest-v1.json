@@ -626,6 +626,11 @@
       "bytes": 558,
       "path": "contracts/corpus/paths/windows-paths.json",
       "sha256": "972dcd43a54b45602735d3ab2374f6fc23c4ba56fa775a39f50de2a0f7b403e0"
+    },
+    {
+      "bytes": 1041983,
+      "path": "contracts/unicode-casefold-v1.json",
+      "sha256": "4bcebe07655e0be42fe11434409127e872bf148e5d905f9d963feefa4075f879"
     }
   ],
   "finding_closure": {
@@ -694,7 +699,7 @@
     }
   },
   "inventory": {
-    "file_count_excluding_manifest": 122,
+    "file_count_excluding_manifest": 123,
     "negative_case_count": 105,
     "negative_group_count": 14,
     "schema_count": 48

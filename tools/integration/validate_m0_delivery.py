@@ -35,7 +35,21 @@ CLOSURE_EVIDENCE = DELIVERY / "evidence" / "finding-closure.json"
 P0_BRANCH = "codex/ppa-00-integration"
 BASE_SHA = "1c481237b6fa32ef5f85d7f8da4cb16f366cd4f0"
 MATRIX_PATH = merge_gate.DEFAULT_MATRIX
-RELEASE_LABEL = "M0-OPEN-R2"
+RELEASE_LABEL = "M0-OPEN-R3"
+
+_ALLOWED_FONT_URLS = {
+    "https://fonts.loli.net/css2?family=Inter:wght@400;500;600;700&display=swap",
+    "https://fonts.loli.net/css2?family=JetBrains+Mono:wght@400;500&display=swap",
+    "https://fonts.loli.net/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap",
+}
+_ALLOWED_FONT_ERROR = "Failed to load resource: net::ERR_FAILED"
+_ALLOWED_TAURI_WARNING = re.compile(
+    r"^\[API\] Tauri IPC 调用失败: TypeError: Cannot read properties of undefined \(reading 'invoke'\)"
+    r"(?:\n    at invoke \(http://127\.0\.0\.1:3000/node_modules/\.vite/deps/@tauri-apps_api_core\.js\?v=[a-z0-9]+:\d+:\d+\))?"
+    r"(?:\n    at initApiClient \(http://127\.0\.0\.1:3000/src/api/config\.ts:\d+:\d+\))?"
+    r"(?:\n    at async bootstrap \(http://127\.0\.0\.1:3000/src/main\.ts:\d+:\d+\))?$",
+    re.IGNORECASE,
+)
 
 
 def sha256(path: Path) -> str:
@@ -138,6 +152,129 @@ def _flow_has_expected_actual(flow: dict[str, Any]) -> bool:
     )
 
 
+def _validate_browser_error_gate(evidence: dict[str, Any]) -> None:
+    """Require the smoke producer's strict, classified browser error gate."""
+
+    strict = evidence.get("strict_browser_gate")
+    if not isinstance(strict, dict) or strict.get("passed") is not True:
+        raise AssertionError("browser strict error gate did not pass")
+    if int(strict.get("failure_count", 0) or 0) != 0 or strict.get("failures"):
+        raise AssertionError("browser strict error gate contains failures")
+    policy = evidence.get("allowlist_policy")
+    if not isinstance(policy, list):
+        raise AssertionError("browser allowlist policy is missing")
+    policy_ids = {
+        item.get("id") for item in policy if isinstance(item, dict) and isinstance(item.get("id"), str)
+    }
+    if policy_ids != {"blocked-font-css", "tauri-browser-fallback"}:
+        raise AssertionError("browser allowlist policy is not the exact M0 policy")
+
+    http_failures = evidence.get("http_failures")
+    if not isinstance(http_failures, list):
+        raise AssertionError("browser HTTP failure classification is missing")
+    if any(isinstance(item, dict) and int(item.get("status", 0) or 0) >= 400 for item in http_failures):
+        raise AssertionError("browser evidence contains an HTTP status >= 400")
+    if http_failures:
+        raise AssertionError("browser evidence contains an unclassified HTTP failure")
+
+    page_errors = evidence.get("page_errors")
+    if not isinstance(page_errors, list) or page_errors:
+        raise AssertionError("browser evidence contains a page error")
+    console_errors = evidence.get("console_errors")
+    if not isinstance(console_errors, list) or console_errors:
+        raise AssertionError("browser evidence contains an unallowlisted console error/warning")
+    console_events = evidence.get("console_events")
+    console_allowlisted = evidence.get("console_allowlisted")
+    if not isinstance(console_events, list) or not isinstance(console_allowlisted, list):
+        raise AssertionError("browser console classification is missing")
+    if len(console_events) != len(console_allowlisted):
+        raise AssertionError("every error/warning console event must be explicitly allowlisted")
+    for event in console_allowlisted:
+        if not isinstance(event, dict) or event.get("allowlist_id") not in policy_ids:
+            raise AssertionError("browser console event has an unknown allowlist id")
+        if event.get("allowlist_id") == "tauri-browser-fallback":
+            if event.get("type") != "warning" or not _ALLOWED_TAURI_WARNING.fullmatch(str(event.get("text", ""))):
+                raise AssertionError("browser Tauri fallback is not an exact documented warning")
+        elif event.get("type") != "error" or event.get("text") != _ALLOWED_FONT_ERROR:
+            raise AssertionError("browser font allowlist entry is not exact")
+
+    blocked_external = evidence.get("blocked_external_requests")
+    if not isinstance(blocked_external, list):
+        raise AssertionError("browser external-request classification is missing")
+    font_requests = 0
+    for request in blocked_external:
+        if not isinstance(request, dict) or request.get("allowlisted") is not True:
+            raise AssertionError("browser evidence contains an unallowlisted external request")
+        if request.get("allowlist_id") != "blocked-font-css" or request.get("method") != "GET":
+            raise AssertionError("browser external allowlist is broader than the font CSS rule")
+        if request.get("resource_type") != "stylesheet" or request.get("url") not in _ALLOWED_FONT_URLS:
+            raise AssertionError("browser external allowlist contains a non-font stylesheet")
+        font_requests += 1
+    font_events = sum(
+        1 for event in console_allowlisted
+        if isinstance(event, dict) and event.get("allowlist_id") == "blocked-font-css"
+    )
+    if font_events > font_requests:
+        raise AssertionError("browser font console allowlist is not bound to an aborted request")
+
+
+def _validate_independent_writing_support_subflows(flows: list[dict[str, Any]]) -> None:
+    """Check that FLOW-07 and FLOW-08 are separate executable UI records."""
+
+    subflows: dict[str, dict[str, Any]] = {}
+    for parent in flows:
+        children = parent.get("subflows", [])
+        if children is None:
+            children = []
+        if not isinstance(children, list):
+            raise AssertionError(f"browser subflows are not a list: {flow_id(parent)}")
+        for child in children:
+            if not isinstance(child, dict):
+                raise AssertionError(f"browser subflow is not an object: {flow_id(parent)}")
+            child_id = flow_id(child)
+            if child_id in subflows:
+                raise AssertionError(f"duplicate browser subflow: {child_id}")
+            subflows[child_id] = child
+    required = {"FLOW-07-foreshadow-ledger", "FLOW-08-story-evolution-bible"}
+    if set(subflows) != required:
+        raise AssertionError("browser evidence must contain exactly the two explicit FLOW-07/FLOW-08 subflows")
+
+    foreshadow = subflows["FLOW-07-foreshadow-ledger"]
+    bible = subflows["FLOW-08-story-evolution-bible"]
+    for child, label in ((foreshadow, "FLOW-07"), (bible, "FLOW-08")):
+        if child.get("status") not in {"passed", "exercised"} or child.get("exercised") is not True:
+            raise AssertionError(f"{label} subflow was not exercised")
+        actions = child.get("ui_actions", child.get("actions"))
+        if not isinstance(actions, list) or not actions:
+            raise AssertionError(f"{label} has no independent UI action record")
+        trace = child.get("api_trace")
+        if not isinstance(trace, list) or not trace:
+            raise AssertionError(f"{label} has no independent API trace")
+        if not _flow_has_expected_actual(child):
+            raise AssertionError(f"{label} has no independent expected/actual assertion")
+        screenshots = _flow_screenshots(child)
+        if len(screenshots) != 1 or not isinstance(screenshots[0], (str, dict)):
+            raise AssertionError(f"{label} must have exactly one independent screenshot")
+        if not any(isinstance(action, dict) and action.get("action") == "click" and action.get("target") == "写作支撑" for action in actions):
+            raise AssertionError(f"{label} does not record the writing-support group click")
+    f_targets = {item.get("target") for item in foreshadow["ui_actions"] if isinstance(item, dict)}
+    b_targets = {item.get("target") for item in bible["ui_actions"] if isinstance(item, dict)}
+    if "伏笔账本" not in f_targets or "故事演进" not in b_targets:
+        raise AssertionError("FLOW-07/FLOW-08 do not record their distinct tab clicks")
+    f_urls = "\n".join(str(item.get("url", "")) for item in foreshadow["api_trace"] if isinstance(item, dict))
+    b_urls = "\n".join(str(item.get("url", "")) for item in bible["api_trace"] if isinstance(item, dict))
+    if "foreshadow-ledger" not in f_urls:
+        raise AssertionError("FLOW-07 trace lacks the foreshadow-ledger API")
+    if "story-evolution" not in b_urls and "/bible" not in b_urls:
+        raise AssertionError("FLOW-08 trace lacks the story-evolution/Bible API")
+    f_paths = {str(item.get("path")) if isinstance(item, dict) else str(item) for item in _flow_screenshots(foreshadow)}
+    b_paths = {str(item.get("path")) if isinstance(item, dict) else str(item) for item in _flow_screenshots(bible)}
+    f_hashes = {str(item.get("sha256")) for item in _flow_screenshots(foreshadow) if isinstance(item, dict)}
+    b_hashes = {str(item.get("sha256")) for item in _flow_screenshots(bible) if isinstance(item, dict)}
+    if f_paths & b_paths or (f_hashes and b_hashes and f_hashes & b_hashes):
+        raise AssertionError("FLOW-07 and FLOW-08 share screenshot evidence")
+
+
 def validate_browser_evidence(evidence: dict[str, Any]) -> dict[str, Any]:
     """Validate the executable ten-flow record, not a surface inventory."""
 
@@ -149,6 +286,13 @@ def validate_browser_evidence(evidence: dict[str, Any]) -> dict[str, Any]:
     ids = [flow_id(flow) for flow in flows if isinstance(flow, dict)]
     if len(ids) != 10 or len(set(ids)) != 10:
         raise AssertionError("browser evidence flow IDs must be unique")
+    if set(ids) != {
+        "home-create-surface", "wizard-generation", "workbench-shell",
+        "workbench-chapter-tree", "chapter-edit-save", "generation-pause-cancel",
+        "sse-disconnect-recovery", "workbench-writing-support",
+        "checkpoint-recovery", "workbench-export-menu",
+    }:
+        raise AssertionError("browser evidence top-level flows are not the ten M0 records")
     for flow in flows:
         if not isinstance(flow, dict):
             raise AssertionError("browser evidence flow must be an object")
@@ -165,6 +309,9 @@ def validate_browser_evidence(evidence: dict[str, Any]) -> dict[str, Any]:
             raise AssertionError(f"browser flow has no expected/actual assertion: {current_id}")
         if not _flow_screenshots(flow):
             raise AssertionError(f"browser flow has no screenshot: {current_id}")
+
+    _validate_independent_writing_support_subflows(flows)
+    _validate_browser_error_gate(evidence)
 
     trace = evidence.get("api_trace")
     if not isinstance(trace, list) or not trace:
@@ -211,9 +358,6 @@ def validate_browser_evidence(evidence: dict[str, Any]) -> dict[str, Any]:
         calls = evidence.get(key, [])
         if calls:
             raise AssertionError(f"browser evidence has unexpected calls: {key}")
-    if evidence.get("page_errors"):
-        raise AssertionError("browser evidence contains page errors")
-
     data_evidence = evidence.get("data_evidence")
     if not isinstance(data_evidence, dict) or int(data_evidence.get("non_empty_chapter_count", 0) or 0) < 1:
         raise AssertionError("browser data evidence does not prove non-empty chapter persistence")
@@ -287,8 +431,8 @@ def validate() -> dict[str, Any]:
     if parity["evidence_run"]["sha256"] != sha256(EVIDENCE):
         raise AssertionError("parity evidence hash drift")
     screenshot_records = parity["evidence_run"]["screenshot_files"]
-    if len(screenshot_records) != 10:
-        raise AssertionError("expected ten screenshot records")
+    if len(screenshot_records) != 11:
+        raise AssertionError("expected nine top-level screenshots plus two independent FLOW-07/FLOW-08 screenshots")
     check_records(screenshot_records, "screenshot")
     for flow in parity["main_flows"]:
         if flow.get("status") != "exercised" or flow["baseline_evidence"].get("executed") is not True:
@@ -332,7 +476,7 @@ def validate() -> dict[str, Any]:
         "negative_cases": expected_inventory["negative_case_count"],
         "parity_main_flows": 10,
         "parity_features": 27,
-        "screenshots": 10,
+        "screenshots": len(screenshot_records),
         "browser_api_trace_entries": browser_summary["api_trace_entries"],
         "branch": git("branch", "--show-current"),
         "base_sha": BASE_SHA,

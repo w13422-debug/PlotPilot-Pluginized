@@ -2352,7 +2352,13 @@ def main() -> int:
     if not args.all:
         parser.error("M0 verification is explicit: pass --all")
     result = verify_all()
-    print(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2))
+    # The documented M0 command is also run from a stock Chinese Windows
+    # console (CP936).  Keep the CLI transport ASCII-only so a successful
+    # verification cannot fail while rendering a non-CP936 code point from a
+    # fixture (for example U+00DF in the Unicode path corpus).  JSON parsers
+    # recover the original strings from the escapes, while the evidence file
+    # remains the exact stdout bytes emitted by this command.
+    print(json.dumps(result, ensure_ascii=True, sort_keys=True, indent=2))
     return 0
 
 

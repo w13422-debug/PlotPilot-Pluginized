@@ -1,7 +1,7 @@
 {
   "evidence_run": {
-    "api_trace_entries": 463,
-    "console_warning_count": 28,
+    "api_trace_entries": 475,
+    "console_warning_count": 24,
     "constraints": {
       "export_download_captured": true,
       "external_network_used": false,
@@ -23,11 +23,11 @@
       "byte_length": 2051,
       "captured_by": "page.waitForEvent(download)",
       "status": 200,
-      "suggested_filename": "novel-novel-1787764638828.markdown"
+      "suggested_filename": "novel-novel-1787795855566.markdown"
     },
     "fixture": {
       "create_status": 201,
-      "id": "novel-1787764638828",
+      "id": "novel-1787795855566",
       "title": "M0 浏览基线"
     },
     "flow_count": 10,
@@ -42,61 +42,66 @@
       "playwright_version": "1.62.1",
       "python_command": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-update-v4.6.0\\.venv\\Scripts\\python.exe"
     },
-    "screenshot_count": 10,
+    "screenshot_count": 11,
     "screenshot_dir": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots",
     "screenshot_files": [
       {
-        "bytes": 157653,
+        "bytes": 141317,
         "path": "docs/deliveries/PPA-00/parity/screenshots/01-home-create-surface.png",
-        "sha256": "3774987656a44f2ec1354a4fb85bfb99a6f115ba7ee698785acf8df802d497bb"
+        "sha256": "046b8cf4999372a3fc32a10101f1ec97ba67d92b063ea317bed9008c18d1be85"
       },
       {
-        "bytes": 68932,
+        "bytes": 68943,
         "path": "docs/deliveries/PPA-00/parity/screenshots/02-wizard-generation.png",
-        "sha256": "64c1d86a289b2cbb6a80e30fb1e22b8552d12e6e1255fd31376edef383930f33"
+        "sha256": "b98b09ab7cb11083e8022ad87ac43d543de1f9e52fdc88cdfc5842cccaf0ec81"
       },
       {
-        "bytes": 176544,
+        "bytes": 176446,
         "path": "docs/deliveries/PPA-00/parity/screenshots/03-workbench-shell.png",
-        "sha256": "16c6711d0b2b6ee9113fb7acead2e64bb4840ad6a8aa260e08cfb33b8279df4b"
+        "sha256": "ce8186d75490cd6afe178a15c05e4969d0dc9669f7c2a069f71a84a2c8758732"
       },
       {
-        "bytes": 220393,
+        "bytes": 220301,
         "path": "docs/deliveries/PPA-00/parity/screenshots/04-sse-disconnect-recovery.png",
-        "sha256": "49ed0c06299c40ff119bad43a1eefcd252a148f77165a63b9b89f4f4d98e4644"
+        "sha256": "28ca79bc18a987e2c202775933f312e7f3bbe5522895fba737c46ffb7436cc60"
       },
       {
-        "bytes": 192124,
+        "bytes": 192027,
         "path": "docs/deliveries/PPA-00/parity/screenshots/05-workbench-chapter-tree.png",
-        "sha256": "457365c6f7ff0a9777adfc71850286ab85ee84c8140b79c0e8db4ac7fe767b5d"
+        "sha256": "a4387e701f917203be08a0102791da1d5f67a0c0c904c3d5584b57dbac4a233c"
       },
       {
-        "bytes": 56958,
+        "bytes": 57147,
         "path": "docs/deliveries/PPA-00/parity/screenshots/06-chapter-edit-save.png",
-        "sha256": "af04c42314947b2762c7f4b9fee7e2e8f974bfe4947453aa33c17fbecd1e3d0f"
+        "sha256": "b92dba2705576933ec67dd9c6cfc70da2248114a5aa2184790ce65a701f39903"
       },
       {
-        "bytes": 229467,
+        "bytes": 229379,
         "path": "docs/deliveries/PPA-00/parity/screenshots/07-generation-pause-cancel.png",
-        "sha256": "9608f704dcdd1f40bdd4bcbe1f6c21ce4c39ad21bf728285878d30496f5aff7e"
+        "sha256": "63670d1774da4ec7ec80340cdb08330f632e6cecac9c58e08c2b13230566b4c3"
       },
       {
-        "bytes": 183163,
-        "path": "docs/deliveries/PPA-00/parity/screenshots/08-workbench-writing-support.png",
-        "sha256": "bacd13b6a6b4db8ec2cb3ba917f610f283953a70e5b642c788ddf1883f1348bb"
+        "bytes": 166290,
+        "path": "docs/deliveries/PPA-00/parity/screenshots/08-workbench-foreshadow-ledger.png",
+        "sha256": "ef12791442f1651c5c46a9f1dca3de708ca7f161cb476678d98fb88ddb259a7c"
       },
       {
-        "bytes": 233905,
+        "bytes": 235295,
+        "path": "docs/deliveries/PPA-00/parity/screenshots/08-workbench-story-evolution-bible.png",
+        "sha256": "3d6e783e192fe4c377a3df0ebc65245d9f38cf5895c4bafae174d77ccd209b64"
+      },
+      {
+        "bytes": 233810,
         "path": "docs/deliveries/PPA-00/parity/screenshots/09-checkpoint-recovery.png",
-        "sha256": "b47be81c77edd5005f2f27f4cb2028fc41649c46e0030b5e2252837fb7167eab"
+        "sha256": "d35380a4d278155d093ce51678f3167a0653155b793aa2a16f230e8e59875451"
       },
       {
-        "bytes": 233217,
+        "bytes": 233126,
         "path": "docs/deliveries/PPA-00/parity/screenshots/10-workbench-export-menu.png",
-        "sha256": "5367cc1caaf9e92b28bf63db2df9b88b1d0e12f822109d65dd933791dfdee60e"
+        "sha256": "7cfb67a72f1dfc70ae927a542a673cf533164e4fc016fd409519e70e68ea08d1"
       }
     ],
-    "sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+    "sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
     "status": "passed",
     "unexpected_external_calls": [],
     "urls": {
@@ -112,21 +117,21 @@
       "baseline_evidence": {
         "api_request_urls": [
           "http://127.0.0.1:3000/api/stats/global",
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/bible",
           "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
           "http://127.0.0.1:3000/api/v1/novels",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/setup/plot-outline",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/worldbuilding",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/setup/plot-outline",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/worldbuilding",
           "http://127.0.0.1:8005/api/v1/novels/"
         ],
         "api_trace_entries": 18,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
-            "actual": "POST /api/v1/novels/ returned 201 and wizard opened for novel-1787764638828",
+            "actual": "POST /api/v1/novels/ returned 201 and wizard opened for novel-1787795855566",
             "expected": "Home UI creates a novel and opens setup wizard",
             "no_direct_api_action": true
           }
@@ -137,9 +142,9 @@
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 157653,
+            "bytes": 141317,
             "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\01-home-create-surface.png",
-            "sha256": "3774987656a44f2ec1354a4fb85bfb99a6f115ba7ee698785acf8df802d497bb"
+            "sha256": "046b8cf4999372a3fc32a10101f1ec97ba67d92b063ea317bed9008c18d1be85"
           }
         ],
         "status": "exercised",
@@ -186,41 +191,41 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/ai-invocations/4b794753-2d00-4486-96b6-fc1823c8ca9d",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/4b794753-2d00-4486-96b6-fc1823c8ca9d/accept",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/4b794753-2d00-4486-96b6-fc1823c8ca9d/commits",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/4b794753-2d00-4486-96b6-fc1823c8ca9d/resume",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/6df7e994-8975-42fc-b35e-d41187f300c3",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/6df7e994-8975-42fc-b35e-d41187f300c3/accept",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/6df7e994-8975-42fc-b35e-d41187f300c3/commits",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/6df7e994-8975-42fc-b35e-d41187f300c3/resume",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/70bd79ce-76fb-4223-84de-89da9621d80b",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/70bd79ce-76fb-4223-84de-89da9621d80b/accept",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/70bd79ce-76fb-4223-84de-89da9621d80b/commits",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/70bd79ce-76fb-4223-84de-89da9621d80b/resume",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/76cf238f-f6d3-43c6-9bb8-bdc3ef0a88d7",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/76cf238f-f6d3-43c6-9bb8-bdc3ef0a88d7/accept",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/76cf238f-f6d3-43c6-9bb8-bdc3ef0a88d7/commits",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/76cf238f-f6d3-43c6-9bb8-bdc3ef0a88d7/resume",
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/generate-stream?stage=characters",
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/generate-stream?stage=locations",
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/generate-stream?stage=worldbuilding",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/07e91575-4860-4c0c-9059-f148c4ef3644",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/07e91575-4860-4c0c-9059-f148c4ef3644/accept",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/07e91575-4860-4c0c-9059-f148c4ef3644/commits",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/07e91575-4860-4c0c-9059-f148c4ef3644/resume",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/268059e0-a5bf-4197-ba3a-347759bc5aba",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/268059e0-a5bf-4197-ba3a-347759bc5aba/accept",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/268059e0-a5bf-4197-ba3a-347759bc5aba/commits",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/268059e0-a5bf-4197-ba3a-347759bc5aba/resume",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/4e4568ad-6d58-4f27-8926-990a79e0bd8a",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/4e4568ad-6d58-4f27-8926-990a79e0bd8a/accept",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/4e4568ad-6d58-4f27-8926-990a79e0bd8a/commits",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/4e4568ad-6d58-4f27-8926-990a79e0bd8a/resume",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/d3ed49c1-bf58-4e4e-a773-feab060405fb",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/d3ed49c1-bf58-4e4e-a773-feab060405fb/accept",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/d3ed49c1-bf58-4e4e-a773-feab060405fb/commits",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/d3ed49c1-bf58-4e4e-a773-feab060405fb/resume",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/status",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/bible",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/generate-stream?stage=characters",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/generate-stream?stage=locations",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/generate-stream?stage=worldbuilding",
           "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/setup/generate-plot-outline-stream",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/setup/plot-outline",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/structure",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/worldbuilding"
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/setup/generate-plot-outline-stream",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/setup/plot-outline",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/statistics",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/structure",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/worldbuilding"
         ],
         "api_trace_entries": 131,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
@@ -240,9 +245,9 @@
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 68932,
+            "bytes": 68943,
             "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\02-wizard-generation.png",
-            "sha256": "64c1d86a289b2cbb6a80e30fb1e22b8552d12e6e1255fd31376edef383930f33"
+            "sha256": "b98b09ab7cb11083e8022ad87ac43d543de1f9e52fdc88cdfc5842cccaf0ec81"
           }
         ],
         "status": "exercised",
@@ -296,13 +301,13 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/worldbuilding"
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/status",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/worldbuilding"
         ],
         "api_trace_entries": 6,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
@@ -316,9 +321,9 @@
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 176544,
+            "bytes": 176446,
             "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\03-workbench-shell.png",
-            "sha256": "16c6711d0b2b6ee9113fb7acead2e64bb4840ad6a8aa260e08cfb33b8279df4b"
+            "sha256": "ce8186d75490cd6afe178a15c05e4969d0dc9669f7c2a069f71a84a2c8758732"
           }
         ],
         "status": "exercised",
@@ -362,7 +367,7 @@
         "api_trace_entries": 0,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "expected_actual": [],
         "flow_ids": [],
         "screenshot_count": 0,
@@ -393,7 +398,7 @@
         "api_trace_entries": 0,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "expected_actual": [],
         "flow_ids": [],
         "screenshot_count": 0,
@@ -421,13 +426,13 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/worldbuilding"
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/status",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/worldbuilding"
         ],
         "api_trace_entries": 6,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
@@ -441,9 +446,9 @@
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 176544,
+            "bytes": 176446,
             "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\03-workbench-shell.png",
-            "sha256": "16c6711d0b2b6ee9113fb7acead2e64bb4840ad6a8aa260e08cfb33b8279df4b"
+            "sha256": "ce8186d75490cd6afe178a15c05e4969d0dc9669f7c2a069f71a84a2c8758732"
           }
         ],
         "status": "exercised",
@@ -483,22 +488,22 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/guardrail-snapshot",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
-          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/structure"
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/status",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters/1",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters/1/guardrail-snapshot",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/knowledge",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787795855566/structure"
         ],
-        "api_trace_entries": 12,
+        "api_trace_entries": 14,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
-            "actual": "chapter selected and editable workflow surface is visible at http://127.0.0.1:3000/book/novel-1787764638828/workbench",
+            "actual": "chapter selected and editable workflow surface is visible at http://127.0.0.1:3000/book/novel-1787795855566/workbench",
             "expected": "Visible Workbench structure selects a chapter"
           }
         ],
@@ -508,9 +513,9 @@
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 192124,
+            "bytes": 192027,
             "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\05-workbench-chapter-tree.png",
-            "sha256": "457365c6f7ff0a9777adfc71850286ab85ee84c8140b79c0e8db4ac7fe767b5d"
+            "sha256": "a4387e701f917203be08a0102791da1d5f67a0c0c904c3d5584b57dbac4a233c"
           }
         ],
         "status": "exercised",
@@ -542,20 +547,20 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
-          "http://127.0.0.1:3000/api/v1/knowledge-graph/novels/novel-1787764638828/chapters/by-number/1/inference-evidence",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/review",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/structure",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics"
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/bible",
+          "http://127.0.0.1:3000/api/v1/knowledge-graph/novels/novel-1787795855566/chapters/by-number/1/inference-evidence",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters/1",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters/1/review",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters/1/structure",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/statistics"
         ],
-        "api_trace_entries": 29,
+        "api_trace_entries": 27,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
@@ -571,9 +576,9 @@
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 56958,
+            "bytes": 57147,
             "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\06-chapter-edit-save.png",
-            "sha256": "af04c42314947b2762c7f4b9fee7e2e8f974bfe4947453aa33c17fbecd1e3d0f"
+            "sha256": "b92dba2705576933ec67dd9c6cfc70da2248114a5aa2184790ce65a701f39903"
           }
         ],
         "status": "exercised",
@@ -617,7 +622,7 @@
         "api_trace_entries": 0,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "expected_actual": [],
         "flow_ids": [],
         "screenshot_count": 0,
@@ -650,7 +655,7 @@
         "api_trace_entries": 0,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "expected_actual": [],
         "flow_ids": [],
         "screenshot_count": 0,
@@ -680,38 +685,38 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/ai-invocations/e891442d-deb8-46cd-88a8-93520a16c53c",
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/guardrail-snapshot",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/character-psyches",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/foreshadow-ledger?status=pending",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/narrative-engine/story-evolution",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics"
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/bible",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/evolution/snapshots?branch_id=main",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/governance/state",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/narrative-engine/story-evolution",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/setup/plot-outline",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/worldline/graph",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787795855566/structure"
         ],
-        "api_trace_entries": 33,
+        "api_trace_entries": 18,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
-            "actual": "writing support and narrative brief are visible",
-            "expected": "Writing-support UI opens existing Bible/foreshadowing surface"
+            "actual": "独立点击 故事演进 后显示故事演进控制台与引导落点，并读取 narrative-engine/Bible API",
+            "expected": "FLOW-08 separately clicks 故事演进 and hydrates its Bible-backed console",
+            "independent_ui_action": true,
+            "surface": "story-evolution-bible"
           }
         ],
         "flow_ids": [
-          "workbench-writing-support"
+          "FLOW-08-story-evolution-bible"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 183163,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\08-workbench-writing-support.png",
-            "sha256": "bacd13b6a6b4db8ec2cb3ba917f610f283953a70e5b642c788ddf1883f1348bb"
+            "bytes": 235295,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\08-workbench-story-evolution-bible.png",
+            "sha256": "3d6e783e192fe4c377a3df0ebc65245d9f38cf5895c4bafae174d77ccd209b64"
           }
         ],
         "status": "exercised",
@@ -722,7 +727,7 @@
           },
           {
             "action": "click",
-            "target": "叙事简报"
+            "target": "故事演进"
           }
         ]
       },
@@ -748,38 +753,56 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/ai-invocations/e891442d-deb8-46cd-88a8-93520a16c53c",
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/guardrail-snapshot",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/character-psyches",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/foreshadow-ledger?status=pending",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/narrative-engine/story-evolution",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics"
+          "http://127.0.0.1:3000/api/v1/ai-invocations/8e19bde4-0464-481f-821e-4786e75b5027",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/status",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/bible",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters/1/guardrail-snapshot",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/character-psyches",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/evolution/snapshots?branch_id=main",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/foreshadow-ledger",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/foreshadow-ledger?status=pending",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/governance/state",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/narrative-engine/story-evolution",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/setup/plot-outline",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/statistics",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/structure",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/worldline/graph",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787795855566/structure"
         ],
-        "api_trace_entries": 33,
+        "api_trace_entries": 58,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
-            "actual": "writing support and narrative brief are visible",
-            "expected": "Writing-support UI opens existing Bible/foreshadowing surface"
+            "actual": "伏笔账本与故事演进/Bible 分别点击、分别断言、分别截图并分别记录 API trace",
+            "expected": "FLOW-07 and FLOW-08 have independent UI actions and screenshots",
+            "formal_flow_ids": [
+              "FLOW-07",
+              "FLOW-08"
+            ],
+            "independent_api_traces": true,
+            "independent_screenshots": true
           }
         ],
         "flow_ids": [
           "workbench-writing-support"
         ],
-        "screenshot_count": 1,
+        "screenshot_count": 2,
         "screenshots": [
           {
-            "bytes": 183163,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\08-workbench-writing-support.png",
-            "sha256": "bacd13b6a6b4db8ec2cb3ba917f610f283953a70e5b642c788ddf1883f1348bb"
+            "bytes": 166290,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\08-workbench-foreshadow-ledger.png",
+            "sha256": "ef12791442f1651c5c46a9f1dca3de708ca7f161cb476678d98fb88ddb259a7c"
+          },
+          {
+            "bytes": 235295,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\08-workbench-story-evolution-bible.png",
+            "sha256": "3d6e783e192fe4c377a3df0ebc65245d9f38cf5895c4bafae174d77ccd209b64"
           }
         ],
         "status": "exercised",
@@ -790,7 +813,15 @@
           },
           {
             "action": "click",
-            "target": "叙事简报"
+            "target": "伏笔账本"
+          },
+          {
+            "action": "click",
+            "target": "写作支撑"
+          },
+          {
+            "action": "click",
+            "target": "故事演进"
           }
         ]
       },
@@ -816,13 +847,13 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/worldbuilding"
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/status",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/worldbuilding"
         ],
         "api_trace_entries": 6,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
@@ -836,9 +867,9 @@
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 176544,
+            "bytes": 176446,
             "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\03-workbench-shell.png",
-            "sha256": "16c6711d0b2b6ee9113fb7acead2e64bb4840ad6a8aa260e08cfb33b8279df4b"
+            "sha256": "ce8186d75490cd6afe178a15c05e4969d0dc9669f7c2a069f71a84a2c8758732"
           }
         ],
         "status": "exercised",
@@ -882,7 +913,7 @@
         "api_trace_entries": 0,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "expected_actual": [],
         "flow_ids": [],
         "screenshot_count": 0,
@@ -911,38 +942,42 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/ai-invocations/e891442d-deb8-46cd-88a8-93520a16c53c",
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/guardrail-snapshot",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/character-psyches",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/foreshadow-ledger?status=pending",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/narrative-engine/story-evolution",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics"
+          "http://127.0.0.1:3000/api/v1/ai-invocations/8e19bde4-0464-481f-821e-4786e75b5027",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/status",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/bible",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters/1/guardrail-snapshot",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/character-psyches",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/foreshadow-ledger",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/foreshadow-ledger?status=pending",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/narrative-engine/story-evolution",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/statistics",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/structure"
         ],
-        "api_trace_entries": 33,
+        "api_trace_entries": 40,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
-            "actual": "writing support and narrative brief are visible",
-            "expected": "Writing-support UI opens existing Bible/foreshadowing surface"
+            "actual": "独立点击 伏笔账本 后显示 .fsw-panel，且读取 foreshadow-ledger API",
+            "expected": "FLOW-07 clicks and hydrates the dedicated 伏笔账本 surface",
+            "independent_ui_action": true,
+            "surface": "foreshadow-ledger"
           }
         ],
         "flow_ids": [
-          "workbench-writing-support"
+          "FLOW-07-foreshadow-ledger"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 183163,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\08-workbench-writing-support.png",
-            "sha256": "bacd13b6a6b4db8ec2cb3ba917f610f283953a70e5b642c788ddf1883f1348bb"
+            "bytes": 166290,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\08-workbench-foreshadow-ledger.png",
+            "sha256": "ef12791442f1651c5c46a9f1dca3de708ca7f161cb476678d98fb88ddb259a7c"
           }
         ],
         "status": "exercised",
@@ -953,7 +988,7 @@
           },
           {
             "action": "click",
-            "target": "叙事简报"
+            "target": "伏笔账本"
           }
         ]
       },
@@ -979,34 +1014,34 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/ai-invocations/e891442d-deb8-46cd-88a8-93520a16c53c",
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/8e19bde4-0464-481f-821e-4786e75b5027",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/status",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/bible",
           "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/guardrail-snapshot",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/character-psyches",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/evolution/snapshots?branch_id=main",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/foreshadow-ledger?status=pending",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/governance/state",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/narrative-engine/story-evolution",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/setup/plot-outline",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/structure",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/worldline/graph",
-          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/structure"
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters/1",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters/1/guardrail-snapshot",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/character-psyches",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/evolution/snapshots?branch_id=main",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/foreshadow-ledger?status=pending",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/governance/state",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/narrative-engine/story-evolution",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/setup/plot-outline",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/statistics",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/structure",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/worldline/graph",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787795855566/structure"
         ],
-        "api_trace_entries": 74,
+        "api_trace_entries": 58,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
-            "actual": "checkpoint evidence remained visible after reload from http://127.0.0.1:3000/book/novel-1787764638828/workbench?chapter=1",
+            "actual": "checkpoint evidence remained visible after reload from http://127.0.0.1:3000/book/novel-1787795855566/workbench?chapter=1",
             "expected": "Checkpoint/recovery surface remains hydrated after refresh",
             "restored_after_refresh": true
           }
@@ -1017,16 +1052,16 @@
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 233905,
+            "bytes": 233810,
             "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\09-checkpoint-recovery.png",
-            "sha256": "b47be81c77edd5005f2f27f4cb2028fc41649c46e0030b5e2252837fb7167eab"
+            "sha256": "d35380a4d278155d093ce51678f3167a0653155b793aa2a16f230e8e59875451"
           }
         ],
         "status": "exercised",
         "ui_actions": [
           {
             "action": "click",
-            "target": "作品基础 → 故事演进/检查点"
+            "target": "写作支撑 → 故事演进/检查点"
           },
           {
             "action": "reload",
@@ -1059,7 +1094,7 @@
         "api_trace_entries": 0,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "expected_actual": [],
         "flow_ids": [],
         "screenshot_count": 0,
@@ -1091,7 +1126,7 @@
         "api_trace_entries": 0,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "expected_actual": [],
         "flow_ids": [],
         "screenshot_count": 0,
@@ -1123,25 +1158,25 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/ai-invocations/5ce8f408-6216-4c1c-9159-ca46a112b234",
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/6afb3f68-2472-45af-ba46-e0bf161a6162",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/status",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/bible",
           "http://127.0.0.1:3000/api/v1/llm-control",
           "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/guardrail-snapshot",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/generate-chapter-stream",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/structure",
-          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/structure"
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters/1",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters/1/guardrail-snapshot",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/generate-chapter-stream",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/statistics",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/structure",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787795855566/structure"
         ],
         "api_trace_entries": 52,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
@@ -1158,9 +1193,9 @@
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 229467,
+            "bytes": 229379,
             "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\07-generation-pause-cancel.png",
-            "sha256": "9608f704dcdd1f40bdd4bcbe1f6c21ce4c39ad21bf728285878d30496f5aff7e"
+            "sha256": "63670d1774da4ec7ec80340cdb08330f632e6cecac9c58e08c2b13230566b4c3"
           }
         ],
         "status": "exercised",
@@ -1201,25 +1236,25 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/ai-invocations/5ce8f408-6216-4c1c-9159-ca46a112b234",
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/6afb3f68-2472-45af-ba46-e0bf161a6162",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/status",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/bible",
           "http://127.0.0.1:3000/api/v1/llm-control",
           "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/guardrail-snapshot",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/generate-chapter-stream",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/structure",
-          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/structure"
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters/1",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters/1/guardrail-snapshot",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/generate-chapter-stream",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/statistics",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/structure",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787795855566/structure"
         ],
         "api_trace_entries": 52,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
@@ -1236,9 +1271,9 @@
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 229467,
+            "bytes": 229379,
             "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\07-generation-pause-cancel.png",
-            "sha256": "9608f704dcdd1f40bdd4bcbe1f6c21ce4c39ad21bf728285878d30496f5aff7e"
+            "sha256": "63670d1774da4ec7ec80340cdb08330f632e6cecac9c58e08c2b13230566b4c3"
           }
         ],
         "status": "exercised",
@@ -1280,27 +1315,27 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/ai-invocations/1aa080c1-14de-4da1-8c01-5da012775699",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/789b7484-4736-415c-a8db-3dc5ad4c2b9f",
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/chapter-stream",
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/start",
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/stop",
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/812f76e3-a2f2-4677-afce-68d201937d12",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/dc5677f3-0d3f-476b-89f0-1c6325c4800d",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/chapter-stream",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/start",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/status",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/stop",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/bible",
           "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/auto-approve-mode",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/structure",
-          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/macro/progress",
-          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/macro/progress/stream"
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/auto-approve-mode",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/statistics",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/structure",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787795855566/macro/progress",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787795855566/macro/progress/stream"
         ],
         "api_trace_entries": 102,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
@@ -1318,9 +1353,9 @@
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 220393,
+            "bytes": 220301,
             "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\04-sse-disconnect-recovery.png",
-            "sha256": "49ed0c06299c40ff119bad43a1eefcd252a148f77165a63b9b89f4f4d98e4644"
+            "sha256": "28ca79bc18a987e2c202775933f312e7f3bbe5522895fba737c46ffb7436cc60"
           }
         ],
         "status": "exercised",
@@ -1382,27 +1417,27 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/ai-invocations/1aa080c1-14de-4da1-8c01-5da012775699",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/789b7484-4736-415c-a8db-3dc5ad4c2b9f",
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/chapter-stream",
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/start",
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/stop",
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/812f76e3-a2f2-4677-afce-68d201937d12",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/dc5677f3-0d3f-476b-89f0-1c6325c4800d",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/chapter-stream",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/start",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/status",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/stop",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/bible",
           "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/auto-approve-mode",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/structure",
-          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/macro/progress",
-          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/macro/progress/stream"
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/auto-approve-mode",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/statistics",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/structure",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787795855566/macro/progress",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787795855566/macro/progress/stream"
         ],
         "api_trace_entries": 102,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
@@ -1420,9 +1455,9 @@
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 220393,
+            "bytes": 220301,
             "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\04-sse-disconnect-recovery.png",
-            "sha256": "49ed0c06299c40ff119bad43a1eefcd252a148f77165a63b9b89f4f4d98e4644"
+            "sha256": "28ca79bc18a987e2c202775933f312e7f3bbe5522895fba737c46ffb7436cc60"
           }
         ],
         "status": "exercised",
@@ -1487,7 +1522,7 @@
         "api_trace_entries": 0,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "expected_actual": [],
         "flow_ids": [],
         "screenshot_count": 0,
@@ -1520,7 +1555,7 @@
         "api_trace_entries": 0,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "expected_actual": [],
         "flow_ids": [],
         "screenshot_count": 0,
@@ -1553,7 +1588,7 @@
         "api_trace_entries": 0,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "expected_actual": [],
         "flow_ids": [],
         "screenshot_count": 0,
@@ -1585,7 +1620,7 @@
         "api_trace_entries": 0,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "expected_actual": [],
         "flow_ids": [],
         "screenshot_count": 0,
@@ -1614,16 +1649,16 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/export/novel/novel-1787764638828?format=markdown"
+          "http://127.0.0.1:3000/api/v1/export/novel/novel-1787795855566?format=markdown"
         ],
         "api_trace_entries": 2,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
-            "actual": "captured novel-novel-1787764638828.markdown (2051 bytes)",
+            "actual": "captured novel-novel-1787795855566.markdown (2051 bytes)",
             "expected": "UI Markdown export downloads non-empty bytes",
             "ui_download_captured": true
           }
@@ -1634,9 +1669,9 @@
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 233217,
+            "bytes": 233126,
             "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\10-workbench-export-menu.png",
-            "sha256": "5367cc1caaf9e92b28bf63db2df9b88b1d0e12f822109d65dd933791dfdee60e"
+            "sha256": "7cfb67a72f1dfc70ae927a542a673cf533164e4fc016fd409519e70e68ea08d1"
           }
         ],
         "status": "exercised",
@@ -1685,21 +1720,21 @@
       "baseline_evidence": {
         "api_request_urls": [
           "http://127.0.0.1:3000/api/stats/global",
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/bible",
           "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
           "http://127.0.0.1:3000/api/v1/novels",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/setup/plot-outline",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/worldbuilding",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/setup/plot-outline",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/worldbuilding",
           "http://127.0.0.1:8005/api/v1/novels/"
         ],
         "api_trace_entries": 18,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
-            "actual": "POST /api/v1/novels/ returned 201 and wizard opened for novel-1787764638828",
+            "actual": "POST /api/v1/novels/ returned 201 and wizard opened for novel-1787795855566",
             "expected": "Home UI creates a novel and opens setup wizard",
             "no_direct_api_action": true
           }
@@ -1710,9 +1745,9 @@
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 157653,
+            "bytes": 141317,
             "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\01-home-create-surface.png",
-            "sha256": "3774987656a44f2ec1354a4fb85bfb99a6f115ba7ee698785acf8df802d497bb"
+            "sha256": "046b8cf4999372a3fc32a10101f1ec97ba67d92b063ea317bed9008c18d1be85"
           }
         ],
         "status": "exercised",
@@ -1761,41 +1796,41 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/ai-invocations/4b794753-2d00-4486-96b6-fc1823c8ca9d",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/4b794753-2d00-4486-96b6-fc1823c8ca9d/accept",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/4b794753-2d00-4486-96b6-fc1823c8ca9d/commits",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/4b794753-2d00-4486-96b6-fc1823c8ca9d/resume",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/6df7e994-8975-42fc-b35e-d41187f300c3",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/6df7e994-8975-42fc-b35e-d41187f300c3/accept",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/6df7e994-8975-42fc-b35e-d41187f300c3/commits",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/6df7e994-8975-42fc-b35e-d41187f300c3/resume",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/70bd79ce-76fb-4223-84de-89da9621d80b",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/70bd79ce-76fb-4223-84de-89da9621d80b/accept",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/70bd79ce-76fb-4223-84de-89da9621d80b/commits",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/70bd79ce-76fb-4223-84de-89da9621d80b/resume",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/76cf238f-f6d3-43c6-9bb8-bdc3ef0a88d7",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/76cf238f-f6d3-43c6-9bb8-bdc3ef0a88d7/accept",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/76cf238f-f6d3-43c6-9bb8-bdc3ef0a88d7/commits",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/76cf238f-f6d3-43c6-9bb8-bdc3ef0a88d7/resume",
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/generate-stream?stage=characters",
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/generate-stream?stage=locations",
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/generate-stream?stage=worldbuilding",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/07e91575-4860-4c0c-9059-f148c4ef3644",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/07e91575-4860-4c0c-9059-f148c4ef3644/accept",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/07e91575-4860-4c0c-9059-f148c4ef3644/commits",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/07e91575-4860-4c0c-9059-f148c4ef3644/resume",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/268059e0-a5bf-4197-ba3a-347759bc5aba",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/268059e0-a5bf-4197-ba3a-347759bc5aba/accept",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/268059e0-a5bf-4197-ba3a-347759bc5aba/commits",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/268059e0-a5bf-4197-ba3a-347759bc5aba/resume",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/4e4568ad-6d58-4f27-8926-990a79e0bd8a",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/4e4568ad-6d58-4f27-8926-990a79e0bd8a/accept",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/4e4568ad-6d58-4f27-8926-990a79e0bd8a/commits",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/4e4568ad-6d58-4f27-8926-990a79e0bd8a/resume",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/d3ed49c1-bf58-4e4e-a773-feab060405fb",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/d3ed49c1-bf58-4e4e-a773-feab060405fb/accept",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/d3ed49c1-bf58-4e4e-a773-feab060405fb/commits",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/d3ed49c1-bf58-4e4e-a773-feab060405fb/resume",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/status",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/bible",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/generate-stream?stage=characters",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/generate-stream?stage=locations",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/generate-stream?stage=worldbuilding",
           "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/setup/generate-plot-outline-stream",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/setup/plot-outline",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/structure",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/worldbuilding"
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/setup/generate-plot-outline-stream",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/setup/plot-outline",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/statistics",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/structure",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/worldbuilding"
         ],
         "api_trace_entries": 131,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
@@ -1815,9 +1850,9 @@
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 68932,
+            "bytes": 68943,
             "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\02-wizard-generation.png",
-            "sha256": "64c1d86a289b2cbb6a80e30fb1e22b8552d12e6e1255fd31376edef383930f33"
+            "sha256": "b98b09ab7cb11083e8022ad87ac43d543de1f9e52fdc88cdfc5842cccaf0ec81"
           }
         ],
         "status": "exercised",
@@ -1873,19 +1908,19 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/guardrail-snapshot",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/worldbuilding",
-          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/structure"
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/status",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters/1",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters/1/guardrail-snapshot",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/worldbuilding",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787795855566/structure"
         ],
-        "api_trace_entries": 18,
+        "api_trace_entries": 20,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
@@ -1893,7 +1928,7 @@
             "expected": "Workbench displays the created product and hydrates a real reference panel"
           },
           {
-            "actual": "chapter selected and editable workflow surface is visible at http://127.0.0.1:3000/book/novel-1787764638828/workbench",
+            "actual": "chapter selected and editable workflow surface is visible at http://127.0.0.1:3000/book/novel-1787795855566/workbench",
             "expected": "Visible Workbench structure selects a chapter"
           }
         ],
@@ -1904,14 +1939,14 @@
         "screenshot_count": 2,
         "screenshots": [
           {
-            "bytes": 176544,
+            "bytes": 176446,
             "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\03-workbench-shell.png",
-            "sha256": "16c6711d0b2b6ee9113fb7acead2e64bb4840ad6a8aa260e08cfb33b8279df4b"
+            "sha256": "ce8186d75490cd6afe178a15c05e4969d0dc9669f7c2a069f71a84a2c8758732"
           },
           {
-            "bytes": 192124,
+            "bytes": 192027,
             "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\05-workbench-chapter-tree.png",
-            "sha256": "457365c6f7ff0a9777adfc71850286ab85ee84c8140b79c0e8db4ac7fe767b5d"
+            "sha256": "a4387e701f917203be08a0102791da1d5f67a0c0c904c3d5584b57dbac4a233c"
           }
         ],
         "status": "exercised",
@@ -1958,20 +1993,20 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
-          "http://127.0.0.1:3000/api/v1/knowledge-graph/novels/novel-1787764638828/chapters/by-number/1/inference-evidence",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/review",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/structure",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics"
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/bible",
+          "http://127.0.0.1:3000/api/v1/knowledge-graph/novels/novel-1787795855566/chapters/by-number/1/inference-evidence",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters/1",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters/1/review",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters/1/structure",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/statistics"
         ],
-        "api_trace_entries": 29,
+        "api_trace_entries": 27,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
@@ -1987,9 +2022,9 @@
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 56958,
+            "bytes": 57147,
             "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\06-chapter-edit-save.png",
-            "sha256": "af04c42314947b2762c7f4b9fee7e2e8f974bfe4947453aa33c17fbecd1e3d0f"
+            "sha256": "b92dba2705576933ec67dd9c6cfc70da2248114a5aa2184790ce65a701f39903"
           }
         ],
         "status": "exercised",
@@ -2032,25 +2067,25 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/ai-invocations/5ce8f408-6216-4c1c-9159-ca46a112b234",
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/6afb3f68-2472-45af-ba46-e0bf161a6162",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/status",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/bible",
           "http://127.0.0.1:3000/api/v1/llm-control",
           "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/guardrail-snapshot",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/generate-chapter-stream",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/structure",
-          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/structure"
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters/1",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters/1/guardrail-snapshot",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/generate-chapter-stream",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/statistics",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/structure",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787795855566/structure"
         ],
         "api_trace_entries": 52,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
@@ -2067,9 +2102,9 @@
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 229467,
+            "bytes": 229379,
             "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\07-generation-pause-cancel.png",
-            "sha256": "9608f704dcdd1f40bdd4bcbe1f6c21ce4c39ad21bf728285878d30496f5aff7e"
+            "sha256": "63670d1774da4ec7ec80340cdb08330f632e6cecac9c58e08c2b13230566b4c3"
           }
         ],
         "status": "exercised",
@@ -2113,27 +2148,27 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/ai-invocations/1aa080c1-14de-4da1-8c01-5da012775699",
-          "http://127.0.0.1:3000/api/v1/ai-invocations/789b7484-4736-415c-a8db-3dc5ad4c2b9f",
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/chapter-stream",
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/start",
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/stop",
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/812f76e3-a2f2-4677-afce-68d201937d12",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/dc5677f3-0d3f-476b-89f0-1c6325c4800d",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/chapter-stream",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/start",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/status",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/stop",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/bible",
           "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/auto-approve-mode",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/structure",
-          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/macro/progress",
-          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/macro/progress/stream"
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/auto-approve-mode",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/statistics",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/structure",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787795855566/macro/progress",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787795855566/macro/progress/stream"
         ],
         "api_trace_entries": 102,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
@@ -2151,9 +2186,9 @@
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 220393,
+            "bytes": 220301,
             "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\04-sse-disconnect-recovery.png",
-            "sha256": "49ed0c06299c40ff119bad43a1eefcd252a148f77165a63b9b89f4f4d98e4644"
+            "sha256": "28ca79bc18a987e2c202775933f312e7f3bbe5522895fba737c46ffb7436cc60"
           }
         ],
         "status": "exercised",
@@ -2217,38 +2252,42 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/ai-invocations/e891442d-deb8-46cd-88a8-93520a16c53c",
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/guardrail-snapshot",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/character-psyches",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/foreshadow-ledger?status=pending",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/narrative-engine/story-evolution",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics"
+          "http://127.0.0.1:3000/api/v1/ai-invocations/8e19bde4-0464-481f-821e-4786e75b5027",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/status",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/bible",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters/1/guardrail-snapshot",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/character-psyches",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/foreshadow-ledger",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/foreshadow-ledger?status=pending",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/narrative-engine/story-evolution",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/statistics",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/structure"
         ],
-        "api_trace_entries": 33,
+        "api_trace_entries": 40,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
-            "actual": "writing support and narrative brief are visible",
-            "expected": "Writing-support UI opens existing Bible/foreshadowing surface"
+            "actual": "独立点击 伏笔账本 后显示 .fsw-panel，且读取 foreshadow-ledger API",
+            "expected": "FLOW-07 clicks and hydrates the dedicated 伏笔账本 surface",
+            "independent_ui_action": true,
+            "surface": "foreshadow-ledger"
           }
         ],
         "flow_ids": [
-          "workbench-writing-support"
+          "FLOW-07-foreshadow-ledger"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 183163,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\08-workbench-writing-support.png",
-            "sha256": "bacd13b6a6b4db8ec2cb3ba917f610f283953a70e5b642c788ddf1883f1348bb"
+            "bytes": 166290,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\08-workbench-foreshadow-ledger.png",
+            "sha256": "ef12791442f1651c5c46a9f1dca3de708ca7f161cb476678d98fb88ddb259a7c"
           }
         ],
         "status": "exercised",
@@ -2259,7 +2298,7 @@
           },
           {
             "action": "click",
-            "target": "叙事简报"
+            "target": "伏笔账本"
           }
         ]
       },
@@ -2287,38 +2326,38 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/ai-invocations/e891442d-deb8-46cd-88a8-93520a16c53c",
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/guardrail-snapshot",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/character-psyches",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/foreshadow-ledger?status=pending",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/narrative-engine/story-evolution",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics"
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/bible",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/evolution/snapshots?branch_id=main",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/governance/state",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/narrative-engine/story-evolution",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/setup/plot-outline",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/worldline/graph",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787795855566/structure"
         ],
-        "api_trace_entries": 33,
+        "api_trace_entries": 18,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
-            "actual": "writing support and narrative brief are visible",
-            "expected": "Writing-support UI opens existing Bible/foreshadowing surface"
+            "actual": "独立点击 故事演进 后显示故事演进控制台与引导落点，并读取 narrative-engine/Bible API",
+            "expected": "FLOW-08 separately clicks 故事演进 and hydrates its Bible-backed console",
+            "independent_ui_action": true,
+            "surface": "story-evolution-bible"
           }
         ],
         "flow_ids": [
-          "workbench-writing-support"
+          "FLOW-08-story-evolution-bible"
         ],
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 183163,
-            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\08-workbench-writing-support.png",
-            "sha256": "bacd13b6a6b4db8ec2cb3ba917f610f283953a70e5b642c788ddf1883f1348bb"
+            "bytes": 235295,
+            "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\08-workbench-story-evolution-bible.png",
+            "sha256": "3d6e783e192fe4c377a3df0ebc65245d9f38cf5895c4bafae174d77ccd209b64"
           }
         ],
         "status": "exercised",
@@ -2329,7 +2368,7 @@
           },
           {
             "action": "click",
-            "target": "叙事简报"
+            "target": "故事演进"
           }
         ]
       },
@@ -2357,34 +2396,34 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/ai-invocations/e891442d-deb8-46cd-88a8-93520a16c53c",
-          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787764638828/status",
-          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787764638828/bible",
+          "http://127.0.0.1:3000/api/v1/ai-invocations/8e19bde4-0464-481f-821e-4786e75b5027",
+          "http://127.0.0.1:3000/api/v1/autopilot/novel-1787795855566/status",
+          "http://127.0.0.1:3000/api/v1/bible/novels/novel-1787795855566/bible",
           "http://127.0.0.1:3000/api/v1/llm-control/prompts/stats",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/chapters/1/guardrail-snapshot",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/character-psyches",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/evolution/snapshots?branch_id=main",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/foreshadow-ledger?status=pending",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/governance/state",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/knowledge",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/narrative-engine/story-evolution",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/setup/plot-outline",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/statistics",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/structure",
-          "http://127.0.0.1:3000/api/v1/novels/novel-1787764638828/worldline/graph",
-          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787764638828/structure"
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters/1",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/chapters/1/guardrail-snapshot",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/character-psyches",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/evolution/snapshots?branch_id=main",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/foreshadow-ledger?status=pending",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/governance/state",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/knowledge",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/narrative-engine/story-evolution",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/setup/plot-outline",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/statistics",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/structure",
+          "http://127.0.0.1:3000/api/v1/novels/novel-1787795855566/worldline/graph",
+          "http://127.0.0.1:3000/api/v1/planning/novels/novel-1787795855566/structure"
         ],
-        "api_trace_entries": 74,
+        "api_trace_entries": 58,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
-            "actual": "checkpoint evidence remained visible after reload from http://127.0.0.1:3000/book/novel-1787764638828/workbench?chapter=1",
+            "actual": "checkpoint evidence remained visible after reload from http://127.0.0.1:3000/book/novel-1787795855566/workbench?chapter=1",
             "expected": "Checkpoint/recovery surface remains hydrated after refresh",
             "restored_after_refresh": true
           }
@@ -2395,16 +2434,16 @@
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 233905,
+            "bytes": 233810,
             "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\09-checkpoint-recovery.png",
-            "sha256": "b47be81c77edd5005f2f27f4cb2028fc41649c46e0030b5e2252837fb7167eab"
+            "sha256": "d35380a4d278155d093ce51678f3167a0653155b793aa2a16f230e8e59875451"
           }
         ],
         "status": "exercised",
         "ui_actions": [
           {
             "action": "click",
-            "target": "作品基础 → 故事演进/检查点"
+            "target": "写作支撑 → 故事演进/检查点"
           },
           {
             "action": "reload",
@@ -2437,16 +2476,16 @@
       ],
       "baseline_evidence": {
         "api_request_urls": [
-          "http://127.0.0.1:3000/api/v1/export/novel/novel-1787764638828?format=markdown"
+          "http://127.0.0.1:3000/api/v1/export/novel/novel-1787795855566?format=markdown"
         ],
         "api_trace_entries": 2,
         "behavior_assertions": [],
         "evidence_file": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "evidence_sha256": "ff141c8587cf285869a393cc4cc5cb1afd160a37c17d8dba36377ebe3a387ee4",
+        "evidence_sha256": "bb05f1fe5d6e9dfe740c5aab0e3f48cfa302d7290efb0dc2434188390d689c90",
         "executed": true,
         "expected_actual": [
           {
-            "actual": "captured novel-novel-1787764638828.markdown (2051 bytes)",
+            "actual": "captured novel-novel-1787795855566.markdown (2051 bytes)",
             "expected": "UI Markdown export downloads non-empty bytes",
             "ui_download_captured": true
           }
@@ -2457,9 +2496,9 @@
         "screenshot_count": 1,
         "screenshots": [
           {
-            "bytes": 233217,
+            "bytes": 233126,
             "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots\\10-workbench-export-menu.png",
-            "sha256": "5367cc1caaf9e92b28bf63db2df9b88b1d0e12f822109d65dd933791dfdee60e"
+            "sha256": "7cfb67a72f1dfc70ae927a542a673cf533164e4fc016fd409519e70e68ea08d1"
           }
         ],
         "status": "exercised",

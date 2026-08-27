@@ -10,7 +10,6 @@ from __future__ import annotations
 import copy
 import json
 import re
-import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
@@ -19,7 +18,15 @@ from jsonschema import Draft202012Validator, ValidationError
 
 from .canonical import hash_jcs, normalize_snapshot, parse_json_bytes, sha256_hex
 from .errors import ContractError, ContractValidationError, ErrorCode
-from .package import build_files_sha256, normalize_relative_path, package_hash, release_id, skill_package_hash, skill_release_id
+from .package import (
+    build_files_sha256,
+    normalize_relative_path,
+    package_hash,
+    release_id,
+    skill_package_hash,
+    skill_release_id,
+    unicode_nfc_casefold as _frozen_unicode_nfc_casefold,
+)
 from .rpc import HOST_METHODS, METHOD_MATRIX, WORKER_METHODS
 
 
@@ -146,15 +153,10 @@ def _utf8_sort(values: Iterable[str]) -> list[str]:
 
 
 def unicode_nfc_casefold(value: str) -> str:
-    """Return the cross-runtime path identity used by the v1 Windows profile.
-
-    NFC is applied before full Unicode ``casefold`` so Python and the
-    TypeScript verifier use the same identity for both composed/decomposed
-    names and folds such as ``Straße``/``strasse``.
-    """
+    """Return the cross-runtime path identity from the frozen v1 table."""
     if not isinstance(value, str):
         raise ContractValidationError("casefold identity requires a string")
-    return unicodedata.normalize("NFC", value).casefold()
+    return _frozen_unicode_nfc_casefold(value)
 
 
 def _casefold_unique(values: Iterable[str], message: str) -> None:

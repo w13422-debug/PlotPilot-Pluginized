@@ -13,11 +13,11 @@
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "stdout": {
-        "bytes": 51835,
+        "bytes": 51843,
         "first_line": "{",
         "last_line": "}",
         "path": "docs/deliveries/PPA-00/evidence/raw/fresh-review-python-contracts-all.stdout.txt",
-        "sha256": "31192c381756c91f63256bcbe1585b35941e0ba609858923c04a0fbee080b6c5"
+        "sha256": "4bf8b0af9a86ee7ae6d4056de8b797de98ddee2d5bbd538dd4911f4346e6a9f4"
       }
     },
     {
@@ -71,7 +71,7 @@
         "first_line": "{",
         "last_line": "}",
         "path": "docs/deliveries/PPA-00/evidence/raw/fresh-review-delivery-record-check.stdout.txt",
-        "sha256": "c39b7a9fb069cc52b6b624b64a8a0400d3feccc8a6d38a646c5ec10db158b15f"
+        "sha256": "60eb72b6cf37d1385217debf741610460114b48a88a5eac09106122c5459f31d"
       }
     },
     {
@@ -85,18 +85,18 @@
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "stdout": {
-        "bytes": 18364,
+        "bytes": 18037,
         "first_line": "{",
         "last_line": "}",
         "path": "docs/deliveries/PPA-00/evidence/raw/fresh-review-merge-gate.stdout.txt",
-        "sha256": "f09f29d8413646e075e80389f1a0b057430555293429ea66a2c86aec570e46f0"
+        "sha256": "7d1f8ce67a0115fd37dbfa3deb84d62a435b89cb3a3e2f56c6812bea557fb333"
       }
     }
   ],
   "findings": [],
   "limitations": [
-    "review is pre-commit; exact M0-OPEN tag target is verified in the final close step",
-    "browser smoke is recorded prior headful evidence and is not repeated because source is unchanged"
+    "review is pre-commit; exact M0-OPEN-R3 tag target is verified in the final close step",
+    "browser smoke was executed as the current R3 headful evidence; this read-only review consumes its exact recorded hash"
   ],
   "m0_gate_matrix": {
     "M0.1": {
@@ -111,7 +111,8 @@
       "evidence": [
         "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\m0.2-identity-runtime.json",
         "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\runtime-toolchain-lock.json",
-        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\license-ledger.json"
+        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\license-ledger.json",
+        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\coordination\\integration-queue\\dependency-delta-naive-ui-2.44.1.json"
       ],
       "status": "passed"
     },
@@ -163,7 +164,11 @@
   },
   "mode": "fresh_read_only_structured_review",
   "observations": {
-    "browser_api_trace_entries": 463,
+    "browser_api_trace_entries": 475,
+    "browser_subflows": [
+      "FLOW-07-foreshadow-ledger",
+      "FLOW-08-story-evolution-bible"
+    ],
     "contract_record_hashes_match": true,
     "contract_schemas": 48,
     "m0_gates": {
@@ -180,12 +185,12 @@
     "negative_groups": 14,
     "parity_features": 27,
     "parity_main_flows": 10,
-    "screenshots": 10,
+    "screenshots": 11,
     "state_json_valid": true,
     "stub_marker_hits": [],
     "tag_present_at_review": true
   },
-  "observed_head": "786986a02219973a69a0d1c1114191149924d7f7",
+  "observed_head": "36ca847d8b328e3f4f7791c836e0530e8a5ea5b3",
   "p1_p6_gate": {
     "creation_gate": [
       {
@@ -276,14 +281,14 @@
     "passed": true,
     "tag_expected_after_commit": true
   },
-  "review_task_id": "PPA-M0-FRESH-REVIEW-R2",
-  "reviewed_at": "2026-08-26T17:31:54Z",
+  "review_task_id": "PPA-M0-FRESH-REVIEW-R3",
+  "reviewed_at": "2026-08-27T02:10:17Z",
   "reviewer": "P0 main control fallback (delegated Sol reviewer returned not_found)",
   "root": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized",
   "schema": "plotpilot-m0-fresh-readonly-review/v1",
   "verdict": "passed_pre_commit",
   "write_set_check": {
-    "changed_paths_count": 246,
+    "changed_paths_count": 243,
     "out_of_set_paths": [],
     "passed": true
   }

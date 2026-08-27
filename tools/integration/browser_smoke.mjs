@@ -14,10 +14,11 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawn } from "node:child_process";
 
 const ROOT = resolve(fileURLToPath(new URL("../..", import.meta.url)));
+const DEFAULT_SCREENSHOT_DIR = resolve(join(ROOT, "docs", "deliveries", "PPA-00", "parity", "screenshots"));
 const OUTPUT = resolve(process.env.PLOTPILOT_BROWSER_SMOKE_OUTPUT ||
   join(ROOT, "docs", "deliveries", "PPA-00", "evidence", "browser-smoke.json"));
 const SCREENSHOT_DIR = resolve(process.env.PLOTPILOT_PARITY_SCREENSHOT_DIR ||
-  join(ROOT, "docs", "deliveries", "PPA-00", "parity", "screenshots"));
+  DEFAULT_SCREENSHOT_DIR);
 const BASE_URL = (process.env.PLOTPILOT_WEBUI_URL || "http://127.0.0.1:3000").replace(/\/$/, "");
 const API_URL = (process.env.PLOTPILOT_API_URL || "http://127.0.0.1:8005").replace(/\/$/, "");
 const FLOW_NAMES = [
@@ -26,6 +27,77 @@ const FLOW_NAMES = [
   "sse-disconnect-recovery", "workbench-writing-support",
   "checkpoint-recovery", "workbench-export-menu",
 ];
+
+// Browser smoke is intentionally offline.  These are the only two benign
+// browser-console cases permitted by the gate, and both are matched against
+// the complete known message shape rather than a broad substring.
+const ALLOWED_FONT_URLS = new Set([
+  "https://fonts.loli.net/css2?family=Inter:wght@400;500;600;700&display=swap",
+  "https://fonts.loli.net/css2?family=JetBrains+Mono:wght@400;500&display=swap",
+  "https://fonts.loli.net/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap",
+]);
+const ALLOWED_FONT_FAILURE_MESSAGE = "Failed to load resource: net::ERR_FAILED";
+const ALLOWED_TAURI_FALLBACK_MESSAGE = /^\[API\] Tauri IPC 调用失败: TypeError: Cannot read properties of undefined \(reading 'invoke'\)(?:\n    at invoke \(http:\/\/127\.0\.0\.1:3000\/node_modules\/.vite\/deps\/@tauri-apps_api_core\.js\?v=[a-z0-9]+:\d+:\d+\))?(?:\n    at initApiClient \(http:\/\/127\.0\.0\.1:3000\/src\/api\/config\.ts:\d+:\d+\))?(?:\n    at async bootstrap \(http:\/\/127\.0\.0\.1:3000\/src\/main\.ts:\d+:\d+\))?$/i;
+const BROWSER_ALLOWLIST_POLICY = [
+  { id: "blocked-font-css", kind: "external_stylesheet_and_matching_console_error",
+    match: "GET exact https://fonts.loli.net/css2 stylesheet plus exact net::ERR_FAILED console text",
+    reason: "External font CSS is deliberately aborted to keep M0 browser smoke offline" },
+  { id: "tauri-browser-fallback", kind: "console_warning",
+    match: "exact documented [API] Tauri IPC invoke failure stack in browser/Vite mode",
+    reason: "Browser/Vite smoke has no Tauri IPC host; the documented desktop fallback is expected" },
+];
+
+function allowlistedExternalRequest(url, method, resourceType) {
+  if (method.toUpperCase() !== "GET" || resourceType !== "stylesheet") return null;
+  if (!ALLOWED_FONT_URLS.has(url)) return null;
+  return {
+    id: "blocked-font-css",
+    reason: "External font CSS is deliberately aborted to keep M0 browser smoke offline",
+  };
+}
+
+function classifyConsoleMessage(type, text, availableFontFailures) {
+  if (type === "warning" && ALLOWED_TAURI_FALLBACK_MESSAGE.test(text)) {
+    return {
+      id: "tauri-browser-fallback",
+      reason: "Browser/Vite smoke has no Tauri IPC host; the documented desktop fallback is expected",
+    };
+  }
+  if (type === "error" && text === ALLOWED_FONT_FAILURE_MESSAGE && availableFontFailures > 0) {
+    return {
+      id: "blocked-font-css",
+      reason: "The corresponding exact fonts.loli.net stylesheet request was intentionally aborted",
+    };
+  }
+  return null;
+}
+
+function evaluateBrowserGate(httpFailures, consoleErrors, pageErrors, blockedExternal, consoleAllowlisted) {
+  const failures = [];
+  for (const item of httpFailures) failures.push({ kind: "http_status", ...item });
+  for (const item of consoleErrors) failures.push({ kind: "console", ...item });
+  for (const item of pageErrors) failures.push({ kind: "pageerror", ...item });
+  for (const item of blockedExternal) {
+    if (!item.allowlisted) failures.push({ kind: "unexpected_external_request", ...item });
+  }
+  const exactFontRequests = blockedExternal.filter(item => item.allowlist_id === "blocked-font-css").length;
+  const allowlistedFontErrors = consoleAllowlisted.filter(item => item.allowlist_id === "blocked-font-css").length;
+  if (allowlistedFontErrors > exactFontRequests) {
+    failures.push({ kind: "allowlist_accounting", message: "font console failures exceed exact blocked-font requests",
+      allowlisted_font_errors: allowlistedFontErrors, exact_font_requests: exactFontRequests });
+  }
+  return {
+    passed: failures.length === 0,
+    failure_count: failures.length,
+    failures,
+    policy: {
+      http_status_ge_400: "fail",
+      pageerror: "fail",
+      console_error_or_warning: "fail_unless_exact_allowlist",
+      external_request: "fail_unless_exact_fonts_loli_net_stylesheet",
+    },
+  };
+}
 
 const PYTHON_CANDIDATES = [
   process.env.PLOTPILOT_PYTHON,
@@ -165,7 +237,7 @@ function backendArgs() {
   const code = [
     "import sys; sys.path.insert(0,'backend')",
     "import tools.integration.browser_smoke_provider as seam",
-    "seam.install_browser_smoke_provider(); seam.patch_daemon_manager_for_browser_smoke()",
+    "seam.install_browser_smoke_provider(); seam.patch_prompt_manager_for_browser_smoke(); seam.patch_daemon_manager_for_browser_smoke()",
     "import interfaces.daemon_manager as dm",
     "dm.cleanup_orphan_python_processes=lambda logger_=None: None",
     "import interfaces.main as appmod",
@@ -178,6 +250,13 @@ function backendArgs() {
 async function main() {
   const started = iso();
   await mkdir(dirname(OUTPUT), { recursive: true });
+  if (SCREENSHOT_DIR !== DEFAULT_SCREENSHOT_DIR) {
+    throw new Error("PLOTPILOT_PARITY_SCREENSHOT_DIR must be the tracked PPA-00 evidence directory");
+  }
+  // A run must not inherit a previous run's screenshots.  The directory is a
+  // fixed, tracked evidence root; remove only that exact directory before
+  // recreating it so stale R2 images cannot enter the new parity ledger.
+  await rm(SCREENSHOT_DIR, { recursive: true, force: true });
   await mkdir(SCREENSHOT_DIR, { recursive: true });
   const dataRoot = await mkdtemp(join(tmpdir(), "plotpilot-m0-browser-"));
   const python = pick(PYTHON_CANDIDATES, "Python 3.12 runtime");
@@ -188,8 +267,10 @@ async function main() {
   const backend = start(python, bArgs, env);
   const vite = start(process.execPath, viteArgs, env, join(ROOT, "frontend"));
   let browser, context, page, browserPath, playwrightVersion = "unknown", playwrightModule = null;
-  let fixture = null, exportObservation = null, failure = null, flowNo = 0, activeFlowId = null;
-  const trace = [], flows = [], blockedExternal = [], consoleErrors = [], pageErrors = [];
+  let fixture = null, exportObservation = null, failure = null, strictGate = null, flowNo = 0, activeFlowId = null;
+  const trace = [], flows = [], blockedExternal = [], httpFailures = [];
+  const consoleEvents = [], consoleErrors = [], consoleAllowlisted = [], pageErrors = [];
+  let availableFontFailures = 0;
   try {
     await waitHttp(API_URL + "/api/v1/novels/");
     await waitHttp(BASE_URL + "/");
@@ -205,7 +286,13 @@ async function main() {
     await context.route("**/*", async function (route) {
       const u = new URL(route.request().url());
       if (["127.0.0.1", "localhost", "::1"].indexOf(u.hostname) < 0) {
-        blockedExternal.push({ at: iso(), method: route.request().method(), url: route.request().url(), action: "aborted" });
+        const request = route.request();
+        const allowlist = allowlistedExternalRequest(request.url(), request.method(), request.resourceType());
+        if (allowlist?.id === "blocked-font-css") availableFontFailures += 1;
+        blockedExternal.push({ at: iso(), method: request.method(), url: request.url(),
+          resource_type: request.resourceType(), action: "aborted",
+          allowlisted: Boolean(allowlist), allowlist_id: allowlist?.id || null,
+          allowlist_reason: allowlist?.reason || null });
         await route.abort();
       } else await route.continue();
     });
@@ -282,15 +369,29 @@ async function main() {
         resource_type: request.resourceType(), has_post_data: Boolean(request.postData()), flow_id: activeFlowId });
     });
     page.on("response", function (response) {
+      if (response.status() >= 400) {
+        httpFailures.push({ kind: "response", at: iso(), method: response.request().method(),
+          url: response.url(), status: response.status(), flow_id: activeFlowId });
+      }
       if (!isApiUrl(response.url())) return;
       trace.push({ kind: "response", at: iso(), method: response.request().method(), url: response.url(),
         status: response.status(), content_type: response.headers()["content-type"] || null, flow_id: activeFlowId });
     });
     page.on("console", function (message) {
-      if (["error", "warning"].indexOf(message.type()) >= 0)
-        consoleErrors.push({ at: iso(), type: message.type(), text: message.text() });
+      if (["error", "warning"].indexOf(message.type()) < 0) return;
+      const event = { at: iso(), type: message.type(), text: message.text(), flow_id: activeFlowId };
+      consoleEvents.push(event);
+      const allowlist = classifyConsoleMessage(message.type(), message.text(), availableFontFailures);
+      if (allowlist) {
+        if (allowlist.id === "blocked-font-css") availableFontFailures -= 1;
+        consoleAllowlisted.push(Object.assign({}, event, {
+          allowlist_id: allowlist.id, allowlist_reason: allowlist.reason,
+        }));
+      } else consoleErrors.push(event);
     });
-    page.on("pageerror", function (error) { pageErrors.push({ at: iso(), message: error.message }); });
+    page.on("pageerror", function (error) {
+      pageErrors.push({ at: iso(), message: error.message, flow_id: activeFlowId });
+    });
 
     async function flow(name, action) {
       const index = flowNo++;
@@ -306,16 +407,49 @@ async function main() {
       }
       await page.waitForTimeout(500);
       record.finished_at = iso();
-      const screenshotPath = join(SCREENSHOT_DIR, String(index + 1).padStart(2, "0") + "-" + name + ".png");
-      await page.screenshot({ path: screenshotPath, fullPage: false });
-      const screenshotBytes = await readFile(screenshotPath);
-      record.screenshots = [{ path: screenshotPath, bytes: screenshotBytes.byteLength, sha256: sha256Buffer(screenshotBytes) }];
+      if (!record.screenshots) {
+        const screenshotPath = join(SCREENSHOT_DIR, String(index + 1).padStart(2, "0") + "-" + name + ".png");
+        await page.screenshot({ path: screenshotPath, fullPage: false });
+        const screenshotBytes = await readFile(screenshotPath);
+        record.screenshots = [{ path: screenshotPath, bytes: screenshotBytes.byteLength,
+          sha256: sha256Buffer(screenshotBytes) }];
+      }
       record.api_trace = trace.slice(begin).map(function (v) { return Object.assign({}, v); });
       record.sse_events = await page.evaluate(function (from) {
         return (window.__plotpilotSseEvents || []).slice(from);
       }, beginSse);
       if (!record.api_trace.length) throw new Error(name + " has no API trace");
       flows.push(record);
+    }
+
+    // A formal flow may have more than one independently auditable surface.
+    // Keep each subflow's actions, API slice and screenshot separate; never
+    // let the parent flow's screenshot stand in for either child evidence.
+    async function subflow(name, screenshotName, action) {
+      const begin = trace.length;
+      const beginSse = await page.evaluate(() => window.__plotpilotSseEvents?.length || 0);
+      const record = { flow_id: name, status: "passed", exercised: true, started_at: iso(),
+        ui_actions: [], expected_actual: [] };
+      const previousFlow = activeFlowId;
+      activeFlowId = name;
+      try {
+        await action(record);
+      } finally {
+        activeFlowId = previousFlow;
+      }
+      await page.waitForTimeout(500);
+      record.finished_at = iso();
+      const screenshotPath = join(SCREENSHOT_DIR, screenshotName);
+      await page.screenshot({ path: screenshotPath, fullPage: false });
+      const screenshotBytes = await readFile(screenshotPath);
+      record.screenshots = [{ path: screenshotPath, bytes: screenshotBytes.byteLength,
+        sha256: sha256Buffer(screenshotBytes) }];
+      record.api_trace = trace.slice(begin).map(function (v) { return Object.assign({}, v); });
+      record.sse_events = await page.evaluate(function (from) {
+        return (window.__plotpilotSseEvents || []).slice(from);
+      }, beginSse);
+      if (!record.api_trace.length) throw new Error(name + " has no API trace");
+      return record;
     }
 
     await flow("home-create-surface", async function (r) {
@@ -534,19 +668,62 @@ async function main() {
     });
 
     await flow("workbench-writing-support", async function (r) {
+      const foreshadow = await subflow("FLOW-07-foreshadow-ledger", "08-workbench-foreshadow-ledger.png", async function (s) {
+        await page.getByRole("button", { name: "写作支撑", exact: true }).click();
+        s.ui_actions.push({ action: "click", target: "写作支撑" });
+        const ledgerTab = page.getByText("伏笔账本", { exact: true }).first();
+        await visible(ledgerTab, "foreshadow ledger tab");
+        await ledgerTab.click();
+        s.ui_actions.push({ action: "click", target: "伏笔账本" });
+        const ledger = page.locator(".fsw-panel").first();
+        await visible(ledger, "foreshadow ledger panel");
+        await visible(ledger.getByText("伏笔账本", { exact: true }).first(), "foreshadow ledger title");
+        await eventually(async function () {
+          return trace.slice(-20).some(function (e) {
+            return e.kind === "response" && pathOf(e).includes("/api/v1/novels/" + fixture.id + "/foreshadow-ledger");
+          });
+        }, "foreshadow ledger API trace", 30000);
+        s.expected_actual = expected("FLOW-07 clicks and hydrates the dedicated 伏笔账本 surface",
+          "独立点击 伏笔账本 后显示 .fsw-panel，且读取 foreshadow-ledger API",
+          { surface: "foreshadow-ledger", independent_ui_action: true });
+      });
+
+      const storyEvolution = await subflow("FLOW-08-story-evolution-bible", "08-workbench-story-evolution-bible.png", async function (s) {
       await page.getByRole("button", { name: "写作支撑", exact: true }).click();
-      await visible(page.getByText("叙事简报", { exact: true }).first(), "narrative brief");
-      await page.getByText("叙事简报", { exact: true }).first().click();
-      await visible(page.getByText("伏笔", { exact: false }).first(), "foreshadowing surface");
-      r.ui_actions.push({ action: "click", target: "写作支撑" }, { action: "click", target: "叙事简报" });
-      r.expected_actual = expected("Writing-support UI opens existing Bible/foreshadowing surface",
-        "writing support and narrative brief are visible");
+        s.ui_actions.push({ action: "click", target: "写作支撑" });
+      const storyTab = page.getByText("故事演进", { exact: true }).first();
+      await visible(storyTab, "story evolution tab");
+      await storyTab.click();
+        s.ui_actions.push({ action: "click", target: "故事演进" });
+      const story = page.locator(".story-evolution-panel").first();
+      await visible(story, "story evolution/Bible panel");
+      await visible(story.getByRole("region", { name: "故事演进控制台" }), "story evolution console");
+      await visible(story.getByText("引导落点", { exact: true }), "Bible setup anchors");
+      await eventually(async function () {
+        return trace.slice(-30).some(function (e) {
+          return e.kind === "response" && (
+            pathOf(e).includes("/api/v1/novels/" + fixture.id + "/narrative-engine/story-evolution") ||
+            pathOf(e).includes("/api/v1/bible/novels/" + fixture.id + "/bible")
+          );
+        });
+      }, "story evolution/Bible API trace", 30000);
+        s.expected_actual = expected("FLOW-08 separately clicks 故事演进 and hydrates its Bible-backed console",
+        "独立点击 故事演进 后显示故事演进控制台与引导落点，并读取 narrative-engine/Bible API",
+        { surface: "story-evolution-bible", independent_ui_action: true });
+      });
+
+      r.subflows = [foreshadow, storyEvolution];
+      r.screenshots = foreshadow.screenshots.concat(storyEvolution.screenshots);
+      r.ui_actions = foreshadow.ui_actions.concat(storyEvolution.ui_actions);
+      r.expected_actual = expected("FLOW-07 and FLOW-08 have independent UI actions and screenshots",
+        "伏笔账本与故事演进/Bible 分别点击、分别断言、分别截图并分别记录 API trace",
+        { formal_flow_ids: ["FLOW-07", "FLOW-08"], independent_screenshots: true,
+          independent_api_traces: true });
     });
 
     await flow("checkpoint-recovery", async function (r) {
-      // 故事演进属于“写作支撑”组，而不是“作品基础”组。 先切换
-      // 真实 UI 分组，再点击可见的 tab；不能依赖 n-tabs 为隐藏组保留的
-      // DOM 节点，否则 Playwright 会命中 display:none 的 label。
+      // 故事演进属于“写作支撑”组，而不是“作品基础”组。先切换真实
+      // UI 分组，再点击可见的 tab；这里仍专门验证刷新后的检查点恢复。
       await page.getByRole("button", { name: "写作支撑", exact: true }).click();
       await visible(page.getByText("故事演进", { exact: true }).first(), "story evolution tab");
       await page.getByText("故事演进", { exact: true }).first().click();
@@ -555,14 +732,12 @@ async function main() {
       const before = await page.url();
       await page.reload();
       await page.waitForURL(new RegExp("/book/" + fixture.id + "/workbench"), { timeout: 30000 });
-      // Workbench reloads its default panel from the route; re-open the same
-      // visible tab before asserting hydrated checkpoint content.
       await page.getByRole("button", { name: "写作支撑", exact: true }).click();
       await visible(page.getByText("故事演进", { exact: true }).first(), "story evolution tab after reload");
       await page.getByText("故事演进", { exact: true }).first().click();
       await eventually(async function () { return (await page.getByText(/检查点|存档|HEAD/, { exact: false }).count()) > 0; },
         "checkpoint hydration after reload", 30000);
-      r.ui_actions.push({ action: "click", target: "作品基础 → 故事演进/检查点" }, { action: "reload", target: "Workbench recovery" });
+      r.ui_actions.push({ action: "click", target: "写作支撑 → 故事演进/检查点" }, { action: "reload", target: "Workbench recovery" });
       r.expected_actual = expected("Checkpoint/recovery surface remains hydrated after refresh",
         "checkpoint evidence remained visible after reload from " + before, { restored_after_refresh: true });
     });
@@ -608,6 +783,10 @@ async function main() {
     });
     if (!invoked) throw new Error("API trace does not prove generation invocation");
     if (flows.length !== 10) throw new Error("expected ten flows, got " + flows.length);
+    strictGate = evaluateBrowserGate(httpFailures, consoleErrors, pageErrors, blockedExternal, consoleAllowlisted);
+    if (!strictGate.passed) {
+      throw new Error("strict browser gate failed: " + JSON.stringify(strictGate.failures));
+    }
     const output = {
       schema: "plotpilot-browser-smoke/v1", status: "passed", started_at: started, finished_at: iso(),
       root: ROOT, urls: { webui: BASE_URL, api: API_URL },
@@ -622,10 +801,15 @@ async function main() {
       data_evidence: dataEvidence, flows: flows, api_trace: trace,
       // External requests are recorded separately from unexpected calls: all
       // were intercepted and aborted before leaving the isolated browser.
-      unexpected_external_calls: [], blocked_external_requests: blockedExternal, forbidden_generation_calls: [],
-      console_errors: consoleErrors, page_errors: pageErrors, export_observation: exportObservation,
+      unexpected_external_calls: blockedExternal.filter(function (entry) { return !entry.allowlisted; }),
+      blocked_external_requests: blockedExternal, http_failures: httpFailures,
+      console_events: consoleEvents, console_errors: consoleErrors, console_allowlisted: consoleAllowlisted,
+      page_errors: pageErrors, allowlist_policy: BROWSER_ALLOWLIST_POLICY,
+      strict_browser_gate: strictGate, export_observation: exportObservation,
       provider_evidence: { configured_provider: "mock", provider_keys_removed: true,
-        backend_log_contains_mock_provider: true },
+        backend_log_contains_mock_provider: true,
+        prompt_stats_read_seam: { installed: true, contract_shape: "PromptStats", production_modules_untouched: true },
+        keyed_fixture_identity_normalization: { installed: true, duplicate_identities_repaired_only: true } },
     };
     await writeFile(OUTPUT, JSON.stringify(output, null, 2) + "\n", "utf8");
     console.log(JSON.stringify(output, null, 2));
@@ -634,8 +818,12 @@ async function main() {
     const output = { schema: "plotpilot-browser-smoke/v1", status: "failed",
       started_at: started, finished_at: iso(), root: ROOT,
       urls: { webui: BASE_URL, api: API_URL }, service_commands: [backend.commandLine, vite.commandLine].filter(Boolean),
-      fixture: fixture, flows: flows, api_trace: trace, unexpected_external_calls: [], blocked_external_requests: blockedExternal,
-      console_errors: consoleErrors, page_errors: pageErrors, error: failure.message,
+      fixture: fixture, flows: flows, api_trace: trace,
+      unexpected_external_calls: blockedExternal.filter(function (entry) { return !entry.allowlisted; }),
+      blocked_external_requests: blockedExternal, http_failures: httpFailures,
+      console_events: consoleEvents, console_errors: consoleErrors, console_allowlisted: consoleAllowlisted,
+      page_errors: pageErrors, allowlist_policy: BROWSER_ALLOWLIST_POLICY,
+      strict_browser_gate: strictGate, error: failure.message,
       service_logs: { backend: backend.snapshotLog(), vite: vite.snapshotLog() }, temporary_data_root: dataRoot };
     await writeFile(OUTPUT, JSON.stringify(output, null, 2) + "\n", "utf8");
     console.error(JSON.stringify(output, null, 2));

@@ -38,7 +38,7 @@ BACKUP_MANIFEST_PATH = Path(
 DESIGN_SHA256 = "e70f450b75cfa753148cf620d13855d0073f7d61294e7599ea9cc98f3e612b7b"
 BASE_SHA = "1c481237b6fa32ef5f85d7f8da4cb16f366cd4f0"
 P0_BRANCH = "codex/ppa-00-integration"
-RELEASE_LABEL = "M0-OPEN-R2"
+RELEASE_LABEL = "M0-OPEN-R3"
 
 FAMILY_IDS = [
     "84.1-common-jcs",
@@ -136,11 +136,11 @@ FEATURE_ROWS = [
     ("PP46-CHAPTER-EDIT-SAVE", "打开章节、编辑并保存正文", "P4", ["P1"], ["chapter-edit-save"], "baseline_observed"),
     ("PP46-ACT-CHAPTER-PLAN", "从幕发起规划并确认章节规划结果", "P6", ["P4", "P1", "P3"], [], "m0_not_exercised"),
     ("PP46-WB-SETTINGS", "右侧设置和生成偏好更新", "P4", ["P1", "P2", "P3"], [], "m0_not_exercised"),
-    ("PP46-BIBLE", "查看作品 Story Bible", "P5", ["P4", "P1"], ["workbench-writing-support"], "baseline_observed"),
+    ("PP46-BIBLE", "查看作品 Story Bible", "P5", ["P4", "P1"], ["FLOW-08-story-evolution-bible"], "baseline_observed"),
     ("PP46-CHARACTER", "查看人物档案和设定", "P5", ["P4", "P1"], ["workbench-writing-support"], "baseline_observed"),
     ("PP46-WORLDBUILDING", "查看世界观", "P5", ["P4", "P1"], ["workbench-shell"], "baseline_observed"),
     ("PP46-PROPS", "查看道具/物品生命周期", "P5", ["P4", "P1"], [], "m0_not_exercised"),
-    ("PP46-FORESHADOW", "查看伏笔台账和待处理数量", "P5", ["P4", "P1"], ["workbench-writing-support"], "baseline_observed"),
+    ("PP46-FORESHADOW", "查看伏笔台账和待处理数量", "P5", ["P4", "P1"], ["FLOW-07-foreshadow-ledger"], "baseline_observed"),
     ("PP46-STORY-EVOLUTION", "查看故事演进并兼容旧 tab 参数", "P5", ["P4", "P1"], ["checkpoint-recovery"], "baseline_observed"),
     ("PP46-KNOWLEDGE-GRAPH", "查看故事知识/知识图谱", "P5", ["P4", "P1"], [], "m0_not_exercised"),
     ("PP46-GENERATE", "执行章节规划、写作、审计和状态推进", "P6", ["P1", "P2", "P3", "P4", "P5"], [], "m0_not_exercised"),
@@ -162,8 +162,8 @@ MAIN_FLOW_ROWS = [
     ("FLOW-04", "PP46-CHAPTER-EDIT-SAVE", "编辑保存", ["chapter-edit-save"]),
     ("FLOW-05", "PP46-GENERATE-CANCEL", "生成/暂停/取消", ["generation-pause-cancel"]),
     ("FLOW-06", "PP46-AUTOPILOT-PROGRESS", "SSE 断线重连", ["sse-disconnect-recovery"]),
-    ("FLOW-07", "PP46-FORESHADOW", "查看伏笔", ["workbench-writing-support"]),
-    ("FLOW-08", "PP46-BIBLE", "查看故事演进/Bible", ["workbench-writing-support"]),
+    ("FLOW-07", "PP46-FORESHADOW", "查看伏笔", ["FLOW-07-foreshadow-ledger"]),
+    ("FLOW-08", "PP46-BIBLE", "查看故事演进/Bible", ["FLOW-08-story-evolution-bible"]),
     ("FLOW-09", "PP46-CHECKPOINT", "恢复任务", ["checkpoint-recovery"]),
     ("FLOW-10", "PP46-EXPORT", "导出", ["workbench-export-menu"]),
 ]
@@ -561,6 +561,18 @@ def flow_index(evidence: dict[str, Any]) -> dict[str, dict[str, Any]]:
         if flow_id in index:
             raise ValueError(f"duplicate browser evidence flow: {flow_id}")
         index[flow_id] = flow
+        subflows = flow.get("subflows", [])
+        if subflows is None:
+            subflows = []
+        if not isinstance(subflows, list):
+            raise ValueError(f"browser evidence subflows must be a list: {flow_id}")
+        for subflow in subflows:
+            if not isinstance(subflow, dict):
+                raise ValueError(f"browser evidence subflow must be an object: {flow_id}")
+            subflow_id = evidence_flow_id(subflow)
+            if subflow_id in index:
+                raise ValueError(f"duplicate browser evidence flow: {subflow_id}")
+            index[subflow_id] = subflow
     return index
 
 
@@ -713,7 +725,7 @@ def build_parity_ledger() -> dict[str, Any]:
             "unexpected_external_calls": evidence.get("unexpected_external_calls", []),
             "forbidden_generation_calls": evidence.get("forbidden_generation_calls", []),
             "page_errors": evidence["page_errors"],
-            "console_warning_count": len(evidence.get("console_errors", [])),
+            "console_warning_count": len(evidence.get("console_events", evidence.get("console_errors", []))),
             "api_trace_entries": len(evidence["api_trace"]),
             "flow_count": len(evidence["flows"]),
             "screenshot_count": len(screenshot_records),
@@ -804,6 +816,7 @@ def build_m0_open_manifest(contract_manifest: dict[str, Any], parity: dict[str, 
         "donor_protection_evidence": DELIVERY / "m0.1-donor-protection.json",
         "runtime_lock": DELIVERY / "runtime-toolchain-lock.json",
         "license_ledger": DELIVERY / "license-ledger.json",
+        "dependency_delta": ROOT / "coordination" / "integration-queue" / "dependency-delta-naive-ui-2.44.1.json",
     }
     artifact_records: dict[str, Any] = {}
     for name, path in outputs.items():
@@ -834,10 +847,11 @@ def build_m0_open_manifest(contract_manifest: dict[str, Any], parity: dict[str, 
             "project_matrix": str(MATRIX_PATH),
             "external_backup_manifest": str(BACKUP_MANIFEST_PATH),
             "bootstrap_evidence": str(BOOTSTRAP_PATH),
+            "dependency_delta": str(ROOT / "coordination" / "integration-queue" / "dependency-delta-naive-ui-2.44.1.json"),
         },
         "gates": {
             "M0.1": {"status": "passed", "evidence": [str(DELIVERY / "m0.1-donor-protection.json"), str(BACKUP_MANIFEST_PATH), str(BOOTSTRAP_PATH)], "assertion": "external donor manifest, three file hashes, donor HEAD/status and product bootstrap identity match"},
-            "M0.2": {"status": "passed", "evidence": [str(EVIDENCE / "m0.2-identity-runtime.json"), str(DELIVERY / "runtime-toolchain-lock.json"), str(DELIVERY / "license-ledger.json")], "assertion": "baseline, exact runtime lock, browser-only scripts, source/data-root separation and license record"},
+            "M0.2": {"status": "passed", "evidence": [str(EVIDENCE / "m0.2-identity-runtime.json"), str(DELIVERY / "runtime-toolchain-lock.json"), str(DELIVERY / "license-ledger.json"), str(ROOT / "coordination" / "integration-queue" / "dependency-delta-naive-ui-2.44.1.json")], "assertion": "baseline, exact runtime lock, browser-only scripts, source/data-root separation, license record and dependency delta"},
             "M0.3": {"status": "passed", "evidence": ["backend/plotpilot_core/bootstrap", "backend/plotpilot_plugin_sdk/ports.py", "frontend/src/contracts/types.ts", "frontend/src/contracts/rpc.ts"], "assertion": "composition root, typed ports, unified errors/diagnostics and existing Home/Workbench composition preserved"},
             "M0.4": {"status": "passed", "evidence": ["contracts/manifest-v1.json", "docs/contracts/README.md", "docs/contracts/schema-map.md", "docs/contracts/method-matrix.md", "docs/contracts/negative-golden.md"], "assertion": f"{inventory['schema_count']} closed schemas, §13.4/§20/§84 surface, four goldens and all {inventory['negative_group_count']} negative groups ({inventory['negative_case_count']} executable cases)"},
             "M0.5": {"status": "passed", "evidence": ["backend/plotpilot_plugin_sdk/fake_provider.py", "backend/plotpilot_plugin_sdk/fixtures.py", "backend/plotpilot_plugin_sdk/ports.py", "frontend/src/contracts/verifier.ts"], "assertion": "deterministic fake Provider, typed port/UI/HTTP/SSE fixtures and Python/TypeScript SDK/verifiers"},
@@ -855,7 +869,7 @@ def build_m0_open_manifest(contract_manifest: dict[str, Any], parity: dict[str, 
             "donor_local_push": identity["git_controls"]["donor_local_push"],
             "p1_p6_creation_gate": live_gate_state,
             "contract_delta": "none",
-            "dependency_delta": "none",
+            "dependency_delta": "dependency-delta-naive-ui-2.44.1.json",
             "desktop_build": "not run",
             "real_provider": "not used",
             "network_in_contract_tests": "disabled",

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import copy
+import json
 import sys
+import unicodedata
 from pathlib import Path
 
 import pytest
@@ -11,7 +13,8 @@ sys.path.insert(0, str(ROOT / "backend"))
 sys.path.insert(0, str(ROOT / "tools" / "integration"))
 
 from plotpilot_plugin_sdk.errors import ContractError, ErrorCode  # noqa: E402
-from plotpilot_plugin_sdk.package import build_files_sha256  # noqa: E402
+from plotpilot_plugin_sdk.package import _unicode_nfc, build_files_sha256  # noqa: E402
+from plotpilot_plugin_sdk.verifier import unicode_nfc_casefold  # noqa: E402
 from verify_contracts import (  # noqa: E402
     FIXTURES_DIR,
     GOLDEN_DIR,
@@ -219,3 +222,42 @@ def test_skill_chain_ref_pairing_and_bundleless_failed_receipt() -> None:
     executed_bundleless["step_state"] = "executed"
     executed_bundleless["receipt_hash"] = hash_without_field(executed_bundleless, "receipt_hash", "skill-run-receipt/v1")
     _assert_rejected(lambda: verify_skill_receipt(executed_bundleless), ErrorCode.RESULT_CONTRACT_MISMATCH)
+
+
+def test_frozen_unicode_casefold_contract_matches_python_15_and_probe_pair() -> None:
+    contract = json.loads((ROOT / "contracts" / "unicode-casefold-v1.json").read_text(encoding="utf-8"))
+    assert contract["schema"] == "unicode-casefold/v1"
+    assert contract["unicode_data_version"] == "15.0.0"
+    mappings = contract["mappings"]
+    assert len(mappings) == 1530
+
+    expected = {
+        f"{codepoint:04x}": chr(codepoint).casefold()
+        for codepoint in range(0x110000)
+        if chr(codepoint).casefold() != chr(codepoint)
+    }
+    assert mappings == expected
+    assert unicodedata.unidata_version == contract["unicode_data_version"]
+    assert all(unicode_nfc_casefold(vector["input"]) == vector["expected"] for vector in contract["test_vectors"])
+    assert all(_unicode_nfc(vector["input"]) == vector["expected"] for vector in contract["nfc_test_vectors"])
+    assert unicode_nfc_casefold(chr(0xA7CB) + ".txt") == chr(0xA7CB) + ".txt"
+    assert unicode_nfc_casefold(chr(0x0264) + ".txt") == chr(0x0264) + ".txt"
+    assert unicode_nfc_casefold(chr(0xA7CB)) != unicode_nfc_casefold(chr(0x0264))
+    assert unicode_nfc_casefold("Straße.txt") == "strasse.txt"
+    assert unicode_nfc_casefold("cafe" + "\u0301" + ".txt") == "café.txt"
+    assert _unicode_nfc("U" + "\u0308" + "\u0304") == "\u01D5"
+    assert _unicode_nfc("\u03B9" + "\u0308" + "\u0301") == "\u0390"
+    assert unicode_nfc_casefold("\uAC00") == "\uAC00"
+    assert unicode_nfc_casefold("\u1100\u1161") == "\uAC00"
+    assert unicode_nfc_casefold("\uAC01") == "\uAC01"
+    assert unicode_nfc_casefold("\u1100\u1161\u11A8") == "\uAC01"
+    assert contract["nfc_decomposition"]["ac00"] == [0x1100, 0x1161]
+    assert contract["nfc_decomposition"]["ac01"] == [0x1100, 0x1161, 0x11A8]
+    assert contract["nfc_composition"]["1100+1161"] == 0xAC00
+    assert contract["nfc_composition"]["ac00+11a8"] == 0xAC01
+    assert contract["nfc_composition"]["00dc+0304"] == 0x01D5
+    assert contract["nfc_composition"]["03ca+0301"] == 0x0390
+
+    # The probe pair is distinct under UCD 15.0.0 and therefore is accepted
+    # as two package paths; it was incorrectly folded together by newer JS.
+    build_files_sha256({chr(0xA7CB) + ".txt": b"a", chr(0x0264) + ".txt": b"b"})

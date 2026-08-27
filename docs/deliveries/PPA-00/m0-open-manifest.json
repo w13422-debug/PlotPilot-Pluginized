@@ -1,9 +1,14 @@
 {
   "artifacts": {
     "contract_golden_manifest": {
-      "bytes": 41661,
+      "bytes": 42035,
       "path": "docs/deliveries/PPA-00/contract-golden-manifest.json",
-      "sha256": "afe818df1fafbf47561de5427349bf67d0d3fa7f2f254ed25680c25ba0eb0147"
+      "sha256": "152aa49ee8b050045f5c2b053a464761a9df4eac7877dd8ed47edb95d8c3398d"
+    },
+    "dependency_delta": {
+      "bytes": 1815,
+      "path": "coordination/integration-queue/dependency-delta-naive-ui-2.44.1.json",
+      "sha256": "c9d01a65a9efdfa3a5bc86890c510911c4b5ab947da892aafea004496da60a03"
     },
     "donor_protection_evidence": {
       "bytes": 14549,
@@ -13,22 +18,22 @@
     "identity_runtime_evidence": {
       "bytes": 6921,
       "path": "docs/deliveries/PPA-00/evidence/m0.2-identity-runtime.json",
-      "sha256": "90bfce813b2a18849711cbd31ed74cfc9373d515fd58f30ed659024458a4c0d9"
+      "sha256": "b7fe36a4e3916086f7242a445ea254bcaf3597cac86fb22006286cb2e5bcdf2e"
     },
     "integration_test_ledger": {
       "bytes": 8396,
       "path": "docs/deliveries/PPA-00/integration-test-ledger.json",
-      "sha256": "19adf026de0ea80ee90bfe157446f16b7f1310119f6036f3f3831bb036f8b924"
+      "sha256": "24b0730bd5e57db10339ddbfbf8cf5c9ecbeb09b81140f8396fc77a0fc80cd59"
     },
     "license_ledger": {
-      "bytes": 87160,
+      "bytes": 87669,
       "path": "docs/deliveries/PPA-00/license-ledger.json",
-      "sha256": "4232d50524dfa17e780bbf2c05c3416f49c7e7e59aee520f5baa4dd1a5d5224d"
+      "sha256": "b287942341be4eb4309efcac9de2dd6fbc422d3dc79fae4447908ca83b0d6e3c"
     },
     "parity_ledger": {
-      "bytes": 129098,
+      "bytes": 131303,
       "path": "docs/deliveries/PPA-00/parity-ledger.json",
-      "sha256": "0b3965a34b6a51d09d58d4a5282691cf2caeed759d8084c75821a683f70759c6"
+      "sha256": "19e3b15f87936fb733e0b255dc1b978c25ef79d1b82f9ef251da87bce2648c53"
     },
     "runtime_lock": {
       "bytes": 1016,
@@ -36,10 +41,10 @@
       "sha256": "4a22e1d06b7b39fc82fe52b7df23a0b94bcf8c65a687f35dfc248e22e1048a30"
     }
   },
-  "commit_ref": "M0-OPEN-R2",
+  "commit_ref": "M0-OPEN-R3",
   "constraints": {
     "contract_delta": "none",
-    "dependency_delta": "none",
+    "dependency_delta": "dependency-delta-naive-ui-2.44.1.json",
     "desktop_build": "not run",
     "donor_local_push": "DISABLED",
     "fixture_user_data": "none",
@@ -58,11 +63,12 @@
       "status": "passed"
     },
     "M0.2": {
-      "assertion": "baseline, exact runtime lock, browser-only scripts, source/data-root separation and license record",
+      "assertion": "baseline, exact runtime lock, browser-only scripts, source/data-root separation, license record and dependency delta",
       "evidence": [
         "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\m0.2-identity-runtime.json",
         "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\runtime-toolchain-lock.json",
-        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\license-ledger.json"
+        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\license-ledger.json",
+        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\coordination\\integration-queue\\dependency-delta-naive-ui-2.44.1.json"
       ],
       "status": "passed"
     },
@@ -136,13 +142,14 @@
   "self_hash_excluded": true,
   "source_inputs": {
     "bootstrap_evidence": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p0-monorepo-bootstrap.json",
+    "dependency_delta": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\coordination\\integration-queue\\dependency-delta-naive-ui-2.44.1.json",
     "design": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized正式设计规划-2026-08-25-v1.md",
     "external_backup_manifest": "C:\\Users\\Administrator\\Desktop\\PlotPilot-Pluginized-preconstruction-backup-20260826\\donor-backup-manifest.json",
     "project_matrix": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized七项目任务书-2026-08-26\\project-matrix.json",
     "task": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized七项目任务书-2026-08-26\\PPA-00-Integration.md"
   },
   "status": "open",
-  "tag": "M0-OPEN-R2",
+  "tag": "M0-OPEN-R3",
   "verification": {
     "commands": [
       "python tools/integration/verify_contracts.py --all",
@@ -153,19 +160,19 @@
     ],
     "contract_golden_delivery": {
       "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\contract-golden-manifest.json",
-      "sha256": "afe818df1fafbf47561de5427349bf67d0d3fa7f2f254ed25680c25ba0eb0147"
+      "sha256": "152aa49ee8b050045f5c2b053a464761a9df4eac7877dd8ed47edb95d8c3398d"
     },
     "contract_manifest": {
       "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\contracts\\manifest-v1.json",
-      "sha256": "fd792d98201e2c38e356c1c4a7251abd597bc732f55dbfac706022edf47f48fa"
+      "sha256": "2866b8d0b36ec954ee8cb5c87374e0ca0a0c4acefd1901070cee0b45979d25e7"
     },
     "parity_ledger": {
       "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity-ledger.json",
-      "sha256": "0b3965a34b6a51d09d58d4a5282691cf2caeed759d8084c75821a683f70759c6"
+      "sha256": "19e3b15f87936fb733e0b255dc1b978c25ef79d1b82f9ef251da87bce2648c53"
     },
     "test_ledger": {
       "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\integration-test-ledger.json",
-      "sha256": "19adf026de0ea80ee90bfe157446f16b7f1310119f6036f3f3831bb036f8b924"
+      "sha256": "24b0730bd5e57db10339ddbfbf8cf5c9ecbeb09b81140f8396fc77a0fc80cd59"
     }
   }
 }

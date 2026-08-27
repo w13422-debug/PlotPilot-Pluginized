@@ -1,4 +1,4 @@
-"""Run a fresh, read-only M0-OPEN release review.
+"""Run a fresh, read-only M0-OPEN-R3 release review.
 
 This review is deliberately separate from the recorded integration ledger. It
 reruns deterministic contract/delivery/merge checks, verifies the content
@@ -25,7 +25,7 @@ RAW = DELIVERY / "evidence" / "raw"
 REVIEW_PATH = DELIVERY / "evidence" / "fresh-readonly-review.json"
 BASE_SHA = "1c481237b6fa32ef5f85d7f8da4cb16f366cd4f0"
 BRANCH = "codex/ppa-00-integration"
-RELEASE_LABEL = "M0-OPEN-R2"
+RELEASE_LABEL = "M0-OPEN-R3"
 
 
 def sha256_bytes(value: bytes) -> str:
@@ -195,6 +195,21 @@ def main() -> int:
         failures.append("contract inventory drift")
     if len(parity.get("main_flows", [])) != 10 or len(parity.get("features", [])) != 27:
         failures.append("parity inventory drift")
+    subflow_map = {
+        child.get("flow_id", child.get("id")): child
+        for flow in browser.get("flows", [])
+        for child in (flow.get("subflows", []) if isinstance(flow, dict) else [])
+        if isinstance(child, dict)
+    }
+    required_subflows = {"FLOW-07-foreshadow-ledger", "FLOW-08-story-evolution-bible"}
+    if set(subflow_map) != required_subflows:
+        failures.append("FLOW-07/FLOW-08 subflow inventory drift")
+    for subflow_id in required_subflows:
+        child = subflow_map.get(subflow_id, {})
+        if child.get("status") not in {"passed", "exercised"} or child.get("exercised") is not True:
+            failures.append(f"{subflow_id} was not exercised")
+        if not child.get("ui_actions") or not child.get("api_trace") or not child.get("screenshots"):
+            failures.append(f"{subflow_id} lacks independent UI/trace/screenshot evidence")
     if (
         len(browser.get("flows", [])) != 10
         or len(browser.get("api_trace", [])) <= 0
@@ -246,7 +261,7 @@ def main() -> int:
     ).returncode == 0
     review = {
         "schema": "plotpilot-m0-fresh-readonly-review/v1",
-        "review_task_id": "PPA-M0-FRESH-REVIEW-R2",
+        "review_task_id": "PPA-M0-FRESH-REVIEW-R3",
         "reviewer": "P0 main control fallback (delegated Sol reviewer returned not_found)",
         "mode": "fresh_read_only_structured_review",
         "reviewed_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
@@ -263,6 +278,7 @@ def main() -> int:
             "parity_main_flows": len(parity["main_flows"]),
             "parity_features": len(parity["features"]),
             "screenshots": len(parity["evidence_run"]["screenshot_files"]),
+            "browser_subflows": sorted(subflow_map),
             "browser_api_trace_entries": len(browser["api_trace"]),
             "state_json_valid": True,
             "m0_ledger_hash_matches": m0["verification"]["test_ledger"]["sha256"] == sha256_file(DELIVERY / "integration-test-ledger.json"),
@@ -288,8 +304,8 @@ def main() -> int:
         },
         "verdict": "passed_pre_commit" if not (failures or record_failures) else "failed",
         "limitations": [
-            "review is pre-commit; exact M0-OPEN tag target is verified in the final close step",
-            "browser smoke is recorded prior headful evidence and is not repeated because source is unchanged",
+            "review is pre-commit; exact M0-OPEN-R3 tag target is verified in the final close step",
+            "browser smoke was executed as the current R3 headful evidence; this read-only review consumes its exact recorded hash",
         ],
     }
     REVIEW_PATH.write_text(json.dumps(review, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")

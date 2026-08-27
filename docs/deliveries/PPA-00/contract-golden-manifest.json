@@ -642,6 +642,11 @@
         "bytes": 558,
         "path": "contracts/corpus/paths/windows-paths.json",
         "sha256": "972dcd43a54b45602735d3ab2374f6fc23c4ba56fa775a39f50de2a0f7b403e0"
+      },
+      {
+        "bytes": 1041983,
+        "path": "contracts/unicode-casefold-v1.json",
+        "sha256": "4bcebe07655e0be42fe11434409127e872bf148e5d905f9d963feefa4075f879"
       }
     ],
     "sdk": [
@@ -681,9 +686,9 @@
         "sha256": "dff3704d429a99b7616deadfa860a371b931e8eed0f157e5baaaeee70a63ee3f"
       },
       {
-        "bytes": 4978,
+        "bytes": 9803,
         "path": "backend/plotpilot_plugin_sdk/package.py",
-        "sha256": "f579905344f5882ecf0eed1ba027d19e48dfec368446bc2824671548a87fdb7f"
+        "sha256": "fa3cc43691494b4417104bafd2cc4cd6525af84764b75e73d42c299c5f539457"
       },
       {
         "bytes": 3782,
@@ -696,9 +701,9 @@
         "sha256": "d07b298c42c327158923e36d05aa55928d209ebd6b3134f9f32201adca80ddab"
       },
       {
-        "bytes": 44992,
+        "bytes": 44839,
         "path": "backend/plotpilot_plugin_sdk/verifier.py",
-        "sha256": "8e4751691a66ec68e81d5ef78a12994d1d1d671e14d55ac80a8c2e479579c5d7"
+        "sha256": "f1c2d04db6b05366d45c3b38ba9f5e0b4ca16209d8e89b81cd3e66059135d199"
       },
       {
         "bytes": 1847,
@@ -716,21 +721,21 @@
         "sha256": "c5871e08f512a97bfa14b6ff2b485805b692c0aadbc1766fe1cc3adf287d0157"
       },
       {
-        "bytes": 49407,
+        "bytes": 44931,
         "path": "frontend/src/contracts/verifier.ts",
-        "sha256": "2b0b4c777208ebc3819d1131a55c5cd43ed8d6dbf55789ee04e2e47a1ccf9d3a"
+        "sha256": "da43b837d12c775b64a0a5d061afc9698523b6c463bc155c1bbbac2913b8e8d2"
       }
     ],
     "tooling": [
       {
-        "bytes": 38931,
+        "bytes": 49685,
         "path": "tools/integration/browser_smoke.mjs",
-        "sha256": "358169dfcbe129feb6d932a22303167892f78dd5ad7c428adaa9faed2b7fff7a"
+        "sha256": "5a4a1a27a59ccdc5df9766ad977915e69c548b7f6f361e614d9f13ae2a41a6b6"
       },
       {
-        "bytes": 6610,
+        "bytes": 11819,
         "path": "tools/integration/browser_smoke_provider.py",
-        "sha256": "25fd04fde4e031ab50dedb82827bf2a9a129d4717bee9507a9299ea59d623445"
+        "sha256": "f15bfa496dab1b5b54933129f284c943f563c9ab2b470172639faf0203263753"
       },
       {
         "bytes": 4923,
@@ -738,14 +743,14 @@
         "sha256": "cef3a40e66c36652d5e76febda1072bc320fc64ef132f011b6f7506e6a7bfa24"
       },
       {
-        "bytes": 14115,
+        "bytes": 15083,
         "path": "tools/integration/fresh_m0_review.py",
-        "sha256": "78ff15334c6c0608d757c78fc21562209e82e2dde06e621d01544e75a01b97db"
+        "sha256": "1cd37cb41bcf4dd60a7c92943dd8e67caf078fb6adb51e3e12cc4fc48d99aa5d"
       },
       {
-        "bytes": 5216,
+        "bytes": 5733,
         "path": "tools/integration/generate_contract_manifest.py",
-        "sha256": "e4a6a7ff175f352fdfc7edee7e00553a1daa434308d435d75bc71b97b81568fb"
+        "sha256": "9343df0be64fe82d8987da3caf8fb48d5d5b43577be2c20c1175ab6f55426a4e"
       },
       {
         "bytes": 66742,
@@ -773,14 +778,19 @@
         "sha256": "2dc8729302fcf8dfc9054fbea1e59c267994e7fb5434a83f44848d6fc6af452a"
       },
       {
-        "bytes": 49528,
+        "bytes": 50557,
         "path": "tools/integration/generate_m0_delivery.py",
-        "sha256": "ce42f3c784f0994f403a1e7a4acc16768db7fbabd35edfc374c0937c3156fec1"
+        "sha256": "6f78df7796edae3fa10036b14a88f59b30fdbb9520247307de5fdcc98c416290"
       },
       {
-        "bytes": 17543,
+        "bytes": 6518,
+        "path": "tools/integration/generate_unicode_casefold.py",
+        "sha256": "b7244980a091f18fb9f7b05e5a16784ab87e05f456701d69bd79c6e7a5e42455"
+      },
+      {
+        "bytes": 26666,
         "path": "tools/integration/validate_m0_delivery.py",
-        "sha256": "0de191c6ce158b25a2f5b6218486e679bdc33e59f3d64e88112366d16a31dee1"
+        "sha256": "d2f2f9de0b3f66327316705f2074188733d56109413c71b8a2fe67a8b9ac9649"
       },
       {
         "bytes": 31418,
@@ -798,9 +808,9 @@
         "sha256": "ef39db2a463ce43edb26f8ef8a0c93e1b9dd5a33fce67b5ebfa2fccb4c0eb035"
       },
       {
-        "bytes": 110715,
+        "bytes": 111154,
         "path": "tools/integration/verify_contracts.py",
-        "sha256": "9484d1f0c382d4661ed9644eb0338b6da95e3290d79694e2eccef782d315d4ac"
+        "sha256": "59aee3b36a20c823d00e8cb82908887e435a2b4bf0ffd3596e5da14f4ce456eb"
       },
       {
         "bytes": 2214,
@@ -827,10 +837,10 @@
   ],
   "contract_version": "1.2.0",
   "generated_from": {
-    "contract_file_count": 122,
+    "contract_file_count": 123,
     "contract_manifest": {
       "path": "contracts/manifest-v1.json",
-      "sha256": "fd792d98201e2c38e356c1c4a7251abd597bc732f55dbfac706022edf47f48fa"
+      "sha256": "2866b8d0b36ec954ee8cb5c87374e0ca0a0c4acefd1901070cee0b45979d25e7"
     },
     "schema_count": 48
   },

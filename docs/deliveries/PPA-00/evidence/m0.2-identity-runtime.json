@@ -17,7 +17,7 @@
     "tauri_build": false
   },
   "captured_branch": "codex/ppa-00-integration",
-  "captured_head": "786986a02219973a69a0d1c1114191149924d7f7",
+  "captured_head": "36ca847d8b328e3f4f7791c836e0530e8a5ea5b3",
   "creation_gate": {
     "closed": true,
     "projects": [
@@ -157,7 +157,7 @@
   "runtime": {
     "license_ledger": {
       "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\license-ledger.json",
-      "sha256": "4232d50524dfa17e780bbf2c05c3416f49c7e7e59aee520f5baa4dd1a5d5224d"
+      "sha256": "b287942341be4eb4309efcac9de2dd6fbc422d3dc79fae4447908ca83b0d6e3c"
     },
     "lock": {
       "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\runtime-toolchain-lock.json",

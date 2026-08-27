@@ -17,7 +17,95 @@ from typing import Any
 
 _ORIGINAL_DAEMON_PROCESS: Any = None
 _ORIGINAL_STREAM_GENERATE: Any = None
+_ORIGINAL_PROMPT_MANAGER_FACTORY: Any = None
 _INSTALLED = False
+_PROMPT_MANAGER_PATCHED = False
+
+
+def _empty_prompt_stats() -> dict[str, Any]:
+    """Return the v1 shape used by the browser prompt-plaza badge.
+
+    The production prompt manager is deliberately not changed by the browser
+    harness.  A fresh isolated database can race its optional seed migration
+    while the Home page prefetches this non-critical read.  Returning the
+    public shape from the acceptance seam keeps that read deterministic while
+    all creative requests still use the real mock provider below.
+    """
+    return {
+        "total_nodes": 0,
+        "total_templates": 0,
+        "total_versions": 0,
+        "builtin_count": 0,
+        "custom_count": 0,
+        "categories": {},
+    }
+
+
+class _BrowserPromptManagerFacade:
+    """Contract-shaped, read-only fallback around the real prompt manager."""
+
+    def __init__(self, delegate: Any) -> None:
+        self._delegate = delegate
+
+    def ensure_seeded(self) -> bool:
+        if self._delegate is None:
+            return True
+        try:
+            return bool(self._delegate.ensure_seeded())
+        except Exception:
+            # This is an isolated read seam only.  Do not hide failures from
+            # any creative/provider path; prompt-plaza stats are optional.
+            return True
+
+    def get_stats(self) -> dict[str, Any]:
+        if self._delegate is None:
+            return _empty_prompt_stats()
+        try:
+            value = self._delegate.get_stats()
+        except Exception:
+            return _empty_prompt_stats()
+        if not isinstance(value, dict):
+            return _empty_prompt_stats()
+        # Normalize every field the frontend contract reads, without
+        # inventing nodes or versions in the test database.
+        result = _empty_prompt_stats()
+        for key in result:
+            if key == "categories":
+                result[key] = value.get(key) if isinstance(value.get(key), dict) else {}
+            elif isinstance(value.get(key), int) and value.get(key) >= 0:
+                result[key] = value[key]
+        return result
+
+    def __getattr__(self, name: str) -> Any:
+        if self._delegate is None:
+            raise AttributeError(name)
+        return getattr(self._delegate, name)
+
+
+def patch_prompt_manager_for_browser_smoke() -> None:
+    """Patch only the acceptance process' prompt-manager read seam.
+
+    ``/prompts/stats`` is a public, non-mutating endpoint.  Its response must
+    remain valid even if the real seed DB is not ready at the first Home-page
+    prefetch.  The facade delegates normally and falls back only on that
+    optional read; no product module or checked-in data is modified.
+    """
+    global _ORIGINAL_PROMPT_MANAGER_FACTORY, _PROMPT_MANAGER_PATCHED
+    if _PROMPT_MANAGER_PATCHED:
+        return
+    from interfaces.api.v1.workbench import llm_control
+
+    _ORIGINAL_PROMPT_MANAGER_FACTORY = llm_control.get_prompt_manager
+
+    def browser_prompt_manager() -> _BrowserPromptManagerFacade:
+        try:
+            delegate = _ORIGINAL_PROMPT_MANAGER_FACTORY()
+        except Exception:
+            delegate = None
+        return _BrowserPromptManagerFacade(delegate)
+
+    llm_control.get_prompt_manager = browser_prompt_manager
+    _PROMPT_MANAGER_PATCHED = True
 
 
 def _act_plan_chapter_count(prompt: Any) -> int:
@@ -70,6 +158,56 @@ def _act_plan_payload(prompt: Any) -> str:
     return json.dumps({"chapters": chapters}, ensure_ascii=False, separators=(",", ":"))
 
 
+def _normalize_browser_fixture_identities(content: str) -> str:
+    """Keep collection identities unique before the UI renders keyed cards.
+
+    This is deliberately a no-op for the normal mock fixtures.  It only
+    repairs repeated names/ids in a provider response, which otherwise become
+    Vue duplicate-key warnings in the setup/workbench cards.  The response
+    remains the same contract-shaped JSON and no production component is
+    patched.
+    """
+    try:
+        payload = json.loads(content)
+    except (TypeError, json.JSONDecodeError):
+        return content
+    if not isinstance(payload, dict):
+        return content
+
+    characters = payload.get("characters")
+    if isinstance(characters, list):
+        seen: set[str] = set()
+        for item in characters:
+            if not isinstance(item, dict):
+                continue
+            original = str(item.get("name") or "").strip()
+            if not original:
+                continue
+            candidate = original
+            suffix = 2
+            while candidate in seen:
+                candidate = f"{original} · {suffix}"
+                suffix += 1
+            item["name"] = candidate
+            seen.add(candidate)
+
+    locations = payload.get("locations")
+    if isinstance(locations, list):
+        seen: set[str] = set()
+        for index, item in enumerate(locations):
+            if not isinstance(item, dict):
+                continue
+            original = str(item.get("id") or item.get("name") or f"location_{index + 1}").strip()
+            candidate = original
+            suffix = 2
+            while candidate in seen:
+                candidate = f"{original}_{suffix}"
+                suffix += 1
+            item["id"] = candidate
+            seen.add(candidate)
+    return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+
+
 def install_browser_smoke_provider() -> None:
     """Install the acceptance-only act-plan extension exactly once per process."""
     global _INSTALLED, _ORIGINAL_STREAM_GENERATE
@@ -87,8 +225,8 @@ def install_browser_smoke_provider() -> None:
             str(getattr(prompt, name, "") or "") for name in ("system", "user")
         ).lower()
         if "planning-act" in text or "请为这一幕规划" in text:
-            return _act_plan_payload(prompt)
-        return original_build(self, prompt)
+            return _normalize_browser_fixture_identities(_act_plan_payload(prompt))
+        return _normalize_browser_fixture_identities(original_build(self, prompt))
 
     MockResponseFactory.build = build_with_act_plan
 

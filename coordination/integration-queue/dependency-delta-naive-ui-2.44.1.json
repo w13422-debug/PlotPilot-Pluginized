@@ -1,0 +1,42 @@
+{
+  "schema": "dependency-delta/v1",
+  "status": "accepted",
+  "delta_id": "PPA-00-DEP-NAIVE-UI-2441",
+  "raised_by_project": "P0",
+  "package_or_tool": "frontend dependency naive-ui",
+  "change": "Pin the existing direct dependency to the donor-compatible 2.44.1 release and lock resolution; no package is added or removed.",
+  "from_version": "2.45.2 (pnpm lock resolution from ^2.44.1)",
+  "to_version": "2.44.1",
+  "reason": "naive-ui 2.45.2 emits a duplicate key=1 wrapper in Space during the existing Home/Workbench UI smoke; 2.44.1 is the existing donor-compatible release and removes that runtime warning without changing PlotPilot business code.",
+  "license": "MIT",
+  "source_and_provenance": {
+    "registry": "https://registry.npmmirror.com/naive-ui/-/naive-ui-2.44.1.tgz",
+    "integrity": "sha512-reo8Esw0p58liZwbUutC7meW24Xbn3EwNv91zReWKm2W4JPu+zfgJRn/F7aO0BFmvN+h2brA2M5lRvYqLq4kuA==",
+    "lockfile": "pnpm-lock.yaml",
+    "manifest": "frontend/package.json"
+  },
+  "compatibility": {
+    "peer": "vue ^3.0.0",
+    "scope": "existing PlotPilot Home/Workbench browser route only",
+    "business_source_modified": false
+  },
+  "supply_chain_review": {
+    "exact_version_pinned": true,
+    "integrity_locked": true,
+    "license_ledger": "docs/deliveries/PPA-00/license-ledger.json"
+  },
+  "validation": [
+    {
+      "command": "pnpm install --frozen-lockfile",
+      "exit_code": 0,
+      "result": "installed naive-ui 2.44.1 from the locked resolution"
+    },
+    {
+      "command": "node tools/integration/browser_smoke.mjs",
+      "exit_code": 0,
+      "result": "10/10 UI flows passed with strict browser error gate and no unallowlisted Vue duplicate-key warning"
+    }
+  ],
+  "p0_decision": "accepted",
+  "decision_evidence": "PPA-00 R3 browser-smoke evidence and the frozen pnpm lockfile"
+}

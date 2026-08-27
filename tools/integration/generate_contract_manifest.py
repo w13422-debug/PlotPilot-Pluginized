@@ -46,6 +46,16 @@ def file_records() -> list[dict[str, Any]]:
         for path in sorted(root.rglob("*")):
             if path.is_file():
                 records.append({"path": relative(path), "bytes": path.stat().st_size, "sha256": sha256(path)})
+    # This is a checked-in runtime contract rather than a schema/example/golden
+    # or corpus fixture.  Keep the explicit record here so the Unicode identity
+    # rule is content-addressed by the same manifest consumed at runtime.
+    unicode_contract = CONTRACTS / "unicode-casefold-v1.json"
+    if unicode_contract.is_file():
+        records.append({
+            "path": relative(unicode_contract),
+            "bytes": unicode_contract.stat().st_size,
+            "sha256": sha256(unicode_contract),
+        })
     return records
 
 

@@ -1,7 +1,7 @@
 {
   "base_sha": "1c481237b6fa32ef5f85d7f8da4cb16f366cd4f0",
   "branch": "codex/ppa-00-integration",
-  "browser_api_trace_entries": 463,
+  "browser_api_trace_entries": 475,
   "contract_schemas": 48,
   "creation_gate": {
     "closed": true,
@@ -100,5 +100,5 @@
   "parity_main_flows": 10,
   "passed": true,
   "schema": "p0-m0-delivery-validation/v1",
-  "screenshots": 10
+  "screenshots": 11
 }

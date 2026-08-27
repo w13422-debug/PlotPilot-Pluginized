@@ -7,6 +7,16 @@
     "python": "M0 verification runtime packages are listed from importlib.metadata; the checked-in requirements files remain the dependency declaration.",
     "review": "Any package with missing license metadata blocks release until its upstream notice is reviewed."
   },
+  "unicode_data": {
+    "name": "Unicode Data Files and Software License",
+    "license": "Unicode Data Files and Software License",
+    "license_url": "https://www.unicode.org/license.txt",
+    "source": "CPython unicodedata backed by the Unicode Character Database",
+    "unicode_data_version": "15.0.0",
+    "generator": "tools/integration/generate_unicode_casefold.py",
+    "artifact": "contracts/unicode-casefold-v1.json",
+    "purpose": "Frozen cross-runtime NFC and full case-fold identity tables"
+  },
   "toolchain": {
     "python": "3.12.10",
     "node": "v24.18.0",
@@ -244,7 +254,7 @@
       },
       {
         "name": "naive-ui",
-        "specifier": "^2.44.1",
+        "specifier": "2.44.1",
         "version": "2.44.1",
         "license": "MIT",
         "resolved": "https://registry.npmmirror.com/naive-ui/-/naive-ui-2.44.1.tgz",
