@@ -1,0 +1,2 @@
+8a8c9879 (HEAD -> codex/ppa-06-writing) feat(p6): freeze dependency-free writing decisions
+59b2a584 feat(p6): add deterministic export suite core
