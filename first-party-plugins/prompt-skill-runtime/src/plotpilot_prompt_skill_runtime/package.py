@@ -285,11 +285,16 @@ class SkillPackage:
     ) -> "SkillPackage":
         material, supplied_manifest = _normalise_files(files)
         # Every loadable package must carry the canonical control manifest.
-        # ``calculate_skill_identity`` remains usable for callers that are
-        # explicitly constructing an identity from an already verified map,
-        # but package materialization never accepts an implicit manifest.
-        if supplied_manifest is None and expected_files_sha256 is None:
+        # An external expected value is only an assertion about a control file
+        # that was actually supplied by the package; it must never substitute
+        # for that file during materialization.
+        if supplied_manifest is None:
             raise ContractValidationError("Skill package requires files.sha256")
+        expected_manifest = (
+            expected_files_sha256
+            if expected_files_sha256 is not None
+            else supplied_manifest
+        )
         manifest = _manifest_from_files(material)
         # Validate an ordinary dictionary before SkillPackage.__post_init__
         # freezes it with MappingProxyType.  jsonschema deliberately expects
@@ -299,13 +304,13 @@ class SkillPackage:
             material,
             manifest["skill_id"],
             manifest["version"],
-            expected_files_sha256=expected_files_sha256 or supplied_manifest,
+            expected_files_sha256=expected_manifest,
         )
         package = cls(manifest, material, identity, supplied_manifest)
         package.verify(
             expected_package_hash=expected_package_hash,
             expected_release_id=expected_release_id,
-            expected_files_sha256=expected_files_sha256 or supplied_manifest,
+            expected_files_sha256=expected_manifest,
         )
         return package
 
@@ -399,8 +404,16 @@ class SkillPackage:
         expected_release_id: str | None = None,
         expected_files_sha256: bytes | None = None,
     ) -> None:
-        expected_hash = expected_package_hash or self.package_hash
-        expected_release = expected_release_id or self.release_id
+        expected_hash = (
+            expected_package_hash
+            if expected_package_hash is not None
+            else self.package_hash
+        )
+        expected_release = (
+            expected_release_id
+            if expected_release_id is not None
+            else self.release_id
+        )
         _sdk_verify_skill_identity(
             self.files,
             self.skill_id,

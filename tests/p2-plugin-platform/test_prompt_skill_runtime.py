@@ -72,6 +72,11 @@ def test_skill_package_valid_folder_zip_and_required_manifest(tmp_path: Path) ->
             output.writestr(name, content)
     assert SkillPackage.from_zip(archive).release_id == folder_package.release_id
 
+    assert SkillPackage.from_files(
+        files,
+        expected_files_sha256=files["files.sha256"],
+    ).release_id == folder_package.release_id
+
     missing = dict(files)
     missing.pop("files.sha256")
     with pytest.raises(ContractError):
@@ -81,3 +86,14 @@ def test_skill_package_valid_folder_zip_and_required_manifest(tmp_path: Path) ->
     tampered["files.sha256"] = (b"0" if tampered["files.sha256"][0:1] != b"0" else b"1") + tampered["files.sha256"][1:]
     with pytest.raises(ContractError):
         SkillPackage.from_files(tampered)
+
+
+def test_skill_package_missing_control_rejects_external_expected_manifest() -> None:
+    files = _skill_files()
+    external_expected = files.pop("files.sha256")
+
+    with pytest.raises(ContractError):
+        SkillPackage.from_files(
+            files,
+            expected_files_sha256=external_expected,
+        )
