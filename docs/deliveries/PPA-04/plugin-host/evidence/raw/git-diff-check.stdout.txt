@@ -1,0 +1,7 @@
+command: git diff --check (before staging)
+exit_code: 0
+output: (empty)
+
+command: git diff --cached --check (after evidence staging)
+exit_code: 0
+output: (empty)

@@ -1,0 +1,18 @@
+scope: staged remediation diff
+allowed_roots: frontend/src/plugin-host/**; tests/p4-webui/plugin-host/**; docs/deliveries/PPA-04/plugin-host/**; coordination/PPA-04/plugin-host/**
+changed_count: 12
+out_of_set: 0
+
+changed_paths:
+coordination/PPA-04/plugin-host/PPA-04B-integration-ready.md
+coordination/PPA-04/plugin-host/PPA-04B-remediation-ready.md
+docs/deliveries/PPA-04/plugin-host/PPA-04B-plugin-host-delivery.md
+docs/deliveries/PPA-04/plugin-host/evidence/raw/git-diff-check.stdout.txt
+docs/deliveries/PPA-04/plugin-host/evidence/raw/out-of-set.stdout.txt
+docs/deliveries/PPA-04/plugin-host/evidence/raw/p4-regression.stdout.txt
+docs/deliveries/PPA-04/plugin-host/evidence/raw/plugin-host-source-tsc.stdout.txt
+docs/deliveries/PPA-04/plugin-host/evidence/raw/plugin-host-tests.stdout.txt
+frontend/src/plugin-host/uiSession.ts
+frontend/src/plugin-host/workerHost.ts
+frontend/src/plugin-host/workerUrl.ts
+tests/p4-webui/plugin-host/worker-host.test.mts
