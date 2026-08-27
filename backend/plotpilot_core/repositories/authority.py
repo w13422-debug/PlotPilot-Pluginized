@@ -69,6 +69,12 @@ class CoreAuthorityRepository:
 
     def create_node(self,value:Node)->Node:
         with self.transaction() as c:
+            if value.document_id:
+                owner=c.execute("SELECT workspace_id FROM document WHERE document_id=?",(value.document_id,)).fetchone()
+                if not owner or owner[0]!=value.workspace_id: raise ConflictError("node document is outside workspace")
+            if value.parent_node_id:
+                owner=c.execute("SELECT workspace_id FROM node WHERE node_id=?",(value.parent_node_id,)).fetchone()
+                if not owner or owner[0]!=value.workspace_id: raise ConflictError("node parent is outside workspace")
             c.execute("INSERT INTO node VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",(value.node_id,value.workspace_id,value.document_id,value.node_type,value.title,value.parent_node_id,value.position,self._j(value.metadata),value.current_revision_id,value.created_at,value.updated_at,value.revision))
         return value
 
@@ -80,6 +86,9 @@ class CoreAuthorityRepository:
 
     def create_relation(self,value:Relation)->Relation:
         with self.transaction() as c:
+            for endpoint in (value.source_id,value.target_id):
+                owner=c.execute("SELECT workspace_id FROM document WHERE document_id=? UNION ALL SELECT workspace_id FROM node WHERE node_id=?",(endpoint,endpoint)).fetchone()
+                if not owner or owner[0]!=value.workspace_id: raise ConflictError("relation endpoint is outside workspace")
             c.execute("INSERT INTO relation VALUES(?,?,?,?,?,?,?,?)",(value.relation_id,value.workspace_id,value.relation_type,value.source_id,value.target_id,self._j(value.metadata),value.revision_id,value.created_at))
         return value
 

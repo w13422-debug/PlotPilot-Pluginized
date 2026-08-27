@@ -23,6 +23,7 @@ def test_candidate_does_not_mutate_and_publication_is_cas_idempotent(tmp_path):
     assert repo.get_document("doc-1").content=="old"
     pub=PublicationService(repo,assets); first=pub.accept("accept-op",staged.candidate_id,created_by="user"); second=pub.accept("accept-op",staged.candidate_id,created_by="user")
     assert first==second and repo.get_document("doc-1").content=="new正文"
+    assert CandidateService(repo,assets).stage("stage-op",_item(base,payload)).candidate_id==staged.candidate_id
 
 
 def test_stale_candidate_is_atomic_and_operation_key_is_bound(tmp_path):

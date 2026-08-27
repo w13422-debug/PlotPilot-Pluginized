@@ -41,13 +41,14 @@ class MigrationRunner:
     def apply(self, migrations: Iterable[Migration] = CORE_MIGRATIONS) -> None:
         self.connection.execute("CREATE TABLE IF NOT EXISTS schema_migration(migration_id TEXT PRIMARY KEY,sha256 TEXT NOT NULL,applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)")
         for migration in migrations:
-            row = self.connection.execute("SELECT sha256 FROM schema_migration WHERE migration_id=?", (migration.migration_id,)).fetchone()
-            if row:
-                if row[0] != migration.sha256:
-                    raise RuntimeError(f"migration hash mismatch: {migration.migration_id}")
-                continue
             try:
                 self.connection.execute("BEGIN IMMEDIATE")
+                row = self.connection.execute("SELECT sha256 FROM schema_migration WHERE migration_id=?", (migration.migration_id,)).fetchone()
+                if row:
+                    if row[0] != migration.sha256:
+                        raise RuntimeError(f"migration hash mismatch: {migration.migration_id}")
+                    self.connection.commit()
+                    continue
                 # ``executescript`` performs an implicit commit in CPython and
                 # would leave partial DDL behind on a later failing statement.
                 for statement in migration.sql.split(";"):

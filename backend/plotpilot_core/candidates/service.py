@@ -36,6 +36,12 @@ class CandidateService:
 
     def stage(self, operation_key: str, item: dict) -> StagedCandidate:
         raw,item_hash=self._canonical(item); item_id=item["item_id"]
+        existing=self.repository._connection.execute("SELECT candidate_id,item_hash,item_json FROM candidate WHERE operation_key=? AND item_id=?",(operation_key,item_id)).fetchone()
+        if existing:
+            if existing["item_hash"]!=item_hash: raise CandidateError("operation key reused with different payload")
+            saved=json.loads(existing["item_json"])
+            eligibility="eligible" if saved["status"]=="complete" or saved["item_kind"]=="incomplete_stream" else "review_only"
+            return StagedCandidate(item_id,existing["candidate_id"],"idempotent",eligibility)
         if item["status"] in {"failed","skipped"}:
             return StagedCandidate(item_id,None,"not_created","ineligible")
         target=item["target"]
@@ -52,6 +58,20 @@ class CandidateService:
         if current.content_hash != base["content_hash"]: raise CandidateError("base hash mismatch")
         if len(item["write_set"])!=1 or item["write_set"][0] != {"workspace_id":target["workspace_id"],"entity_kind":"document","entity_id":target["entity_id"],"revision_id":base["revision_id"],"content_hash":base["content_hash"]}:
             raise CandidateError("write-set is not the exact target base")
+        for source in item["source_refs"]:
+            if set(source)!={"workspace_id","source_type","source_id","revision_or_hash"}: raise CandidateError("invalid source reference fields")
+            source_workspace=source["workspace_id"]
+            if source_workspace is not None:
+                try: self.repository.get_workspace(source_workspace)
+                except NotFoundError as exc: raise CandidateError("source workspace missing") from exc
+                if source["source_type"]=="document":
+                    try: source_doc=self.repository.get_document(source["source_id"])
+                    except NotFoundError as exc: raise CandidateError("source document missing") from exc
+                    if source_doc.workspace_id!=source_workspace: raise CandidateError("source workspace mismatch")
+                elif source["source_type"]=="revision":
+                    try: source_revision=self.repository.get_revision(source["source_id"])
+                    except NotFoundError as exc: raise CandidateError("source revision missing") from exc
+                    if source_revision.workspace_id!=source_workspace or source["revision_or_hash"] not in {source_revision.revision_id,source_revision.content_hash}: raise CandidateError("source revision mismatch")
         eligibility="eligible" if item["status"]=="complete" or item["item_kind"]=="incomplete_stream" else "review_only"
         with self.repository.transaction() as c:
             existing=c.execute("SELECT candidate_id,item_hash FROM candidate WHERE operation_key=? AND item_id=?",(operation_key,item_id)).fetchone()

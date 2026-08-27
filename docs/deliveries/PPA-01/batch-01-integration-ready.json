@@ -22,7 +22,7 @@
     {
       "command": "python -B -m pytest -q tests/p1-core",
       "exit_code": 0,
-      "result": "6 passed in 0.61s"
+      "result": "7 passed in 0.58s"
     },
     {
       "command": "python -B -m compileall -q backend/plotpilot_core/domain backend/plotpilot_core/repositories backend/plotpilot_core/assets backend/plotpilot_core/candidates backend/plotpilot_core/publication",
@@ -35,6 +35,13 @@
       "result": "clean"
     }
   ],
+  "independent_review": {
+    "reviewer": "Sol read-only focused review",
+    "initial_findings": 4,
+    "closed_findings": 4,
+    "result": "PASS",
+    "note": "Cross-workspace parent/source lineage is permitted by formal design v1.2 line 410; target/base/write-set remain workspace-bound."
+  },
   "write_set_proof": {
     "out_of_set_paths": [],
     "allowed_roots": [
