@@ -1,0 +1,118 @@
+{
+  "schema": "p6b-source-candidate/v1",
+  "status": "awaiting-sol-review",
+  "project_id": "P6B",
+  "parent_project": "P6",
+  "branch": "codex/ppa-06b-export-quality",
+  "accepted_base_sha": "1b352be671e70a2ce443b10499060982e93d64b7",
+  "candidate_head_sha": null,
+  "candidate_head_note": "The exact head is reported from Git after the single source-only candidate commit; this manifest is intentionally non-self-referential.",
+  "donor_local_push": "DISABLED",
+  "changed_paths": [
+    "coordination/PPA-06/p6b-export-quality/runtime-port-delta-v1.json",
+    "docs/deliveries/PPA-06/p6b-export-quality/delivery-record-v1.md",
+    "docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/changed-paths.txt",
+    "docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/compileall.stderr.txt",
+    "docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/compileall.stdout.txt",
+    "docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/git-diff-check.stderr.txt",
+    "docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/git-diff-check.stdout.txt",
+    "docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/git-status-before-delivery.txt",
+    "docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/pytest-p6-writing.stderr.txt",
+    "docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/pytest-p6-writing.stdout.txt",
+    "docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/pytest-p6b.stderr.txt",
+    "docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/pytest-p6b.stdout.txt",
+    "docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/repeated-render-probe.py",
+    "docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/repeated-render-probe.stderr.txt",
+    "docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/repeated-render-probe.stdout.txt",
+    "docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/validation-exit-codes.txt",
+    "docs/deliveries/PPA-06/p6b-export-quality/source-candidate-v1.json",
+    "first-party-plugins/export-suite/README.md",
+    "first-party-plugins/export-suite/backend/src/plotpilot_export_suite/__init__.py",
+    "first-party-plugins/export-suite/backend/src/plotpilot_export_suite/integration.py",
+    "first-party-plugins/export-suite/backend/src/plotpilot_export_suite/ports.py",
+    "first-party-plugins/quality-suite/README.md",
+    "first-party-plugins/quality-suite/backend/src/plotpilot_quality_suite/__init__.py",
+    "first-party-plugins/quality-suite/backend/src/plotpilot_quality_suite/bundles.py",
+    "tests/p6-writing/p6b-export-quality/test_export_ports.py",
+    "tests/p6-writing/p6b-export-quality/test_quality_bundles.py"
+  ],
+  "implementation": {
+    "export_input": "accepted export-current-revisions/v1 bound to verified RunSnapshot parameters_asset_id and asset_hashes",
+    "export_ports": "injected SDK-style read_asset/create_asset plus explicit P1AssetStoreAdapter",
+    "export_write_policy": "one output Asset create call only; no正文/revision/candidate/publication write",
+    "format_parity": [
+      "markdown",
+      "epub",
+      "docx",
+      "pdf"
+    ],
+    "quality_outputs": [
+      "diagnostic",
+      "finding",
+      "proposed candidate"
+    ],
+    "quality_publish_policy": "private domain projection only; no publish/stage callable",
+    "runtime_gate": "stopped pending real P1 current-pointer and P2/P3 runtime ports"
+  },
+  "dependencies": {
+    "new_dependencies": [],
+    "existing_renderer_dependencies": [
+      "python-docx",
+      "ebooklib",
+      "fpdf"
+    ],
+    "p0_sdk": "read-only verifier import required by snapshot integration",
+    "p1_runtime": "not integrated; explicit adapter only",
+    "p2_p3_runtime": "not integrated"
+  },
+  "validation": [
+    {
+      "id": "pytest-p6b",
+      "command": "python -B -m pytest -p no:cacheprovider tests/p6-writing/p6b-export-quality -q",
+      "exit_code": 0,
+      "status": "passed",
+      "stdout": "evidence/raw/pytest-p6b.stdout.txt",
+      "stderr": "evidence/raw/pytest-p6b.stderr.txt"
+    },
+    {
+      "id": "pytest-p6-writing",
+      "command": "python -B -m pytest -p no:cacheprovider tests/p6-writing -q",
+      "exit_code": 0,
+      "status": "passed",
+      "stdout": "evidence/raw/pytest-p6-writing.stdout.txt",
+      "stderr": "evidence/raw/pytest-p6-writing.stderr.txt"
+    },
+    {
+      "id": "compileall",
+      "command": "python -m compileall -q first-party-plugins/export-suite/backend/src first-party-plugins/quality-suite/backend/src",
+      "exit_code": 0,
+      "status": "passed",
+      "stdout": "evidence/raw/compileall.stdout.txt",
+      "stderr": "evidence/raw/compileall.stderr.txt"
+    },
+    {
+      "id": "repeated-render-probe",
+      "command": "python -B docs/deliveries/PPA-06/p6b-export-quality/evidence/raw/repeated-render-probe.py",
+      "exit_code": 0,
+      "status": "passed",
+      "stdout": "evidence/raw/repeated-render-probe.stdout.txt",
+      "stderr": "evidence/raw/repeated-render-probe.stderr.txt"
+    },
+    {
+      "id": "git-diff-check",
+      "command": "git diff --check",
+      "exit_code": 0,
+      "status": "passed",
+      "stdout": "evidence/raw/git-diff-check.stdout.txt",
+      "stderr": "evidence/raw/git-diff-check.stderr.txt"
+    }
+  ],
+  "review": {
+    "required": true,
+    "model": "gpt-5.6-sol/max",
+    "mode": "read-only",
+    "luna_may_accept": false,
+    "merge_eligibility": "Sol-only"
+  },
+  "runtime_delta": "coordination/PPA-06/p6b-export-quality/runtime-port-delta-v1.json"
+}

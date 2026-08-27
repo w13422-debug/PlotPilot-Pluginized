@@ -25,6 +25,7 @@ from .ports import AssetReadResult
 
 _ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$")
 _HASH_RE = re.compile(r"^[0-9a-f]{64}$")
+_ASSET_MIME_RE = re.compile(r"^[^\s/]+/[^\s/]+$")
 _UTF8_BOM = b"\xef\xbb\xbf"
 _MISSING = object()
 
@@ -201,6 +202,30 @@ class ExportResult:
     def asset_id(self) -> str:
         return self.asset_metadata.asset_id
 
+    @property
+    def source_revisions(self) -> tuple[tuple[str, str, str], ...]:
+        return self.prepared.source_revisions
+
+    @property
+    def output_hash(self) -> str:
+        return self.asset_metadata.sha256
+
+    @property
+    def mime(self) -> str:
+        return self.asset_metadata.mime
+
+    @property
+    def asset_mime(self) -> str:
+        """MIME stored in the Core Asset metadata contract."""
+
+        return self.asset_metadata.mime
+
+    @property
+    def download_media_type(self) -> str:
+        """Legacy renderer media type retained for the eventual download route."""
+
+        return self.payload.media_type
+
     def as_dict(self) -> dict[str, Any]:
         return {
             "payload": {
@@ -250,6 +275,23 @@ def _require_hash(value: object, label: str) -> str:
     return result
 
 
+def _normalise_asset_mime(value: object, label: str = "Asset MIME") -> str:
+    """Return a contract-valid MIME while preserving the payload bytes.
+
+    The legacy Markdown renderer intentionally exposes
+    ``text/markdown; charset=utf-8`` as its download media type.  ``asset-metadata/v1`` uses a
+    token-like MIME field with no whitespace, so the Asset boundary stores the
+    equivalent ``text/markdown;charset=utf-8`` spelling.  This keeps the
+    renderer/download contract and the Core Asset metadata contract separate.
+    """
+
+    raw = _require_text(value, label, nonempty=True)
+    normalised = ";".join(part.strip() for part in raw.split(";"))
+    if _ASSET_MIME_RE.fullmatch(normalised) is None:
+        _fail(f"{label} is not valid asset-metadata/v1 MIME")
+    return normalised
+
+
 def _stable_json_bytes(value: object) -> bytes:
     try:
         return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
@@ -278,7 +320,12 @@ def _verified_snapshot(value: Mapping[str, Any]) -> dict[str, Any]:
     except Exception as exc:  # pragma: no cover - hostile mapping implementation
         raise ExportPortError(f"RunSnapshot cannot be copied safely: {exc}") from exc
     verify_snapshot, _ = _load_sdk_verifiers()
-    verify_snapshot(snapshot)
+    try:
+        verify_snapshot(snapshot)
+    except ExportPortError:
+        raise
+    except Exception as exc:
+        raise ExportPortError(f"RunSnapshot verification failed: {exc}") from exc
     return snapshot
 
 
@@ -554,7 +601,12 @@ def build_export_from_snapshot(
         workspace_id=snapshot["workspace_id"],
     )
     _, verify_export_current_revisions_asset = _load_sdk_verifiers()
-    manifest = verify_export_current_revisions_asset(raw_manifest, snapshot, asset_id=expected_manifest_id)
+    try:
+        manifest = verify_export_current_revisions_asset(raw_manifest, snapshot, asset_id=expected_manifest_id)
+    except ExportPortError:
+        raise
+    except Exception as exc:
+        raise ExportPortError(f"export-current-revisions/v1 verification failed: {exc}") from exc
     return _build_prepared_export(
         snapshot=snapshot,
         manifest_asset_id=expected_manifest_id,
@@ -574,8 +626,9 @@ def _create_asset(port: object, prepared: PreparedExport) -> ExportAssetMetadata
     creator = getattr(port, "create_asset", None)
     if not callable(creator):
         _fail("injected Asset create port must expose create_asset(content, *, mime)")
+    asset_mime = _normalise_asset_mime(prepared.payload.media_type)
     try:
-        returned = creator(prepared.payload.content, mime=prepared.payload.media_type)
+        returned = creator(prepared.payload.content, mime=asset_mime)
     except Exception as exc:
         raise ExportPortError(f"output Asset create failed: {exc}") from exc
 
@@ -592,7 +645,7 @@ def _create_asset(port: object, prepared: PreparedExport) -> ExportAssetMetadata
     output_size = len(prepared.payload.content)
     for field_name, expected, aliases in (
         ("sha256", output_hash, ("sha256", "content_hash")),
-        ("mime", prepared.payload.media_type, ("mime", "media_type", "content_type")),
+        ("mime", asset_mime, ("mime", "media_type", "content_type")),
         ("size", output_size, ("size", "total_size")),
     ):
         value = _metadata_value(supplied, *aliases)
@@ -614,7 +667,7 @@ def _create_asset(port: object, prepared: PreparedExport) -> ExportAssetMetadata
     return ExportAssetMetadata(
         asset_id=asset_id,
         sha256=output_hash,
-        mime=prepared.payload.media_type,
+        mime=asset_mime,
         size=output_size,
         logical_role=logical_role,
         provenance=provenance,
