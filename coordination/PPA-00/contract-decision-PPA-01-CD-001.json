@@ -1,0 +1,179 @@
+{
+  "schema": "contract-delta-decision/v1",
+  "decision_id": "PPA-00-CD-DECISION-001",
+  "delta_id": "PPA-01-CD-001",
+  "status": "accepted_with_scoped_public_contract",
+  "binding_owner": "P0",
+  "decision_date": "2026-08-27",
+  "implementation_status_at_decision": "not_observed",
+  "baseline": {
+    "branch": "codex/ppa-00-integration",
+    "head": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+    "accepted_base": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+    "m0_release_tag": "M0-OPEN-R4",
+    "m0_release_commit": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+    "m0_contract_manifest": {
+      "path": "contracts/manifest-v1.json",
+      "sha256": "2866b8d0b36ec954ee8cb5c87374e0ca0a0c4acefd1901070cee0b45979d25e7",
+      "contract_version": "1.2.0"
+    },
+    "m0_rpc_matrix": {
+      "path": "contracts/json-schema/rpc-method-matrix.v1.json",
+      "sha256": "7f2ef272ad8f0637b82800bb1e11856800cbc5bf799c38b095105da9382e5400"
+    },
+    "m0_plugin_sdk_ports": {
+      "path": "backend/plotpilot_plugin_sdk/ports.py",
+      "sha256": "8db2a7c5ce4422c0fbd4185b59729c75597713c27cc2e5f038da2aff5fe318cc"
+    },
+    "formal_design": {
+      "path": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized正式设计规划-2026-08-25-v1.md",
+      "version": "v1.2",
+      "sha256": "e70f450b75cfa753148cf620d13855d0073f7d61294e7599ea9cc98f3e612b7b",
+      "sections": ["2.1", "5", "8", "10", "84.8"]
+    },
+    "delta_source": {
+      "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-01-Core\\coordination\\PPA-01\\contract-delta-core-publication-v1.json",
+      "sha256": "39814f851d01ee3f24991cc439665d153f5df5fa74329253b0878bc1ed41d843",
+      "affected_slice_stopped": true
+    },
+    "triage": {
+      "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p1-contract-delta-001-triage.json",
+      "sha256": "68f0a52b0bb1cc6a931b5918b4c42d67d9e890638ba668461f833a3249d79b87",
+      "verdict": "ACCEPTED_FOR_P0_ADJUDICATION"
+    }
+  },
+  "subdecisions": [
+    {
+      "finding_id": "CD-001-A",
+      "verdict": "confirmed_contract_gap",
+      "scope": "Core HTTP Workspace/Document/Node/Relation/Revision command and query wire contracts",
+      "disposition": "publish_core_authority_command_query_v1",
+      "affected_projects": ["P1", "P4"],
+      "blocked_until_p0_publish": ["P1 public Core API implementation", "P4 Core HTTP client consumption"],
+      "allowed_while_blocked": ["P1 internal authority/domain/repository/asset behavior", "P1 internal migration runner", "P4 shell and route work using no private Core schema"]
+    },
+    {
+      "finding_id": "CD-001-B",
+      "verdict": "confirmed_contract_gap",
+      "scope": "Core-native typed Candidate Publication accept/result",
+      "disposition": "publish_publication_command_result_v1",
+      "affected_projects": ["P1", "P4", "P5", "P6"],
+      "blocked_until_p0_publish": ["public Publication HTTP route", "P4/P5/P6 public accept integration"],
+      "allowed_while_blocked": ["P1 internal Candidate/Publication authority tests that consume no external wire schema"],
+      "safety_boundary": "Only Core-native service and Core-rendered UI controls may perform accept. Plugin worker, Plugin UI Bundle, Plugin SDK and plugin RPC expose no direct Publication callable. Plugin UI intent may request a Core operation or candidate preview only; it cannot carry a publication mutation."
+    },
+    {
+      "finding_id": "CD-001-C",
+      "verdict": "confirmed_contract_gap",
+      "scope": "Core HTTP Asset metadata and bounded read-range DTO",
+      "disposition": "publish_asset_metadata_v1",
+      "affected_projects": ["P1", "P4"],
+      "blocked_until_p0_publish": ["P1 public Asset HTTP adapter", "P4 Asset metadata/range client"],
+      "allowed_while_blocked": ["P1 internal immutable AssetStore behavior", "existing plugin host.asset.read/v1 and host.asset.create/v1 use unchanged"],
+      "compatibility_rule": "Existing host Asset RPC remains byte- and field-compatible; this is a separate Core HTTP DTO, not a new plugin method."
+    },
+    {
+      "finding_id": "CD-001-D",
+      "verdict": "clarified_internal_implementation_detail",
+      "scope": "P1 Core schema migration receipt/DB record",
+      "disposition": "no_new_public_plugin_contract",
+      "allowed": "P1 may define a deterministic internal receipt in its own migration/domain/repository write set and include it in P1 delivery evidence.",
+      "forbidden": "Do not add it to rpc-method-matrix.v1, plotpilot-plugin-sdk, Plugin UI, or Core HTTP API. Do not change migration.apply/v1; its applied_schema/receipt_hash remains the plugin install migration contract."
+    }
+  ],
+  "version_policy": {
+    "new_contract_ids": [
+      "core-authority-command-query/v1",
+      "publication-command-result/v1",
+      "asset-metadata/v1"
+    ],
+    "core_api_compatibility_window": ">=1.0 <2.0",
+    "core_contract_release": "1.2.0",
+    "rule": "No Core HTTP wire family was published in M0. These are first-publication additive v1 families inside the already-frozen Core API 1.x window, not edits to an existing M0 v1 field, method, hash, frame, lease, state or cursor. Once published, any change to one of these families follows §84.8 and requires a new v2 family plus ADR.",
+    "manifest_rule": "Regenerate the current content-addressed contract manifest to include the new v1 files and fixtures. Preserve the M0 historical manifest bytes/hash through M0-OPEN-R4; do not rewrite any old tag or historical delivery artifact.",
+    "rpc_rule": "Do not add Core HTTP methods to rpc-method-matrix.v1 or change plugin RPC compatibility."
+  },
+  "minimum_public_surface": {
+    "common": [
+      "Every request/response is a closed Draft 2020-12 DTO; no arbitrary metadata map or untyped command payload.",
+      "IDs, UTC strings, SHA-256 and JCS/hash rules reuse §84.1; all write commands carry an operation_key and all revision-affecting writes carry an explicit expected/base revision.",
+      "Unknown fields, unknown entity/workspace references, cross-workspace targets, stale CAS bases and operation-key payload reuse are rejected with typed Core HTTP error responses."
+    ],
+    "core_authority": {
+      "dto_families": [
+        "workspace/v1: workspace_id, workspace_kind, title, status, current_plan_revision_id|null, created_at, updated_at, revision",
+        "document/v1: document_id, workspace_id, document_type, title, current_revision_id|null, created_at, updated_at, revision",
+        "node/v1: node_id, workspace_id, document_id|null, node_type, title, parent_node_id|null, position, current_revision_id|null, created_at, updated_at, revision",
+        "relation/v1: relation_id, workspace_id, relation_type, source_id, target_id, revision_id|null, created_at",
+        "revision/v1: revision_id, workspace_id, document_id|null, node_id|null, parent_revision_id|null, content_hash, created_by, source_candidate_id|null, created_at, revision_number, payload_schema",
+        "page/v1 and revision-content-page/v1: typed offset/limit/total/next_offset and bounded text read; entity DTOs never inline unbounded body text"
+      ],
+      "queries": [
+        "GET /api/v1/core/workspaces and GET /api/v1/core/workspaces/{workspace_id}",
+        "GET /api/v1/core/workspaces/{workspace_id}/documents and GET /api/v1/core/documents/{document_id}",
+        "GET /api/v1/core/workspaces/{workspace_id}/nodes with bounded document/parent filters",
+        "GET /api/v1/core/workspaces/{workspace_id}/relations with bounded source/target/type filters",
+        "GET /api/v1/core/documents/{document_id}/revisions, GET /api/v1/core/nodes/{node_id}/revisions, GET /api/v1/core/revisions/{revision_id}",
+        "GET /api/v1/core/revisions/{revision_id}/content?offset=&length="
+      ],
+      "commands": [
+        "POST /api/v1/core/workspaces: create; PATCH /api/v1/core/workspaces/{workspace_id}: title/status update; DELETE /api/v1/core/workspaces/{workspace_id}: typed delete result",
+        "POST /api/v1/core/workspaces/{workspace_id}/documents: create; PATCH /api/v1/core/documents/{document_id}: bounded identity update",
+        "POST /api/v1/core/workspaces/{workspace_id}/nodes: create; PATCH /api/v1/core/nodes/{node_id}: title/parent/position structure command; DELETE /api/v1/core/nodes/{node_id}: typed delete result",
+        "POST /api/v1/core/workspaces/{workspace_id}/relations: create; DELETE /api/v1/core/relations/{relation_id}: typed delete result",
+        "POST /api/v1/core/documents/{document_id}/revisions and POST /api/v1/core/nodes/{node_id}/revisions: explicit CAS revision write returning the typed resulting Revision"
+      ],
+      "non_goals": ["generic query language", "arbitrary JSON patch", "search/index API", "asset upload API", "plugin RPC aliases"]
+    },
+    "publication": {
+      "command": "POST /api/v1/core/publications/accept",
+      "request": "publication-command/v1: publication_operation_key, workspace_id, candidate_id, accepted_by",
+      "result": "publication-result/v1: publication_id, candidate_id, workspace_id, entity_kind, entity_id, resulting_revision, idempotent",
+      "required_server_checks": ["rehydrate durable Candidate", "verify payload hash, RunSnapshot/provenance/release identity, target/mutation/base/write-set and parent closure", "perform Core transaction CAS", "write Publication receipt and revision.published event", "same key and payload returns the first result; different payload fails"],
+      "direct_plugin_access": false
+    },
+    "asset": {
+      "metadata_query": "GET /api/v1/core/assets/{asset_id} -> asset-metadata/v1: asset_id, sha256, mime, size, logical_role, provenance, rebuildable",
+      "range_query": "GET /api/v1/core/assets/{asset_id}/range?offset=&length= -> asset-read-range/v1: asset_id, offset, length, total_size, base64_chunk, next_offset|null, content_hash",
+      "limits": "Bounded non-negative offset/length; response bytes and exact SHA-256 are checked. No public upload/create method is introduced by this Delta."
+    }
+  },
+  "implementation_gate": {
+    "required_p0_artifacts": [
+      "closed JSON Schemas for all DTO/request/result families",
+      "Python DTOs and validators",
+      "TypeScript DTOs and validators",
+      "positive and negative HTTP fixtures, including stale CAS, cross-workspace, unknown field, duplicate operation key, partial Publication and Asset range bounds",
+      "P1/P4 typed port fakes that implement only this matrix",
+      "manifest/content hashes, compatibility note and ADR linkage"
+    ],
+    "required_runtime_checks": [
+      "Python validator and real frontend/src/contracts verifier",
+      "cross-language positive/negative fixture parity",
+      "HTTP fixture route/status/body assertions",
+      "proof that plugin SDK/RPC has no direct Publication method",
+      "P1/P4 integration must consume only the published P0 contract"
+    ],
+    "release_verdict_before_implementation": "BLOCKED",
+    "luna_review": {
+      "status": "not_applicable_no_draft_observed",
+      "findings": [],
+      "rule": "A future Luna implementation is an execution draft only; Sol must inspect the actual diff and raw test output before P0 accepts it."
+    }
+  },
+  "sync_order": [
+    "P1 may submit an integration-ready/v1 batch limited to internal authority/domain/repository/assets/candidates/backup and deterministic internal migration; public Core API/Publication slice stays stopped.",
+    "P0 validates that batch and integrates it with git merge --no-ff; no submission may be inferred from a branch or task status.",
+    "P0 publishes the above versioned contracts, fixtures, DTOs and validators on the integration branch and obtains Sol focused review.",
+    "P1 and P4 update clean worktrees with git merge --ff-only to the new P0 integration head; only then may P1 implement the public Core API/Publication adapter and P4 consume the HTTP DTOs.",
+    "P1/P4 must stop and raise a new Contract Delta if an implementation request changes any frozen v1 field, method, hash, error or CAS meaning."
+  ],
+  "immutable_tags": ["M0-OPEN", "M0-OPEN-R2", "M0-OPEN-R3", "M0-OPEN-R4"],
+  "prohibitions": [
+    "Do not modify formal design v1.2 or project-matrix.json.",
+    "Do not modify P1/P4 worktrees or donor.",
+    "Do not add Publication to backend/plotpilot_plugin_sdk/ports.py or rpc-method-matrix.v1.json.",
+    "Do not create P1-P6 branches/worktrees/projects or first-party plugins beyond those already registered.",
+    "Do not build desktop/Tauri/EXE/installer or run broad browser regression for this adjudication."
+  ]
+}

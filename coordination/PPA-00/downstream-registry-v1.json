@@ -1,0 +1,317 @@
+{
+  "schema": "ppa-downstream-registry/v1",
+  "status": "registered-awaiting-submissions",
+  "phase": "M1-M7",
+  "owner": {
+    "project_key": "P0",
+    "project_name": "PPA-00-Integration",
+    "branch": "codex/ppa-00-integration",
+    "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized",
+    "merge_owner": true,
+    "merge_method": "no-ff"
+  },
+  "source_of_truth": {
+    "project_matrix_path": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized七项目任务书-2026-08-26\\project-matrix.json",
+    "project_matrix_sha256": "076541384c643d879e8552737f94a9ce2ed9134dba3e0d448f2c4a0b58297656",
+    "design_version": "v1.2",
+    "design_sha256": "e70f450b75cfa753148cf620d13855d0073f7d61294e7599ea9cc98f3e612b7b"
+  },
+  "accepted_base": {
+    "sha": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+    "tag": "M0-OPEN-R4",
+    "tag_peeled_commit": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+    "verified_current_p0_head": true,
+    "rule": "A downstream branch is not accepted merely because it exists or is ahead; a ready submission must prove base_sha/head_sha and the actual diff."
+  },
+  "dependency_order": [
+    "P1",
+    "P2",
+    "P3",
+    "P4",
+    "P5",
+    "P6"
+  ],
+  "dependency_policy": {
+    "source": "project-matrix.json",
+    "rule": "All listed dependencies must be integrated or otherwise satisfied by the current queue decision before the dependent submission may merge.",
+    "matrix_dependency_edges_are_authoritative": true,
+    "parallelism": "Only independent ready batches may be validated in parallel; merge remains a single P0 writer and follows the dependency order."
+  },
+  "downstream": [
+    {
+      "project_key": "P1",
+      "project_name": "PPA-01-Core",
+      "codex_project_id": "9c897037-e093-4df1-87fa-9c4a81404e79",
+      "task_id": "01a04163-222b-73b1-ac3c-1e646866677a",
+      "branch": "codex/ppa-01-core",
+      "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-01-Core",
+      "mission": "Core 创作权威、Revision/Asset/Candidate/Publication 和备份恢复数据面",
+      "dependencies": [
+        "P0"
+      ],
+      "milestones": [
+        "M1",
+        "M4",
+        "M5",
+        "M7"
+      ],
+      "write_sets": [
+        "backend/plotpilot_core/domain/**",
+        "backend/plotpilot_core/repositories/**",
+        "backend/plotpilot_core/assets/**",
+        "backend/plotpilot_core/candidates/**",
+        "backend/plotpilot_core/publication/**",
+        "backend/plotpilot_core/backup/**",
+        "backend/plotpilot_core/api/v1/core/**",
+        "tests/p1-core/**",
+        "docs/deliveries/PPA-01/**",
+        "coordination/PPA-01/**"
+      ],
+      "first_party_plugins": [],
+      "observed_head": "752e2b6b6e56031eabe9a8e630a7f4638706da8d",
+      "observed_head_is_accepted_base": false,
+      "registration_status": "registered",
+      "submission_status": "awaiting-integration-ready/v1"
+    },
+    {
+      "project_key": "P2",
+      "project_name": "PPA-02-Plugin-Platform",
+      "codex_project_id": "2fb43c6b-1b1a-4b5c-a705-e0dcd6bc9ef5",
+      "task_id": "01a04163-610a-74e0-86df-378dfd0e4d81",
+      "branch": "codex/ppa-02-plugin-platform",
+      "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-02-Plugin-Platform",
+      "mission": "插件包、安装删除、Generation/Settings、Runtime、LKG 和 Prompt/Skill Runtime",
+      "dependencies": [
+        "P0",
+        "P1"
+      ],
+      "milestones": [
+        "M2",
+        "M3",
+        "M4",
+        "M5",
+        "M6",
+        "M7"
+      ],
+      "write_sets": [
+        "backend/plotpilot_core/plugins/**",
+        "backend/plotpilot_core/supervisor/**",
+        "backend/plotpilot_core/api/v1/plugins/**",
+        "first-party-plugins/prompt-skill-runtime/**",
+        "tests/p2-plugin-platform/**",
+        "docs/deliveries/PPA-02/**",
+        "coordination/PPA-02/**"
+      ],
+      "first_party_plugins": [
+        "com.plotpilot.prompt-skill-runtime"
+      ],
+      "observed_head": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+      "observed_head_is_accepted_base": true,
+      "registration_status": "registered",
+      "submission_status": "awaiting-integration-ready/v1"
+    },
+    {
+      "project_key": "P3",
+      "project_name": "PPA-03-Execution",
+      "codex_project_id": "d693a4da-e278-489e-b8ea-bcea3a647c17",
+      "task_id": "01a04163-9dff-7730-914c-f1b4ae6ddea5",
+      "branch": "codex/ppa-03-execution",
+      "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-03-Execution",
+      "mission": "Job、Provider、Broker、Checkpoint、SSE、Stream 和 Receipt",
+      "dependencies": [
+        "P0",
+        "P1",
+        "P2"
+      ],
+      "milestones": [
+        "M1",
+        "M2",
+        "M3",
+        "M4",
+        "M5",
+        "M6",
+        "M7"
+      ],
+      "write_sets": [
+        "backend/plotpilot_core/jobs/**",
+        "backend/plotpilot_core/events/**",
+        "backend/plotpilot_core/model/**",
+        "backend/plotpilot_core/broker/**",
+        "backend/plotpilot_core/api/v1/jobs/**",
+        "backend/plotpilot_core/api/v1/models/**",
+        "first-party-plugins/provider-openai-compatible/**",
+        "tests/p3-execution/**",
+        "docs/deliveries/PPA-03/**",
+        "coordination/PPA-03/**"
+      ],
+      "first_party_plugins": [
+        "com.plotpilot.provider.openai-compatible"
+      ],
+      "observed_head": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+      "observed_head_is_accepted_base": true,
+      "registration_status": "registered",
+      "submission_status": "awaiting-integration-ready/v1"
+    },
+    {
+      "project_key": "P4",
+      "project_name": "PPA-04-WebUI",
+      "codex_project_id": "6374b2dd-8eb9-493e-8d6c-6934903785a5",
+      "task_id": "01a04163-e281-7982-ba0f-c2fca5ce17f1",
+      "branch": "codex/ppa-04-webui",
+      "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-04-WebUI",
+      "mission": "固定 WebUI、导航、Slot Host、Plugin UI 和任务抽屉",
+      "dependencies": [
+        "P0",
+        "P1",
+        "P2",
+        "P3"
+      ],
+      "milestones": [
+        "M1",
+        "M2",
+        "M3",
+        "M4",
+        "M5",
+        "M6",
+        "M7"
+      ],
+      "write_sets": [
+        "frontend/src/core/**",
+        "frontend/src/views/**",
+        "frontend/src/components/**",
+        "frontend/src/plugin-host/**",
+        "frontend/tests/**",
+        "tests/p4-webui/**",
+        "docs/deliveries/PPA-04/**",
+        "coordination/PPA-04/**"
+      ],
+      "first_party_plugins": [],
+      "observed_head": "ff7566c2f6d7d30c07db978ad64311f79d3a9c6b",
+      "observed_head_is_accepted_base": false,
+      "registration_status": "registered",
+      "submission_status": "awaiting-integration-ready/v1"
+    },
+    {
+      "project_key": "P5",
+      "project_name": "PPA-05-Planning",
+      "codex_project_id": "2ebc4e90-82fb-4f17-9bd8-d4889e25f206",
+      "task_id": "01a04164-31aa-7971-88cd-ab0afea7b8c0",
+      "branch": "codex/ppa-05-planning",
+      "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-05-Planning",
+      "mission": "设定、故事 Bible、人物、世界观、物品、伏笔和故事演进",
+      "dependencies": [
+        "P0",
+        "P1",
+        "P2",
+        "P3"
+      ],
+      "milestones": [
+        "M4",
+        "M6",
+        "M7"
+      ],
+      "write_sets": [
+        "first-party-plugins/project-planner/**",
+        "first-party-plugins/story-state/**",
+        "tests/p5-planning/**",
+        "docs/deliveries/PPA-05/**",
+        "coordination/PPA-05/**"
+      ],
+      "first_party_plugins": [
+        "com.plotpilot.project-planner",
+        "com.plotpilot.story-state"
+      ],
+      "observed_head": "80c94cb95530d9d07ff6b2eaee43521e25e50b06",
+      "observed_head_is_accepted_base": false,
+      "registration_status": "registered",
+      "submission_status": "awaiting-integration-ready/v1"
+    },
+    {
+      "project_key": "P6",
+      "project_name": "PPA-06-Writing",
+      "codex_project_id": "d67aaea5-7ea3-444b-a450-838dfdf6dfe9",
+      "task_id": "01a04164-722c-77e3-9b6d-415751278cf3",
+      "branch": "codex/ppa-06-writing",
+      "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-06-Writing",
+      "mission": "章节生成与编辑协同、Autopilot、Quality 和 Export",
+      "dependencies": [
+        "P0",
+        "P1",
+        "P2",
+        "P3",
+        "P5"
+      ],
+      "milestones": [
+        "M3",
+        "M5",
+        "M6",
+        "M7"
+      ],
+      "write_sets": [
+        "first-party-plugins/chapter-workflow/**",
+        "first-party-plugins/autopilot/**",
+        "first-party-plugins/quality-suite/**",
+        "first-party-plugins/export-suite/**",
+        "tests/p6-writing/**",
+        "docs/deliveries/PPA-06/**",
+        "coordination/PPA-06/**"
+      ],
+      "first_party_plugins": [
+        "com.plotpilot.chapter-workflow",
+        "com.plotpilot.autopilot",
+        "com.plotpilot.quality-suite",
+        "com.plotpilot.export-suite"
+      ],
+      "observed_head": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+      "observed_head_is_accepted_base": true,
+      "registration_status": "registered",
+      "submission_status": "awaiting-integration-ready/v1"
+    }
+  ],
+  "integration_ready_v1": {
+    "template": "coordination/integration-queue/integration-ready-v1.json",
+    "required_schema": "integration-ready/v1",
+    "required_fields": [
+      "submission_id",
+      "project_id",
+      "source_branch",
+      "base_sha",
+      "head_sha",
+      "contract_manifest_sha256",
+      "changed_paths",
+      "write_set_proof",
+      "contract_delta_ids",
+      "dependency_delta_ids",
+      "validation",
+      "artifacts",
+      "review",
+      "ready"
+    ],
+    "pre_merge_checks": [
+      "project_id must be exactly a registered matrix project key P1-P6 and source_branch must match the matrix.",
+      "base_sha and head_sha must resolve to existing Git commits; head_sha must be based on base_sha.",
+      "base_sha must equal the current accepted base for the batch; changed_paths must equal the real base..head diff.",
+      "Every changed path must be inside the submitting project's matrix write_sets, including first-party plugin roots; no P0 write-set substitution.",
+      "contract_manifest_sha256 must equal the current real SHA-256 of contracts/manifest-v1.json.",
+      "Every validation/artifact record must bind a real file, its content hash, and an explicit exit code/status; submitted JSON claims are not evidence by themselves.",
+      "Contract Delta and Dependency Delta references must resolve and comply with the P0 policy; no silent v1 reinterpretation or undeclared root dependency change.",
+      "reviewer, finding IDs, and closure artifact must be present and verifiable; no Stub/fake user path or out-of-set mutation.",
+      "P0 reruns affected tests after validation and performs the only merge with git merge --no-ff."
+    ],
+    "rejection_rules": [
+      "No real submission file: do not infer readiness from a branch head, task status, or downstream commit.",
+      "Any failed/unknown/missing evidence, base mismatch, diff mismatch, dependency violation, or out-of-set path is fail-closed.",
+      "A Contract Delta or Dependency Delta stops the affected slice until explicitly resolved; it is not permission to reinterpret the contract."
+    ]
+  },
+  "queue": {
+    "queue_state": "coordination/integration-queue/queue-state-v1.json",
+    "registry": "coordination/PPA-00/downstream-registry-v1.json",
+    "submission_directory": "coordination/integration-queue/",
+    "accepted_submissions": [],
+    "pending_contract_deltas": [],
+    "pending_dependency_deltas": [],
+    "intake_status": "awaiting-real-submission"
+  },
+  "observed_at": "2026-08-27T04:14:51.721862Z"
+}

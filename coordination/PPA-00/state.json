@@ -91,7 +91,24 @@
     "NF-01 executable regression passed: five child nonzero-exit cases, five non-passed-status cases, success path and invalid merge JSON path",
     "M0-OPEN-R4 content-addressed contract-golden, integration-test ledger, fresh review raw evidence and release metadata regenerated without browser/Unicode rerun"
   ],
-  "contract_delta": [],
+  "contract_delta": [
+    {
+      "delta_id": "PPA-01-CD-001",
+      "status": "accepted_with_scoped_public_contract",
+      "decision": "coordination/PPA-00/contract-decision-PPA-01-CD-001.json",
+      "adr": "docs/contracts/adr-041-core-api-contract-v1.md",
+      "affected_projects": ["P1", "P4", "P5", "P6"],
+      "affected_slice_stopped": true,
+      "implementation_status": "not_observed",
+      "new_contract_families": [
+        "core-authority-command-query/v1",
+        "publication-command-result/v1",
+        "asset-metadata/v1"
+      ],
+      "internal_only": ["P1 Core schema migration receipt"],
+      "preserve": ["migration.apply/v1 receipt_hash", "existing M0 v1 RPC/SDK semantics"]
+    }
+  ],
   "deliverables": [
     {
       "bytes": 3482,
@@ -308,7 +325,7 @@
     "new_tag": "M0-OPEN-R4"
   },
   "gate": "P1-P6 creation is forbidden until M0-OPEN is committed and tagged.",
-  "in_progress": null,
+  "in_progress": "PPA-01-CD-001 adjudicated by P0; ADR-041 and scoped decision written. Public implementation is not yet observed; P1 internal authority remains the only allowed affected work.",
   "known_blockers": [
     {
       "acceptance": "project-specific P1-P6 write sets; real commit ancestry/diff/hash/evidence; first-party root; real creation gate; positive/negative submission tests",
@@ -392,7 +409,12 @@
     "M0.6": "passed",
     "M0.7": "passed"
   },
-  "next_steps": [],
+  "next_steps": [
+    "P1 submits an integration-ready/v1 internal authority batch without public Core API/Publication files.",
+    "P0 validates and no-ff integrates that batch, then publishes the three scoped v1 Core HTTP contract families and focused evidence.",
+    "P1/P4 fast-forward clean worktrees to the new P0 integration head before resuming public Core API/Publication consumption.",
+    "Sol reviews the future Luna contract diff and raw contract/fixture/DTO verifier output; no M0 rerun or desktop build."
+  ],
   "prohibitions": [
     "P1-P6 branch/worktree/project creation before M0-OPEN",
     "donor mutation or donor cleanup/reset/checkout",
@@ -634,10 +656,10 @@
     "verdict": "passed_pre_commit"
   },
   "schema": "ppa-project-state/v1",
-  "status": "complete",
-  "target": "M0-OPEN-R4",
-  "task_id": "PPA-M0-REMEDIATION-04",
-  "updated_at": "2026-08-27T03:12:54.997546+00:00",
+  "status": "in_progress",
+  "target": "PPA-01-CD-001",
+  "task_id": "PPA-01-CD-001",
+  "updated_at": "2026-08-27T04:30:00.000000+00:00",
   "validation_runs": [
     {
       "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe tools/integration/generate_contract_manifest.py --check",
@@ -1016,7 +1038,7 @@
   "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized",
   "write_set_hash": "076541384c643d879e8552737f94a9ce2ed9134dba3e0d448f2c4a0b58297656",
   "write_set_source": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized七项目任务书-2026-08-26\\project-matrix.json",
-  "head": "b6e20df15de9eb4b25de1acfe4e8a8f9e7080bde",
+  "head": "42123d1a5126bb2bef31304b0498e2e7def9183e",
   "r4_remediation": {
     "task_id": "PPA-M0-REMEDIATION-04",
     "status": "closed",

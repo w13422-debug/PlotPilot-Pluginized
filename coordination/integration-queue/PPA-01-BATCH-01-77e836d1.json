@@ -1,0 +1,68 @@
+{
+  "schema": "integration-ready/v1",
+  "status": "ready",
+  "submission_id": "PPA-01-BATCH-01-77e836d1",
+  "project_id": "P1",
+  "source_branch": "codex/ppa-01-core",
+  "base_sha": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+  "head_sha": "77e836d126e5be525e95b34f2f396ac7b9f864a1",
+  "contract_manifest_sha256": "2866b8d0b36ec954ee8cb5c87374e0ca0a0c4acefd1901070cee0b45979d25e7",
+  "changed_paths": [
+    "backend/plotpilot_core/assets/__init__.py",
+    "backend/plotpilot_core/assets/store.py",
+    "backend/plotpilot_core/candidates/__init__.py",
+    "backend/plotpilot_core/candidates/service.py",
+    "backend/plotpilot_core/domain/__init__.py",
+    "backend/plotpilot_core/domain/entities.py",
+    "backend/plotpilot_core/publication/__init__.py",
+    "backend/plotpilot_core/publication/service.py",
+    "backend/plotpilot_core/repositories/__init__.py",
+    "backend/plotpilot_core/repositories/authority.py",
+    "backend/plotpilot_core/repositories/migrations.py",
+    "coordination/PPA-01/contract-delta-core-publication-v1.json",
+    "docs/deliveries/PPA-01/batch-01-integration-ready.json",
+    "docs/deliveries/PPA-01/batch-01-summary.md",
+    "tests/p1-core/test_asset_store.py",
+    "tests/p1-core/test_candidate_publication.py",
+    "tests/p1-core/test_core_authority.py"
+  ],
+  "write_set_proof": {
+    "matrix_path": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized七项目任务书-2026-08-26\\project-matrix.json",
+    "project_id": "P1",
+    "project_write_set_match": true,
+    "out_of_set_paths": []
+  },
+  "contract_delta_ids": [
+    "PPA-01-CD-001"
+  ],
+  "dependency_delta_ids": [],
+  "validation": [
+    {
+      "command": "P1 F-P1-INT-01 closure review",
+      "exit_code": 0,
+      "status": "passed",
+      "evidence": {
+        "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p1-batch-01-f-p1-int-01-closure-20260827.json",
+        "sha256": "d2080ccdb7ca9501f71be481165c8f603196b5979412c36a26d5a802b9b515df",
+        "exit_code": 0
+      }
+    }
+  ],
+  "artifacts": [],
+  "review": {
+    "reviewer": "Sol focused intake review",
+    "finding_ids": [
+      "F-P1-INT-01"
+    ],
+    "closure_artifact": {
+      "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p1-batch-01-f-p1-int-01-closure-20260827.json",
+      "sha256": "d2080ccdb7ca9501f71be481165c8f603196b5979412c36a26d5a802b9b515df",
+      "exit_code": 0
+    }
+  },
+  "ready": true,
+  "source_delivery_path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-01-Core\\docs\\deliveries\\PPA-01\\batch-01-integration-ready.json",
+  "reviewed_implementation_head": "93a34093e25603c3e2553ff72bfd6469e033de4a",
+  "evidence_only_submission_head": "77e836d126e5be525e95b34f2f396ac7b9f864a1",
+  "submission_parent": "93a34093e25603c3e2553ff72bfd6469e033de4a"
+}

@@ -4,7 +4,55 @@
   "merge_method": "no-ff",
   "project_matrix_path": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized七项目任务书-2026-08-26\\project-matrix.json",
   "accepted_submissions": [],
-  "pending_contract_deltas": [],
+  "pending_contract_deltas": [
+    {
+      "delta_id": "PPA-01-CD-001",
+      "status": "accepted_for_p0_adjudication",
+      "source_path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-01-Core\\coordination\\PPA-01\\contract-delta-core-publication-v1.json",
+      "decision_path": "coordination/PPA-00/contract-decision-PPA-01-CD-001.json",
+      "adr_path": "docs/contracts/adr-041-core-api-contract-v1.md",
+      "affected_projects": ["P1", "P4", "P5", "P6"],
+      "stopped_slices": [
+        "P1 public Core HTTP API and Publication adapter",
+        "P4 Core HTTP contract consumption",
+        "P5/P6 public Publication accept integration"
+      ],
+      "allowed_slices": [
+        "P1 internal authority/domain/repository/asset/candidate behavior",
+        "P1 internal deterministic schema migration receipt",
+        "P4 shell/route work without a private Core wire schema"
+      ],
+      "new_contract_families": [
+        "core-authority-command-query/v1",
+        "publication-command-result/v1",
+        "asset-metadata/v1"
+      ],
+      "plugin_contract_change": false
+    }
+  ],
   "pending_dependency_deltas": [],
-  "last_decision": null
+  "last_decision": {
+    "type": "contract-delta-adjudication",
+    "status": "accepted_with_scoped_public_contract",
+    "submission_id": null,
+    "accepted_base_sha": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+    "delta_id": "PPA-01-CD-001",
+    "decision_path": "coordination/PPA-00/contract-decision-PPA-01-CD-001.json",
+    "adr_path": "docs/contracts/adr-041-core-api-contract-v1.md",
+    "at": "2026-08-27T04:24:14.1427689Z",
+    "note": "A/B/C are confirmed public contract gaps; D is an internal P1 detail. No implementation or downstream submission has been accepted or merged."
+  },
+  "phase": "M1-M7",
+  "accepted_base_sha": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+  "accepted_base_tag": "M0-OPEN-R4",
+  "downstream_registry": "coordination/PPA-00/downstream-registry-v1.json",
+  "dependency_order": [
+    "P1",
+    "P2",
+    "P3",
+    "P4",
+    "P5",
+    "P6"
+  ],
+  "intake_status": "awaiting-p1-internal-submission_and_p0_contract-publication"
 }

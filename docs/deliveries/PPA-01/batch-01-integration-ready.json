@@ -1,0 +1,79 @@
+{
+  "schema": "ppa-integration-ready/v1",
+  "project_id": "P1",
+  "batch_id": "PPA-01-BATCH-01",
+  "status": "integration_ready",
+  "base_sha": "42123d1a5126bb2bef31304b0498e2e7def9183e",
+  "head_sha": "93a34093e25603c3e2553ff72bfd6469e033de4a",
+  "reviewed_implementation_head": "93a34093e25603c3e2553ff72bfd6469e033de4a",
+  "commits": [
+    "752e2b6b feat(core): add immutable asset store foundation",
+    "d6d354b6 feat(core): establish SQLite authority and publication CAS",
+    "82dab14c docs(core): record batch 01 integration evidence",
+    "93a34093 fix(core): close batch 01 authority review findings"
+  ],
+  "delivered": [
+    "fail-closed transactional hash migrations with deterministic internal receipts",
+    "single-writer SQLite Workspace/Document/Node/Relation authority",
+    "immutable Revision history with current-pointer CAS and restart recovery",
+    "content-addressed immutable Asset put/read/range with metadata and tamper detection",
+    "candidate-item/v1 document staging without formal-content mutation",
+    "Core-native internal Publication CAS and operation-key idempotency"
+  ],
+  "migration_ids": ["0001-core-authority", "0002-candidate-publication"],
+  "verification": [
+    {
+      "command": "python -B -m pytest -q tests/p1-core",
+      "exit_code": 0,
+      "result": "7 passed in 0.58s"
+    },
+    {
+      "command": "python -B -m compileall -q backend/plotpilot_core/domain backend/plotpilot_core/repositories backend/plotpilot_core/assets backend/plotpilot_core/candidates backend/plotpilot_core/publication",
+      "exit_code": 0,
+      "result": "no diagnostics"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "result": "clean"
+    }
+  ],
+  "independent_review": {
+    "reviewer": "Sol read-only focused review",
+    "initial_findings": 4,
+    "closed_findings": 4,
+    "result": "PASS",
+    "note": "Cross-workspace parent/source lineage is permitted by formal design v1.2 line 410; target/base/write-set remain workspace-bound."
+  },
+  "write_set_proof": {
+    "out_of_set_paths": [],
+    "allowed_roots": [
+      "backend/plotpilot_core/domain/",
+      "backend/plotpilot_core/repositories/",
+      "backend/plotpilot_core/assets/",
+      "backend/plotpilot_core/candidates/",
+      "backend/plotpilot_core/publication/",
+      "tests/p1-core/",
+      "docs/deliveries/PPA-01/",
+      "coordination/PPA-01/"
+    ]
+  },
+  "contract_delta": {
+    "id": "PPA-01-CD-001",
+    "status": "accepted_with_scoped_public_contract",
+    "decision_id": "PPA-00-CD-DECISION-001",
+    "public_contract_families": {
+      "core-authority-command-query/v1": "not_published",
+      "publication-command-result/v1": "not_published",
+      "asset-metadata/v1": "not_published"
+    },
+    "stopped": ["public Core HTTP DTOs", "plugin-callable Publication method", "public Asset metadata DTO"],
+    "unaffected": ["internal Core authority", "internal migration receipt", "Asset domain/store", "candidate-item/v1 staging", "Core-native internal Publication"]
+  },
+  "remaining_dependencies": [
+    "P0 publication and focused review of the three accepted but not-yet-published public contract families",
+    "P3 Job/Attempt/provenance/outbox transaction port for the full candidate completion transaction",
+    "P2 release/package identity for deletion-after-publication integration tests"
+  ],
+  "rollback": "Revert 93a34093, 82dab14c, d6d354b6, then 752e2b6b in reverse integration order; no pre-existing schema or user data is migrated by this construction batch."
+}

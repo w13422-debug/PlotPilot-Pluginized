@@ -1,0 +1,31 @@
+{
+  "schema": "contract-delta/v1",
+  "status": "accepted_with_scoped_public_contract",
+  "delta_id": "PPA-01-CD-001",
+  "raised_by_project": "P1",
+  "affected_contract_ids": [
+    "core-authority-command-query/v1",
+    "publication-command-result/v1",
+    "migration-receipt/v1",
+    "asset-metadata/v1"
+  ],
+  "formal_design_version": "v1.2",
+  "formal_design_sha256": "e70f450b75cfa753148cf620d13855d0073f7d61294e7599ea9cc98f3e612b7b",
+  "observed_mismatch": "The formal design requires typed Workspace/Document/Node/Revision commands and queries, typed idempotent Publication, migration receipts, and Asset metadata, but M0 publishes no external JSON Schema or RPC/HTTP method shape for these surfaces.",
+  "evidence": [
+    "formal-design-v1.2:313-425,441-488",
+    "contracts/json-schema/rpc-method-matrix.v1.json:18-173",
+    "backend/plotpilot_plugin_sdk/ports.py:8-13"
+  ],
+  "affected_slice_stopped": true,
+  "proposed_v2_or_adr": "P0 should freeze minimal v1 command/result schemas and SDK ports. P1 continues only internal authority behavior and existing host Asset/Candidate contracts; public Core HTTP API and external Publication surface remain stopped.",
+  "p0_decision": "accepted_with_scoped_public_contract",
+  "decision_evidence": {
+    "decision_id": "PPA-00-CD-DECISION-001",
+    "path": "coordination/PPA-00/contract-decision-PPA-01-CD-001.json",
+    "adr": "docs/contracts/adr-041-core-api-contract-v1.md",
+    "public_families_published": false,
+    "affected_slice_stopped": true,
+    "internal_migration_receipt_public_contract": false
+  }
+}
