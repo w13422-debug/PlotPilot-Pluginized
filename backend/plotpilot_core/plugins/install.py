@@ -1,9 +1,9 @@
 """Crash-tolerant local staging for plugin package installation.
 
-This slice intentionally stops at package publication.  Generation/LKG and
-worker lifecycle decisions remain in their owning P2 modules; a staging
-attempt here only verifies and snapshots bytes before handing them to the
-immutable :class:`PackageStore`.
+The staging marker is byte-materialization evidence, not the authoritative
+Install→Generation→LKG transition.  Durable lifecycle state lives in
+``plugins.lifecycle.LifecycleRepository``; this module only verifies and
+snapshots bytes before handing them to the immutable :class:`PackageStore`.
 """
 from __future__ import annotations
 
@@ -11,11 +11,11 @@ import json
 import os
 import shutil
 import uuid
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from types import MappingProxyType
-from typing import Any, Mapping
+from typing import Any
 
 from plotpilot_plugin_sdk.canonical import parse_json_bytes
 from plotpilot_plugin_sdk.errors import ContractError, ErrorCode
@@ -23,12 +23,11 @@ from plotpilot_plugin_sdk.errors import ContractError, ErrorCode
 from .package import (
     CompatibilityProfile,
     PackageError,
-    PackageIntegrityError,
     PackageLimits,
     VerifiedPackage,
     verify_package,
 )
-from .store import PackageStore, PackageStoreError
+from .store import PackageStore
 
 
 class InstallError(PackageError):
@@ -184,16 +183,9 @@ class InstallStager:
     ) -> StagedPackage:
         operation_id = _safe_operation_id(install_operation_id)
         stage_dir = self._stage_dir(operation_id)
-        if stage_dir.exists():
-            existing = self._read_existing(operation_id)
-            if expected_package_hash is not None and existing.package.package_hash != expected_package_hash:
-                raise InstallError("install operation already stages a different package", code=ErrorCode.ASSET_ERROR)
-            if base_generation_id is not None and existing.base_generation_id != base_generation_id:
-                raise InstallError("install operation base generation differs", code=ErrorCode.INCOMPATIBLE_GENERATION)
-            return existing
-
-        # Verify the untrusted source before creating any durable staging
-        # marker.  No published store path is touched on failure.
+        # Bind the operation to the actual verified input even when a staging
+        # directory already exists.  Call ``load`` (not ``stage``) when crash
+        # recovery intentionally proceeds without the original source.
         package = verify_package(
             source,
             expected_package_hash=expected_package_hash,
@@ -202,6 +194,16 @@ class InstallStager:
             limits=self.limits,
             compatibility=compatibility,
         )
+        if stage_dir.exists():
+            existing = self._read_existing(operation_id)
+            if existing.identity != package.identity or existing.package.release_id != package.release_id:
+                raise InstallError("install operation already stages a different package", code=ErrorCode.ASSET_ERROR)
+            if existing.base_generation_id != base_generation_id:
+                raise InstallError("install operation base generation differs", code=ErrorCode.INCOMPATIBLE_GENERATION)
+            return existing
+
+        # Verify the untrusted source before creating any durable staging
+        # marker.  No published store path is touched on failure.
         temp_dir = self.staging_root / f".{operation_id}.{uuid.uuid4().hex}.tmp"
         package_dir = temp_dir / "package"
         try:
@@ -266,6 +268,8 @@ class InstallStager:
         current = self._read_existing(operation_id)
         if current.state in {InstallState.FAILED, InstallState.SUPERSEDED}:
             raise InstallError("staging operation cannot be verified from its terminal failure state")
+        if current.state in {InstallState.VERIFIED, InstallState.PACKAGE_PUBLISHED}:
+            return current
         verified = StagedPackage(
             install_operation_id=current.install_operation_id,
             package=current.package,
@@ -280,7 +284,18 @@ class InstallStager:
     verify_staged = verify
 
     def publish(self, staged: StagedPackage | str) -> VerifiedPackage:
-        verified = self.verify(staged)
+        operation_id = staged.install_operation_id if isinstance(staged, StagedPackage) else staged
+        current = self._read_existing(operation_id)
+        if current.state == InstallState.PACKAGE_PUBLISHED:
+            # Re-verify/adopt the exact immutable tree without downgrading the
+            # evidence marker.  This closes the published->verified crash
+            # window that a blind replay would otherwise create.
+            return self.store.publish(
+                current.package,
+                expected_package_hash=current.package.package_hash,
+                expected_release_id=current.package.release_id,
+            )
+        verified = self.verify(current)
         try:
             package = self.store.publish(verified.package)
         except ContractError:
@@ -312,6 +327,33 @@ class InstallStager:
             ),
         )
         return package
+
+    def reconcile(self, install_operation_id: str) -> StagedPackage:
+        """Converge marker and package registry for one exact operation.
+
+        No directory scan or automatic activation occurs.  If an immutable
+        package tree won the rename but registry/marker publication crashed,
+        ``PackageStore.publish`` verifies and adopts only this staged identity.
+        """
+        current = self._read_existing(install_operation_id)
+        if current.state in {InstallState.FAILED, InstallState.SUPERSEDED}:
+            return current
+        package = self.store.publish(
+            current.package,
+            expected_package_hash=current.package.package_hash,
+            expected_release_id=current.package.release_id,
+        )
+        if current.state != InstallState.PACKAGE_PUBLISHED:
+            current = StagedPackage(
+                install_operation_id=current.install_operation_id,
+                package=package,
+                stage_dir=current.stage_dir,
+                package_dir=current.package_dir,
+                state=InstallState.PACKAGE_PUBLISHED,
+                base_generation_id=current.base_generation_id,
+            )
+            _write_marker(current.stage_dir / _MARKER_NAME, self._marker(current))
+        return current
 
     publish_package = publish
 
@@ -350,8 +392,8 @@ def publish_staged_package(store: PackageStore, staged: StagedPackage | str) -> 
 __all__ = [
     "InstallError",
     "InstallStager",
-    "InstallState",
     "InstallStaging",
+    "InstallState",
     "StagedPackage",
     "publish_staged_package",
     "stage_package",
