@@ -1,0 +1,26 @@
+{
+  "schema": "plotpilot-finding-remediation-evidence/v1",
+  "node_id": "NW-P1-EXECUTION-TX-01",
+  "parent": "d1b6f612b1bb330a28328954fc23e2fdf0ce2d1d",
+  "parent_tree": "16b7c0131f28146c56881cb723e844da288d8f26",
+  "finding_manifest_sha256": "1c47a49309c16af426da5d4c967a0c34ee3e91fea2457bdc8a0e9d54fda2394e",
+  "review_disposition": "pending_original_reviewer",
+  "self_acceptance_performed": false,
+  "mappings": [
+    {"id":"NW-P1-ETX-F-001","test":"test_f001_cancel_reservation_precedes_side_effect_and_recovers_record_failure"},
+    {"id":"NW-P1-ETX-F-002","test":"test_f002_attempt_acquisition_has_one_active_monotonic_fence"},
+    {"id":"NW-P1-ETX-F-003","test":"test_f003_required_queued_child_blocks_parent_success_without_mutation"},
+    {"id":"NW-P1-ETX-F-004","test":"test_f004_frozen_result_contract_rejects_profile_swap"},
+    {"id":"NW-P1-ETX-F-005","test":"test_f005_run_snapshot_workspace_is_rechecked_before_staging"},
+    {"id":"NW-P1-ETX-F-006","test":"test_f006_explicit_plan_freezes_membership_dag_and_output"},
+    {"id":"NW-P1-ETX-F-007","test":"test_f007_core_materializes_receipt_and_rejects_unbound_parent"},
+    {"id":"NW-P1-ETX-F-008","test":"test_f008_plugin_incomplete_stream_is_never_stageable"},
+    {"id":"NW-P1-ETX-F-009","test":"test_f009_publication_requires_complete_execution_evidence"},
+    {"id":"NW-P1-ETX-F-010","test":"test_f010_shared_connection_reader_waits_for_rollback"},
+    {"id":"NW-P1-ETX-F-011","test":"test_f011_candidate_identity_is_scoped_by_attempt_and_bundle"},
+    {"id":"NW-P1-ETX-F-012","test":"test_f012_existing_visible_parent_candidate_is_accepted"},
+    {"id":"NW-P1-ETX-F-013","test":"test_f013_cancelling_wins_with_cancelled_code_and_zero_writes"},
+    {"id":"NW-P1-ETX-F-014","test":"test_f014_plugin_job_event_uses_current_plugin_namespace"},
+    {"id":"NW-P1-ETX-F-015","tests":["test_f015_complete_replay_fails_closed_when_receipt_is_missing","test_f015_invoke_replay_requires_snapshot_bytes_and_child_identity"]}
+  ]
+}

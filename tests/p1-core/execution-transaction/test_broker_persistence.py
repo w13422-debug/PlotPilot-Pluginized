@@ -300,3 +300,90 @@ def test_committed_child_replay_is_fenced_before_lookup(execution_stack):
     with pytest.raises(ContractError) as caught:
         execution_stack["authority"].validate_attempt(context)
     assert caught.value.code == int(ErrorCode.STALE_LEASE)
+
+
+def _production_broker(stack, *, execution, ledger=None):
+    context, binding, request = _request(stack)
+
+    class Runtime:
+        @staticmethod
+        def resolve_release(_plugin_id, _requirement): return "e" * 64
+
+        @staticmethod
+        def current_generation(): return "generation-1"
+
+    authority = stack["authority"]
+    broker = CapabilityBroker(
+        core=stack["assets"], execution=execution, runtime=Runtime(),
+        bindings={binding.binding_id: binding}, child_factory=authority,
+        operation_ledger=ledger or authority.operation_ledger,
+        child_records=authority.child_records, attempt_context=authority,
+    )
+    return broker, context, request
+
+
+def test_f001_cancel_reservation_precedes_side_effect_and_recovers_record_failure(execution_stack):
+    authority = execution_stack["authority"]
+
+    class FaultOnceLedger:
+        def __init__(self, delegate):
+            self.delegate = delegate
+            self.failed = False
+
+        def __getattr__(self, name):
+            return getattr(self.delegate, name)
+
+        def record(self, **kwargs):
+            if kwargs["method"] == "host.capability.cancel/v1" and not self.failed:
+                self.failed = True
+                raise RuntimeError("injected ACK persistence failure")
+            return self.delegate.record(**kwargs)
+
+    class Execution:
+        def __init__(self): self.cancel_calls = 0
+
+        def cancel(self, _operation_key, _child_job_id):
+            self.cancel_calls += 1
+            return True
+
+    execution = Execution()
+    ledger = FaultOnceLedger(authority.operation_ledger)
+    broker, context, request = _production_broker(execution_stack, execution=execution, ledger=ledger)
+    child = broker.invoke(context, operation_key="invoke-1", binding_id="binding-1", input_asset_id=request.input_asset_id)
+    with pytest.raises(RuntimeError, match="injected"):
+        broker.cancel(context, operation_key="cancel-1", child_job_id=child.child_job_id)
+    replay = broker.cancel(context, operation_key="cancel-1", child_job_id=child.child_job_id)
+    assert replay.accepted and replay.child_state == "cancelling"
+    assert execution.cancel_calls == 1
+    assert execution_stack["repository"]._connection.execute(
+        "SELECT count(*) FROM p3_broker_operation WHERE method='host.capability.cancel/v1'"
+    ).fetchone()[0] == 1
+
+
+def test_f003_required_queued_child_blocks_parent_success_without_mutation(execution_stack):
+    class Execution:
+        pass
+
+    broker, context, request = _production_broker(execution_stack, execution=Execution())
+    broker.invoke(context, operation_key="invoke-1", binding_id="binding-1", input_asset_id=request.input_asset_id)
+    from support import complete_kwargs, make_candidate_bundle
+    bundle, receipt, _ = make_candidate_bundle(execution_stack)
+    with pytest.raises(ContractError) as caught:
+        execution_stack["authority"].complete_attempt(**complete_kwargs(bundle, receipt))
+    assert caught.value.code == int(ErrorCode.INVALID_TRANSITION)
+    connection = execution_stack["repository"]._connection
+    assert connection.execute("SELECT job_state FROM execution_job WHERE job_id='job-1'").fetchone()[0] == "running"
+    assert connection.execute("SELECT count(*) FROM execution_outcome WHERE job_id='job-1'").fetchone()[0] == 0
+
+
+def test_f015_invoke_replay_requires_snapshot_bytes_and_child_identity(execution_stack):
+    class Execution:
+        pass
+
+    broker, context, request = _production_broker(execution_stack, execution=Execution())
+    child = broker.invoke(context, operation_key="invoke-1", binding_id="binding-1", input_asset_id=request.input_asset_id)
+    digest = child.child_run_snapshot_asset_id.removeprefix("asset-sha256-")
+    (execution_stack["assets"].objects / digest[:2] / digest).unlink()
+    with pytest.raises(ContractError) as caught:
+        broker.invoke(context, operation_key="invoke-1", binding_id="binding-1", input_asset_id=request.input_asset_id)
+    assert caught.value.code == int(ErrorCode.ASSET_ERROR)

@@ -46,6 +46,9 @@ class CandidateService:
         item: dict,
         *,
         initial_status: str = "staged",
+        context_identity: str | None = None,
+        method: str = "candidate.stage/v1",
+        expected_workspace_id: str | None = None,
     ) -> StagedCandidate:
         """Stage under a caller-owned P1 transaction.
 
@@ -55,7 +58,12 @@ class CandidateService:
         if initial_status not in {"prepared", "staged"}:
             raise CandidateError("invalid candidate initial status")
         raw,item_hash=self._canonical(item); item_id=item["item_id"]
-        existing=connection.execute("SELECT candidate_id,item_hash,item_json,status FROM candidate WHERE operation_key=? AND item_id=?",(operation_key,item_id)).fetchone()
+        scoped_operation_key = operation_key
+        if context_identity is not None:
+            scoped_operation_key = hashlib.sha256(
+                f"candidate-operation/v1\n{context_identity}\n{method}\n{operation_key}".encode("utf-8")
+            ).hexdigest()
+        existing=connection.execute("SELECT candidate_id,item_hash,item_json,status FROM candidate WHERE operation_key=? AND item_id=?",(scoped_operation_key,item_id)).fetchone()
         if existing:
             if existing["item_hash"]!=item_hash: raise CandidateError("operation key reused with different payload")
             saved=json.loads(existing["item_json"])
@@ -64,8 +72,12 @@ class CandidateService:
         if item["status"] in {"failed","skipped"}:
             return StagedCandidate(item_id,None,"not_created","ineligible")
         target=item["target"]
-        if item["item_kind"] not in {"document","incomplete_stream"} or target["entity_kind"]!="document":
+        if item["item_kind"] == "incomplete_stream":
+            raise CandidateError("incomplete_stream is Core durable-stream authority only")
+        if item["item_kind"] != "document" or target["entity_kind"]!="document":
             raise CandidateError("first Core slice supports document publication only")
+        if expected_workspace_id is not None and target["workspace_id"] != expected_workspace_id:
+            raise CandidateError("candidate target is outside the RunSnapshot workspace")
         if item["mutation"]["mode"] not in {"replace","append_text"}: raise CandidateError("unsupported document mutation")
         asset=self.assets.describe(item["payload_asset_id"])
         if asset.sha256 != item["mutation"]["payload_hash"]: raise CandidateError("payload hash mismatch")
@@ -77,6 +89,10 @@ class CandidateService:
         if doc["current_revision_id"] != base["revision_id"]: raise CandidateError("stale candidate base")
         current=connection.execute("SELECT workspace_id,revision_id,content_hash FROM revision WHERE revision_id=?",(base["revision_id"],)).fetchone()
         if not current or current["content_hash"] != base["content_hash"]: raise CandidateError("base hash mismatch")
+        if current["workspace_id"] != target["workspace_id"] or (
+            expected_workspace_id is not None and current["workspace_id"] != expected_workspace_id
+        ):
+            raise CandidateError("candidate base is outside the RunSnapshot workspace")
         if len(item["write_set"])!=1 or item["write_set"][0] != {"workspace_id":target["workspace_id"],"entity_kind":"document","entity_id":target["entity_id"],"revision_id":base["revision_id"],"content_hash":base["content_hash"]}:
             raise CandidateError("write-set is not the exact target base")
         for source in item["source_refs"]:
@@ -93,10 +109,10 @@ class CandidateService:
                     source_revision=connection.execute("SELECT workspace_id,revision_id,content_hash FROM revision WHERE revision_id=?",(source["source_id"],)).fetchone()
                     if not source_revision: raise CandidateError("source revision missing")
                     if source_revision["workspace_id"]!=source_workspace or source["revision_or_hash"] not in {source_revision["revision_id"],source_revision["content_hash"]}: raise CandidateError("source revision mismatch")
-        eligibility="eligible" if item["status"]=="complete" or item["item_kind"]=="incomplete_stream" else "review_only"
+        eligibility="eligible" if item["status"]=="complete" else "review_only"
         for parent in item["parent_candidate_ids"]:
             row=connection.execute("SELECT status FROM candidate WHERE candidate_id=?",(parent,)).fetchone()
             if not row or row["status"] in {"rejected","deleted","expired","prepared"}: raise CandidateError("invalid parent candidate")
         cid=f"candidate-{uuid.uuid4().hex}"
-        connection.execute("INSERT INTO candidate VALUES(?,?,?,?,?,?,?)",(cid,item_id,operation_key,item_hash,raw,initial_status,utc_now()))
+        connection.execute("INSERT INTO candidate VALUES(?,?,?,?,?,?,?)",(cid,item_id,scoped_operation_key,item_hash,raw,initial_status,utc_now()))
         return StagedCandidate(item_id,cid,"created",eligibility)

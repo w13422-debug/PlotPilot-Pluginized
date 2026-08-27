@@ -1,7 +1,7 @@
 {
   "schema": "active-work/v1",
-  "revision": 2,
-  "status": "completed_in_containing_source_commit",
+  "revision": 4,
+  "status": "remediation_source_complete_pending_original_review",
   "node_id": "NW-P1-EXECUTION-TX-01",
   "objective": "Atomic Job terminal transaction across bundle/assets/candidate/publication/receipt/event/outcome, including durable reservation and create_or_recover_child adapters inside P1 authority.",
   "identity": {
@@ -9,7 +9,9 @@
     "base_head": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
     "base_tree": "ecf773e49f93b20806ebda5dec2fa14db422a1f4",
     "donor_push": "DISABLED",
-    "source_commit": "containing commit"
+    "source_commit": "containing commit",
+    "remediation_parent": "d1b6f612b1bb330a28328954fc23e2fdf0ce2d1d",
+    "remediation_parent_tree": "16b7c0131f28146c56881cb723e844da288d8f26"
   },
   "worktree_protection": "Exact base was clean before work; all changed paths are inside the exclusive write set.",
   "reuse_decision": {
@@ -20,27 +22,30 @@
   },
   "tasks": [
     {
-      "task_id": "NW-P1-EXECUTION-TX-01-ARCH-AUDIT",
+      "task_id": "NW-P1-ETX-REM-001-005",
       "agent": "/root/architecture_audit",
+      "input": "Frozen findings F-001..005",
       "write_set": [],
+      "output": "read-only minimal fix/test mapping",
       "status": "completed",
-      "output": "agent final read-only architecture report",
       "model": "gpt-5.6-sol/high"
     },
     {
-      "task_id": "NW-P1-EXECUTION-TX-01-RESERVATION-AUDIT",
+      "task_id": "NW-P1-ETX-REM-006-010",
       "agent": "/root/reservation_audit",
+      "input": "Frozen findings F-006..010",
       "write_set": [],
+      "output": "read-only minimal fix/test mapping",
       "status": "completed",
-      "output": "agent final read-only reservation report",
       "model": "gpt-5.6-sol/high"
     },
     {
-      "task_id": "NW-P1-EXECUTION-TX-01-TEST-AUDIT",
+      "task_id": "NW-P1-ETX-REM-011-015",
       "agent": "/root/test_audit",
+      "input": "Frozen findings F-011..015",
       "write_set": [],
+      "output": "read-only minimal fix/test mapping",
       "status": "completed",
-      "output": "agent final read-only test report",
       "model": "gpt-5.6-sol/high"
     }
   ],
@@ -54,40 +59,35 @@
   ],
   "in_progress": null,
   "next_steps": [
-    "Containing source commit must be verified for exact head/tree/clean status.",
-    "Dispatch fresh gpt-5.6-sol/max central source review; this source task does not self-accept.",
-    "P0 applies PARENT-STATE-UPDATE-REQUEST.json and composes the accepted adapters only after review."
+    "Create the one permitted remediation source commit containing implementation, tests and evidence.",
+    "Return exact identity and raw validation to original reviewer 01a044cf-1e97-76a0-9165-ad159ced0669.",
+    "Do not self-close findings or perform central acceptance."
   ],
   "validation": [
     {
       "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/execution-transaction -q",
-      "result": "47 passed in 2.22s",
       "exit_code": 0,
-      "raw": "docs/deliveries/PPA-01/execution-transaction/evidence/raw/pytest-execution-transaction.txt"
+      "result": "64 passed in 3.46s"
     },
     {
       "command": "python -B -m pytest -p no:cacheprovider tests/p3-execution/test_job_execution.py tests/p3-execution/provider-broker -q",
-      "result": "39 passed in 0.94s",
       "exit_code": 0,
-      "raw": "docs/deliveries/PPA-01/execution-transaction/evidence/raw/pytest-p3-p3b-regression.txt"
+      "result": "39 passed in 0.68s"
     },
     {
       "command": "python -B -m pytest -p no:cacheprovider tests/p1-core -q",
-      "result": "54 passed in 2.84s",
       "exit_code": 0,
-      "raw": "docs/deliveries/PPA-01/execution-transaction/evidence/raw/pytest-p1-core-regression.txt"
+      "result": "71 passed in 3.29s"
     },
     {
-      "command": "python -B -m compileall -q backend/plotpilot_core/repositories backend/plotpilot_core/assets backend/plotpilot_core/candidates backend/plotpilot_core/publication",
-      "result": "exit 0",
+      "command": "python -B -m compileall -q backend/plotpilot_core/repositories backend/plotpilot_core/assets backend/plotpilot_core/candidates backend/plotpilot_core/publication backend/plotpilot_core/broker",
       "exit_code": 0,
-      "raw": "docs/deliveries/PPA-01/execution-transaction/evidence/raw/compileall.txt"
+      "result": "no output"
     },
     {
-      "command": "git diff --check; git diff --cached --check; git diff HEAD --check",
-      "result": "all exit 0",
+      "command": "git diff --check",
       "exit_code": 0,
-      "raw": "docs/deliveries/PPA-01/execution-transaction/evidence/raw/git-diff-check.txt"
+      "result": "no output"
     }
   ],
   "blockers": [],
@@ -103,5 +103,19 @@
     "No final Windows artifacts or unrelated full builds.",
     "No self-acceptance."
   ],
-  "updated_at": "2026-08-28T01:37:53.6029621+08:00"
+  "updated_at": "2026-08-28T07:57:05.6003752+08:00",
+  "finding_manifest": {
+    "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\findings\\nw-p1-execution-tx-fresh-sol-block-v1.json",
+    "sha256": "1c47a49309c16af426da5d4c967a0c34ee3e91fea2457bdc8a0e9d54fda2394e",
+    "ids": "NW-P1-ETX-F-001..015",
+    "verdict": "BLOCK",
+    "frozen": true
+  },
+  "remediation_evidence": {
+    "mapping": "coordination/PPA-01/execution-transaction/REMEDIATION-MAPPING.json",
+    "report": "docs/deliveries/PPA-01/execution-transaction/REMEDIATION-20260828.md",
+    "verification": "docs/deliveries/PPA-01/execution-transaction/evidence/remediation-verification.json",
+    "raw_output": "docs/deliveries/PPA-01/execution-transaction/evidence/remediation-raw-validation.txt",
+    "disposition": "pending original reviewer; no self-acceptance"
+  }
 }

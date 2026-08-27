@@ -1,0 +1,39 @@
+{
+  "schema": "plotpilot-remediation-verification/v1",
+  "node_id": "NW-P1-EXECUTION-TX-01",
+  "parent": "d1b6f612b1bb330a28328954fc23e2fdf0ce2d1d",
+  "parent_tree": "16b7c0131f28146c56881cb723e844da288d8f26",
+  "source_commit": "containing commit",
+  "finding_manifest_sha256": "1c47a49309c16af426da5d4c967a0c34ee3e91fea2457bdc8a0e9d54fda2394e",
+  "original_reviewer_thread": "01a044cf-1e97-76a0-9165-ad159ced0669",
+  "self_acceptance_performed": false,
+  "results": [
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/execution-transaction -q",
+      "exit_code": 0,
+      "summary": "64 passed in 3.46s"
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p3-execution/test_job_execution.py tests/p3-execution/provider-broker -q",
+      "exit_code": 0,
+      "summary": "39 passed in 0.68s"
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core -q",
+      "exit_code": 0,
+      "summary": "71 passed in 3.29s"
+    },
+    {
+      "command": "python -B -m compileall -q backend/plotpilot_core/repositories backend/plotpilot_core/assets backend/plotpilot_core/candidates backend/plotpilot_core/publication backend/plotpilot_core/broker",
+      "exit_code": 0,
+      "summary": "no output"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "summary": "no output"
+    }
+  ],
+  "raw_output": "remediation-raw-validation.txt",
+  "disposition": "pending original reviewer"
+}
