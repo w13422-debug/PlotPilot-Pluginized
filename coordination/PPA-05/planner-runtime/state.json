@@ -1,0 +1,29 @@
+{
+  "schema": "planner-runtime-source-state/v1",
+  "node_id": "NW-P5-PLANNER-RUNTIME-02",
+  "status": "source_candidate_ready_for_fresh_review",
+  "base": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+  "branch": "codex/nw-p5-planner-runtime-02",
+  "completed": [
+    "startup branch/HEAD/tree/clean/donor gate",
+    "H_C acceptance hash and content verification",
+    "local knowledge and repository reuse decision",
+    "two disjoint Sol/high read-only architecture/test scouts",
+    "source-only binding freeze and Candidate Bundle implementation",
+    "22 planner-runtime targeted tests",
+    "41 P5 planning tests",
+    "Ruff source/test lint gate",
+    "compileall and exclusive write-set proof"
+  ],
+  "in_progress": "controller-owned fresh Sol/max review and Contract Delta disposition",
+  "next_steps": [
+    "controller runs fresh Sol/max source review",
+    "P0 decides NW-P5-PLANNER-RUNTIME-CD-001 before effectful composition",
+    "do not claim production execution until Prompt/Skill Runtime and runtime composition are accepted"
+  ],
+  "contract_delta_ids": [
+    "NW-P5-PLANNER-RUNTIME-CD-001"
+  ],
+  "production_execution_claimed": false,
+  "self_acceptance_claimed": false
+}

@@ -1,0 +1,59 @@
+{
+  "schema": "planner-runtime-validation-evidence/v1",
+  "node_id": "NW-P5-PLANNER-RUNTIME-02",
+  "base": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+  "environment": {
+    "python": "C:/Users/Administrator/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe",
+    "python_version": "3.12.13",
+    "temporary_test_dependencies": "pytest 8.4.2, pytest-asyncio 0.26.0, jsonschema 4.26.0, rfc8785 0.1.4, fastapi 0.141.1",
+    "repository_dependencies_changed": false
+  },
+  "commands": [
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p5-planning/planner-runtime -q",
+      "result": "22 passed in 0.79s",
+      "exit_code": 0
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p5-planning -q",
+      "result": "41 passed in 0.52s",
+      "exit_code": 0
+    },
+    {
+      "command": "ruff check first-party-plugins/project-planner/src/plotpilot_project_planner tests/p5-planning/planner-runtime",
+      "result": "All checks passed!",
+      "exit_code": 0
+    },
+    {
+      "command": "python -B -m compileall -q first-party-plugins/project-planner",
+      "result": "no output",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --check",
+      "result": "exit 0 (line-ending advisory only)",
+      "exit_code": 0
+    },
+    {
+      "command": "write-set proof over tracked diff plus untracked non-ignored paths",
+      "result": "13 changed paths; outside_count=0",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --cached --check",
+      "result": "no output",
+      "exit_code": 0
+    },
+    {
+      "command": "staged write-set proof",
+      "result": "13 staged paths; outside_count=0; unstaged_content_count=0",
+      "exit_code": 0
+    }
+  ],
+  "post_commit_checks": [
+    "candidate identity and direct-child parent",
+    "clean worktree and donor-local push disabled"
+  ],
+  "final_product_build_run": false,
+  "production_execution_claimed": false
+}

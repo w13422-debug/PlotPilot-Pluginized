@@ -1,0 +1,44 @@
+{
+  "schema": "contract-delta/v1",
+  "status": "raised",
+  "delta_id": "NW-P5-PLANNER-RUNTIME-CD-001",
+  "raised_by_project": "P5",
+  "raised_by_node": "NW-P5-PLANNER-RUNTIME-02",
+  "affected_contract_ids": [
+    "run-snapshot/v1",
+    "host.model.invoke/v1",
+    "host.capability.invoke/v1",
+    "host.capability.poll/v1",
+    "host.candidate.stage/v1",
+    "host.job.complete/v1"
+  ],
+  "formal_design_version": "v1.2",
+  "formal_design_sha256": "e70f450b75cfa753148cf620d13855d0073f7d61294e7599ea9cc98f3e612b7b",
+  "observed_mismatch": "The accepted RPC matrix requires typed model/capability/candidate/job Host calls, but the public SDK exposes no equivalent model, Broker, typed Candidate-stage or Job-completion ports. Its legacy CoreAuthorityPort.stage_candidate(operation_key,bundle_id) omits result_bundle_asset_id and input_snapshot_hash. RunSnapshot also represents Prompt only indirectly as a Skill release and has no independent Prompt binding.",
+  "evidence": [
+    "backend/plotpilot_plugin_sdk/ports.py",
+    "contracts/json-schema/rpc-method-matrix.v1.json",
+    "contracts/json-schema/run-snapshot-v1.schema.json",
+    "first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/ports.py",
+    "first-party-plugins/project-planner/src/plotpilot_project_planner/runtime.py",
+    "tests/p5-planning/planner-runtime/test_runtime.py"
+  ],
+  "affected_slice_stopped": true,
+  "stopped_scope": [
+    "live model invocation and response decoding",
+    "live Prompt/Skill execution through Host composition",
+    "Host Asset creation and candidate staging",
+    "durable Job completion and receipt transaction",
+    "installable manifest, worker and runtime composition"
+  ],
+  "independently_delivered_scope": [
+    "verified RunSnapshot binding freeze",
+    "Prompt-as-frozen-Skill compatibility binding",
+    "deterministic setting/Bible/outline payload preparation",
+    "append-only rerun version lineage",
+    "SDK-verified candidate-batch/v1 materialization from Host-created Asset IDs"
+  ],
+  "proposed_v2_or_adr": "P0 should publish typed SDK ports matching host.model.invoke/v1, host.capability.invoke|poll|cancel/v1, host.candidate.stage/v1 and host.job.complete/v1. P0/P2 should also decide whether Prompt remains a designated Skill release or receives an explicit RunSnapshot binding. P5 will add effectful composition only after those surfaces and NW-P2-PROMPT-SKILL-RUNTIME-02 are accepted.",
+  "p0_decision": "pending",
+  "decision_evidence": null
+}

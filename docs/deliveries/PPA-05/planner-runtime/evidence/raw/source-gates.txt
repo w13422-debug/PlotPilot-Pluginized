@@ -1,0 +1,32 @@
+command=git diff --check
+warning: in the working copy of 'first-party-plugins/project-planner/src/plotpilot_project_planner/__init__.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'first-party-plugins/project-planner/src/plotpilot_project_planner/domain.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p5-planning/conftest.py', LF will be replaced by CRLF the next time Git touches it
+exit_code=0
+
+command=write-set proof over tracked diff plus untracked non-ignored paths
+changed_count=13
+outside_count=0
+conftest_content_diff_count=0
+changed_paths:
+coordination/PPA-05/planner-runtime/runtime-composition-contract-delta-v1.json
+coordination/PPA-05/planner-runtime/state.json
+docs/deliveries/PPA-05/planner-runtime/evidence/raw/compileall.txt
+docs/deliveries/PPA-05/planner-runtime/evidence/raw/pytest-p5-planning.txt
+docs/deliveries/PPA-05/planner-runtime/evidence/raw/pytest-planner-runtime.txt
+docs/deliveries/PPA-05/planner-runtime/evidence/raw/ruff.txt
+docs/deliveries/PPA-05/planner-runtime/evidence/raw/source-gates.txt
+docs/deliveries/PPA-05/planner-runtime/NW-P5-PLANNER-RUNTIME-02.md
+docs/deliveries/PPA-05/planner-runtime/validation-evidence.json
+first-party-plugins/project-planner/src/plotpilot_project_planner/__init__.py
+first-party-plugins/project-planner/src/plotpilot_project_planner/domain.py
+first-party-plugins/project-planner/src/plotpilot_project_planner/runtime.py
+tests/p5-planning/planner-runtime/test_runtime.py
+
+command=git diff --cached --check
+exit_code=0
+
+command=staged write-set proof
+staged_count=13
+staged_outside_count=0
+unstaged_content_count=0
