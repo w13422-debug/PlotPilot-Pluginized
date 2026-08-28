@@ -1,0 +1,69 @@
+{
+  "schema": "nw-p2-supervisor-f003-closure-evidence/v1",
+  "node_id": "NW-P2-SUPERVISOR-01",
+  "finding_id": "NW-P2-SUP-F-003",
+  "source_parent": "c31640d5826d3f24b4e606442062fd6736d55cf6",
+  "source_parent_tree": "d3d5a55f663127b0bc2d0370aec4155dd8022c0a",
+  "replacement_review": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\nw-p2-supervisor-replacement-sol-block-v1.json",
+  "replacement_review_sha256": "416759bc7fc03c4733d33773b622eb9b91b352c9f004debb0877ff1413b11ef3",
+  "original_manifest_sha256": "1deba5f9fc087590c99bb7fe47d7adff98c867d8ba3df492d90d379447f58e34",
+  "review_state": "submitted_for_same_replacement_reviewer_single_id_recheck",
+  "reviewer_id": "01a0460d-1572-74b0-877d-d7268d127221",
+  "self_acceptance_claimed": false,
+  "structural_fix": [
+    "Resolve route, build session/handshake, sample initial monotonic clock, allocate retain identity/key/callback gate and create dispatch closure inside one claim cleanup try.",
+    "Invoke processes.start() only after every precomputed initial record value succeeds.",
+    "Any exception through process start calls exact _release_or_enqueue() and re-raises the original exception."
+  ],
+  "decisive_test": {
+    "name": "test_retain_id_failure_retries_exact_claim_before_any_spawn",
+    "matrix": [
+      "release returns false",
+      "release raises exception"
+    ],
+    "assertions": [
+      "the exact original retain-id sentinel object is re-raised",
+      "process factory has zero started processes",
+      "no supervisor record/current status exists",
+      "the failed exact release is present in the pending retry map",
+      "tick retries the same fence/lifecycle and removes the authoritative claim"
+    ]
+  },
+  "validation": [
+    {
+      "command": "focused F-003 pytest",
+      "result": "2 passed in 0.60s",
+      "exit_code": 0
+    },
+    {
+      "command": "pytest supervisor",
+      "result": "122 passed in 4.69s",
+      "exit_code": 0
+    },
+    {
+      "command": "pytest complete P2",
+      "result": "154 passed in 4.76s",
+      "exit_code": 0
+    },
+    {
+      "command": "compileall",
+      "result": "no diagnostics",
+      "exit_code": 0
+    },
+    {
+      "command": "ruff",
+      "result": "All checks passed!",
+      "exit_code": 0
+    },
+    {
+      "command": "contract manifest check",
+      "result": "contract manifest is deterministic (137 files)",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --check",
+      "result": "exit 0; LF-to-CRLF advisories only",
+      "exit_code": 0
+    }
+  ]
+}

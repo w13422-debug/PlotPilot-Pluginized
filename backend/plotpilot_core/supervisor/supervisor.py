@@ -418,34 +418,32 @@ class PluginProcessSupervisor:
                     data_generation_id=fence.data_generation_id,
                     deadline_at=self._deadline(self._config.handshake_timeout),
                 )
-            except Exception:
-                self._release_or_enqueue(fence, lifecycle_id)
-                raise
+                now = self._clock.monotonic()
+                retain_id = f"{self._retain_id_factory()}:1"
+                key = self._key(worker_id, lifecycle_id)
+                callback_lock = threading.Lock()
+                pending_callbacks: list[tuple[str, bytes | int | str]] = []
+                callbacks_armed = False
 
-            callback_lock = threading.Lock()
-            pending_callbacks: list[tuple[str, bytes | int | str]] = []
-            callbacks_armed = False
+                def dispatch(kind: str, payload: bytes | int | str) -> None:
+                    nonlocal callbacks_armed
+                    with callback_lock:
+                        if not callbacks_armed:
+                            pending_callbacks.append((kind, payload))
+                            return
+                    if kind == "stdout":
+                        assert isinstance(payload, bytes)
+                        self._on_stdout(worker_id, lifecycle_id, payload)
+                    elif kind == "stderr":
+                        assert isinstance(payload, bytes)
+                        self._on_stderr(worker_id, lifecycle_id, payload)
+                    elif kind == "transport":
+                        assert isinstance(payload, str)
+                        self._on_transport_error(worker_id, lifecycle_id, payload)
+                    else:
+                        assert isinstance(payload, int)
+                        self._on_exit(worker_id, lifecycle_id, payload)
 
-            def dispatch(kind: str, payload: bytes | int | str) -> None:
-                nonlocal callbacks_armed
-                with callback_lock:
-                    if not callbacks_armed:
-                        pending_callbacks.append((kind, payload))
-                        return
-                if kind == "stdout":
-                    assert isinstance(payload, bytes)
-                    self._on_stdout(worker_id, lifecycle_id, payload)
-                elif kind == "stderr":
-                    assert isinstance(payload, bytes)
-                    self._on_stderr(worker_id, lifecycle_id, payload)
-                elif kind == "transport":
-                    assert isinstance(payload, str)
-                    self._on_transport_error(worker_id, lifecycle_id, payload)
-                else:
-                    assert isinstance(payload, int)
-                    self._on_exit(worker_id, lifecycle_id, payload)
-
-            try:
                 process = self._processes.start(
                     route,
                     on_stdout=lambda data: dispatch("stdout", data),
@@ -457,8 +455,6 @@ class PluginProcessSupervisor:
                 self._release_or_enqueue(fence, lifecycle_id)
                 raise
 
-            now = self._clock.monotonic()
-            retain_id = f"{self._retain_id_factory()}:1"
             record = _Record(
                 lifecycle_id=lifecycle_id,
                 fence=fence,
@@ -471,7 +467,6 @@ class PluginProcessSupervisor:
                 started_at=now,
                 last_heartbeat=now,
             )
-            key = self._key(worker_id, lifecycle_id)
             with self._lock:
                 previous_lifecycle = self._current.get(worker_id)
                 self._records[key] = record

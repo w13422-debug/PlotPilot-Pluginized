@@ -400,6 +400,42 @@ def test_prespawn_release_failure_is_retried_without_masking_original(harness, m
     assert not harness.authority.claims
 
 
+@pytest.mark.parametrize("release_mode", ["false", "exception"])
+def test_retain_id_failure_retries_exact_claim_before_any_spawn(harness, monkeypatch, release_mode: str) -> None:
+    original = RuntimeError("retain-id sentinel")
+
+    def fail_retain_id() -> str:
+        raise original
+
+    monkeypatch.setattr(harness.supervisor, "_retain_id_factory", fail_retain_id)
+    if release_mode == "false":
+        harness.authority.release_failures = 1
+    else:
+        harness.authority.release_exceptions = 1
+
+    with pytest.raises(RuntimeError) as caught:
+        harness.supervisor.acquire("worker-1")
+
+    assert caught.value is original
+    assert harness.processes.processes == []
+    assert harness.supervisor.status("worker-1") is None
+    claimed_fence, lifecycle_id = harness.authority.claims[harness.fence.pin_id]
+    assert claimed_fence == harness.fence
+    assert harness.authority.releases == [(harness.fence, lifecycle_id)]
+    assert harness.supervisor._pending_releases[(harness.fence.worker_id, lifecycle_id)] == (
+        harness.fence,
+        lifecycle_id,
+    )
+
+    harness.supervisor.tick()
+    assert harness.authority.releases == [
+        (harness.fence, lifecycle_id),
+        (harness.fence, lifecycle_id),
+    ]
+    assert not harness.authority.holds(harness.fence, lifecycle_id)
+    assert harness.processes.processes == []
+
+
 def test_attempt_and_install_are_busy_retains_until_last_unbind(harness) -> None:
     ticket = harness.supervisor.acquire("worker-1")
     complete_handshake(harness, ticket)
