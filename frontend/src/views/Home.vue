@@ -1,9 +1,11 @@
 <template>
   <div class="home">
-    <StatsSidebar
-      @create-book="focusCreateInput"
-      @refresh-list="handleRefreshList"
-      @collapsed-change="handleSidebarCollapsedChange"
+    <CoreProjectSidebar
+      :project-count="books.length"
+      :collapsed="sidebarCollapsed"
+      @create-project="focusCreateInput"
+      @refresh="handleRefreshList"
+      @update:collapsed="handleSidebarCollapsedChange"
     />
     <div class="home-content" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
       <div class="home-bg" aria-hidden="true" />
@@ -47,13 +49,26 @@
               </n-button>
             </div>
 
+            <n-alert type="info" :show-icon="true">
+              当前源码节点仅创建权威 Core Workspace；书名会立即保存，梗概、市场分区与篇幅规划等待后续 Planning Publication 接入后启用。
+            </n-alert>
+
+            <n-form-item label="书名" :show-feedback="false">
+              <n-input
+                ref="createInputRef"
+                v-model:value="newBook.title"
+                placeholder="输入书名"
+                :disabled="creating"
+                size="large"
+              />
+            </n-form-item>
+
             <n-input
-              ref="createInputRef"
               v-model:value="newBook.premise"
               type="textarea"
               placeholder="用一段话写清主线与爽点预期（不超过 2000 字）…&#10;&#10;例如：废柴赘婿觉醒签到系统，从被退婚到一方巨擘。"
               :rows="5"
-              :disabled="creating"
+              disabled
               size="large"
               class="premise-input"
               show-count
@@ -72,7 +87,7 @@
                 v-model:pacingControl="newBook.pacingControl"
                 v-model:writingStyle="newBook.writingStyle"
                 v-model:specialRequirements="newBook.specialRequirements"
-                :disabled="creating"
+                disabled
               />
             </div>
 
@@ -84,7 +99,7 @@
                     v-for="opt in lengthTierOptions"
                     :key="opt.value"
                     :value="opt.value"
-                    :disabled="creating"
+                    disabled
                     class="length-tier-radio"
                   >
                     <div class="length-tier-option-inner">
@@ -103,17 +118,17 @@
               <n-grid :cols="2" :x-gap="16" :y-gap="16" responsive="screen">
                 <n-gi>
                   <n-form-item label="书名">
-                    <n-input v-model:value="newBook.title" placeholder="留空则从梗概自动截取" />
+                    <n-input v-model:value="newBook.title" disabled />
                   </n-form-item>
                 </n-gi>
                 <n-gi>
                   <n-form-item label="章节数">
-                    <n-input-number v-model:value="newBook.chapters" :min="1" :max="9999" class="w-full" placeholder="默认 100 章" />
+                    <n-input-number v-model:value="newBook.chapters" :min="1" :max="9999" class="w-full" disabled />
                   </n-form-item>
                 </n-gi>
                 <n-gi>
                   <n-form-item label="每章字数">
-                    <n-input-number v-model:value="newBook.words" :min="500" :max="20000" :step="500" class="w-full" />
+                    <n-input-number v-model:value="newBook.words" :min="500" :max="20000" :step="500" class="w-full" disabled />
                   </n-form-item>
                 </n-gi>
               </n-grid>
@@ -125,7 +140,7 @@
                 size="large"
                 round
                 :loading="creating"
-                :disabled="!newBook.premise.trim() || !newBook.genre.trim() || !newBook.worldPreset.trim() || !newBook.storyStructure.trim() || !newBook.pacingControl.trim() || !newBook.writingStyle.trim() || !newBook.specialRequirements.trim()"
+                :disabled="!newBook.title.trim()"
                 @click="handleCreate"
               >
                 <template #icon>
@@ -313,18 +328,6 @@
       </template>
     </n-modal>
 
-    <!-- 新书向导：仅挂载一次且 show 恒为 true，避免「先关再开」的双过渡（原 newNovelId + showSetupGuide 分步更新导致） -->
-    <NovelSetupGuide
-      v-if="setupWizard"
-      :key="setupWizard.novelId"
-      :novel-id="setupWizard.novelId"
-      :target-chapters="setupWizard.targetChapters"
-      :show="true"
-      @update:show="(open) => { if (!open) setupWizard = null }"
-      @complete="handleSetupComplete"
-      @skip="handleSetupSkip"
-    />
-
     <!-- 查看全部书目弹窗 -->
     <n-modal
       v-model:show="showAllModal"
@@ -417,16 +420,13 @@
 import { defineAsyncComponent, h, ref, onMounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMessage, NIcon } from 'naive-ui'
-import { novelApi, type NovelDTO } from '../api/novel'
-import { isWizardCompleted } from '@/utils/wizardStageCache'
-import StatsSidebar from '@/components/stats/StatsSidebar.vue'
 import TaskDrawer from '@/components/jobs/TaskDrawer.vue'
+import CoreProjectSidebar from '@/core/flows/CoreProjectSidebar.vue'
 import { useAppSettingsShellStore } from '@/stores/appSettingsShellStore'
-import { parseGenreWorldFromPremise } from '@/utils/premisePresets'
-import { useStatsStore } from '@/stores/statsStore'
 import { storageKeys } from '@/config/storageKeys'
 import { readStorageBoolean } from '@/utils/storage'
-import { formatApiError } from '@/utils/apiError'
+import type { CoreProjectListItem } from '@/core/flows/coreFlows.ts'
+import { requireCoreFlowRuntime } from '@/core/flows/runtime.ts'
 import {
   NOVEL_LENGTH_TIER_OPTIONS,
   getNovelStageLabel,
@@ -437,10 +437,6 @@ import {
 const MarketTaxonomyPicker = defineAsyncComponent(
   () => import('@/components/taxonomy/MarketTaxonomyPicker.vue'),
 )
-const NovelSetupGuide = defineAsyncComponent(
-  () => import('@/components/onboarding/NovelSetupGuide.vue'),
-)
-
 // Icons
 const IconSpark = () =>
   h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', width: '1em', height: '1em' },
@@ -478,11 +474,11 @@ interface BookListItem {
   genre: string
   chapter_count?: number
   word_count?: number
+  core: CoreProjectListItem
 }
 
 const router = useRouter()
 const message = useMessage()
-const statsStore = useStatsStore()
 const appSettingsShell = useAppSettingsShellStore()
 
 const createInputRef = ref<any>(null)
@@ -500,9 +496,6 @@ const searchQuery = ref('')
 const deletingSlug = ref<string | null>(null)
 const showAllModal = ref(false)
 const modalSearchQuery = ref('')
-/** 有值时挂载向导；与 show 分离，挂载后始终 :show="true"，避免 Modal 先 false 再 true 闪烁 */
-const setupWizard = ref<{ novelId: string; targetChapters: number } | null>(null)
-
 // Batch delete
 const selectedBooks = ref<string[]>([])
 const showBatchDeleteConfirm = ref(false)
@@ -576,22 +569,17 @@ const isPartialSelected = computed(() => {
 const fetchBooks = async () => {
   loading.value = true
   try {
-    const novels = await novelApi.listNovels()
-    books.value = novels.map((novel: NovelDTO) => {
-      const fromPrefix = parseGenreWorldFromPremise(novel.premise || '').genre
-      const g = novel.locked_genre?.trim() || fromPrefix || ''
-      return {
-        slug: novel.id,
-        title: novel.title,
-        stage: novel.stage,
-        stage_label: getNovelStageLabel(novel.stage),
-        genre: g,
-        chapter_count: novel.chapters?.length || 0,
-        word_count: novel.total_word_count,
-      }
-    })
-  } catch {
-    message.error('加载失败')
+    const projects = await requireCoreFlowRuntime().listProjects()
+    books.value = projects.map(project => ({
+      slug: project.workspaceId,
+      title: project.title,
+      stage: project.status,
+      stage_label: getNovelStageLabel(project.status),
+      genre: '',
+      core: project,
+    }))
+  } catch (error: unknown) {
+    message.error(error instanceof Error ? error.message : '加载失败')
   } finally {
     loading.value = false
   }
@@ -605,102 +593,38 @@ const formatWordCount = (count: number): string => {
 }
 
 const handleCreate = async () => {
-  if (!newBook.value.premise.trim()) {
-    message.warning('请输入核心梗概')
-    return
-  }
-  if (!newBook.value.genre.trim()) {
-    message.warning('请在「市场分区」中选定大类与主题')
-    return
-  }
-  if (!newBook.value.worldPreset.trim()) {
-    message.warning('请填写或确认世界观基调')
-    return
-  }
-  if (!newBook.value.storyStructure.trim() || !newBook.value.pacingControl.trim() || !newBook.value.writingStyle.trim() || !newBook.value.specialRequirements.trim()) {
-    message.warning('请补全四项写作规则')
+  if (!newBook.value.title.trim()) {
+    message.warning('请输入书名')
     return
   }
 
   creating.value = true
   try {
-    const title = newBook.value.title || newBook.value.premise.substring(0, 20)
-    const novelId = `novel-${Date.now()}`
-
-    const base = {
-      novel_id: novelId,
-      title: title,
-      author: '作者',
-      premise: newBook.value.premise.trim(),
-      genre: newBook.value.genre,
-      world_preset: newBook.value.worldPreset,
-      story_structure: newBook.value.storyStructure,
-      pacing_control: newBook.value.pacingControl,
-      writing_style: newBook.value.writingStyle,
-      special_requirements: newBook.value.specialRequirements,
-    }
-    const result = await novelApi.createNovel(
-      showAdvanced.value
-        ? {
-            ...base,
-            target_chapters: newBook.value.chapters || 100,
-            target_words_per_chapter: newBook.value.words || 2500,
-          }
-        : {
-            ...base,
-            length_tier: lengthTier.value,
-            target_chapters: 0,
-          }
-    )
+    const result = await requireCoreFlowRuntime().createProject(newBook.value.title)
     message.success('创建成功')
-
-    setupWizard.value = {
-      novelId: result.id,
-      targetChapters: result.target_chapters,
-    }
+    await router.push(`/book/${result.workspaceId}/workbench`)
   } catch (error: unknown) {
-    message.error(formatApiError(error, '创建失败'))
+    message.error(error instanceof Error ? error.message : '创建失败')
   } finally {
     creating.value = false
   }
 }
 
-const handleSetupComplete = () => {
-  const id = setupWizard.value?.novelId
-  setupWizard.value = null
-  if (id) router.push(`/book/${id}/workbench`)
-}
-
-const handleSetupSkip = () => {
-  const id = setupWizard.value?.novelId
-  setupWizard.value = null
-  if (id) router.push(`/book/${id}/workbench`)
-}
-
 const navigateToBook = (novelId: string) => {
-  // 未完成向导的书重新打开向导
-  if (!isWizardCompleted(novelId)) {
-    // 查找该书的 target_chapters
-    const novel = books.value.find(b => b.slug === novelId)
-    setupWizard.value = {
-      novelId,
-      targetChapters: 100, // 默认值，向导内部会从 API 获取真实值
-    }
-    return
-  }
-  router.push(`/book/${novelId}/workbench`)
+  void router.push(`/book/${novelId}/workbench`)
 }
 
 const handleDeleteBook = async (slug: string) => {
   deletingSlug.value = slug
   try {
-    await novelApi.deleteNovel(slug)
+    const project = books.value.find(book => book.slug === slug)?.core
+    if (project === undefined) throw new Error('项目不在当前 Core 列表中')
+    await requireCoreFlowRuntime().deleteProject(project)
     message.success('书目已删除')
     books.value = books.value.filter(b => b.slug !== slug)
     selectedBooks.value = selectedBooks.value.filter(s => s !== slug)
-    await statsStore.loadGlobalStats(true)
   } catch (error: unknown) {
-    message.error(formatApiError(error, '删除失败'))
+    message.error(error instanceof Error ? error.message : '删除失败')
   } finally {
     deletingSlug.value = null
   }
@@ -732,7 +656,9 @@ const handleBatchDelete = async () => {
     
     for (const slug of selectedBooks.value) {
       try {
-        await novelApi.deleteNovel(slug)
+        const project = books.value.find(book => book.slug === slug)?.core
+        if (project === undefined) throw new Error('项目不在当前 Core 列表中')
+        await requireCoreFlowRuntime().deleteProject(project)
         successCount++
       } catch {
         failCount++
@@ -743,7 +669,6 @@ const handleBatchDelete = async () => {
       message.success(`成功删除 ${successCount} 本书目`)
       books.value = books.value.filter(b => !selectedBooks.value.includes(b.slug))
       selectedBooks.value = []
-      await statsStore.loadGlobalStats(true)
     }
     if (failCount > 0) {
       message.warning(`${failCount} 本删除失败`)

@@ -1,6 +1,9 @@
 <template>
   <div class="workbench">
-    <StatsTopBar :slug="slug" @open-settings="appSettingsShell.open()" />
+    <header class="core-workbench-header">
+      <strong>{{ bookTitle || slug }}</strong>
+      <span>Core Workspace · {{ slug }}</span>
+    </header>
 
     <n-spin :show="pageLoading" class="workbench-spin" description="加载工作台…">
       <div class="workbench-inner">
@@ -11,18 +14,13 @@
           :default-size="WORKBENCH_SPLIT.sidebarDefault"
         >
           <template #1>
-            <ChapterList
-              ref="chapterListRef"
-              :slug="slug"
+            <CoreChapterList
               :chapters="chapters"
-              :current-chapter-id="currentChapterId"
-              :generation-prefs="generationPrefs"
-              :writing-chapter-number="writingChapterNumber"
-              :writing-pipeline-step="writingPipelineStep"
-              @select="onSidebarChapterSelect"
+              :current-document-id="currentDocumentId"
+              :busy="chapterLoading || chapterSaving"
+              @select="handleChapterSelect"
               @back="goHome"
               @refresh="handleChapterUpdated"
-              @plan-act="handlePlanAct"
             />
           </template>
 
@@ -35,17 +33,16 @@
                 :default-size="WORKBENCH_SPLIT.mainDefault"
               >
                 <template #1>
-                  <WorkArea
-                    ref="workAreaRef"
-                    :slug="slug"
+                  <CoreChapterEditor
                     :book-title="bookTitle"
-                    :chapters="chapters"
-                    :current-chapter-id="currentChapterId"
-                    :chapter-content="chapterContent"
-                    :chapter-loading="chapterLoading"
-                    :generation-prefs="generationPrefs"
-                    @chapter-updated="handleChapterUpdated"
-                    @select-chapter="handleChapterSelect"
+                    :chapter-title="currentChapter?.title ?? ''"
+                    :model-value="chapterContent"
+                    :has-chapter="currentChapter !== null"
+                    :dirty="openedChapter?.dirty ?? false"
+                    :loading="chapterLoading"
+                    :saving="chapterSaving"
+                    @update:model-value="handleChapterEdit"
+                    @save="handleChapterSave"
                   />
                 </template>
 
@@ -53,15 +50,18 @@
                   <div v-if="rightCollapsed" class="wb-right-strip" @click="toggleRight">
                     <span class="wb-strip-icon">◀</span>
                   </div>
-                  <SettingsPanel
-                    v-else
-                    :slug="slug"
-                    :current-panel="rightPanel"
-                    :current-chapter="currentChapter"
-                    :generation-prefs="generationPrefs"
-                    @update:current-panel="onSettingsPanelChange"
-                    @collapse="toggleRight"
-                  />
+                  <aside v-else class="core-right-panel">
+                    <header>
+                      <strong>Core 信息</strong>
+                      <n-button quaternary size="tiny" @click="toggleRight">收起</n-button>
+                    </header>
+                    <dl v-if="currentChapter">
+                      <dt>Document ID</dt><dd>{{ currentChapter.documentId }}</dd>
+                      <dt>Revision ID</dt><dd>{{ openedChapter?.revisionId ?? '尚未保存' }}</dd>
+                      <dt>状态</dt><dd>{{ openedChapter?.dirty ? '有未保存编辑' : '已同步' }}</dd>
+                    </dl>
+                    <p v-else>选择章节后显示 Core 文档与 Revision 身份。</p>
+                  </aside>
                 </template>
               </n-split>
             </div>
@@ -70,73 +70,131 @@
       </div>
     </n-spin>
 
-    <!-- 幕→章 AI 规划弹层 -->
-    <ActPlanningModal
-      v-model:show="showActPlanning"
-      :act-id="actPlanningId"
-      :act-title="actPlanningTitle"
-      @confirmed="handleChapterUpdated"
-    />
     <TaskDrawer />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, computed, ref, watch, defineAsyncComponent, type ComponentPublicInstance } from 'vue'
-import { useRoute } from 'vue-router'
+import { onMounted, onUnmounted, computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
 import { useDebouncedTask } from '../composables/useDebouncedTask'
-import { useWorkbench } from '../composables/useWorkbench'
-import { useStatsStore } from '../stores/statsStore'
-import { useWorkbenchRefreshStore } from '../stores/workbenchRefreshStore'
-import { useAppSettingsShellStore } from '../stores/appSettingsShellStore'
-import StatsTopBar from '../components/stats/StatsTopBar.vue'
-import ChapterList from '../components/workbench/ChapterList.vue'
-import WorkArea from '../components/workbench/WorkArea.vue'
-import SettingsPanel from '../components/workbench/SettingsPanel.vue'
 import TaskDrawer from '../components/jobs/TaskDrawer.vue'
+import CoreChapterEditor from '../core/flows/CoreChapterEditor.vue'
+import CoreChapterList from '../core/flows/CoreChapterList.vue'
 import {
-  WORKBENCH_CHAPTER_DESK_CHANGE_EVENT,
-  WORKBENCH_OPEN_SETTINGS_PANEL_EVENT,
-  WORKBENCH_GENERATION_PREFS_UPDATED_EVENT,
-  isWorkbenchSettingsPanelName,
-} from '../workbench/deskEvents'
+  editCoreChapter,
+  type CoreChapterListItem,
+  type CoreOpenedChapter,
+} from '../core/flows/coreFlows.ts'
+import { requireCoreFlowRuntime } from '../core/flows/runtime.ts'
 import { WORKBENCH_SPLIT } from '../design/layoutDensity'
 import { storageKeys } from '@/config/storageKeys'
 import { runtimePerformance } from '@/config/performance'
 import { readStorageBoolean, writeStorageBoolean } from '@/utils/storage'
 
-const ActPlanningModal = defineAsyncComponent(() => import('../components/workbench/ActPlanningModal.vue'))
-
 const route = useRoute()
+const router = useRouter()
 const message = useMessage()
-const statsStore = useStatsStore()
-const workbenchRefresh = useWorkbenchRefreshStore()
-const appSettingsShell = useAppSettingsShellStore()
 
 const slug = computed(() => String(route.params.slug ?? ''))
 
-const chapterListRef = ref<ComponentPublicInstance<{ refreshStoryTree: () => void }> | null>(null)
-const workAreaRef = ref<ComponentPublicInstance<{
-  ensureAssistedMode: () => void
-  streamingChapterNumber: import('vue').Ref<number | null>
-  writingPipelineStep: import('vue').ComputedRef<number | null>
-}> | null>(null)
+const bookTitle = ref('')
+const chapters = ref<CoreChapterListItem[]>([])
+const pageLoading = ref(true)
+const currentDocumentId = ref<string | null>(null)
+const chapterContent = ref('')
+const chapterLoading = ref(false)
+const chapterSaving = ref(false)
+const openedChapter = ref<CoreOpenedChapter | null>(null)
+const draftByDocument = new Map<string, string>()
+let openSequence = 0
 
-const writingChapterNumber = computed(() => workAreaRef.value?.streamingChapterNumber?.value ?? null)
-const writingPipelineStep = computed(() => workAreaRef.value?.writingPipelineStep?.value ?? null)
+async function loadDesk() {
+  const snapshot = await requireCoreFlowRuntime().loadWorkbench(slug.value)
+  bookTitle.value = snapshot.project.title
+  chapters.value = snapshot.chapters
+  if (currentDocumentId.value !== null && !chapters.value.some(chapter => chapter.documentId === currentDocumentId.value)) {
+    currentDocumentId.value = null
+    openedChapter.value = null
+    chapterContent.value = ''
+  }
+}
 
-async function onSidebarChapterSelect(chapterId: number, title = '') {
-  await handleChapterSelect(chapterId, title)
-  workAreaRef.value?.ensureAssistedMode?.()
+async function reloadDeskForSlugChange() {
+  openSequence += 1
+  draftByDocument.clear()
+  currentDocumentId.value = null
+  openedChapter.value = null
+  chapterContent.value = ''
+  await loadDesk()
+}
+
+function goHome() {
+  void router.push('/')
+}
+
+async function goToChapter(documentId: string) {
+  const target = chapters.value.find(chapter => chapter.documentId === documentId)
+  if (target === undefined) {
+    message.error('章节不在当前 Core 文档列表中')
+    return
+  }
+  const requestSequence = ++openSequence
+  chapterLoading.value = true
+  try {
+    let opened = await requireCoreFlowRuntime().openChapter(target)
+    if (requestSequence !== openSequence) return
+    const pendingDraft = draftByDocument.get(documentId)
+    if (pendingDraft !== undefined) opened = editCoreChapter(opened, pendingDraft)
+    currentDocumentId.value = documentId
+    openedChapter.value = opened
+    chapterContent.value = opened.draftContent
+    if (route.query.chapter !== documentId) {
+      await router.replace({ query: { ...route.query, chapter: documentId } })
+    }
+  } catch (error: unknown) {
+    if (requestSequence !== openSequence) return
+    message.error(error instanceof Error ? error.message : '加载章节失败')
+  } finally {
+    if (requestSequence === openSequence) chapterLoading.value = false
+  }
+}
+
+async function handleChapterSelect(documentId: string) {
+  await goToChapter(documentId)
+}
+
+function handleChapterEdit(content: string) {
+  chapterContent.value = content
+  if (openedChapter.value !== null) {
+    openedChapter.value = editCoreChapter(openedChapter.value, content)
+    draftByDocument.set(openedChapter.value.chapter.documentId, content)
+  }
+}
+
+async function handleChapterSave() {
+  if (openedChapter.value === null || !openedChapter.value.dirty) return
+  chapterSaving.value = true
+  try {
+    const savingDocumentId = openedChapter.value.chapter.documentId
+    const saved = await requireCoreFlowRuntime().saveChapter(openedChapter.value)
+    draftByDocument.delete(savingDocumentId)
+    if (currentDocumentId.value === savingDocumentId) {
+      openedChapter.value = saved
+      chapterContent.value = saved.draftContent
+    }
+    message.success('保存成功')
+    handleChapterUpdated()
+  } catch (error: unknown) {
+    message.error(error instanceof Error ? error.message : '保存失败')
+  } finally {
+    chapterSaving.value = false
+  }
 }
 
 async function runChapterDeskReload() {
   await loadDesk()
-  void statsStore.loadBookStats(slug.value, true).catch(() => {})
-  window.dispatchEvent(new CustomEvent('plotpilot:bible-panel:soft-reload'))
-  chapterListRef.value?.refreshStoryTree?.()
-  workbenchRefresh.bumpAfterChapterDeskChange()
 }
 
 /** 合并短时间内的多次「整桌刷新」：全托管状态抖动 / 多源 emit 时只拉一次 API，减轻闪烁与日志刷屏 */
@@ -154,28 +212,6 @@ const handleChapterUpdated = () => {
   chapterDeskReload.schedule()
 }
 
-function onDeskChangeSignalFromPanels() {
-  handleChapterUpdated()
-}
-
-function onOpenSettingsPanelFromChild(e: Event) {
-  const panel = (e as CustomEvent<{ panel?: string }>).detail?.panel
-  if (typeof panel === 'string' && isWorkbenchSettingsPanelName(panel)) {
-    rightPanel.value = panel
-  }
-}
-
-// 幕→章 规划弹层
-const showActPlanning = ref(false)
-const actPlanningId = ref('')
-const actPlanningTitle = ref('')
-
-const handlePlanAct = (actId: string, actTitle: string) => {
-  actPlanningId.value = actId
-  actPlanningTitle.value = actTitle
-  showActPlanning.value = true
-}
-
 const rightCollapsed = ref(readStorageBoolean(storageKeys.workbenchRightPanelCollapsed))
 
 function toggleRight() {
@@ -183,62 +219,30 @@ function toggleRight() {
   writeStorageBoolean(storageKeys.workbenchRightPanelCollapsed, rightCollapsed.value)
 }
 
-const {
-  bookTitle,
-  chapters,
-  generationPrefs,
-  rightPanel,
-  pageLoading,
-  bookMeta,
-  currentJobId,
-  currentChapterId,
-  chapterContent,
-  chapterLoading,
-  setRightPanel,
-  loadDesk,
-  reloadDeskForSlugChange,
-  goHome,
-  goToChapter,
-  handleChapterSelect,
-} = useWorkbench({ slug })
-
 const currentChapter = computed(() => {
-  if (!currentChapterId.value) return null
-  return chapters.value.find(ch => ch.id === currentChapterId.value) || null
+  if (currentDocumentId.value === null) return null
+  return chapters.value.find(chapter => chapter.documentId === currentDocumentId.value) ?? null
 })
 
-function onSettingsPanelChange(panel: string) {
-  rightPanel.value = panel
-}
-
-function parseChapterQuery(q: unknown): number | null {
+function parseChapterQuery(q: unknown): string | null {
   if (q == null || q === '') return null
   const raw = Array.isArray(q) ? q[0] : q
-  const n = Number(raw)
-  return !Number.isNaN(n) && n >= 1 ? n : null
+  return typeof raw === 'string' && raw.length > 0 ? raw : null
 }
 
 async function syncChapterFromRoute() {
-  const n = parseChapterQuery(route.query.chapter)
-  if (n != null) {
-    await goToChapter(n)
+  const documentId = parseChapterQuery(route.query.chapter)
+  if (documentId !== null && documentId !== currentDocumentId.value) {
+    await goToChapter(documentId)
   }
 }
 
-function onGenerationPrefsUpdated() {
-  void loadDesk()
-  chapterListRef.value?.refreshStoryTree?.()
-}
-
 onMounted(async () => {
-  window.addEventListener(WORKBENCH_CHAPTER_DESK_CHANGE_EVENT, onDeskChangeSignalFromPanels)
-  window.addEventListener(WORKBENCH_OPEN_SETTINGS_PANEL_EVENT, onOpenSettingsPanelFromChild)
-  window.addEventListener(WORKBENCH_GENERATION_PREFS_UPDATED_EVENT, onGenerationPrefsUpdated)
   try {
     await loadDesk()
     await syncChapterFromRoute()
-  } catch {
-    message.error('加载失败，请检查网络与后端是否已启动')
+  } catch (error: unknown) {
+    message.error(error instanceof Error ? error.message : '加载 Core 工作台失败')
     bookTitle.value = slug.value
   } finally {
     pageLoading.value = false
@@ -246,9 +250,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  window.removeEventListener(WORKBENCH_CHAPTER_DESK_CHANGE_EVENT, onDeskChangeSignalFromPanels)
-  window.removeEventListener(WORKBENCH_OPEN_SETTINGS_PANEL_EVENT, onOpenSettingsPanelFromChild)
-  window.removeEventListener(WORKBENCH_GENERATION_PREFS_UPDATED_EVENT, onGenerationPrefsUpdated)
+  openSequence += 1
   chapterDeskReload.cancel()
 })
 
@@ -266,11 +268,8 @@ watch(
     try {
       await reloadDeskForSlugChange()
       await syncChapterFromRoute()
-      void statsStore.loadBookStats(next, true).catch(() => {})
-      chapterListRef.value?.refreshStoryTree?.()
-      workbenchRefresh.bumpAfterChapterDeskChange()
-    } catch {
-      message.error('切换作品失败，请检查网络与后端是否已启动')
+    } catch (error: unknown) {
+      message.error(error instanceof Error ? error.message : '切换 Core 项目失败')
       bookTitle.value = next
     }
   }
@@ -287,6 +286,43 @@ watch(
   display: flex;
   flex-direction: column;
 }
+
+.core-workbench-header {
+  min-height: 56px;
+  padding: 8px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--app-text);
+  background: var(--app-surface);
+  border-bottom: 1px solid var(--app-divider, rgba(15, 23, 42, 0.08));
+}
+
+.core-workbench-header span {
+  color: var(--app-text-muted);
+  font-size: 12px;
+}
+
+.core-right-panel {
+  height: 100%;
+  padding: 14px;
+  overflow: auto;
+  color: var(--app-text);
+  background: var(--app-surface);
+  border-left: 1px solid var(--plotpilot-split-border);
+}
+
+.core-right-panel header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.core-right-panel dl { margin: 0; display: grid; gap: 6px; }
+.core-right-panel dt { color: var(--app-text-muted); font-size: 12px; }
+.core-right-panel dd { margin: 0 0 10px; overflow-wrap: anywhere; }
 
 .workbench-spin {
   flex: 1;

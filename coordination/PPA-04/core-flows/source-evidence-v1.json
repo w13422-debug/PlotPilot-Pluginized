@@ -1,0 +1,64 @@
+{
+  "schema": "ppa-04-core-flows-source-evidence/v1",
+  "node_id": "NW-P4-CORE-FLOWS-02",
+  "candidate_kind": "source_only",
+  "base": {
+    "commit": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+    "tree": "eab64b7d5b1e3ad652aeaf48bd0085d930beca5d",
+    "branch": "codex/nw-p4-core-flows-02"
+  },
+  "candidate_commit_locator": "the direct child commit containing this immutable record",
+  "source_readiness": "source_ready_integration_deferred",
+  "runtime_dependencies": [
+    "NW-P1-AUTHORITY-PUBLICATION-SEAM-02",
+    "NW-P1-CORE-HTTP-G2",
+    "NW-P0-RUNTIME-COMPOSITION-02"
+  ],
+  "contract_bindings": {
+    "workspace_routes": ["workspace.list", "workspace.get", "workspace.create", "workspace.delete"],
+    "chapter_routes": ["document.list", "document.get", "revision.get", "revision.content", "document.revision.create"],
+    "chapter_identity": "document_id",
+    "mutation_retry": "same operation_key and entity identity until an exact success receipt",
+    "runtime_default": "uninstalled; no fake or legacy fallback"
+  },
+  "reuse": {
+    "knowledge_note_id": "kb-plotpilot-pluginized-nw-p1-core-http-runtime-seam-blocker-20260828",
+    "knowledge_note_status": "draft",
+    "knowledge_note_sha256": "14936673ecdd5696d01f520780ebdc47a29b59dcb9bc39a7374a15bc9581a52d",
+    "repository_sources": [
+      "frontend/src/contracts/core-api.ts",
+      "frontend/src/contracts/types.ts",
+      "contracts/json-schema/core-api-method-matrix.v1.json"
+    ],
+    "local_tool_copy": null,
+    "github_search": "skipped_no_additional_reuse_benefit"
+  },
+  "validation": [
+    {
+      "command": "node --experimental-strip-types --test tests/p4-webui/core-flows/*.test.mts",
+      "exit_code": 0,
+      "result": "18 tests, 18 pass, 0 fail"
+    },
+    {
+      "command": "node --experimental-strip-types --test tests/p4-webui/*.test.mts",
+      "exit_code": 0,
+      "result": "13 tests, 13 pass, 0 fail"
+    },
+    {
+      "command": "frontend/node_modules/.bin/vue-tsc.cmd --noEmit -p frontend/tsconfig.app.json --incremental false",
+      "exit_code": 1,
+      "result": "isolated worktree dependency directory absent"
+    },
+    {
+      "command": "main-worktree vue-tsc --noEmit with a temporary equivalent strict config targeting this worktree",
+      "exit_code": 0,
+      "result": "typecheck passed; no product file or dependency mutation"
+    }
+  ],
+  "forbidden_gates_run": [],
+  "claims": {
+    "central_pass": false,
+    "merge_eligible": false,
+    "live_runtime_connected": false
+  }
+}
