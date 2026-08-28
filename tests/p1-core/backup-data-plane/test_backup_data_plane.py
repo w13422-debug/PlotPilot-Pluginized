@@ -29,15 +29,31 @@ from backend.plotpilot_core.backup import (
     SqliteAssetReferenceScanner,
     SqliteCoreSnapshotAdapter,
 )
-from backend.plotpilot_core.domain import Workspace
+from backend.plotpilot_core.broker.service import (
+    BrokerInvocationEnvelope,
+    CallerAttemptContext,
+    CapabilityBinding,
+    ChildCreationRequest,
+)
+from backend.plotpilot_core.candidates import CandidateService
+from backend.plotpilot_core.domain import Document, Workspace
 from backend.plotpilot_core.plugins.package import verify_package
 from backend.plotpilot_core.plugins.store import PackageStore
+from backend.plotpilot_core.publication import PublicationService
 from backend.plotpilot_core.repositories import CoreAuthorityRepository
+from backend.plotpilot_core.repositories.execution import ExecutionAuthority
 from backend.plotpilot_plugin_sdk.canonical import canonical_bytes, hash_jcs
 from backend.plotpilot_plugin_sdk.package import build_files_sha256
+from backend.plotpilot_plugin_sdk.verifier import (
+    hash_without_field,
+    request_key,
+    snapshot_hash,
+)
 
 NOW = "2026-08-28T01:00:00Z"
 RELEASE_ID = "1" * 64
+EXECUTION_RELEASE_ID = "e" * 64
+EXECUTION_PACKAGE_HASH = "a" * 64
 
 
 class BoundBarrierPort:
@@ -194,13 +210,14 @@ def _request(
     *,
     mode: str = "workspace",
     core_contract_version: str = "1.2.0",
+    workspace_ids: tuple[str, ...] = ("ws-1",),
 ) -> BackupRequest:
     return BackupRequest(
         backup_id=backup_id,
         library_root_id="library-source",
         backup_epoch=7,
         mode=mode,  # type: ignore[arg-type]
-        workspace_ids=("ws-1",),
+        workspace_ids=workspace_ids,
         created_at=NOW,
         verified_at=NOW,
         core_contract_version=core_contract_version,
@@ -261,6 +278,350 @@ def _plane(source: Path, database: Path, assets: Path, **kwargs: Any) -> BackupD
         plugin_data_port=kwargs.pop("plugin_data_port", BoundPluginDataPort()),
         **kwargs,
     )
+
+
+def _add_integrated_execution_closure(
+    repository: CoreAuthorityRepository,
+    assets: AssetStore,
+    *,
+    workspace_id: str,
+    document_id: str,
+    marker: str,
+    content: bytes,
+) -> dict[str, object]:
+    base = repository.publish_revision(
+        document_id=document_id,
+        content=f"base-{marker}",
+        expected_revision_id=None,
+        created_by="user",
+        revision_id=f"revision-{marker}-base",
+    )
+    snapshot = json.loads(
+        Path("contracts/golden/run-snapshot/snapshot.json").read_text(encoding="utf-8")
+    )
+    snapshot.update(
+        snapshot_id=f"snapshot-{marker}",
+        run_intent_id=f"intent-{marker}",
+        workspace_id=workspace_id,
+        plugin_releases=[
+            {
+                "plugin_id": "com.plotpilot.demo",
+                "release_id": EXECUTION_RELEASE_ID,
+                "package_hash": EXECUTION_PACKAGE_HASH,
+                "data_generation_id": f"generation-{marker}",
+            }
+        ],
+        input_revisions=[
+            {
+                "document_id": document_id,
+                "revision_id": base.revision_id,
+                "content_hash": base.content_hash,
+            }
+        ],
+    )
+    snapshot["scope"] = {
+        "document_id": document_id,
+        "node_id": None,
+        "operation": "writing.chapter.draft/v1",
+    }
+    snapshot["request_key"] = request_key(snapshot)
+    snapshot["snapshot_hash"] = snapshot_hash(snapshot)
+
+    job_id = f"job-{marker}"
+    step_id = f"step-{marker}"
+    attempt_id = f"attempt-{marker}"
+    receipt_id = f"receipt-{marker}"
+    worker_run_id = f"worker-{marker}"
+    generation_id = f"generation-{marker}"
+    authority = ExecutionAuthority(repository, assets)
+    authority.create_from_verified_snapshot(job_id, snapshot)
+    authority.freeze_plan(
+        job_id,
+        [
+            {
+                "step_id": step_id,
+                "depends_on": [],
+                "result_contract": "candidate-batch/v1",
+            }
+        ],
+        output_step_id=step_id,
+    )
+    authority.start_attempt(
+        job_id=job_id,
+        step_id=step_id,
+        attempt_id=attempt_id,
+        worker_run_id=worker_run_id,
+        plugin_id="com.plotpilot.demo",
+        release_id=EXECUTION_RELEASE_ID,
+        package_hash=EXECUTION_PACKAGE_HASH,
+        capability_id="writing.chapter.draft/v1",
+        generation_id=generation_id,
+        preallocated_receipt_id=receipt_id,
+    )
+
+    invoke_operation_key = f"invoke-{marker}"
+    caller = CallerAttemptContext(
+        job_id,
+        step_id,
+        attempt_id,
+        1,
+        generation_id=generation_id,
+        plugin_release_id=EXECUTION_RELEASE_ID,
+    )
+    binding = CapabilityBinding(
+        f"binding-{marker}",
+        "writing.chapter.draft/v1",
+        "com.plotpilot.demo",
+        "1.0.0",
+        "candidate-batch/v1",
+        False,
+        True,
+    )
+    input_asset = assets.put(
+        content + b"-broker-input",
+        mime="text/plain",
+        logical_role="broker_input",
+        provenance=f"test:{workspace_id}",
+    )
+    envelope = BrokerInvocationEnvelope.from_assets(
+        invocation_id=f"invocation-{marker}",
+        parent=caller,
+        invoke_operation_key=invoke_operation_key,
+        binding=binding,
+        input_asset_id=input_asset.asset_id,
+        input_asset_bytes=assets.read(input_asset.asset_id),
+    )
+    envelope_asset_id = assets.create_asset(
+        envelope.canonical_bytes(), mime="application/json"
+    )
+    child_request = ChildCreationRequest(
+        envelope_asset_id,
+        envelope,
+        input_asset.asset_id,
+        None,
+        binding,
+        None,
+        EXECUTION_RELEASE_ID,
+        generation_id,
+        caller,
+    )
+    authority.operation_ledger.reserve(
+        context_identity=caller.identity(),
+        method="host.capability.invoke/v1",
+        operation_key=invoke_operation_key,
+        payload_hash=envelope.asset_hash,
+    )
+    authority.operation_ledger.attach_envelope(
+        context_identity=caller.identity(),
+        method="host.capability.invoke/v1",
+        operation_key=invoke_operation_key,
+        payload_hash=envelope.asset_hash,
+        envelope_asset_id=envelope_asset_id,
+    )
+    child = authority.create_or_recover_child(child_request)
+    child_attempt = repository._connection.execute(
+        "SELECT preallocated_receipt_id FROM execution_attempt WHERE attempt_id=?",
+        (child.child_attempt_id,),
+    ).fetchone()
+    child_receipt_id = child_attempt[0]
+    child_worker_run_id = f"child-worker-{marker}"
+    authority.start_attempt(
+        job_id=child.child_job_id,
+        step_id=child.child_step_id,
+        attempt_id=child.child_attempt_id,
+        worker_run_id=child_worker_run_id,
+        plugin_id="com.plotpilot.demo",
+        release_id=EXECUTION_RELEASE_ID,
+        package_hash=EXECUTION_PACKAGE_HASH,
+        capability_id="writing.chapter.draft/v1",
+        generation_id=generation_id,
+        preallocated_receipt_id=child_receipt_id,
+    )
+    child_receipt = {
+        "schema": "provenance-receipt/v1",
+        "receipt_id": child_receipt_id,
+        "plugin_id": "com.plotpilot.demo",
+        "release_id": EXECUTION_RELEASE_ID,
+        "package_hash": EXECUTION_PACKAGE_HASH,
+        "capability_id": "writing.chapter.draft/v1",
+        "job_id": child.child_job_id,
+        "step_id": child.child_step_id,
+        "attempt_id": child.child_attempt_id,
+        "lease_epoch": 1,
+        "run_snapshot_hash": child.child_run_snapshot_hash,
+        "bundle_id": None,
+        "bundle_hash": None,
+        "parent_receipt_ids": [],
+        "model_receipt_ids": [],
+        "skill_chain_result_refs": [],
+        "staged_items": [],
+        "created_at": NOW,
+    }
+    child_receipt["receipt_hash"] = hash_without_field(
+        child_receipt, "receipt_hash", "provenance-receipt/v1"
+    )
+    authority.complete_attempt(
+        job_id=child.child_job_id,
+        step_id=child.child_step_id,
+        attempt_id=child.child_attempt_id,
+        lease_epoch=1,
+        operation_key=f"complete-child-{marker}",
+        worker_run_id=child_worker_run_id,
+        outcome="failed",
+        result_bundle_asset_id=None,
+        candidate_stage_operation_key=None,
+        terminal_detail_asset_id=None,
+        local_seq=1,
+        provenance_receipt=child_receipt,
+        operation_meta={
+            "protocol_version": "1",
+            "generation_id": generation_id,
+            "plugin_release_id": EXECUTION_RELEASE_ID,
+            "deadline_at": "2026-08-28T02:00:00Z",
+            "context": "attempt",
+            "operation_id": f"rpc-child-{marker}",
+            "job_id": child.child_job_id,
+            "step_id": child.child_step_id,
+            "attempt_id": child.child_attempt_id,
+            "lease_epoch": 1,
+        },
+    )
+
+    payload = assets.put(
+        content,
+        mime="text/plain",
+        logical_role="candidate_payload",
+        provenance=f"test:{workspace_id}",
+    )
+    item_id = f"item-{marker}"
+    item = {
+        "schema": "candidate-item/v1",
+        "item_id": item_id,
+        "item_kind": "document",
+        "target": {
+            "workspace_id": workspace_id,
+            "entity_kind": "document",
+            "entity_id": document_id,
+        },
+        "mutation": {
+            "mode": "replace",
+            "payload_schema": "core/document-text/v1",
+            "payload_hash": payload.sha256,
+        },
+        "payload_asset_id": payload.asset_id,
+        "base": {
+            "revision_id": base.revision_id,
+            "content_hash": base.content_hash,
+        },
+        "write_set": [
+            {
+                "workspace_id": workspace_id,
+                "entity_kind": "document",
+                "entity_id": document_id,
+                "revision_id": base.revision_id,
+                "content_hash": base.content_hash,
+            }
+        ],
+        "parent_candidate_ids": [],
+        "source_refs": [],
+        "status": "complete",
+    }
+    bundle = {
+        "schema": "result-bundle/v1",
+        "contract_id": "candidate-batch/v1",
+        "bundle_id": f"bundle-{marker}",
+        "bundle_type": "candidate_batch",
+        "producer": {
+            "plugin_id": "com.plotpilot.demo",
+            "release_id": EXECUTION_RELEASE_ID,
+            "capability_id": "writing.chapter.draft/v1",
+            "job_id": job_id,
+            "step_id": step_id,
+            "attempt_id": attempt_id,
+            "lease_epoch": 1,
+        },
+        "input_snapshot_hash": snapshot["snapshot_hash"],
+        "items": [item],
+        "warnings": [],
+        "partial": False,
+        "provenance_receipt_id": receipt_id,
+        "skill_chain_result_refs": [],
+    }
+    bundle_raw = canonical_bytes(bundle)
+    bundle_asset = assets.put(
+        bundle_raw,
+        mime="application/json",
+        logical_role="result_bundle",
+        provenance=f"test:{workspace_id}",
+    )
+    receipt = {
+        "schema": "provenance-receipt/v1",
+        "receipt_id": receipt_id,
+        "plugin_id": "com.plotpilot.demo",
+        "release_id": EXECUTION_RELEASE_ID,
+        "package_hash": EXECUTION_PACKAGE_HASH,
+        "capability_id": "writing.chapter.draft/v1",
+        "job_id": job_id,
+        "step_id": step_id,
+        "attempt_id": attempt_id,
+        "lease_epoch": 1,
+        "run_snapshot_hash": snapshot["snapshot_hash"],
+        "bundle_id": bundle["bundle_id"],
+        "bundle_hash": hashlib.sha256(bundle_raw).hexdigest(),
+        "parent_receipt_ids": [child_receipt_id],
+        "model_receipt_ids": [],
+        "skill_chain_result_refs": [],
+        "staged_items": [item_id],
+        "created_at": NOW,
+    }
+    receipt["receipt_hash"] = hash_without_field(
+        receipt, "receipt_hash", "provenance-receipt/v1"
+    )
+    operation_key = f"complete-{marker}"
+    authority.complete_attempt(
+        job_id=job_id,
+        step_id=step_id,
+        attempt_id=attempt_id,
+        lease_epoch=1,
+        operation_key=operation_key,
+        worker_run_id=worker_run_id,
+        outcome="succeeded",
+        result_bundle_asset_id=bundle_asset.asset_id,
+        candidate_stage_operation_key=f"stage-{marker}",
+        terminal_detail_asset_id=None,
+        local_seq=1,
+        provenance_receipt=receipt,
+        operation_meta={
+            "protocol_version": "1",
+            "generation_id": generation_id,
+            "plugin_release_id": EXECUTION_RELEASE_ID,
+            "deadline_at": "2026-08-28T02:00:00Z",
+            "context": "attempt",
+            "operation_id": f"rpc-{marker}",
+            "job_id": job_id,
+            "step_id": step_id,
+            "attempt_id": attempt_id,
+            "lease_epoch": 1,
+        },
+    )
+    candidate_id = repository._connection.execute(
+        "SELECT candidate_id FROM execution_candidate_binding WHERE job_id=?",
+        (job_id,),
+    ).fetchone()[0]
+    publication = PublicationService(repository, assets).accept(
+        f"publish-{marker}", candidate_id, created_by="user"
+    )
+    return {
+        "job_id": job_id,
+        "step_id": step_id,
+        "attempt_id": attempt_id,
+        "receipt_id": receipt_id,
+        "candidate_id": candidate_id,
+        "publication_id": publication.publication_id,
+        "child_job_id": child.child_job_id,
+        "payload_asset_id": payload.asset_id,
+        "input_asset_id": input_asset.asset_id,
+    }
 
 
 def _tree_hashes(root: Path) -> dict[str, str]:
@@ -421,7 +782,7 @@ def test_online_backup_never_splices_asset_closure_across_commits(tmp_path: Path
         backup_pages=1,
         on_backup_progress=commit_during_backup,
     )
-    result = plane.create_backup(tmp_path / "backup", _request())
+    result = plane.create_backup(tmp_path / "backup", _request(mode="full"))
 
     assert changed is True
     snapshot_db = sqlite3.connect(result.bundle_root / "core/core.db")
@@ -488,8 +849,10 @@ def test_missing_contributor_asset_fails_closed(tmp_path: Path, contributor: str
     if contributor == "core":
         kwargs["core_snapshot_port"] = BoundCoreSnapshotPort(state_asset_ids=(missing,))
     elif contributor == "p2":
+        mode = "data"
         kwargs["generation_port"] = BoundGenerationPort(asset_ids=(missing,))
     elif contributor == "p3":
+        mode = "data"
         kwargs["plugin_data_port"] = BoundPluginDataPort(asset_ids=(missing,))
     else:
         mode = "data"
@@ -534,7 +897,7 @@ def test_asset_closure_is_read_from_frozen_database_not_live_authority(tmp_path:
         writer.close()
 
     plane = _plane(source, database, assets, on_core_snapshot_copied=mutate_only_after_copy)
-    result = plane.create_backup(tmp_path / "backup", _request())
+    result = plane.create_backup(tmp_path / "backup", _request(mode="full"))
 
     assert first.asset_id in result.receipt["asset_ids"]
     assert second.asset_id not in result.receipt["asset_ids"]
@@ -1090,27 +1453,600 @@ def test_core_snapshot_state_hash_must_bind_state_asset_id(tmp_path: Path) -> No
         plane.create_backup(tmp_path / "backup", _request())
 
 
-def test_workspace_scope_rebuild_rejects_multi_workspace_frozen_database(
+def test_workspace_backup_projects_one_of_multiple_workspaces_and_restores_new_root(
+    tmp_path: Path,
+) -> None:
+    source, database, assets, ws1_cover_id = _source(tmp_path)
+    assert ws1_cover_id is not None
+    secret = b"RAW_SECRET_WS2_ONLY"
+    store = AssetStore(assets)
+    ws1_payload = store.put(
+        b"selected workspace payload",
+        mime="text/plain",
+        logical_role="candidate_payload",
+        provenance="plugin:selected",
+    )
+    ws2_cover = store.put(
+        secret + b" cover",
+        mime="application/octet-stream",
+        logical_role="workspace_cover",
+        provenance="test",
+    )
+    ws2_payload = store.put(
+        secret + b" payload",
+        mime="text/plain",
+        logical_role="candidate_payload",
+        provenance="plugin:other",
+    )
+    repository = CoreAuthorityRepository(database)
+    repository.create_workspace(
+        Workspace(
+            "ws-2",
+            "Second " + secret.decode(),
+            metadata={"cover_asset_id": ws2_cover.asset_id},
+            created_at=NOW,
+            updated_at=NOW,
+        )
+    )
+    repository.create_document(
+        Document("doc-1", "ws-1", "Selected authority", created_at=NOW, updated_at=NOW)
+    )
+    repository.create_document(
+        Document(
+            "doc-2",
+            "ws-2",
+            "Other authority " + secret.decode(),
+            created_at=NOW,
+            updated_at=NOW,
+        )
+    )
+    ws1_base = repository.publish_revision(
+        document_id="doc-1",
+        content="selected base",
+        expected_revision_id=None,
+        created_by="user",
+        revision_id="rev-ws-1-base",
+    )
+    ws2_base = repository.publish_revision(
+        document_id="doc-2",
+        content=secret.decode() + " base",
+        expected_revision_id=None,
+        created_by="user",
+        revision_id="rev-ws-2-base",
+    )
+
+    def candidate_item(
+        *, workspace_id: str, document_id: str, item_id: str, base: object, payload: object
+    ) -> dict[str, object]:
+        target = {
+            "workspace_id": workspace_id,
+            "entity_kind": "document",
+            "entity_id": document_id,
+        }
+        return {
+            "schema": "candidate-item/v1",
+            "item_id": item_id,
+            "item_kind": "document",
+            "target": target,
+            "mutation": {
+                "mode": "replace",
+                "payload_schema": "core/document-text/v1",
+                "payload_hash": payload.sha256,  # type: ignore[attr-defined]
+            },
+            "payload_asset_id": payload.asset_id,  # type: ignore[attr-defined]
+            "base": {
+                "revision_id": base.revision_id,  # type: ignore[attr-defined]
+                "content_hash": base.content_hash,  # type: ignore[attr-defined]
+            },
+            "write_set": [
+                {
+                    **target,
+                    "revision_id": base.revision_id,  # type: ignore[attr-defined]
+                    "content_hash": base.content_hash,  # type: ignore[attr-defined]
+                }
+            ],
+            "parent_candidate_ids": [],
+            "source_refs": [],
+            "status": "complete",
+        }
+
+    ws1_candidate = CandidateService(repository, store).stage(
+        "stage-ws-1",
+        candidate_item(
+            workspace_id="ws-1",
+            document_id="doc-1",
+            item_id="item-ws-1",
+            base=ws1_base,
+            payload=ws1_payload,
+        ),
+    )
+    ws2_candidate = CandidateService(repository, store).stage(
+        "stage-ws-2",
+        candidate_item(
+            workspace_id="ws-2",
+            document_id="doc-2",
+            item_id="item-ws-2",
+            base=ws2_base,
+            payload=ws2_payload,
+        ),
+    )
+    assert ws1_candidate.candidate_id is not None
+    assert ws2_candidate.candidate_id is not None
+    ws1_publication = PublicationService(repository, store).accept(
+        "accept-ws-1", ws1_candidate.candidate_id, created_by="user"
+    )
+    ws2_publication = PublicationService(repository, store).accept(
+        "accept-ws-2", ws2_candidate.candidate_id, created_by="user"
+    )
+    repository.close()
+
+    plugin_database = source / "plugins" / "data" / "other.db"
+    plugin_database.parent.mkdir(parents=True)
+    plugin_connection = sqlite3.connect(plugin_database)
+    plugin_connection.execute("CREATE TABLE secret(value BLOB NOT NULL)")
+    plugin_connection.execute("INSERT INTO secret VALUES(?)", (secret,))
+    plugin_connection.commit()
+    plugin_connection.close()
+    plugin_package = source / "plugins" / "packages" / "other.zip"
+    plugin_package.parent.mkdir(parents=True)
+    plugin_package.write_bytes(secret + b" package")
+    secret_file = source / "secrets" / "other.txt"
+    secret_file.parent.mkdir()
+    secret_file.write_bytes(secret)
+
+    plane = _plane(source, database, assets)
+    backup = plane.create_backup(
+        tmp_path / "backup-ws-1",
+        _request("backup-ws-1", workspace_ids=("ws-1",)),
+    )
+    projected_database = backup.bundle_root / "core" / "core.db"
+    connection = sqlite3.connect(projected_database)
+    assert connection.execute("SELECT workspace_id FROM workspace").fetchall() == [("ws-1",)]
+    assert connection.execute("SELECT document_id FROM document").fetchall() == [("doc-1",)]
+    assert connection.execute("SELECT revision_id FROM revision ORDER BY revision_number").fetchall() == [
+        ("rev-ws-1-base",),
+        (ws1_publication.revision_id,),
+    ]
+    assert connection.execute("SELECT candidate_id FROM candidate").fetchall() == [
+        (ws1_candidate.candidate_id,)
+    ]
+    assert connection.execute("SELECT candidate_id FROM publication_receipt").fetchall() == [
+        (ws1_candidate.candidate_id,)
+    ]
+    assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+    assert connection.execute("PRAGMA integrity_check").fetchone() == ("ok",)
+    connection.close()
+
+    assert backup.manifest["workspace_ids"] == ["ws-1"]
+    assert ws1_cover_id in backup.receipt["asset_ids"]
+    assert ws1_payload.asset_id in backup.receipt["asset_ids"]
+    assert ws2_cover.asset_id not in backup.receipt["asset_ids"]
+    assert ws2_payload.asset_id not in backup.receipt["asset_ids"]
+    snapshot = json.loads((backup.bundle_root / "core" / "snapshot.json").read_text())
+    assert [item["aggregate_id"] for item in snapshot["covered_aggregates"]] == ["ws-1"]
+    state_asset_id = snapshot["covered_aggregates"][0]["state_asset_id"]
+    assert state_asset_id in backup.receipt["asset_ids"]
+    manifest_paths = {item["path"] for item in backup.manifest["files"]}
+    assert all(item["role"] not in {"plugin_db", "package"} for item in backup.manifest["files"])
+    assert plugin_database.relative_to(source).as_posix() not in manifest_paths
+    assert plugin_package.relative_to(source).as_posix() not in manifest_paths
+    assert all(secret not in path.read_bytes() for path in backup.bundle_root.rglob("*") if path.is_file())
+
+    live_hashes = _tree_hashes(source)
+    restored = plane.stage_restore(
+        backup.bundle_root,
+        tmp_path / "restored-ws-1",
+        _restore_request("restore-ws-1"),
+    )
+    restored_database = restored.target_root / "core" / "core.db"
+    connection = sqlite3.connect(restored_database)
+    assert connection.execute("SELECT workspace_id FROM workspace").fetchall() == [("ws-1",)]
+    assert connection.execute("SELECT count(*) FROM document WHERE workspace_id='ws-2'").fetchone() == (
+        0,
+    )
+    connection.close()
+    restored_assets = AssetStore(restored.target_root / "assets")
+    assert restored_assets.read(ws1_cover_id) == b"cover"
+    assert restored_assets.read(ws1_payload.asset_id) == b"selected workspace payload"
+    assert secret not in restored_assets.read(state_asset_id)
+    assert json.loads((restored.target_root / "receipt.json").read_text()) == backup.receipt
+    assert _tree_hashes(source) == live_hashes
+
+    live = sqlite3.connect(database)
+    assert live.execute("SELECT workspace_id FROM workspace ORDER BY workspace_id").fetchall() == [
+        ("ws-1",),
+        ("ws-2",),
+    ]
+    assert live.execute(
+        "SELECT revision_id FROM publication_receipt WHERE candidate_id=?",
+        (ws2_candidate.candidate_id,),
+    ).fetchone() == (ws2_publication.revision_id,)
+    live.close()
+
+    full = plane.create_backup(
+        tmp_path / "backup-full",
+        _request("backup-full", mode="full", workspace_ids=("ws-1", "ws-2")),
+    )
+    full_database = sqlite3.connect(full.bundle_root / "core" / "core.db")
+    assert full_database.execute(
+        "SELECT workspace_id FROM workspace ORDER BY workspace_id"
+    ).fetchall() == [("ws-1",), ("ws-2",)]
+    full_database.close()
+
+
+def test_workspace_backup_projects_integrated_execution_and_broker_closure(
+    tmp_path: Path,
+) -> None:
+    source, database, assets, ws1_cover_id = _source(tmp_path)
+    assert ws1_cover_id is not None
+    secret = b"INTEGRATED_WS2_SENTINEL_SECRET"
+    store = AssetStore(assets)
+    repository = CoreAuthorityRepository(database)
+    repository.create_document(
+        Document("doc-int-1", "ws-1", "Selected", created_at=NOW, updated_at=NOW)
+    )
+    ws2_cover = store.put(
+        secret + b"-cover",
+        mime="application/octet-stream",
+        logical_role="workspace_cover",
+        provenance="test:ws-2",
+    )
+    repository.create_workspace(
+        Workspace(
+            "ws-2",
+            "Other " + secret.decode(),
+            metadata={"cover_asset_id": ws2_cover.asset_id},
+            created_at=NOW,
+            updated_at=NOW,
+        )
+    )
+    repository.create_document(
+        Document(
+            "doc-int-2",
+            "ws-2",
+            "Other " + secret.decode(),
+            created_at=NOW,
+            updated_at=NOW,
+        )
+    )
+    selected = _add_integrated_execution_closure(
+        repository,
+        store,
+        workspace_id="ws-1",
+        document_id="doc-int-1",
+        marker="int-1",
+        content=b"selected integrated payload",
+    )
+    excluded = _add_integrated_execution_closure(
+        repository,
+        store,
+        workspace_id="ws-2",
+        document_id="doc-int-2",
+        marker="int-2",
+        content=secret,
+    )
+    live_core_high_water = repository._connection.execute(
+        "SELECT seq FROM sqlite_sequence WHERE name='execution_core_event'"
+    ).fetchone()[0]
+    repository.close()
+
+    backup = _plane(source, database, assets).create_backup(
+        tmp_path / "integrated-backup",
+        _request("integrated-backup", workspace_ids=("ws-1",)),
+    )
+    projected_database = backup.bundle_root / "core" / "core.db"
+    connection = sqlite3.connect(projected_database)
+    try:
+        assert connection.execute(
+            "SELECT migration_id FROM schema_migration ORDER BY rowid"
+        ).fetchall() == [
+            ("0001-core-authority",),
+            ("0002-candidate-publication",),
+            ("p3-jobs-001",),
+            ("0003-execution-authority",),
+            ("0004-execution-remediation",),
+        ]
+        assert connection.execute(
+            "SELECT count(*) FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%'"
+        ).fetchone()[0] == 30
+        assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+        assert connection.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+        assert connection.execute(
+            "SELECT seq FROM sqlite_sequence WHERE name='execution_core_event'"
+        ).fetchone()[0] == live_core_high_water
+        for table, identity, expected in (
+            ("workspace", "workspace_id", "ws-1"),
+            ("execution_job", "job_id", selected["job_id"]),
+            ("execution_step", "step_id", selected["step_id"]),
+            ("execution_attempt", "attempt_id", selected["attempt_id"]),
+            ("execution_receipt", "receipt_id", selected["receipt_id"]),
+            ("candidate", "candidate_id", selected["candidate_id"]),
+            (
+                "publication_receipt",
+                "publication_id",
+                selected["publication_id"],
+            ),
+            ("p3_broker_child_record", "child_job_id", selected["child_job_id"]),
+        ):
+            values = [row[0] for row in connection.execute(f'SELECT "{identity}" FROM "{table}"')]
+            assert expected in values
+            assert all("int-2" not in str(value) for value in values)
+        assert connection.execute(
+            "SELECT count(*) FROM execution_outcome"
+        ).fetchone()[0] == 2
+        assert connection.execute(
+            "SELECT count(*) FROM execution_job_event"
+        ).fetchone()[0] == 2
+        assert connection.execute(
+            "SELECT count(*) FROM execution_core_event"
+        ).fetchone()[0] == 5
+        assert connection.execute(
+            "SELECT count(*) FROM execution_candidate_binding"
+        ).fetchone()[0] == 1
+        assert connection.execute(
+            "SELECT count(*) FROM execution_publication_binding"
+        ).fetchone()[0] == 1
+        assert connection.execute(
+            "SELECT count(*) FROM execution_child_creation"
+        ).fetchone()[0] == 1
+        assert connection.execute(
+            "SELECT count(*) FROM p3_broker_operation"
+        ).fetchone()[0] == 1
+        assert connection.execute(
+            "SELECT count(*) FROM p3_host_operation_ledger"
+        ).fetchone()[0] == 2
+    finally:
+        connection.close()
+
+    assert selected["payload_asset_id"] in backup.receipt["asset_ids"]
+    assert selected["input_asset_id"] in backup.receipt["asset_ids"]
+    assert excluded["payload_asset_id"] not in backup.receipt["asset_ids"]
+    assert excluded["input_asset_id"] not in backup.receipt["asset_ids"]
+    assert ws2_cover.asset_id not in backup.receipt["asset_ids"]
+    state_asset_id = json.loads(
+        (backup.bundle_root / "core/snapshot.json").read_text(encoding="utf-8")
+    )["covered_aggregates"][0]["state_asset_id"]
+    state = store.read(state_asset_id)
+    assert b'"execution_job"' in state
+    assert str(selected["child_job_id"]).encode() in state
+    assert secret not in state
+    assert all(
+        secret not in path.read_bytes()
+        for path in backup.bundle_root.rglob("*")
+        if path.is_file()
+    )
+
+    restored = _plane(source, database, assets).stage_restore(
+        backup.bundle_root,
+        tmp_path / "integrated-restored",
+        _restore_request("restore-integrated"),
+    )
+    restored_database = restored.target_root / "core/core.db"
+    before = sqlite3.connect(restored_database)
+    migration_rows = before.execute(
+        "SELECT migration_id,sha256,applied_at FROM schema_migration ORDER BY rowid"
+    ).fetchall()
+    before.close()
+    reopened = CoreAuthorityRepository(restored_database)
+    try:
+        assert reopened.get_workspace("ws-1").workspace_id == "ws-1"
+        with pytest.raises(KeyError):
+            reopened.get_workspace("ws-2")
+        assert reopened._connection.execute(
+            "SELECT job_id FROM execution_job WHERE job_id=?",
+            (selected["job_id"],),
+        ).fetchone()[0] == selected["job_id"]
+        assert reopened._connection.execute(
+            "SELECT count(*) FROM execution_job WHERE workspace_id='ws-2'"
+        ).fetchone()[0] == 0
+        assert [
+            tuple(row)
+            for row in reopened._connection.execute(
+                "SELECT migration_id,sha256,applied_at FROM schema_migration ORDER BY rowid"
+            ).fetchall()
+        ] == migration_rows
+        assert reopened._connection.execute("PRAGMA foreign_key_check").fetchall() == []
+    finally:
+        reopened.close()
+
+    for mode in ("data", "full"):
+        unscoped = _plane(source, database, assets).create_backup(
+            tmp_path / f"integrated-{mode}",
+            _request(
+                f"integrated-{mode}",
+                mode=mode,
+                workspace_ids=("ws-1", "ws-2"),
+            ),
+        )
+        unscoped_db = sqlite3.connect(unscoped.bundle_root / "core/core.db")
+        assert unscoped_db.execute(
+            "SELECT workspace_id FROM workspace ORDER BY workspace_id"
+        ).fetchall() == [("ws-1",), ("ws-2",)]
+        unscoped_db.close()
+
+
+@pytest.mark.parametrize("authority_row", ["broker_operation", "host_ledger"])
+def test_workspace_backup_rejects_orphan_integrated_authority(
+    tmp_path: Path, authority_row: str
+) -> None:
+    source, database, assets, _ = _source(tmp_path)
+    connection = sqlite3.connect(database)
+    if authority_row == "broker_operation":
+        connection.execute(
+            "INSERT INTO p3_broker_operation("
+            "context_identity,method,operation_key,payload_hash"
+            ") VALUES(?,?,?,?)",
+            (
+                "f" * 64,
+                "host.capability.invoke/v1",
+                "orphan-invoke",
+                "a" * 64,
+            ),
+        )
+    else:
+        connection.execute(
+            "INSERT INTO p3_host_operation_ledger VALUES(?,?,?,?,?)",
+            (
+                "f" * 64,
+                "host.job.complete/v1",
+                "orphan-complete",
+                "a" * 64,
+                b"orphan-response",
+            ),
+        )
+    connection.commit()
+    connection.close()
+    destination = tmp_path / "orphan-backup"
+
+    with pytest.raises(BackupValidationError, match="safely scoped"):
+        _plane(source, database, assets).create_backup(destination, _request())
+
+    assert not destination.exists()
+    assert not list(tmp_path.glob(".b-*.stage"))
+    saved = sqlite3.connect(database)
+    table = (
+        "p3_broker_operation"
+        if authority_row == "broker_operation"
+        else "p3_host_operation_ledger"
+    )
+    assert saved.execute(f'SELECT count(*) FROM "{table}"').fetchone()[0] == 1
+    saved.close()
+
+
+def test_workspace_backup_rejects_cross_workspace_broker_child_closure(
     tmp_path: Path,
 ) -> None:
     source, database, assets, _ = _source(tmp_path)
+    store = AssetStore(assets)
     repository = CoreAuthorityRepository(database)
+    repository.create_document(
+        Document("doc-cross-1", "ws-1", "Selected", created_at=NOW, updated_at=NOW)
+    )
     repository.create_workspace(
-        Workspace("ws-2", "Second", created_at=NOW, updated_at=NOW)
+        Workspace("ws-2", "Other", created_at=NOW, updated_at=NOW)
+    )
+    closure = _add_integrated_execution_closure(
+        repository,
+        store,
+        workspace_id="ws-1",
+        document_id="doc-cross-1",
+        marker="cross",
+        content=b"selected",
+    )
+    repository._connection.execute(
+        "UPDATE execution_job SET workspace_id='ws-2' WHERE job_id=?",
+        (closure["child_job_id"],),
     )
     repository.close()
-    request = BackupRequest(
-        backup_id="backup-multi",
-        library_root_id="library-source",
-        backup_epoch=7,
-        mode="workspace",
-        workspace_ids=("ws-1", "ws-2"),
-        created_at=NOW,
-        verified_at=NOW,
-    )
+    destination = tmp_path / "cross-workspace-backup"
 
-    with pytest.raises(BackupValidationError, match="could not capture"):
-        _plane(source, database, assets).create_backup(tmp_path / "backup", request)
+    with pytest.raises(BackupValidationError, match="safely scoped"):
+        _plane(source, database, assets).create_backup(destination, _request())
+
+    assert not destination.exists()
+    assert not list(tmp_path.glob(".b-*.stage"))
+    saved = sqlite3.connect(database)
+    assert saved.execute(
+        "SELECT workspace_id FROM execution_job WHERE job_id=?",
+        (closure["child_job_id"],),
+    ).fetchone() == ("ws-2",)
+    saved.close()
+
+
+@pytest.mark.parametrize("mutation", ["table", "view", "trigger", "column", "migration"])
+def test_workspace_backup_rejects_unclassified_core_schema(
+    tmp_path: Path, mutation: str
+) -> None:
+    source, database, assets, _ = _source(tmp_path)
+    connection = sqlite3.connect(database)
+    if mutation == "table":
+        connection.execute("CREATE TABLE unclassified_global(secret TEXT NOT NULL)")
+        connection.execute("INSERT INTO unclassified_global VALUES('other workspace secret')")
+    elif mutation == "view":
+        connection.execute(
+            "CREATE VIEW unclassified_global AS SELECT title AS secret FROM workspace"
+        )
+    elif mutation == "trigger":
+        connection.execute(
+            "CREATE TRIGGER unclassified_global AFTER UPDATE ON workspace BEGIN SELECT 1; END"
+        )
+    elif mutation == "column":
+        connection.execute("ALTER TABLE workspace ADD COLUMN unclassified_secret TEXT")
+        connection.execute(
+            "UPDATE workspace SET unclassified_secret='other workspace secret' WHERE workspace_id='ws-1'"
+        )
+    else:
+        connection.execute(
+            "UPDATE schema_migration SET migration_id='unknown-backup-migration' "
+            "WHERE migration_id='0004-execution-remediation'"
+        )
+    connection.commit()
+    connection.close()
+    destination = tmp_path / "backup"
+
+    with pytest.raises(BackupValidationError, match="safely scoped"):
+        _plane(source, database, assets).create_backup(destination, _request())
+
+    assert not destination.exists()
+    assert not list(tmp_path.glob(".b-*.stage"))
+    source_connection = sqlite3.connect(database)
+    if mutation in {"table", "view"}:
+        saved = source_connection.execute("SELECT secret FROM unclassified_global").fetchone()
+    elif mutation == "trigger":
+        saved = source_connection.execute(
+            "SELECT name FROM sqlite_schema WHERE type='trigger' AND name='unclassified_global'"
+        ).fetchone()
+    elif mutation == "column":
+        saved = source_connection.execute(
+            "SELECT unclassified_secret FROM workspace WHERE workspace_id='ws-1'"
+        ).fetchone()
+    else:
+        saved = source_connection.execute(
+            "SELECT migration_id FROM schema_migration WHERE migration_id='unknown-backup-migration'"
+        ).fetchone()
+    expected = (
+        ("unclassified_global",)
+        if mutation == "trigger"
+        else ("unknown-backup-migration",)
+        if mutation == "migration"
+        else ("Novel",)
+        if mutation == "view"
+        else ("other workspace secret",)
+    )
+    assert saved == expected
+    source_connection.close()
+
+
+@pytest.mark.parametrize("contributor", ["package", "plugin_db", "declared_asset"])
+def test_workspace_backup_rejects_plugin_contributors(
+    tmp_path: Path, contributor: str
+) -> None:
+    source, database, assets, _ = _source(tmp_path)
+    kwargs: dict[str, object] = {}
+    if contributor == "declared_asset":
+        asset = AssetStore(assets).put(
+            b"plugin state",
+            mime="application/octet-stream",
+            logical_role="plugin_state",
+            provenance="plugin:test",
+        )
+        kwargs["plugin_data_port"] = BoundPluginDataPort(asset_ids=(asset.asset_id,))
+    else:
+        artifact = tmp_path / ("plugin.zip" if contributor == "package" else "plugin.db")
+        artifact.write_bytes(b"must not enter workspace backup")
+        role = "package" if contributor == "package" else "plugin_db"
+        descriptor = _file_descriptor(artifact, f"plugins/{artifact.name}", role)
+        if contributor == "package":
+            kwargs["generation_port"] = BoundGenerationPort(files=(descriptor,))
+        else:
+            kwargs["plugin_data_port"] = BoundPluginDataPort(files=(descriptor,))
+    destination = tmp_path / "backup"
+
+    with pytest.raises(BackupValidationError, match="workspace backup cannot contain"):
+        _plane(source, database, assets, **kwargs).create_backup(destination, _request())
+
+    assert not destination.exists()
+    assert not list(tmp_path.glob(".b-*.stage"))
 
 
 @pytest.mark.parametrize(
