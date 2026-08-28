@@ -1,0 +1,55 @@
+{
+  "schema": "chapter-workflow-runtime-integration-delta/v1",
+  "node_id": "NW-P6-CHAPTER-WORKFLOW-02",
+  "base_commit": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+  "source_readiness": "source_ready_integration_deferred",
+  "public_contract_change_requested": false,
+  "production_integration_claimed": false,
+  "deltas": [
+    {
+      "delta_id": "P6-CHAPTER-P3-CANCEL-PARTIAL-001",
+      "owners": ["P3", "P0"],
+      "status": "deferred_to_runtime_composition",
+      "evidence": [
+        "backend/plotpilot_core/repositories/execution.py:1280-1291",
+        "tests/p1-core/execution-transaction/test_frozen_findings_remediation.py:471-482"
+      ],
+      "constraint": "A plugin may return an ordinary document/status=partial review-only Candidate, but a Core Attempt already in cancelling state rejects both succeeded and partial terminal commits with zero execution outcomes. The P0/P3 adapter must serialize the intended partial terminal before cancellation wins, or provide a separately authorized Core recovery route. This source does not reinterpret cancelled as publishable and never emits incomplete_stream."
+    },
+    {
+      "delta_id": "P6-CHAPTER-P2-SKILL-EVIDENCE-001",
+      "owners": ["P2", "P3", "P0"],
+      "status": "deferred_to_runtime_composition",
+      "evidence": [
+        "first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/chain.py",
+        "backend/plotpilot_plugin_sdk/verifier.py:354-380"
+      ],
+      "constraint": "The injected Broker adapter must return verified Skill chain Assets/receipts as bundle-backed skill-chain-ref/v1 values anchored to the preallocated final chapter ResultBundle/item. Stream-backed or bundleless refs are rejected."
+    },
+    {
+      "delta_id": "P6-CHAPTER-PUBLICATION-HTTP-001",
+      "owners": ["P0", "P4"],
+      "status": "deferred_to_runtime_composition",
+      "evidence": [
+        "backend/plotpilot_plugin_sdk/core_api.py:95-120",
+        "contracts/json-schema/publication-command-result-v1.schema.json"
+      ],
+      "constraint": "Publication is a typed Core HTTP control operation, not a plugin worker/RPC authority. P0 composition must inject the adapter; Chapter Workflow only emits/validates the typed command/result and never writes正文."
+    },
+    {
+      "delta_id": "P6-CHAPTER-P5-SETTLEMENT-001",
+      "owners": ["P5", "P1", "P0"],
+      "status": "deferred_to_runtime_composition",
+      "evidence": [
+        "first-party-plugins/story-state/src/plotpilot_story_state/domain.py",
+        "backend/plotpilot_core/candidates/service.py:75-81"
+      ],
+      "constraint": "The baseline has no public P5 settlement adapter and the first P1 Candidate slice stages document targets only. P0/P5 must inject a proposal-to-Candidate adapter for non-document Story State targets. Chapter Workflow neither imports P5 nor creates a local Story State authority."
+    }
+  ],
+  "stop_conditions": [
+    "Do not mount the plugin until all required P0/P2/P3/P5 adapters are real and contract-verified.",
+    "Do not claim cancel-partial production integration from source-only tests.",
+    "Do not add a direct P5 import, Core repository handle,正文 writer, or second Story State store."
+  ]
+}

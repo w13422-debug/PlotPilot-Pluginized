@@ -1,0 +1,36 @@
+{
+  "schema": "chapter-workflow-source-validation/v1",
+  "node_id": "NW-P6-CHAPTER-WORKFLOW-02",
+  "base_commit": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+  "base_tree": "eab64b7d5b1e3ad652aeaf48bd0085d930beca5d",
+  "source_readiness": "source_ready_integration_deferred",
+  "environment": {
+    "python": "3.12.13",
+    "pytest": "8.4.2",
+    "dependency_note": "The host PATH had no python command. Tests used an existing audit venv and temporary uncommitted rfc8785/jsonschema packages; no root manifest or lock changed."
+  },
+  "results": [
+    {
+      "scope": "tests/p6-writing/chapter-workflow",
+      "command": "python -B -m pytest -p no:cacheprovider tests/p6-writing/chapter-workflow -q",
+      "exit_code": 0,
+      "raw_result": "33 passed in 0.49s"
+    },
+    {
+      "scope": "tests/p6-writing",
+      "command": "python -B -m pytest -p no:cacheprovider tests/p6-writing -q",
+      "exit_code": 0,
+      "raw_result": "80 passed, 4 warnings in 4.39s",
+      "warnings": "Existing fpdf2 uni parameter deprecation in export-suite/domain.py"
+    }
+  ],
+  "boundaries": {
+    "direct_p5_import": false,
+    "direct_core_repository_import": false,
+    "direct_body_write": false,
+    "direct_story_state_write": false,
+    "plugin_json_created": false,
+    "production_integration_claimed": false,
+    "review_or_acceptance_claimed": false
+  }
+}
