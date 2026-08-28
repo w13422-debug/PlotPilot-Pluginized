@@ -5,10 +5,34 @@ import os
 import sqlite3
 import sys
 import zipfile
+from collections import defaultdict
+from collections.abc import Mapping
 from pathlib import Path
 
 from backend import plotpilot_plugin_sdk as _sdk_package
-from backend.plotpilot_plugin_sdk.canonical import canonical_bytes, hash_jcs
+from backend.plotpilot_plugin_sdk.canonical import (
+    canonical_bytes,
+    hash_jcs,
+    parse_json_bytes,
+)
+from backend.plotpilot_plugin_sdk.context_identity import (
+    derive_operation_context_identity,
+)
+from backend.plotpilot_plugin_sdk.framing import decode_frame
+from backend.plotpilot_plugin_sdk.verifier import (
+    assert_valid,
+    hash_without_field,
+    verify_snapshot,
+)
+
+from ..broker.service import (
+    BrokerChildRecord,
+    ChildCreationResult,
+    verify_child_snapshot_binding,
+)
+from ..candidates.service import CandidateService
+from ..repositories.authority import CoreAuthorityRepository
+from ..repositories.execution import _broker_context_identity, _dependency_ids
 
 # The repository supports both ``backend.*`` source-tree imports and the
 # installed top-level SDK package.  Core's accepted package authority uses the
@@ -24,6 +48,35 @@ from .models import BackupBarrier, BackupMode, CoreSnapshotCapture, PluginBackup
 
 class CoreSnapshotAdapterError(RuntimeError):
     """The frozen Core authority cannot be represented as core-snapshot/v1."""
+
+
+class WorkspaceProjectionError(CoreSnapshotAdapterError):
+    """The frozen Core database cannot be safely scoped to one workspace."""
+
+
+_CORE_TABLE_ORDER = (
+    "schema_migration",
+    "workspace",
+    "document",
+    "node",
+    "revision",
+    "relation",
+    "candidate",
+    "publication_receipt",
+    "execution_job",
+    "execution_step",
+    "execution_attempt",
+    "execution_receipt",
+    "execution_job_event",
+    "execution_core_event",
+    "execution_outcome",
+    "execution_candidate_binding",
+    "execution_publication_binding",
+    "execution_child_creation",
+    "p3_broker_child_record",
+    "p3_broker_operation",
+    "p3_host_operation_ledger",
+)
 
 
 def _sqlite_uri(path: Path) -> str:
@@ -48,6 +101,1201 @@ def _rows(
     return [dict(zip(columns, row, strict=True)) for row in connection.execute(query, parameters)]
 
 
+def _candidate_workspace(row: dict[str, object]) -> tuple[str, dict[str, object]]:
+    raw = row.get("item_json")
+    if not isinstance(raw, str):
+        raise WorkspaceProjectionError("candidate item_json must be text")
+    try:
+        item = parse_json_bytes(raw.encode("utf-8"))
+    except Exception as exc:
+        raise WorkspaceProjectionError("candidate item_json is invalid") from exc
+    if not isinstance(item, dict):
+        raise WorkspaceProjectionError("candidate item_json must be an object")
+    try:
+        canonical, item_hash = CandidateService._canonical(item)
+    except Exception as exc:
+        raise WorkspaceProjectionError("candidate item_json violates Core authority") from exc
+    if (
+        item.get("schema") != "candidate-item/v1"
+        or item.get("item_id") != row.get("item_id")
+        or canonical != raw
+        or item_hash != row.get("item_hash")
+    ):
+        raise WorkspaceProjectionError("candidate row identity does not bind item_json")
+    target = item.get("target")
+    if not isinstance(target, dict) or not isinstance(target.get("workspace_id"), str):
+        raise WorkspaceProjectionError("candidate target lacks a workspace identity")
+    return str(target["workspace_id"]), item
+
+
+def _migration_rows(connection: sqlite3.Connection) -> list[dict[str, object]]:
+    columns = [
+        str(row[1]) for row in connection.execute('PRAGMA table_info("schema_migration")')
+    ]
+    if not columns:
+        raise CoreSnapshotAdapterError("required Core migration ledger is missing")
+    return [
+        dict(zip(columns, row, strict=True))
+        for row in connection.execute("SELECT * FROM schema_migration ORDER BY rowid")
+    ]
+
+
+class SqliteWorkspaceDatabaseProjector:
+    """Create a one-workspace Core SQLite image from an immutable frozen image.
+
+    Only the accepted Core authority tables have classification rules.  Any
+    additional table, view, or trigger fails closed instead of leaking an
+    unclassified global row into a workspace backup.
+    """
+
+    @staticmethod
+    def _validate_schema(connection: sqlite3.Connection) -> tuple[dict[str, str], list[str]]:
+        query = (
+            "SELECT type,name,tbl_name,sql FROM sqlite_schema "
+            "WHERE name NOT LIKE 'sqlite_%' ORDER BY type,name"
+        )
+        canonical = CoreAuthorityRepository(":memory:")
+        try:
+            with canonical.read_connection() as accepted:
+                expected_objects = [tuple(row) for row in accepted.execute(query)]
+                expected_migrations = {
+                    str(migration_id): str(sha256)
+                    for migration_id, sha256 in accepted.execute(
+                        "SELECT migration_id,sha256 FROM schema_migration"
+                    )
+                }
+            actual_objects = [tuple(row) for row in connection.execute(query)]
+            if actual_objects != expected_objects:
+                raise WorkspaceProjectionError(
+                    "Core authority schema differs from CoreAuthorityRepository migrations"
+                )
+            actual_migrations = {
+                str(migration_id): str(sha256)
+                for migration_id, sha256 in connection.execute(
+                    "SELECT migration_id,sha256 FROM schema_migration"
+                )
+            }
+            if actual_migrations != expected_migrations:
+                raise WorkspaceProjectionError(
+                    "Core migration ledger differs from CoreAuthorityRepository authority"
+                )
+            table_sql = {
+                str(name): str(sql)
+                for object_type, name, _table_name, sql in expected_objects
+                if object_type == "table"
+            }
+            if set(table_sql) != set(_CORE_TABLE_ORDER):
+                raise WorkspaceProjectionError(
+                    "integrated Core table classification is incomplete"
+                )
+            index_sql = [
+                str(sql)
+                for object_type, _name, _table_name, sql in expected_objects
+                if object_type == "index" and sql is not None
+            ]
+            return table_sql, index_sql
+        finally:
+            canonical.close()
+
+    @staticmethod
+    def _selected_rows(
+        connection: sqlite3.Connection, workspace_id: str
+    ) -> dict[str, list[dict[str, object]]]:
+        workspace = _rows(
+            connection,
+            "workspace",
+            where='"workspace_id"=?',
+            parameters=(workspace_id,),
+        )
+        if len(workspace) != 1:
+            raise WorkspaceProjectionError("selected workspace is absent from frozen Core authority")
+        selected: dict[str, list[dict[str, object]]] = {
+            "schema_migration": _migration_rows(connection),
+            "workspace": workspace,
+        }
+        for table in ("document", "node", "revision", "relation"):
+            selected[table] = _rows(
+                connection,
+                table,
+                where='"workspace_id"=?',
+                parameters=(workspace_id,),
+            )
+        candidates: list[dict[str, object]] = []
+        candidate_items: dict[str, dict[str, object]] = {}
+        for row in _rows(connection, "candidate"):
+            owner, item = _candidate_workspace(row)
+            if owner == workspace_id:
+                candidate_id = row.get("candidate_id")
+                if not isinstance(candidate_id, str):
+                    raise WorkspaceProjectionError("candidate ID is invalid")
+                candidates.append(row)
+                candidate_items[candidate_id] = item
+        selected["candidate"] = candidates
+        selected["publication_receipt"] = _rows(
+            connection,
+            "publication_receipt",
+            where=(
+                '"revision_id" IN (SELECT "revision_id" FROM "revision" '
+                'WHERE "workspace_id"=?)'
+            ),
+            parameters=(workspace_id,),
+        )
+        all_jobs = _rows(connection, "execution_job")
+        selected["execution_job"] = [
+            row for row in all_jobs if row.get("workspace_id") == workspace_id
+        ]
+        job_ids = {str(row["job_id"]) for row in selected["execution_job"]}
+        selected["execution_step"] = [
+            row for row in _rows(connection, "execution_step") if row.get("job_id") in job_ids
+        ]
+        selected["execution_attempt"] = [
+            row for row in _rows(connection, "execution_attempt") if row.get("job_id") in job_ids
+        ]
+        for table in (
+            "execution_receipt",
+            "execution_job_event",
+            "execution_outcome",
+            "execution_candidate_binding",
+            "execution_publication_binding",
+        ):
+            selected[table] = [
+                row for row in _rows(connection, table) if row.get("job_id") in job_ids
+            ]
+        selected["execution_core_event"] = [
+            row
+            for row in _rows(connection, "execution_core_event")
+            if row.get("workspace_id") == workspace_id
+        ]
+        for table in ("execution_child_creation", "p3_broker_child_record"):
+            selected[table] = [
+                row for row in _rows(connection, table) if row.get("child_job_id") in job_ids
+            ]
+
+        job_owner = {str(row["job_id"]): str(row["workspace_id"]) for row in all_jobs}
+        broker_context_owner: dict[str, str] = {}
+        for attempt in _rows(connection, "execution_attempt"):
+            job_id = str(attempt["job_id"])
+            owner = job_owner.get(job_id)
+            if owner is None:
+                raise WorkspaceProjectionError("execution attempt has no Workspace-owned job")
+            context = _broker_context_identity(
+                job_id, str(attempt["step_id"]), str(attempt["attempt_id"])
+            )
+            previous = broker_context_owner.setdefault(context, owner)
+            if previous != owner:
+                raise WorkspaceProjectionError("broker context maps to multiple Workspaces")
+        selected["p3_broker_operation"] = []
+        for row in _rows(connection, "p3_broker_operation"):
+            owner = broker_context_owner.get(str(row.get("context_identity")))
+            if owner is None:
+                raise WorkspaceProjectionError("broker operation has no Workspace-owned attempt")
+            if owner == workspace_id:
+                selected["p3_broker_operation"].append(row)
+
+        outcome_key_owners: dict[tuple[str, str], set[str]] = defaultdict(set)
+        for outcome in _rows(connection, "execution_outcome"):
+            owner = job_owner.get(str(outcome.get("job_id")))
+            if owner is None:
+                raise WorkspaceProjectionError("execution outcome has no Workspace-owned job")
+            outcome_key_owners[
+                (str(outcome.get("context_identity")), str(outcome.get("operation_key")))
+            ].add(owner)
+        selected["p3_host_operation_ledger"] = []
+        for row in _rows(connection, "p3_host_operation_ledger"):
+            owners = outcome_key_owners.get(
+                (str(row.get("context_identity")), str(row.get("operation_key"))), set()
+            )
+            if len(owners) != 1:
+                raise WorkspaceProjectionError(
+                    "host operation ledger is orphaned or ambiguously scoped"
+                )
+            if workspace_id in owners:
+                selected["p3_host_operation_ledger"].append(row)
+        SqliteWorkspaceDatabaseProjector._validate_boundaries(
+            connection=connection,
+            workspace_id=workspace_id,
+            selected=selected,
+            candidate_items=candidate_items,
+        )
+        return selected
+
+    @staticmethod
+    def _validate_boundaries(
+        *,
+        connection: sqlite3.Connection,
+        workspace_id: str,
+        selected: dict[str, list[dict[str, object]]],
+        candidate_items: dict[str, dict[str, object]],
+    ) -> None:
+        document_ids = {str(row["document_id"]) for row in selected["document"]}
+        node_ids = {str(row["node_id"]) for row in selected["node"]}
+        revision_ids = {str(row["revision_id"]) for row in selected["revision"]}
+        candidate_ids = set(candidate_items)
+        endpoint_ids = document_ids | node_ids
+        workspace_plan = selected["workspace"][0].get("current_plan_revision_id")
+        if workspace_plan is not None and workspace_plan not in revision_ids:
+            raise WorkspaceProjectionError("workspace plan revision crosses the selected boundary")
+        for document in selected["document"]:
+            current_revision = document.get("current_revision_id")
+            if current_revision is not None:
+                revision = next(
+                    (
+                        item
+                        for item in selected["revision"]
+                        if item.get("revision_id") == current_revision
+                    ),
+                    None,
+                )
+                if revision is None or revision.get("document_id") != document.get("document_id"):
+                    raise WorkspaceProjectionError(
+                        "document current revision crosses the selected boundary"
+                    )
+        for node in selected["node"]:
+            current_revision = node.get("current_revision_id")
+            if current_revision is not None:
+                revision = next(
+                    (
+                        item
+                        for item in selected["revision"]
+                        if item.get("revision_id") == current_revision
+                    ),
+                    None,
+                )
+                if revision is None or revision.get("node_id") != node.get("node_id"):
+                    raise WorkspaceProjectionError(
+                        "node current revision crosses the selected boundary"
+                    )
+        for relation in selected["relation"]:
+            if relation.get("source_id") not in endpoint_ids or relation.get("target_id") not in endpoint_ids:
+                raise WorkspaceProjectionError("relation endpoint crosses the selected boundary")
+            if relation.get("revision_id") is not None and relation.get("revision_id") not in revision_ids:
+                raise WorkspaceProjectionError("relation revision crosses the selected boundary")
+        for revision in selected["revision"]:
+            source_candidate = revision.get("source_candidate_id")
+            if source_candidate is not None and source_candidate not in candidate_ids:
+                raise WorkspaceProjectionError("revision source candidate crosses the selected boundary")
+        for receipt in selected["publication_receipt"]:
+            if receipt.get("candidate_id") not in candidate_ids:
+                raise WorkspaceProjectionError("publication candidate crosses the selected boundary")
+        for candidate_id, item in candidate_items.items():
+            parents = item.get("parent_candidate_ids")
+            write_set = item.get("write_set")
+            source_refs = item.get("source_refs")
+            if not isinstance(parents, list) or any(parent not in candidate_ids for parent in parents):
+                raise WorkspaceProjectionError(
+                    f"candidate parent crosses the selected boundary: {candidate_id}"
+                )
+            if not isinstance(write_set, list) or any(
+                not isinstance(entry, dict) or entry.get("workspace_id") != workspace_id
+                for entry in write_set
+            ):
+                raise WorkspaceProjectionError(
+                    f"candidate write set crosses the selected boundary: {candidate_id}"
+                )
+            if not isinstance(source_refs, list) or any(
+                not isinstance(entry, dict)
+                or entry.get("workspace_id") not in {None, workspace_id}
+                for entry in source_refs
+            ):
+                raise WorkspaceProjectionError(
+                    f"candidate source reference crosses the selected boundary: {candidate_id}"
+                )
+        SqliteWorkspaceDatabaseProjector._validate_integrated_boundaries(connection)
+
+    @staticmethod
+    def _validate_integrated_boundaries(connection: sqlite3.Connection) -> None:
+        violation = connection.execute("PRAGMA foreign_key_check").fetchone()
+        if violation is not None:
+            raise WorkspaceProjectionError(f"source Core authority violates a foreign key: {violation}")
+
+        def mapping(table: str, identity: str, owner: str) -> dict[str, str]:
+            result: dict[str, str] = {}
+            for row in _rows(connection, table):
+                key = row.get(identity)
+                scope = row.get(owner)
+                if not isinstance(key, str) or not isinstance(scope, str) or key in result:
+                    raise WorkspaceProjectionError(f"{table} identity is ambiguous")
+                result[key] = scope
+            return result
+
+        def require(values: dict[str, str], value: object, label: str) -> str:
+            if not isinstance(value, str) or value not in values:
+                raise WorkspaceProjectionError(f"{label} is orphaned")
+            return values[value]
+
+        workspace_ids = {
+            str(row["workspace_id"]) for row in _rows(connection, "workspace")
+        }
+        workspace_owner = {workspace_id: workspace_id for workspace_id in workspace_ids}
+        document_owner = mapping("document", "document_id", "workspace_id")
+        node_owner = mapping("node", "node_id", "workspace_id")
+        revision_owner = mapping("revision", "revision_id", "workspace_id")
+        document_rows = {
+            str(row["document_id"]): row for row in _rows(connection, "document")
+        }
+        node_rows = {str(row["node_id"]): row for row in _rows(connection, "node")}
+        revision_rows = {
+            str(row["revision_id"]): row for row in _rows(connection, "revision")
+        }
+        for owner in (*document_owner.values(), *node_owner.values(), *revision_owner.values()):
+            require(workspace_owner, owner, "Core authority workspace")
+
+        for row in _rows(connection, "workspace"):
+            current = row.get("current_plan_revision_id")
+            if current is not None and require(
+                revision_owner, current, "workspace plan revision"
+            ) != row.get("workspace_id"):
+                raise WorkspaceProjectionError("workspace plan revision crosses Workspace")
+        for document_id, row in document_rows.items():
+            current = row.get("current_revision_id")
+            if current is not None:
+                revision = revision_rows.get(str(current))
+                if (
+                    revision is None
+                    or revision.get("document_id") != document_id
+                    or require(revision_owner, current, "document current revision")
+                    != document_owner[document_id]
+                ):
+                    raise WorkspaceProjectionError(
+                        "document current revision crosses Workspace"
+                    )
+        for node_id, row in node_rows.items():
+            owner = node_owner[node_id]
+            document_id = row.get("document_id")
+            parent_id = row.get("parent_node_id")
+            current = row.get("current_revision_id")
+            if document_id is not None and require(
+                document_owner, document_id, "node document"
+            ) != owner:
+                raise WorkspaceProjectionError("node document crosses Workspace")
+            if parent_id is not None and require(
+                node_owner, parent_id, "node parent"
+            ) != owner:
+                raise WorkspaceProjectionError("node parent crosses Workspace")
+            if current is not None:
+                revision = revision_rows.get(str(current))
+                if (
+                    revision is None
+                    or revision.get("node_id") != node_id
+                    or require(revision_owner, current, "node current revision") != owner
+                ):
+                    raise WorkspaceProjectionError("node current revision crosses Workspace")
+        for revision_id, row in revision_rows.items():
+            owner = revision_owner[revision_id]
+            document_id = row.get("document_id")
+            node_id = row.get("node_id")
+            if (document_id is None) == (node_id is None):
+                raise WorkspaceProjectionError("revision target authority is ambiguous")
+            if document_id is not None and require(
+                document_owner, document_id, "revision document"
+            ) != owner:
+                raise WorkspaceProjectionError("revision document crosses Workspace")
+            if node_id is not None and require(node_owner, node_id, "revision node") != owner:
+                raise WorkspaceProjectionError("revision node crosses Workspace")
+            parent = row.get("parent_revision_id")
+            if parent is not None and require(
+                revision_owner, parent, "revision parent"
+            ) != owner:
+                raise WorkspaceProjectionError("revision parent crosses Workspace")
+        endpoint_owner = {**document_owner, **node_owner}
+        for row in _rows(connection, "relation"):
+            owner = require(workspace_owner, row.get("workspace_id"), "relation workspace")
+            if (
+                require(endpoint_owner, row.get("source_id"), "relation source") != owner
+                or require(endpoint_owner, row.get("target_id"), "relation target") != owner
+            ):
+                raise WorkspaceProjectionError("relation endpoint crosses Workspace")
+            revision_id = row.get("revision_id")
+            if revision_id is not None and require(
+                revision_owner, revision_id, "relation revision"
+            ) != owner:
+                raise WorkspaceProjectionError("relation revision crosses Workspace")
+
+        candidate_owner: dict[str, str] = {}
+        candidate_rows: dict[str, dict[str, object]] = {}
+        candidate_items: dict[str, dict[str, object]] = {}
+        for row in _rows(connection, "candidate"):
+            owner, item = _candidate_workspace(row)
+            require(workspace_owner, owner, "candidate workspace")
+            candidate_id = row.get("candidate_id")
+            if not isinstance(candidate_id, str) or candidate_id in candidate_owner:
+                raise WorkspaceProjectionError("candidate identity is ambiguous")
+            candidate_owner[candidate_id] = owner
+            candidate_rows[candidate_id] = row
+            candidate_items[candidate_id] = item
+        for candidate_id, item in candidate_items.items():
+            owner = candidate_owner[candidate_id]
+            target = item.get("target")
+            base = item.get("base")
+            if not isinstance(target, dict) or not isinstance(base, dict):
+                raise WorkspaceProjectionError("candidate target/base authority is invalid")
+            base_id = base.get("revision_id")
+            base_row = revision_rows.get(str(base_id))
+            if (
+                target.get("workspace_id") != owner
+                or target.get("entity_kind") != "document"
+                or require(document_owner, target.get("entity_id"), "candidate target") != owner
+                or require(revision_owner, base_id, "candidate base") != owner
+                or base_row is None
+                or base_row.get("content_hash") != base.get("content_hash")
+            ):
+                raise WorkspaceProjectionError("candidate target/base crosses Workspace")
+            parents = item.get("parent_candidate_ids")
+            if not isinstance(parents, list) or any(
+                require(candidate_owner, parent, "candidate parent") != owner
+                for parent in parents
+            ):
+                raise WorkspaceProjectionError("candidate parent crosses Workspace")
+            write_set = item.get("write_set")
+            if not isinstance(write_set, list) or not write_set or any(
+                not isinstance(entry, dict)
+                or entry.get("workspace_id") != owner
+                or require(
+                    document_owner, entry.get("entity_id"), "candidate write-set target"
+                )
+                != owner
+                or require(
+                    revision_owner,
+                    entry.get("revision_id"),
+                    "candidate write-set revision",
+                )
+                != owner
+                for entry in write_set
+            ):
+                raise WorkspaceProjectionError("candidate write set crosses Workspace")
+            source_refs = item.get("source_refs")
+            if not isinstance(source_refs, list) or any(
+                not isinstance(entry, dict)
+                or (
+                    entry.get("workspace_id") is not None
+                    and require(
+                        workspace_owner,
+                        entry.get("workspace_id"),
+                        "candidate source Workspace",
+                    )
+                    != entry.get("workspace_id")
+                )
+                for entry in source_refs
+            ):
+                raise WorkspaceProjectionError("candidate source reference is invalid")
+            for source in source_refs:
+                source_workspace = source.get("workspace_id")
+                if source_workspace is None:
+                    continue
+                source_type = source.get("source_type")
+                if source_type == "document":
+                    source_owner = require(
+                        document_owner, source.get("source_id"), "candidate source document"
+                    )
+                elif source_type == "revision":
+                    source_owner = require(
+                        revision_owner, source.get("source_id"), "candidate source revision"
+                    )
+                    source_revision = revision_rows[str(source["source_id"])]
+                    if source.get("revision_or_hash") not in {
+                        source_revision.get("revision_id"),
+                        source_revision.get("content_hash"),
+                    }:
+                        raise WorkspaceProjectionError(
+                            "candidate source revision identity is invalid"
+                        )
+                else:
+                    raise WorkspaceProjectionError(
+                        "candidate source reference type is unclassified"
+                    )
+                if source_owner != source_workspace:
+                    raise WorkspaceProjectionError(
+                        "candidate source reference crosses Workspace"
+                    )
+
+        publication_owner: dict[str, str] = {}
+        publication_rows: dict[str, dict[str, object]] = {}
+        for row in _rows(connection, "publication_receipt"):
+            candidate_id = row.get("candidate_id")
+            revision_id = row.get("revision_id")
+            owner = require(candidate_owner, candidate_id, "publication candidate")
+            if require(revision_owner, revision_id, "publication revision") != owner:
+                raise WorkspaceProjectionError("publication crosses Workspace")
+            revision = revision_rows[str(revision_id)]
+            if revision.get("source_candidate_id") != candidate_id:
+                raise WorkspaceProjectionError("publication revision is not candidate-bound")
+            publication_id = row.get("publication_id")
+            if not isinstance(publication_id, str) or publication_id in publication_owner:
+                raise WorkspaceProjectionError("publication identity is ambiguous")
+            publication_owner[publication_id] = owner
+            publication_rows[publication_id] = row
+
+        job_owner = mapping("execution_job", "job_id", "workspace_id")
+        job_rows = {str(row["job_id"]): row for row in _rows(connection, "execution_job")}
+        job_snapshots: dict[str, dict[str, object]] = {}
+        for job_id, row in job_rows.items():
+            owner = require(workspace_owner, job_owner[job_id], "execution job workspace")
+            snapshot = SqliteWorkspaceDatabaseProjector._json_mapping(
+                row.get("run_snapshot_json"), "RunSnapshot authority"
+            )
+            job_snapshots[job_id] = snapshot
+            if snapshot.get("schema") == "run-snapshot/v1":
+                try:
+                    verify_snapshot(snapshot)
+                except Exception as exc:
+                    raise WorkspaceProjectionError("RunSnapshot authority is invalid") from exc
+                if (
+                    snapshot.get("snapshot_hash") != row.get("run_snapshot_hash")
+                    or snapshot.get("run_intent_id") != row.get("run_intent_id")
+                    or snapshot.get("workspace_id") != owner
+                ):
+                    raise WorkspaceProjectionError("RunSnapshot identity crosses Workspace")
+            elif snapshot.get("schema") == "broker-child-snapshot-binding/v1":
+                if (
+                    snapshot.get("child_job_id") != job_id
+                    or hashlib.sha256(canonical_bytes(snapshot)).hexdigest()
+                    != row.get("run_snapshot_hash")
+                ):
+                    raise WorkspaceProjectionError(
+                        "Broker child Snapshot identity is invalid"
+                    )
+            else:
+                raise WorkspaceProjectionError("execution Snapshot profile is unclassified")
+        step_job = {
+            str(row["step_id"]): str(row["job_id"])
+            for row in _rows(connection, "execution_step")
+        }
+        step_owner = {
+            step_id: require(job_owner, job_id, "execution step job")
+            for step_id, job_id in step_job.items()
+        }
+        step_rows = {str(row["step_id"]): row for row in _rows(connection, "execution_step")}
+        attempt_rows = {
+            str(row["attempt_id"]): row for row in _rows(connection, "execution_attempt")
+        }
+        attempt_owner: dict[str, str] = {}
+        for attempt_id, row in attempt_rows.items():
+            owner = require(job_owner, row.get("job_id"), "execution attempt job")
+            if (
+                require(step_owner, row.get("step_id"), "execution attempt step") != owner
+                or step_job[str(row["step_id"])] != row.get("job_id")
+            ):
+                raise WorkspaceProjectionError("execution attempt crosses Workspace")
+            attempt_owner[attempt_id] = owner
+
+        receipt_owner: dict[str, str] = {}
+        receipt_rows: dict[str, dict[str, object]] = {}
+        receipt_values: dict[str, dict[str, object]] = {}
+        for row in _rows(connection, "execution_receipt"):
+            owner_set = {
+                require(job_owner, row.get("job_id"), "execution receipt job"),
+                require(step_owner, row.get("step_id"), "execution receipt step"),
+                require(attempt_owner, row.get("attempt_id"), "execution receipt attempt"),
+            }
+            attempt = attempt_rows[str(row["attempt_id"])]
+            if (
+                len(owner_set) != 1
+                or attempt.get("job_id") != row.get("job_id")
+                or attempt.get("step_id") != row.get("step_id")
+            ):
+                raise WorkspaceProjectionError("execution receipt crosses Workspace")
+            receipt = SqliteWorkspaceDatabaseProjector._json_mapping(
+                row.get("receipt_json"), "execution receipt"
+            )
+            try:
+                assert_valid("provenance-receipt/v1", receipt)
+            except Exception as exc:
+                raise WorkspaceProjectionError("execution receipt contract is invalid") from exc
+            if any(
+                receipt.get(field) != row.get(field)
+                for field in ("receipt_id", "job_id", "step_id", "attempt_id", "receipt_hash")
+            ) or receipt.get("receipt_hash") != hash_without_field(
+                receipt, "receipt_hash", "provenance-receipt/v1"
+            ):
+                raise WorkspaceProjectionError("execution receipt identity is invalid")
+            receipt_id = str(row["receipt_id"])
+            receipt_owner[receipt_id] = next(iter(owner_set))
+            receipt_rows[receipt_id] = row
+            receipt_values[receipt_id] = receipt
+
+        for receipt_id, receipt in receipt_values.items():
+            owner = receipt_owner[receipt_id]
+            for parent_receipt_id in receipt["parent_receipt_ids"]:  # type: ignore[index]
+                if require(
+                    receipt_owner,
+                    parent_receipt_id,
+                    "execution parent receipt",
+                ) != owner:
+                    raise WorkspaceProjectionError(
+                        "execution parent receipt crosses Workspace"
+                    )
+
+        for job_id, row in job_rows.items():
+            owner = job_owner[job_id]
+            output_step = row.get("output_step_id")
+            if output_step is not None and (
+                require(step_owner, output_step, "execution output step") != owner
+                or step_job[str(output_step)] != job_id
+            ):
+                raise WorkspaceProjectionError("execution output step crosses Workspace")
+            provenance_receipt = row.get("provenance_receipt_id")
+            if provenance_receipt is not None and require(
+                receipt_owner, provenance_receipt, "execution job receipt"
+            ) != owner:
+                raise WorkspaceProjectionError("execution job receipt crosses Workspace")
+        for step_id, row in step_rows.items():
+            owner = step_owner[step_id]
+            active_attempt = row.get("active_attempt_id")
+            if active_attempt is not None:
+                attempt = attempt_rows.get(str(active_attempt))
+                if (
+                    attempt is None
+                    or require(
+                        attempt_owner, active_attempt, "execution active attempt"
+                    )
+                    != owner
+                    or attempt.get("step_id") != step_id
+                ):
+                    raise WorkspaceProjectionError(
+                        "execution active attempt crosses Workspace"
+                    )
+            try:
+                dependencies = _dependency_ids(str(row.get("dependency_step_ids_json")))
+            except Exception as exc:
+                raise WorkspaceProjectionError(
+                    "execution Step dependency authority is invalid"
+                ) from exc
+            if any(
+                require(step_owner, dependency, "execution dependency") != owner
+                or step_job[dependency] != row.get("job_id")
+                for dependency in dependencies
+            ):
+                raise WorkspaceProjectionError("execution dependency crosses Workspace")
+            is_output = row.get("is_output") == 1
+            if is_output != (job_rows[str(row["job_id"])].get("output_step_id") == step_id):
+                raise WorkspaceProjectionError("execution output Step authority is inconsistent")
+        for attempt_id, row in attempt_rows.items():
+            preallocated = row.get("preallocated_receipt_id")
+            if preallocated in receipt_owner and (
+                receipt_owner[str(preallocated)] != attempt_owner[attempt_id]
+                or receipt_rows[str(preallocated)].get("attempt_id") != attempt_id
+            ):
+                raise WorkspaceProjectionError(
+                    "preallocated execution receipt crosses Workspace"
+                )
+
+        job_event_keys: set[tuple[str, int]] = set()
+        for row in _rows(connection, "execution_job_event"):
+            owner = require(job_owner, row.get("job_id"), "execution Job Event job")
+            attempt_id = row.get("attempt_id")
+            attempt = attempt_rows.get(str(attempt_id))
+            if (
+                attempt is None
+                or require(attempt_owner, attempt_id, "execution Job Event attempt")
+                != owner
+                or attempt.get("job_id") != row.get("job_id")
+            ):
+                raise WorkspaceProjectionError("execution Job Event crosses Workspace")
+            event = SqliteWorkspaceDatabaseProjector._json_mapping(
+                row.get("event_json"), "execution Job Event"
+            )
+            try:
+                assert_valid("plugin-job-event/v1", event)
+            except Exception as exc:
+                raise WorkspaceProjectionError("execution Job Event is invalid") from exc
+            expected = (
+                row.get("event_id"),
+                row.get("job_id"),
+                attempt.get("step_id"),
+                attempt_id,
+                row.get("job_event_seq"),
+                row.get("local_seq"),
+            )
+            actual = tuple(
+                event.get(field)
+                for field in (
+                    "event_id",
+                    "job_id",
+                    "step_id",
+                    "attempt_id",
+                    "job_event_seq",
+                    "local_seq",
+                )
+            )
+            if actual != expected:
+                raise WorkspaceProjectionError("execution Job Event identity is invalid")
+            job_event_keys.add((str(row["job_id"]), int(row["job_event_seq"])))
+
+        core_event_seqs: set[int] = set()
+        for row in _rows(connection, "execution_core_event"):
+            owner = require(
+                workspace_owner, row.get("workspace_id"), "execution Core Event workspace"
+            )
+            event = SqliteWorkspaceDatabaseProjector._json_mapping(
+                row.get("event_json"), "execution Core Event"
+            )
+            try:
+                assert_valid("core-event-v1", event)
+            except Exception as exc:
+                raise WorkspaceProjectionError("execution Core Event is invalid") from exc
+            expected = tuple(
+                row.get(field)
+                for field in (
+                    "event_id",
+                    "workspace_id",
+                    "core_event_seq",
+                    "aggregate_id",
+                    "aggregate_revision",
+                )
+            )
+            actual = tuple(
+                event.get(field)
+                for field in (
+                    "event_id",
+                    "workspace_id",
+                    "core_event_seq",
+                    "aggregate_id",
+                    "aggregate_revision",
+                )
+            )
+            if actual != expected:
+                raise WorkspaceProjectionError("execution Core Event identity is invalid")
+            event_type = event.get("event_type")
+            if event_type in {"job.state.changed", "job.terminal"}:
+                aggregate_owner = require(
+                    job_owner, row.get("aggregate_id"), "Core Job Event aggregate"
+                )
+                causation_owner = require(
+                    attempt_owner, event.get("causation_id"), "Core Job Event causation"
+                )
+            elif event_type == "revision.published":
+                aggregate_owner = require(
+                    document_owner,
+                    row.get("aggregate_id"),
+                    "publication Core Event aggregate",
+                )
+                causation_owner = require(
+                    candidate_owner,
+                    event.get("causation_id"),
+                    "publication Core Event causation",
+                )
+            else:
+                raise WorkspaceProjectionError("execution Core Event type is unclassified")
+            if aggregate_owner != owner or causation_owner != owner:
+                raise WorkspaceProjectionError("execution Core Event crosses Workspace")
+            core_event_seqs.add(int(row["core_event_seq"]))
+
+        host_context_owner: dict[str, str] = {}
+        host_context_attempt: dict[str, str] = {}
+        for attempt_id, row in attempt_rows.items():
+            lease_epoch = row.get("lease_epoch")
+            meta = {
+                "protocol_version": "1",
+                "context": "attempt",
+                "operation_id": "backup-closure-validation",
+                "deadline_at": "9999-12-31T23:59:59Z",
+                "job_id": row.get("job_id"),
+                "step_id": row.get("step_id"),
+                "attempt_id": attempt_id,
+                "lease_epoch": lease_epoch,
+                "generation_id": row.get("generation_id"),
+                "plugin_release_id": row.get("release_id"),
+            }
+            try:
+                context_identity = derive_operation_context_identity(
+                    meta, expected_lease_epoch=lease_epoch  # type: ignore[arg-type]
+                )
+            except Exception as exc:
+                raise WorkspaceProjectionError("execution Attempt context is invalid") from exc
+            if context_identity in host_context_attempt:
+                raise WorkspaceProjectionError("execution Attempt context is ambiguous")
+            host_context_attempt[context_identity] = attempt_id
+            host_context_owner[context_identity] = attempt_owner[attempt_id]
+
+        outcome_by_attempt: dict[str, dict[str, object]] = {}
+        outcome_by_key: dict[tuple[str, str], dict[str, object]] = {}
+        for row in _rows(connection, "execution_outcome"):
+            attempt_id = row.get("attempt_id")
+            attempt = attempt_rows.get(str(attempt_id))
+            owner_set = {
+                require(job_owner, row.get("job_id"), "execution outcome job"),
+                require(step_owner, row.get("step_id"), "execution outcome step"),
+                require(attempt_owner, attempt_id, "execution outcome attempt"),
+                require(
+                    host_context_owner,
+                    row.get("context_identity"),
+                    "execution outcome context",
+                ),
+            }
+            if (
+                len(owner_set) != 1
+                or attempt is None
+                or attempt.get("job_id") != row.get("job_id")
+                or attempt.get("step_id") != row.get("step_id")
+                or host_context_attempt[str(row["context_identity"])] != attempt_id
+            ):
+                raise WorkspaceProjectionError("execution outcome crosses Workspace")
+            receipt_id = row.get("provenance_receipt_id")
+            if receipt_id is not None and (
+                require(receipt_owner, receipt_id, "execution outcome receipt")
+                != next(iter(owner_set))
+                or receipt_rows[str(receipt_id)].get("attempt_id") != attempt_id
+            ):
+                raise WorkspaceProjectionError("execution outcome receipt crosses Workspace")
+            response = SqliteWorkspaceDatabaseProjector._json_mapping(
+                row.get("response_json"), "execution outcome response"
+            )
+            if response.get("provenance_receipt_id") != receipt_id:
+                raise WorkspaceProjectionError("execution outcome response identity is invalid")
+            key = (str(row["context_identity"]), str(row["operation_key"]))
+            if key in outcome_by_key or str(attempt_id) in outcome_by_attempt:
+                raise WorkspaceProjectionError("execution outcome identity is ambiguous")
+            outcome_by_key[key] = row
+            outcome_by_attempt[str(attempt_id)] = row
+
+        candidate_binding_by_id: dict[str, dict[str, object]] = {}
+        candidate_binding_by_identity: dict[
+            tuple[str, str, str, str], dict[str, object]
+        ] = {}
+        for row in _rows(connection, "execution_candidate_binding"):
+            job_id = row.get("job_id")
+            attempt_id = row.get("attempt_id")
+            candidate_id = row.get("candidate_id")
+            owner = require(job_owner, job_id, "execution Candidate binding job")
+            if (
+                require(attempt_owner, attempt_id, "execution Candidate binding attempt")
+                != owner
+                or attempt_rows[str(attempt_id)].get("job_id") != job_id
+                or require(candidate_owner, candidate_id, "execution Candidate binding candidate")
+                != owner
+                or candidate_rows[str(candidate_id)].get("item_id") != row.get("item_id")
+            ):
+                raise WorkspaceProjectionError("execution Candidate binding crosses Workspace")
+            outcome = outcome_by_attempt.get(str(attempt_id))
+            if outcome is None or outcome.get("job_id") != job_id:
+                raise WorkspaceProjectionError(
+                    "execution Candidate binding has no terminal outcome"
+                )
+            receipt_id = outcome.get("provenance_receipt_id")
+            receipt = SqliteWorkspaceDatabaseProjector._json_mapping(
+                receipt_rows.get(str(receipt_id), {}).get("receipt_json"),
+                "execution Candidate receipt",
+            )
+            if (
+                receipt.get("bundle_id") != row.get("bundle_id")
+                or row.get("item_id") not in receipt.get("staged_items", ())
+            ):
+                raise WorkspaceProjectionError(
+                    "execution Candidate binding receipt is incomplete"
+                )
+            scoped_operation_key = hashlib.sha256(
+                (
+                    "candidate-operation/v1\n"
+                    f"{outcome['context_identity']}\nhost.job.complete/v1\n"
+                    f"{row['stage_operation_key']}"
+                ).encode()
+            ).hexdigest()
+            if candidate_rows[str(candidate_id)].get("operation_key") != scoped_operation_key:
+                raise WorkspaceProjectionError(
+                    "execution Candidate binding operation identity is invalid"
+                )
+            identity = (
+                str(job_id),
+                str(attempt_id),
+                str(row["item_id"]),
+                str(candidate_id),
+            )
+            if str(candidate_id) in candidate_binding_by_id or identity in candidate_binding_by_identity:
+                raise WorkspaceProjectionError("execution Candidate binding is ambiguous")
+            candidate_binding_by_id[str(candidate_id)] = row
+            candidate_binding_by_identity[identity] = row
+
+        for row in _rows(connection, "execution_publication_binding"):
+            identity = (
+                str(row.get("job_id")),
+                str(row.get("attempt_id")),
+                str(row.get("item_id")),
+                str(row.get("candidate_id")),
+            )
+            candidate_binding = candidate_binding_by_identity.get(identity)
+            publication_id = row.get("publication_id")
+            publication = publication_rows.get(str(publication_id))
+            if (
+                candidate_binding is None
+                or publication is None
+                or publication.get("candidate_id") != row.get("candidate_id")
+                or require(
+                    publication_owner,
+                    publication_id,
+                    "execution publication binding",
+                )
+                != require(
+                    job_owner, row.get("job_id"), "execution publication binding job"
+                )
+            ):
+                raise WorkspaceProjectionError(
+                    "execution publication binding crosses Workspace"
+                )
+
+        broker_context_owner: dict[str, str] = {}
+        broker_context_attempt: dict[str, str] = {}
+        for attempt_id, row in attempt_rows.items():
+            context = _broker_context_identity(
+                str(row["job_id"]), str(row["step_id"]), attempt_id
+            )
+            if context in broker_context_attempt:
+                raise WorkspaceProjectionError("Broker attempt context is ambiguous")
+            broker_context_attempt[context] = attempt_id
+            broker_context_owner[context] = attempt_owner[attempt_id]
+
+        creation_by_key: dict[tuple[str, str], dict[str, object]] = {}
+        for row in _rows(connection, "execution_child_creation"):
+            context = str(row.get("context_identity"))
+            key = (context, str(row.get("operation_key")))
+            parent_owner = require(
+                broker_context_owner, context, "Broker child parent context"
+            )
+            child_owner = require(
+                job_owner, row.get("child_job_id"), "Broker child job"
+            )
+            result = SqliteWorkspaceDatabaseProjector._json_mapping(
+                row.get("result_json"), "Broker child creation"
+            )
+            try:
+                creation = ChildCreationResult.from_mapping(result)
+            except Exception as exc:
+                raise WorkspaceProjectionError("Broker child creation is invalid") from exc
+            if (
+                parent_owner != child_owner
+                or creation.child_job_id != row.get("child_job_id")
+                or require(step_owner, creation.child_step_id, "Broker child Step")
+                != child_owner
+                or require(attempt_owner, creation.child_attempt_id, "Broker child Attempt")
+                != child_owner
+                or attempt_rows[creation.child_attempt_id].get("job_id")
+                != creation.child_job_id
+            ):
+                raise WorkspaceProjectionError("Broker child creation crosses Workspace")
+            if key in creation_by_key:
+                raise WorkspaceProjectionError("Broker child creation is ambiguous")
+            creation_by_key[key] = row
+
+        child_record_by_key: dict[tuple[str, str], dict[str, object]] = {}
+        for row in _rows(connection, "p3_broker_child_record"):
+            context = str(row.get("context_identity"))
+            key = (context, str(row.get("operation_key")))
+            parent_attempt_id = broker_context_attempt.get(context)
+            if parent_attempt_id is None:
+                raise WorkspaceProjectionError("Broker child record is orphaned")
+            record_value = SqliteWorkspaceDatabaseProjector._json_mapping(
+                row.get("record_json"), "Broker child record"
+            )
+            try:
+                record = BrokerChildRecord.from_mapping(record_value)
+            except Exception as exc:
+                raise WorkspaceProjectionError("Broker child record is invalid") from exc
+            parent_attempt = attempt_rows[parent_attempt_id]
+            parent_owner = broker_context_owner[context]
+            creation_row = creation_by_key.get(key)
+            if creation_row is None:
+                raise WorkspaceProjectionError("Broker child record is orphaned")
+            creation = ChildCreationResult.from_mapping(
+                SqliteWorkspaceDatabaseProjector._json_mapping(
+                    creation_row.get("result_json"), "Broker child creation"
+                )
+            )
+            child_snapshot = job_snapshots.get(record.child_job_id)
+            if child_snapshot is None:
+                raise WorkspaceProjectionError("Broker child Snapshot is orphaned")
+            try:
+                verify_child_snapshot_binding(
+                    child_snapshot,
+                    child_job_id=record.child_job_id,
+                    child_step_id=creation.child_step_id,
+                    child_attempt_id=creation.child_attempt_id,
+                    envelope_asset_id=record.broker_invocation_asset_id,
+                    envelope_hash=record.broker_invocation_hash,
+                    input_asset_id=str(child_snapshot.get("input_asset_id")),
+                    input_hash=str(child_snapshot.get("input_hash")),
+                    parameters_asset_id=child_snapshot.get(
+                        "source_parameters_asset_id"
+                    ),  # type: ignore[arg-type]
+                    parameters_hash=child_snapshot.get(
+                        "source_parameters_hash"
+                    ),  # type: ignore[arg-type]
+                    child_run_snapshot_asset_id=record.child_run_snapshot_asset_id,
+                    child_run_snapshot_hash=record.child_run_snapshot_hash,
+                )
+            except Exception as exc:
+                raise WorkspaceProjectionError("Broker child Snapshot is invalid") from exc
+            if (
+                require(job_owner, row.get("child_job_id"), "Broker child record job")
+                != parent_owner
+                or record.child_job_id != row.get("child_job_id")
+                or record.parent_job_id != parent_attempt.get("job_id")
+                or record.parent_step_id != parent_attempt.get("step_id")
+                or record.parent_attempt_id != parent_attempt_id
+                or record.invoke_operation_key != row.get("operation_key")
+            ):
+                raise WorkspaceProjectionError("Broker child record crosses Workspace")
+            if key in child_record_by_key:
+                raise WorkspaceProjectionError("Broker child record is ambiguous")
+            child_record_by_key[key] = row
+
+        broker_operations: dict[tuple[str, str], dict[str, object]] = {}
+        for row in _rows(connection, "p3_broker_operation"):
+            context = str(row.get("context_identity"))
+            key = (context, str(row.get("operation_key")))
+            require(broker_context_owner, context, "Broker operation context")
+            if row.get("method") != "host.capability.invoke/v1":
+                raise WorkspaceProjectionError("Broker operation method is unclassified")
+            child_json = row.get("child_creation_json")
+            response = row.get("response")
+            if child_json is None:
+                if response is not None or key in creation_by_key or key in child_record_by_key:
+                    raise WorkspaceProjectionError("Broker child operation closure is incomplete")
+            else:
+                creation = creation_by_key.get(key)
+                record = child_record_by_key.get(key)
+                if (
+                    creation is None
+                    or record is None
+                    or creation.get("result_json") != child_json
+                    or response is None
+                ):
+                    raise WorkspaceProjectionError("Broker child operation closure is incomplete")
+                try:
+                    result = parse_json_bytes(bytes(response))
+                except Exception as exc:
+                    raise WorkspaceProjectionError(
+                        "Broker child response is invalid"
+                    ) from exc
+                if not isinstance(result, Mapping):
+                    raise WorkspaceProjectionError("Broker child response is invalid")
+                child_result = ChildCreationResult.from_mapping(
+                    SqliteWorkspaceDatabaseProjector._json_mapping(
+                        child_json, "Broker child operation"
+                    )
+                )
+                if result.get("child_job_id") != child_result.child_job_id:
+                    raise WorkspaceProjectionError("Broker child response identity is invalid")
+            if key in broker_operations:
+                raise WorkspaceProjectionError("Broker operation identity is ambiguous")
+            broker_operations[key] = row
+        if set(creation_by_key) != {
+            key for key, row in broker_operations.items() if row.get("child_creation_json") is not None
+        } or set(child_record_by_key) != set(creation_by_key):
+            raise WorkspaceProjectionError("Broker child authority is orphaned")
+
+        ledger_keys: set[tuple[str, str]] = set()
+        for row in _rows(connection, "p3_host_operation_ledger"):
+            if row.get("method") != "host.job.complete/v1":
+                raise WorkspaceProjectionError("host operation ledger method is unclassified")
+            key = (str(row.get("context_identity")), str(row.get("operation_key")))
+            outcome = outcome_by_key.get(key)
+            if outcome is None or outcome.get("payload_hash") != row.get("payload_hash"):
+                raise WorkspaceProjectionError("host operation ledger is orphaned")
+            frame = decode_frame(bytes(row["response_frame"]))
+            stored_response = SqliteWorkspaceDatabaseProjector._json_mapping(
+                outcome.get("response_json"), "execution outcome response"
+            )
+            if frame.get("result") != stored_response:
+                raise WorkspaceProjectionError("host operation response identity is invalid")
+            ledger_keys.add(key)
+        if ledger_keys != set(outcome_by_key):
+            raise WorkspaceProjectionError("execution outcome lacks a host operation ledger")
+
+    @staticmethod
+    def _json_mapping(raw: object, label: str) -> dict[str, object]:
+        if not isinstance(raw, str):
+            raise WorkspaceProjectionError(f"{label} must be canonical JSON text")
+        try:
+            value = parse_json_bytes(raw.encode("utf-8"))
+        except Exception as exc:
+            raise WorkspaceProjectionError(f"{label} is invalid JSON") from exc
+        if not isinstance(value, Mapping):
+            raise WorkspaceProjectionError(f"{label} must be a JSON object")
+        return dict(value)
+
+    @staticmethod
+    def _insert_rows(
+        connection: sqlite3.Connection,
+        table: str,
+        rows: list[dict[str, object]],
+    ) -> None:
+        columns = [row[1] for row in connection.execute(f'PRAGMA table_info("{table}")')]
+        if not columns:
+            raise WorkspaceProjectionError(f"projected table is missing: {table}")
+        quoted = ",".join(f'"{column}"' for column in columns)
+        placeholders = ",".join("?" for _ in columns)
+        for row in rows:
+            connection.execute(
+                f'INSERT INTO "{table}" ({quoted}) VALUES ({placeholders})',
+                tuple(row[column] for column in columns),
+            )
+
+    def project(
+        self,
+        *,
+        frozen_database: str | Path,
+        destination: str | Path,
+        workspace_id: str,
+    ) -> None:
+        source_path = Path(frozen_database)
+        destination_path = Path(destination)
+        if destination_path.exists():
+            raise WorkspaceProjectionError("workspace projection destination already exists")
+        source = sqlite3.connect(_sqlite_uri(source_path), uri=True)
+        target: sqlite3.Connection | None = None
+        try:
+            table_sql, index_sql = self._validate_schema(source)
+            selected = self._selected_rows(source, workspace_id)
+            page_size = int(source.execute("PRAGMA page_size").fetchone()[0])
+            user_version = int(source.execute("PRAGMA user_version").fetchone()[0])
+            application_id = int(source.execute("PRAGMA application_id").fetchone()[0])
+            sequence_row = source.execute(
+                "SELECT seq FROM sqlite_sequence WHERE name='execution_core_event'"
+            ).fetchone()
+            destination_path.parent.mkdir(parents=True, exist_ok=True)
+            target = sqlite3.connect(destination_path)
+            target.execute(f"PRAGMA page_size={page_size}")
+            target.execute("PRAGMA foreign_keys=OFF")
+            for table in _CORE_TABLE_ORDER:
+                target.execute(table_sql[table])
+            for table in _CORE_TABLE_ORDER:
+                self._insert_rows(target, table, selected[table])
+            if sequence_row is not None:
+                target.execute(
+                    "DELETE FROM sqlite_sequence WHERE name='execution_core_event'"
+                )
+                target.execute(
+                    "INSERT INTO sqlite_sequence(name,seq) VALUES('execution_core_event',?)",
+                    (int(sequence_row[0]),),
+                )
+            for sql in index_sql:
+                target.execute(sql)
+            target.execute(f"PRAGMA user_version={user_version}")
+            target.execute(f"PRAGMA application_id={application_id}")
+            target.commit()
+            target.execute("PRAGMA foreign_keys=ON")
+            self._validate_schema(target)
+            self._selected_rows(target, workspace_id)
+            violation = target.execute("PRAGMA foreign_key_check").fetchone()
+            if violation is not None:
+                raise WorkspaceProjectionError(
+                    f"projected Core authority has a foreign-key violation: {violation}"
+                )
+            integrity = target.execute("PRAGMA integrity_check").fetchone()
+            if integrity is None or integrity[0] != "ok":
+                raise WorkspaceProjectionError("projected Core authority failed integrity_check")
+            target.close()
+            target = None
+            with destination_path.open("r+b") as stream:
+                os.fsync(stream.fileno())
+        except BaseException:
+            if target is not None:
+                target.close()
+            destination_path.unlink(missing_ok=True)
+            raise
+        finally:
+            source.close()
+
+
 class SqliteCoreSnapshotAdapter:
     """Production CoreSnapshot adapter over the accepted SQLite/Asset authorities.
 
@@ -60,9 +1308,33 @@ class SqliteCoreSnapshotAdapter:
         self.asset_store = AssetStore(asset_root)
 
     @staticmethod
+    def _state_row(row: dict[str, object]) -> dict[str, object]:
+        return {
+            key: ({"sqlite_blob_hex": bytes(value).hex()} if isinstance(value, bytes) else value)
+            for key, value in row.items()
+        }
+
+    @staticmethod
     def _workspace_state(
-        connection: sqlite3.Connection, workspace_id: str
+        connection: sqlite3.Connection,
+        workspace_id: str,
+        *,
+        include_integrated: bool = False,
     ) -> tuple[dict[str, object], int]:
+        if include_integrated:
+            selected = SqliteWorkspaceDatabaseProjector._selected_rows(
+                connection, workspace_id
+            )
+            tables: dict[str, object] = {
+                table: [
+                    SqliteCoreSnapshotAdapter._state_row(row)
+                    for row in selected[table]
+                ]
+                for table in _CORE_TABLE_ORDER
+                if table != "schema_migration"
+            }
+        else:
+            tables = {}
         workspace = _rows(
             connection,
             "workspace",
@@ -73,34 +1345,29 @@ class SqliteCoreSnapshotAdapter:
             raise CoreSnapshotAdapterError(
                 f"workspace scope is absent or ambiguous in frozen Core authority: {workspace_id}"
             )
-        tables: dict[str, object] = {"workspace": workspace}
-        for table in ("document", "node", "revision", "relation"):
-            tables[table] = _rows(
+        if not include_integrated:
+            tables["workspace"] = workspace
+            for table in ("document", "node", "revision", "relation"):
+                tables[table] = _rows(
+                    connection,
+                    table,
+                    where='"workspace_id"=?',
+                    parameters=(workspace_id,),
+                )
+            tables["candidate"] = [
+                row
+                for row in _rows(connection, "candidate")
+                if _candidate_workspace(row)[0] == workspace_id
+            ]
+            tables["publication_receipt"] = _rows(
                 connection,
-                table,
-                where='"workspace_id"=?',
+                "publication_receipt",
+                where=(
+                    '"revision_id" IN (SELECT "revision_id" FROM "revision" '
+                    'WHERE "workspace_id"=?)'
+                ),
                 parameters=(workspace_id,),
             )
-        # Candidate/publication rows are included through their authoritative
-        # revision relationship rather than copied as an unscoped global set.
-        tables["candidate"] = _rows(
-            connection,
-            "candidate",
-            where=(
-                '"candidate_id" IN (SELECT "source_candidate_id" FROM "revision" '
-                'WHERE "workspace_id"=? AND "source_candidate_id" IS NOT NULL)'
-            ),
-            parameters=(workspace_id,),
-        )
-        tables["publication_receipt"] = _rows(
-            connection,
-            "publication_receipt",
-            where=(
-                '"revision_id" IN (SELECT "revision_id" FROM "revision" '
-                'WHERE "workspace_id"=?)'
-            ),
-            parameters=(workspace_id,),
-        )
         revision_values = [
             row.get("revision")
             for table in ("workspace", "document", "node")
@@ -155,7 +1422,11 @@ class SqliteCoreSnapshotAdapter:
             covered: list[dict[str, object]] = []
             required_assets: list[str] = []
             for workspace_id in workspace_ids:
-                state, revision = self._workspace_state(connection, workspace_id)
+                state, revision = self._workspace_state(
+                    connection,
+                    workspace_id,
+                    include_integrated=mode == "workspace",
+                )
                 state_raw = canonical_bytes(state)
                 metadata = self.asset_store.put(
                     state_raw,
@@ -283,5 +1554,7 @@ __all__ = [
     "CoreSnapshotAdapterError",
     "PackageStoreArchiveAdapter",
     "SqliteCoreSnapshotAdapter",
+    "SqliteWorkspaceDatabaseProjector",
+    "WorkspaceProjectionError",
     "deterministic_package_archive",
 ]

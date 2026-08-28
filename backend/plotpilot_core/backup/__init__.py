@@ -4,6 +4,8 @@ from .adapters import (
     CoreSnapshotAdapterError,
     PackageStoreArchiveAdapter,
     SqliteCoreSnapshotAdapter,
+    SqliteWorkspaceDatabaseProjector,
+    WorkspaceProjectionError,
     deterministic_package_archive,
 )
 from .models import (
@@ -53,5 +55,7 @@ __all__ = [
     "RestoreResult",
     "SqliteAssetReferenceScanner",
     "SqliteCoreSnapshotAdapter",
+    "SqliteWorkspaceDatabaseProjector",
+    "WorkspaceProjectionError",
     "deterministic_package_archive",
 ]

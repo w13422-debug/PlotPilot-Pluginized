@@ -1,14 +1,17 @@
 {
   "schema": "ppa-node-state/v1",
   "node_id": "NW-P1-BACKUP-DATA-01",
-  "branch": "codex/nw-p1-backup-data-01",
+  "branch": "codex/nw-p1-backup-data-wave-c-g2",
   "base": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
-  "status": "f011_minimal_remediation_pending_clean_sol_review",
-  "outcome": "Production SQLite CoreSnapshot adapter, exact durable high-water and Asset/package identity bindings, closed receipt, and isolated recoverable restore/backup staging",
+  "generation_parent": "f5e7feaee17ed7c331eeb63a5fe185df7e2e8b2f",
+  "generation_parent_tree": "86d74c2e84c590306751da8a8db19e2c7d12f1f8",
+  "superseded_source": "7948da473f3e5066b13d3fe6239561572bce86b9",
+  "status": "wave_c_hc_f_001_g2_receipt_lineage_source_ready_pending_review",
+  "outcome": "Same-barrier online Core freeze with canonical integrated CORE/P3_JOB/EXECUTION single-Workspace SQLite projection, including fail-closed existing same-Workspace execution receipt parent lineage, bound CoreSnapshot/Asset closure, and isolated new-root restore",
   "public_contract_changes": [],
   "dependency_changes": [],
   "composition_dependencies": [
-    "P0/P3 must provide a durable monotonic BackupBarrierPort implementation.",
+    "P0/P3 must provide a durable monotonic BackupBarrierPort implementation and Core event high-water.",
     "P0/P1 must compose the provided SqliteCoreSnapshotAdapter with the durable barrier high-water producer.",
     "P0/P2 must compose durable current/LKG generation, release, package, and projection state through GenerationBackupPort.",
     "P0/P3 must compose quiesced independent SQLite/files through PluginDataBackupPort."
@@ -22,9 +25,17 @@
     "missing, wrong-hash, orphaned, or wrong-mode package",
     "manifest, receipt, Core snapshot, compatibility evidence, or file-set mismatch",
     "unowned/reparse interrupted staging generation",
-    "existing, overlapping, raced, or bundle-conflicting restore root"
+    "existing, overlapping, raced, or bundle-conflicting restore root",
+    "integrated Core schema or five-step migration-ledger mismatch",
+    "unclassified Core table/view/trigger/index/column/migration",
+    "cross-Workspace, orphaned, or ambiguous Core/P3/ETX authority reference",
+    "missing or cross-Workspace execution receipt parent lineage",
+    "workspace-mode P2/P3 file or declared Asset-root contribution"
   ],
-  "source_review": "NW-P1-BDP-F-011 remediated_pending_clean_sol_reviewer; no closure or merge-eligibility claim",
+  "source_review": "WAVE-C-HC-F-001 Generation 2 receipt-lineage follow-up source_ready_pending_review on parent 77be6c1d; review_pending=true; no closure or merge-eligibility claim",
   "central_pass_claimed": false,
-  "donor_push": "DISABLED"
+  "donor_push": "DISABLED",
+  "review_pending": true,
+  "self_closed": false,
+  "review_launched": false
 }

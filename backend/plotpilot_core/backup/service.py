@@ -25,6 +25,7 @@ from backend.plotpilot_plugin_sdk.verifier import (
 
 from ..assets import AssetMetadata, AssetStore
 from ..plugins.package import verify_package
+from .adapters import SqliteWorkspaceDatabaseProjector
 from .models import (
     BackupBarrier,
     BackupMode,
@@ -965,9 +966,30 @@ class BackupDataPlane:
         ):
             raise BackupValidationError("backup barrier did not bind the requested durable epoch")
         database_target = _join(stage, _CORE_DATABASE)
-        self._online_backup(self.core_database, database_target)
-        if self.on_core_snapshot_copied is not None:
-            self.on_core_snapshot_copied(database_target)
+        if request.mode == "workspace":
+            if len(workspace_ids) != 1:
+                raise BackupValidationError("workspace backup requires exactly one selected workspace")
+            frozen_database = _join(stage, "core/.workspace-source.db")
+            self._online_backup(self.core_database, frozen_database)
+            if self.on_core_snapshot_copied is not None:
+                self.on_core_snapshot_copied(frozen_database)
+            try:
+                SqliteWorkspaceDatabaseProjector().project(
+                    frozen_database=frozen_database,
+                    destination=database_target,
+                    workspace_id=workspace_ids[0],
+                )
+            except Exception as exc:
+                raise BackupValidationError(
+                    "frozen Core authority cannot be safely scoped to the selected workspace"
+                ) from exc
+            finally:
+                frozen_database.unlink(missing_ok=True)
+            _verify_database(database_target)
+        else:
+            self._online_backup(self.core_database, database_target)
+            if self.on_core_snapshot_copied is not None:
+                self.on_core_snapshot_copied(database_target)
         database_bytes = database_target.read_bytes()
         database_digest = _sha256(database_bytes)
         database_workspace_ids = self._workspace_rows(database_target)
@@ -1007,6 +1029,15 @@ class BackupDataPlane:
             barrier,
             core_hash,
         )
+        if request.mode == "workspace" and (
+            generation.asset_ids
+            or generation.files
+            or plugin_data.asset_ids
+            or plugin_data.files
+        ):
+            raise BackupValidationError(
+                "workspace backup cannot contain P2/P3 files or declared Asset roots"
+            )
         plugin_releases = sorted(
             (dict(item) for item in generation.plugin_releases),
             key=lambda item: (
