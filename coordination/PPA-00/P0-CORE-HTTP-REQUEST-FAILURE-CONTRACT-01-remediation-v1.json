@@ -1,0 +1,130 @@
+{
+  "changed_path_intent": [
+    "contracts/corpus/core-http-request-failure-v1/negative.json",
+    "contracts/json-schema/core-http-request-failure-policy-v1.schema.json",
+    "contracts/manifest-v1.json",
+    "coordination/PPA-00/P0-CORE-HTTP-REQUEST-FAILURE-CONTRACT-01-remediation-v1.json",
+    "docs/contracts/README.md",
+    "docs/deliveries/PPA-00/evidence/finding-closure.json",
+    "tests/contract/test_core_http_request_failure.py",
+    "tools/integration/generate_contract_schemas.py",
+    "tools/integration/verify_contracts.py"
+  ],
+  "commit_binding": {
+    "evidence_only_followup_allowed": false,
+    "rule": "this record must be committed in exactly one direct child of parent_sha"
+  },
+  "finding_source_conditions": {
+    "P0-RF-F-001": {
+      "requirements": [
+        "policy.bindings is an exact ordered deep const in the generated Draft 2020-12 schema",
+        "reordered, pair drift, scope drift and duplicate-source/different-tuple are executable negatives",
+        "Draft 2020-12, generic Python SDK, specialized Python parser and real TypeScript parser reject every negative case"
+      ],
+      "status": "implemented_pending_same_fresh_sol_rereview"
+    },
+    "P0-RF-F-002": {
+      "requirements": [
+        "all changed paths are covered by the original node patterns or the exact-path extension",
+        "the extension identity and SHA-256 are bound in this machine-readable record"
+      ],
+      "status": "implemented_pending_same_fresh_sol_rereview"
+    }
+  },
+  "findings_declared_closed": false,
+  "fresh_review": {
+    "finding_ids": [
+      "P0-RF-F-001",
+      "P0-RF-F-002"
+    ],
+    "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\p0-core-http-request-failure-fresh-sol-block-v1.json",
+    "review_state": "BLOCK",
+    "sha256": "2508f2e2d78e49f3f92f013b19444d618cd80d614ff969fe72bc2f2eb36bbbd3"
+  },
+  "merge_eligible": false,
+  "parent_sha": "faafa2171afb8cfc2df4078d8930a51ac83a8584",
+  "product_router_or_mount_changed": false,
+  "remediation_id": "P0-CORE-HTTP-REQUEST-FAILURE-CONTRACT-01-REMEDIATION-001",
+  "review_gate": "pending same fresh Sol reviewer",
+  "schema": "p0-contract-remediation-source-evidence/v1",
+  "task_id": "P0-CORE-HTTP-REQUEST-FAILURE-CONTRACT-01",
+  "validation": [
+    {
+      "command": "python -B tools/integration/generate_contract_schemas.py --check",
+      "exit_code": 0,
+      "result": "generated artifacts are deterministic (58 files)"
+    },
+    {
+      "command": "python -B tools/integration/generate_contract_manifest.py --check",
+      "exit_code": 0,
+      "result": "contract manifest is deterministic (141 files)"
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/contract/test_core_http_request_failure.py -q",
+      "exit_code": 0,
+      "result": "4 passed in 0.90s"
+    },
+    {
+      "command": "python -B tools/integration/verify_contracts.py --all --json",
+      "exit_code": 0,
+      "result": "55 schemas; 141 manifest files; request-failure 4 positives and 13 negatives rejected by Draft/generic Python/specialized Python/real TypeScript"
+    },
+    {
+      "command": "node tools/integration/verify_contracts.mjs --all",
+      "exit_code": 0,
+      "result": "schema_count=55; negative_group_count=14; package/skill/snapshot/backup identities stable"
+    },
+    {
+      "command": "python -B tools/integration/verify_cross_language_goldens.py",
+      "exit_code": 0,
+      "result": "status=ok; Python and Node hashes identical"
+    },
+    {
+      "command": "frontend/node_modules/.bin/tsc.cmd --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --resolveJsonModule --allowImportingTsExtensions --skipLibCheck frontend/src/contracts/core-api.ts frontend/src/contracts/types.ts frontend/src/contracts/schema-ingress.ts frontend/src/contracts/canonical.ts frontend/src/contracts/verifier.ts",
+      "exit_code": 0,
+      "result": "no diagnostics"
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/contract -q",
+      "exit_code": 0,
+      "result": "32 passed in 16.55s"
+    },
+    {
+      "command": "python -B -m compileall -q backend/plotpilot_plugin_sdk tools/integration/generate_contract_schemas.py tools/integration/verify_contracts.py tests/contract/test_core_http_request_failure.py",
+      "exit_code": 0,
+      "result": "PASS; no diagnostics"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "result": "PASS; only core.autocrlf informational warnings"
+    }
+  ],
+  "write_set_authority": {
+    "extension": {
+      "additional_exact_paths": [
+        "coordination/integration-queue/NW-P1-CORE-HTTP-01-adjudication-v1.json",
+        "docs/deliveries/PPA-00/evidence/.gitattributes",
+        "docs/deliveries/PPA-00/evidence/finding-closure.json",
+        "tools/integration/.gitattributes",
+        "tools/integration/generate_contract_manifest.py",
+        "tools/integration/generate_contract_schemas.py",
+        "tools/integration/verify_contracts.mjs",
+        "tools/integration/verify_contracts.py"
+      ],
+      "decision": "APPROVED_EXACT_PATH_EXTENSION",
+      "extension_id": "P0-CORE-HTTP-REQUEST-FAILURE-CONTRACT-01-WRITESET-EXT-001",
+      "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p0-request-failure-write-set-extension-v1.json",
+      "sha256": "ad6aaf5107d6ec86ca70b078266484a311ea8b2106a09723797702085a8e0aee"
+    },
+    "no_other_path_implied": true,
+    "original_patterns": [
+      "contracts/**",
+      "backend/plotpilot_plugin_sdk/**",
+      "frontend/src/contracts/**",
+      "tests/contract/**",
+      "docs/contracts/**",
+      "coordination/PPA-00/**"
+    ]
+  }
+}

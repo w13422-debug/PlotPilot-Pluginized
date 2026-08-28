@@ -830,30 +830,25 @@ def core_http_request_failure_schemas() -> dict[str, dict[str, Any]]:
         },
         ("schema", "error_code", "message", "retryable"),
     )
-    binding = obj(
-        {
-            "source": enum(
-                "json_decode",
-                "closed_request_schema",
-                "query_decode",
-                "asset_range_bounds",
-            ),
-            "error_code": error_code,
-            "scope": enum("all_core_routes", "asset.range"),
-        },
-        ("source", "error_code", "scope"),
-    )
+    exact_bindings = [
+        {"source": "json_decode", "error_code": "malformed_json", "scope": "all_core_routes"},
+        {"source": "closed_request_schema", "error_code": "invalid_request", "scope": "all_core_routes"},
+        {"source": "query_decode", "error_code": "invalid_query", "scope": "all_core_routes"},
+        {"source": "asset_range_bounds", "error_code": "range_out_of_bounds", "scope": "asset.range"},
+    ]
     policy = obj(
         {
             "schema": const("core-http-request-failure-policy/v1"),
             "status": const(400),
             "error_schema": const("core-http-request-error/v1"),
             "retryable": const(False),
-            "bindings": array(binding, min_items=4, unique=True),
+            # The policy is data, not a generic tuple registry.  A deep const
+            # makes Draft 2020-12 enforce the same exact tuples and order as
+            # the specialized Python and TypeScript parsers.
+            "bindings": const(exact_bindings),
         },
         ("schema", "status", "error_schema", "retryable", "bindings"),
     )
-    policy["properties"]["bindings"]["maxItems"] = 4
     return {
         "core-http-request-error-v1": request_error,
         "core-http-request-failure-policy-v1": policy,

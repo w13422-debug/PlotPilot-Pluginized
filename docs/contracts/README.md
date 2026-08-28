@@ -11,14 +11,14 @@
 
 `contracts/json-schema/` 中的 55 个 `*.schema.json` 是 Draft 2020-12 closed schemas；
 `rpc-method-matrix.v1.json`、`core-api-method-matrix.v1.json` 和 `compatibility-matrix.v1.json` 是方法/兼容性机器清单。
-正例 fixture、五组 golden、Windows path corpus、compatibility/history corpus、14 组冻结的
+正例 fixture、六组 golden、Windows path corpus、compatibility/history corpus、14 组冻结的
 `84.13` negative corpus 与 25 个 additive contract-publication probes 均由 `contracts/manifest-v1.json` 内容寻址。
 
 | 项目 | 数量/规则 |
 |---|---|
 | closed schemas | 55 |
 | 正例 fixture | 35 个 `contracts/examples/fixtures/*.json`，另有 4 个组合示例 |
-| golden | package、Skill、RunSnapshot/request-key、backup、contract-publication |
+| golden | package、Skill、RunSnapshot/request-key、backup、contract-publication、Core HTTP request-failure |
 | negative | M0 14 组/105 case 保持原 bytes；另有 25 个公共合同/TS ingress probes |
 | 哈希 JSON | RFC 8785 JCS、UTF-8、无 BOM；自含 hash 先省略自身字段 |
 | 对象 | `additionalProperties=false`；联合顶层 `unevaluatedProperties=false` |

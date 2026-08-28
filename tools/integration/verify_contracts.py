@@ -2354,12 +2354,35 @@ def _request_failure_mutation(value: Any, mutation: Mapping[str, Any]) -> Any:
 
 
 def verify_core_http_request_failure_contract() -> dict[str, Any]:
-    """Verify ADR-043 in the Python SDK and the real TypeScript parser."""
+    """Verify ADR-043 through every published Python/TypeScript ingress."""
 
     golden_path = GOLDEN_DIR / "core-http-request-failure-v1" / "expected.json"
     corpus_path = CORPUS_DIR / "core-http-request-failure-v1" / "negative.json"
     golden = load_strict_json(golden_path)
     corpus = load_strict_json(corpus_path)
+
+    schemas = {
+        "request_error": (
+            "core-http-request-error/v1",
+            Draft202012Validator(
+                load_strict_json(SCHEMA_DIR / "core-http-request-error-v1.schema.json")
+            ),
+        ),
+        "request_failure_policy": (
+            "core-http-request-failure-policy/v1",
+            Draft202012Validator(
+                load_strict_json(SCHEMA_DIR / "core-http-request-failure-policy-v1.schema.json")
+            ),
+        ),
+    }
+
+    for value in golden["errors"]:
+        if list(schemas["request_error"][1].iter_errors(value)):
+            raise AssertionError("Draft 2020-12 rejected a request-error golden")
+        assert_valid(schemas["request_error"][0], value)
+    if list(schemas["request_failure_policy"][1].iter_errors(golden["policy"])):
+        raise AssertionError("Draft 2020-12 rejected the request-failure policy golden")
+    assert_valid(schemas["request_failure_policy"][0], golden["policy"])
 
     parsed_errors = [parse_core_http_request_error(value) for value in golden["errors"]]
     parsed_policy = parse_core_http_request_failure_policy(golden["policy"])
@@ -2376,6 +2399,8 @@ def verify_core_http_request_failure_contract() -> dict[str, Any]:
     if parsed_policy["status"] != 400 or parsed_policy["retryable"] is not False:
         raise AssertionError("request-failure policy must bind HTTP 400/non-retryable")
 
+    draft_negative: list[str] = []
+    generic_negative: list[str] = []
     python_negative: list[str] = []
     for case in corpus["cases"]:
         value = _request_failure_mutation(
@@ -2383,6 +2408,14 @@ def verify_core_http_request_failure_contract() -> dict[str, Any]:
             case["mutation"],
         )
         validator = case["validator"]
+        if validator not in schemas:
+            raise AssertionError(f"unknown request-failure validator: {validator}")
+        contract_id, draft_validator = schemas[validator]
+        if not list(draft_validator.iter_errors(value)):
+            raise AssertionError(f"Draft 2020-12 false-accepted {case['case_id']}")
+        draft_negative.append(case["case_id"])
+        _expect_failure(lambda contract_id=contract_id, value=value: assert_valid(contract_id, value))
+        generic_negative.append(case["case_id"])
         if validator == "request_error":
             action = lambda value=value: parse_core_http_request_error(value)
         elif validator == "request_failure_policy":
@@ -2471,6 +2504,8 @@ console.log(JSON.stringify({ status: 'ok', positive_errors: golden.errors.length
         "status": "ok",
         "http_status": parsed_policy["status"],
         "positive_errors": len(parsed_errors),
+        "draft_negative_cases": draft_negative,
+        "generic_negative_cases": generic_negative,
         "python_negative_cases": python_negative,
         "typescript_negative_cases": typescript["negative_cases"],
     }

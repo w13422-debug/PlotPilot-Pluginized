@@ -12,7 +12,7 @@
       "exit_code": 0,
       "path": "contracts/manifest-v1.json",
       "role": "manifest",
-      "sha256": "2f9f8f89054f43b595f8752a400ff976acda8fbafba33f95c4aea35c50ff3ac4"
+      "sha256": "999bfdaf3f938f4bbb49dba4e978bab7042bd5386b66cc27bdbd7c5bf4c6092a"
     },
     {
       "bytes": 10692,
@@ -22,11 +22,11 @@
       "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
     },
     {
-      "bytes": 142139,
+      "bytes": 143798,
       "exit_code": 0,
       "path": "tools/integration/verify_contracts.py",
       "role": "executable-support",
-      "sha256": "d416e3d51cc76691146d07f56f02cf7aa669e7f129a371e8139f6642f167355e"
+      "sha256": "f72c6086fbb4b4ed29d9da775ccab488294f2a579f105724d41f0104183abf34"
     },
     {
       "bytes": 44839,
@@ -436,7 +436,7 @@
           "exit_code": 0,
           "path": "contracts/manifest-v1.json",
           "role": "manifest",
-          "sha256": "2f9f8f89054f43b595f8752a400ff976acda8fbafba33f95c4aea35c50ff3ac4"
+          "sha256": "999bfdaf3f938f4bbb49dba4e978bab7042bd5386b66cc27bdbd7c5bf4c6092a"
         }
       ],
       "command": "python -m pytest tests/contract/test_finding_closure.py -q -p no:cacheprovider",
@@ -605,7 +605,7 @@
           "exit_code": 0,
           "path": "contracts/manifest-v1.json",
           "role": "manifest",
-          "sha256": "2f9f8f89054f43b595f8752a400ff976acda8fbafba33f95c4aea35c50ff3ac4"
+          "sha256": "999bfdaf3f938f4bbb49dba4e978bab7042bd5386b66cc27bdbd7c5bf4c6092a"
         }
       ],
       "command": "python -m pytest tests/contract/test_finding_closure.py -q -p no:cacheprovider",
@@ -2689,7 +2689,7 @@
     "exit_code": 0,
     "path": "contracts/manifest-v1.json",
     "role": "manifest",
-    "sha256": "2f9f8f89054f43b595f8752a400ff976acda8fbafba33f95c4aea35c50ff3ac4"
+    "sha256": "999bfdaf3f938f4bbb49dba4e978bab7042bd5386b66cc27bdbd7c5bf4c6092a"
   },
   "schema": "plotpilot-finding-closure-evidence/v1",
   "status": "passed",

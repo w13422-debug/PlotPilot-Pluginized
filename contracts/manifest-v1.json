@@ -46,9 +46,9 @@
       "sha256": "55164bd67abd64d85f81149e9d5f2ffc2a60f69a2bb3f687979e44d8c9d3e14a"
     },
     {
-      "bytes": 3429,
+      "bytes": 3760,
       "path": "contracts/corpus/core-http-request-failure-v1/negative.json",
-      "sha256": "d4bf65d2944db8d94495aa562310989453f74a5a27de5ff0d4018ec6f6882ea4"
+      "sha256": "c16c4c0390c5fc8973eb4dabac8f51dff560f6b7e9f49c06241bc966cab9aa33"
     },
     {
       "bytes": 186,
@@ -511,9 +511,9 @@
       "sha256": "a81b9712d2cf6e2843d77e1e898faf492322ed5ac58fede873952fea1da32188"
     },
     {
-      "bytes": 1497,
+      "bytes": 1228,
       "path": "contracts/json-schema/core-http-request-failure-policy-v1.schema.json",
-      "sha256": "464d4b855a0e60141e5158d4ffba1faaebf38081fb2c12558288d81fbccef018"
+      "sha256": "ed8b98d7605d2c5ef2dc1021d3e50a3fa16c026dd101a54b07f803996ac6febe"
     },
     {
       "bytes": 3131,
@@ -1124,11 +1124,11 @@
       "sha256": "a81b9712d2cf6e2843d77e1e898faf492322ed5ac58fede873952fea1da32188"
     },
     {
-      "bytes": 1497,
+      "bytes": 1228,
       "contract_id": "core-http-request-failure-policy-v1",
       "path": "contracts/json-schema/core-http-request-failure-policy-v1.schema.json",
       "schema_id": "https://plotpilot.local/contracts/core-http-request-failure-policy-v1",
-      "sha256": "464d4b855a0e60141e5158d4ffba1faaebf38081fb2c12558288d81fbccef018"
+      "sha256": "ed8b98d7605d2c5ef2dc1021d3e50a3fa16c026dd101a54b07f803996ac6febe"
     },
     {
       "bytes": 3131,

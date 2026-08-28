@@ -4,43 +4,28 @@
   "additionalProperties": false,
   "properties": {
     "bindings": {
-      "items": {
-        "additionalProperties": false,
-        "properties": {
-          "error_code": {
-            "enum": [
-              "malformed_json",
-              "invalid_request",
-              "invalid_query",
-              "range_out_of_bounds"
-            ]
-          },
-          "scope": {
-            "enum": [
-              "all_core_routes",
-              "asset.range"
-            ]
-          },
-          "source": {
-            "enum": [
-              "json_decode",
-              "closed_request_schema",
-              "query_decode",
-              "asset_range_bounds"
-            ]
-          }
+      "const": [
+        {
+          "error_code": "malformed_json",
+          "scope": "all_core_routes",
+          "source": "json_decode"
         },
-        "required": [
-          "source",
-          "error_code",
-          "scope"
-        ],
-        "type": "object"
-      },
-      "maxItems": 4,
-      "minItems": 4,
-      "type": "array",
-      "uniqueItems": true
+        {
+          "error_code": "invalid_request",
+          "scope": "all_core_routes",
+          "source": "closed_request_schema"
+        },
+        {
+          "error_code": "invalid_query",
+          "scope": "all_core_routes",
+          "source": "query_decode"
+        },
+        {
+          "error_code": "range_out_of_bounds",
+          "scope": "asset.range",
+          "source": "asset_range_bounds"
+        }
+      ]
     },
     "error_schema": {
       "const": "core-http-request-error/v1"

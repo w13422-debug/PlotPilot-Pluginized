@@ -22,8 +22,16 @@ def test_request_failure_goldens_pass_python_and_typescript() -> None:
     assert result["status"] == "ok"
     assert result["http_status"] == 400
     assert result["positive_errors"] == 4
-    assert len(result["python_negative_cases"]) == 12
+    assert len(result["python_negative_cases"]) == 13
+    assert result["draft_negative_cases"] == result["python_negative_cases"]
+    assert result["generic_negative_cases"] == result["python_negative_cases"]
     assert result["typescript_negative_cases"] == result["python_negative_cases"]
+    assert {
+        "policy-binding-reordered",
+        "policy-binding-pair-drift",
+        "policy-binding-scope-drift",
+        "policy-binding-duplicate-source-different-tuple",
+    } <= set(result["python_negative_cases"])
 
 
 def test_request_failure_policy_binds_every_error_to_http_400() -> None:

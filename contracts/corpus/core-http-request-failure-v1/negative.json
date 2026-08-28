@@ -140,6 +140,20 @@
       "validator": "request_failure_policy"
     },
     {
+      "case_id": "policy-binding-duplicate-source-different-tuple",
+      "fixture": "expected.json#/policy",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "bindings",
+          1,
+          "source"
+        ],
+        "value": "json_decode"
+      },
+      "validator": "request_failure_policy"
+    },
+    {
       "case_id": "policy-binding-extra-field",
       "fixture": "expected.json#/policy",
       "mutation": {
