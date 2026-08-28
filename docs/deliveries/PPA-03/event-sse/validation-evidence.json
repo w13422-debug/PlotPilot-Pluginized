@@ -1,0 +1,61 @@
+{
+  "schema": "ppa03-event-sse-validation/v1",
+  "node_id": "NW-P3-EVENT-SSE-03",
+  "baseline": {
+    "head": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+    "tree": "eab64b7d5b1e3ad652aeaf48bd0085d930beca5d"
+  },
+  "runtime": {
+    "python": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+    "python_version": "3.12.13",
+    "test_dependencies": "%TEMP%\\ppa-event-sse-pydeps",
+    "test_temp": "%TEMP%\\t"
+  },
+  "validations": [
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p3-execution/event-sse -q",
+      "exit_code": 0,
+      "result": "13 passed in 1.17s"
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p3-execution/test_job_execution.py -q",
+      "exit_code": 0,
+      "result": "4 passed in 0.49s"
+    },
+    {
+      "command": "python -B -m compileall -q backend/plotpilot_core/api/v1/jobs/sse backend/plotpilot_core/events",
+      "exit_code": 0,
+      "result": "no output"
+    },
+    {
+      "command": "python -B tools/integration/generate_contract_manifest.py --check",
+      "exit_code": 0,
+      "result": "contract manifest is deterministic (141 files)"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "result": "no output"
+    }
+  ],
+  "environment_repairs": [
+    {
+      "attempt": "required event-sse pytest with a long custom TEMP root",
+      "result": "9 passed, 3 failed because Windows path expansion made AssetStore temporary metadata paths exceed the usable path length",
+      "repair": "reran with TEMP/TMP shortened to %TEMP%\\t; the final source reports 13 passed"
+    }
+  ],
+  "coverage": [
+    "caller-owned Core transaction rollback and standalone-writer rejection",
+    "independent Core/Job cursor domains and monotonic high-water after prune/reopen",
+    "retained row/JSON identity drift rejection",
+    "Plugin Attempt/plugin/release/local-sequence/payload/prefix binding",
+    "strict Last-Event-ID grammar, after_seq conflict, cursor ahead and domain mix",
+    "409 snapshot recovery, pre-capture high-water retry and post-snapshot tail convergence",
+    "Core aggregate projector and Job runtime projection injection",
+    "immutable Job snapshot/Event page Assets and running/terminal Broker projection"
+  ],
+  "source_review_status": "not_self_reviewed",
+  "central_acceptance_claimed": false,
+  "recorded_at": "2026-08-28T17:25:56.0419350+08:00"
+}

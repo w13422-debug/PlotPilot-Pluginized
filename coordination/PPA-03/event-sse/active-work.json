@@ -1,0 +1,76 @@
+{
+  "schema": "active-work/v1",
+  "revision": 2,
+  "status": "source_candidate_ready_for_commit",
+  "node_id": "NW-P3-EVENT-SSE-03",
+  "objective": "Deliver one direct-child source candidate implementing durable Core and Job event storage, monotonic sequence/high-water, retention-gap snapshot convergence, and refresh-safe SSE while keeping Plugin Job Events distinct from Core Events.",
+  "baseline": {
+    "branch": "codex/nw-p3-event-sse-03",
+    "head": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+    "tree": "eab64b7d5b1e3ad652aeaf48bd0085d930beca5d",
+    "worktree_clean": true,
+    "donor_push": "DISABLED"
+  },
+  "write_set": [
+    "backend/plotpilot_core/api/v1/jobs/sse/**",
+    "backend/plotpilot_core/events/**",
+    "tests/p3-execution/event-sse/**",
+    "docs/deliveries/PPA-03/event-sse/**",
+    "coordination/PPA-03/event-sse/**"
+  ],
+  "completed": [
+    "Read AGENTS.md/AGENTS.override.md, taskbook, canonical case state, local checkpoint, and exact H_C acceptance.",
+    "Verified branch, HEAD, tree, clean worktree, H_C acceptance hash, and donor-local push DISABLED.",
+    "Queried reverse-lab KB and canonical local knowledge vault; local tool selector found no relevant reusable event/SSE helper."
+    ,"Completed two parallel read-only repository/contract discovery tasks and integrated their evidence-backed boundary findings."
+    ,"Implemented durable stores, snapshot/page projection, retention recovery and refresh-safe SSE within the exclusive write set."
+    ,"Directed Event/SSE tests report 13 passed; existing Job execution tests report 4 passed; compileall and contract manifest checks pass."
+  ],
+  "in_progress": "Stage the exclusive write set, run final staged write-set/diff gates and create one direct-child source commit.",
+  "next_steps": [
+    "Create one direct-child source commit from exact H_C.",
+    "Return candidate identity and await fresh Sol/max review controlled outside this source task."
+  ],
+  "tasks": [
+    {
+      "task_id": "NW-P3-EVENT-SSE-03-READ-CONTRACTS",
+      "owner": "/root/read_contracts",
+      "input": "accepted repository public/runtime contracts and P3 jobs seams",
+      "write_set": [],
+      "status": "completed_read_only"
+    },
+    {
+      "task_id": "NW-P3-EVENT-SSE-03-READ-PATTERNS",
+      "owner": "/root/read_patterns",
+      "input": "existing event stores/SSE tests and retention/reconnect semantics",
+      "write_set": [],
+      "status": "completed_read_only"
+    }
+  ],
+  "prohibitions": [
+    "No writes outside the exclusive write set.",
+    "No merge/rebase/cherry-pick/reset/amend/tag/push.",
+    "No GUI/desktop/EXE/installer/final-only gates.",
+    "No self-review or acceptance PASS claim."
+  ],
+  "validations": [
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p3-execution/event-sse -q",
+      "result": "13 passed in 1.17s"
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p3-execution/test_job_execution.py -q",
+      "result": "4 passed in 0.49s"
+    },
+    {
+      "command": "python -B -m compileall -q backend/plotpilot_core/api/v1/jobs/sse backend/plotpilot_core/events",
+      "result": "exit 0"
+    },
+    {
+      "command": "python -B tools/integration/generate_contract_manifest.py --check",
+      "result": "contract manifest is deterministic (141 files)"
+    }
+  ],
+  "delivery": "docs/deliveries/PPA-03/event-sse/source-candidate.md",
+  "updated_at": "2026-08-28T17:25:56.0419350+08:00"
+}
