@@ -1517,8 +1517,8 @@ class BackupDataPlane:
             raise BackupValidationError("backup root does not exist")
         manifest_path = root / _BACKUP_MANIFEST
         receipt_path = root / _BACKUP_RECEIPT
-        manifest_raw = manifest_path.read_bytes() if manifest_path.is_file() else b""
         manifest = _read_canonical_json(manifest_path)
+        manifest_raw = _canonical_json(manifest)
         receipt = _read_canonical_json(receipt_path)
         try:
             verify_backup(manifest)

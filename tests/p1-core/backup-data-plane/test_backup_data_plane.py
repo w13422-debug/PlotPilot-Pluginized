@@ -1249,6 +1249,15 @@ def test_verify_rejects_reparse_control_file_before_read(
     backup = plane.create_backup(tmp_path / "backup", _request())
     control = backup.bundle_root / "backup.json"
     original = backup_service._is_reparse_point
+    original_read_bytes = Path.read_bytes
+    control_reads: list[Path] = []
+
+    def tracked_read_bytes(path: Path) -> bytes:
+        if os.path.normcase(os.path.abspath(path)) == os.path.normcase(
+            os.path.abspath(control)
+        ):
+            control_reads.append(path)
+        return original_read_bytes(path)
 
     def is_reparse(path: Path) -> bool:
         same = os.path.normcase(os.path.abspath(path)) == os.path.normcase(
@@ -1257,8 +1266,10 @@ def test_verify_rejects_reparse_control_file_before_read(
         return same or original(path)
 
     monkeypatch.setattr(backup_service, "_is_reparse_point", is_reparse)
+    monkeypatch.setattr(Path, "read_bytes", tracked_read_bytes)
     with pytest.raises(BackupValidationError, match="reparse"):
         plane.verify_backup(backup.bundle_root)
+    assert control_reads == []
 
 
 def test_restore_rejects_reparse_target_component_before_staging(

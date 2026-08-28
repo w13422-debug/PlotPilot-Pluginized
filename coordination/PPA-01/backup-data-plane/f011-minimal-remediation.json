@@ -1,0 +1,47 @@
+{
+  "schema": "ppa-f011-minimal-remediation/v1",
+  "node_id": "NW-P1-BACKUP-DATA-01",
+  "finding_id": "NW-P1-BDP-F-011",
+  "status": "remediated_pending_clean_sol_reviewer",
+  "parent": "210e09b79aa3cf0c90d2c5245bf9af22be828beb",
+  "parent_tree": "9f98e386a2910979b8f63b1008d29df4230c35c6",
+  "review_input": {
+    "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\nw-p1-backup-data-clean-sol-rereview-v1.json",
+    "sha256": "c63e774760c1e3e1d9879ce5091ccbe8d703ff50faf8e34d50c83ae3f495da3f",
+    "verdict": "BLOCK",
+    "only_open_finding": "NW-P1-BDP-F-011"
+  },
+  "structural_fix": "_verify_bundle now obtains the already-validated canonical manifest object through _read_canonical_json before deriving manifest_raw; no direct manifest Path.read_bytes occurs ahead of the existing boundary/reparse gate.",
+  "decisive_negative_test": "test_verify_rejects_reparse_control_file_before_read marks backup.json as a reparse control file, spies on Path.read_bytes, and requires zero reads before rejection.",
+  "validation": [
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/backup-data-plane -q",
+      "result": "59 passed in 8.59s",
+      "exit_code": 0
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core -q",
+      "result": "66 passed in 8.43s",
+      "exit_code": 0
+    },
+    {
+      "command": "python -B -m ruff check backend/plotpilot_core/backup tests/p1-core/backup-data-plane",
+      "result": "All checks passed!",
+      "exit_code": 0
+    },
+    {
+      "command": "python -B -m compileall -q backend/plotpilot_core/backup",
+      "result": "no stdout",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --check",
+      "result": "no diff errors; Git emitted line-ending notices only",
+      "exit_code": 0
+    }
+  ],
+  "other_findings_modified": [],
+  "public_contract_changes": [],
+  "self_closed": false,
+  "merge_eligible_claimed": false
+}
