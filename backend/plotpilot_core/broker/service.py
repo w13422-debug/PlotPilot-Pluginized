@@ -2270,7 +2270,7 @@ class CapabilityBroker:
             content = fn(asset_id)
         except ContractError:
             raise
-        except (KeyError, LookupError) as exc:
+        except (KeyError, LookupError, OSError) as exc:
             raise ContractError(ErrorCode.ASSET_ERROR, f"{label} does not exist") from exc
         if not isinstance(content, (bytes, bytearray)):
             raise ContractError(ErrorCode.ASSET_ERROR, f"{label} port did not return bytes")
@@ -2363,6 +2363,46 @@ class CapabilityBroker:
             raise ContractError(
                 ErrorCode.RESULT_CONTRACT_MISMATCH,
                 "invoke ledger response and child record binding drift",
+            )
+        reservation = _reservation_get(
+            self.operation_ledger,
+            context_identity=context_identity,
+            method=self.INVOKE_METHOD,
+            operation_key=operation_key,
+        )
+        if reservation is None or reservation.child_creation is None:
+            raise ContractError(ErrorCode.ASSET_ERROR, "invoke replay lacks its durable child reservation")
+        creation = ChildCreationResult.from_mapping(_thaw(reservation.child_creation))
+        if (
+            creation.child_job_id != result.child_job_id
+            or creation.child_step_id != result.child_step_id
+            or creation.child_run_snapshot_asset_id != result.child_run_snapshot_asset_id
+            or creation.child_run_snapshot_hash != result.child_run_snapshot_hash
+            or creation.child_plugin_release_id is None
+        ):
+            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "invoke reservation response closure drift")
+        snapshot_bytes = self._read_asset(record.child_run_snapshot_asset_id, "child_run_snapshot_asset_id")
+        verify_child_snapshot_binding(
+            snapshot_bytes,
+            child_job_id=creation.child_job_id,
+            child_step_id=creation.child_step_id,
+            child_attempt_id=creation.child_attempt_id,
+            envelope_asset_id=record.broker_invocation_asset_id,
+            envelope_hash=record.broker_invocation_hash,
+            input_asset_id=envelope.input_asset_id,
+            input_hash=envelope.input_hash,
+            parameters_asset_id=envelope.parameters_asset_id,
+            parameters_hash=envelope.parameters_hash,
+            child_run_snapshot_asset_id=creation.child_run_snapshot_asset_id,
+            child_run_snapshot_hash=creation.child_run_snapshot_hash,
+        )
+        validator = getattr(self.child_factory, "validate_committed_child_replay", None)
+        if callable(validator):
+            validator(
+                creation,
+                expected_release_id=creation.child_plugin_release_id,
+                expected_generation_id=_call_runtime(self.runtime, "current_generation"),
+                expected_result_contract=binding.result_contract,
             )
         return result
 
@@ -2820,6 +2860,44 @@ class CapabilityBroker:
             )
             if existing is not None:
                 return self._cancel_response_from_ledger(existing, payload_hash=payload_hash)
+            prior_reservation = _reservation_get(
+                self.operation_ledger,
+                context_identity=context_identity,
+                method=self.CANCEL_METHOD,
+                operation_key=operation_key,
+            )
+            if prior_reservation is not None:
+                if prior_reservation.payload_hash != payload_hash:
+                    raise ContractError(ErrorCode.DUPLICATE_REQUEST, "cancel reservation payload drift")
+                if record.state == "cancelling" or record.state in TERMINAL_STATES:
+                    recovered = BrokerCancelResult(
+                        accepted=True,
+                        terminal_known=record.state in TERMINAL_STATES,
+                        child_state=record.state,
+                        child_job_event_seq=0,
+                    )
+                    _ledger_record(
+                        self.operation_ledger,
+                        context_identity=context_identity,
+                        method=self.CANCEL_METHOD,
+                        operation_key=operation_key,
+                        payload_hash=payload_hash,
+                        response=recovered.canonical_bytes(),
+                    )
+                    return recovered
+                raise ContractError(
+                    ErrorCode.INVALID_TRANSITION,
+                    "cancel side-effect outcome is uncertain; refusing duplicate execution",
+                )
+            # The durable reservation is the recovery boundary.  It must be
+            # visible before execution.cancel can mutate child authority.
+            _reservation_reserve(
+                self.operation_ledger,
+                context_identity=context_identity,
+                method=self.CANCEL_METHOD,
+                operation_key=operation_key,
+                payload_hash=payload_hash,
+            )
             if record.state in TERMINAL_STATES:
                 response = BrokerCancelResult(
                     accepted=True,

@@ -1,0 +1,49 @@
+{
+  "schema": "p0-composition-dependencies/v1",
+  "node_id": "NW-P1-EXECUTION-TX-01",
+  "status": "source_ready_for_fresh_review",
+  "dependencies": [
+    {
+      "id": "P0-EXEC-TX-01",
+      "requirement": "Inject the same P1 CoreAuthorityRepository/ExecutionAuthority authority into the Broker attempt_context, operation_ledger, child_records and child_factory ports.",
+      "reason": "Mixing authority instances or InMemory ports would reintroduce split truth."
+    },
+    {
+      "id": "P0-EXEC-TX-02",
+      "requirement": "Pass the validated original attempt RPC meta to ExecutionAuthority.complete_attempt(operation_meta=...).",
+      "reason": "P1 fences the durable lease before deriving the accepted operation-context-identity and before ledger replay."
+    },
+    {
+      "id": "P0-EXEC-TX-03",
+      "requirement": "On child worker acquisition call start_attempt with the P2-authoritative release package hash.",
+      "reason": "Child creation intentionally persists package_hash=NULL rather than fabricating a package identity; worker start atomically fills it."
+    },
+    {
+      "id": "P0-EXEC-TX-04",
+      "requirement": "Keep backend/plotpilot_core/jobs/migrations/manifest.json and its SQL available as package data in the eventual runtime artifact.",
+      "reason": "P1 verifies and registers the accepted P3 migration at startup and fails closed on manifest/hash drift."
+    },
+    {
+      "id": "P0-EXEC-TX-05",
+      "requirement": "If P0 requires a full run-snapshot/v1 for Broker children, compose the missing P2 release/package/settings/model lineage before replacing the accepted binding-attestation profile.",
+      "reason": "ChildCreationRequest does not carry enough authoritative P2 data to synthesize a full Snapshot; this source task does not invent it."
+    },
+    {
+      "id": "P0-EXEC-TX-06",
+      "requirement": "Call ExecutionAuthority.freeze_plan with the complete deterministic Step DAG and output Step before acquiring any root worker Attempt.",
+      "reason": "P1 now rejects terminal commit and replay unless the complete frozen membership remains authoritative; this task intentionally does not add P0 runtime wiring."
+    },
+    {
+      "id": "P0-EXEC-TX-07",
+      "requirement": "Inject ExecutionAuthority.skill_receipt_reader from the durable frozen Skill receipt authority produced by Prompt Skill runtime composition.",
+      "reason": "P1 now calls the existing canonical verify_skill_chain verifier before receipt materialization and fails closed when the authoritative receipt bodies required for receipt closure are unavailable."
+    }
+  ],
+  "forbidden": [
+    "No InMemory Broker authority in production composition.",
+    "No alternate context_identity synthesis.",
+    "No public contract change or runtime wiring in this source commit."
+  ],
+  "central_gate": "fresh gpt-5.6-sol/max source review required",
+  "updated_at": "2026-08-28T11:05:00+08:00"
+}

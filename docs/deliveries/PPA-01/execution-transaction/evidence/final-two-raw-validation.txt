@@ -1,0 +1,58 @@
+COMMAND: python -B -m pytest -p no:cacheprovider tests/p1-core/execution-transaction/test_frozen_findings_remediation.py::test_f007_wrong_chain_hash_is_rejected_before_materialization tests/p1-core/execution-transaction/test_broker_persistence.py::test_f015_broker_child_exact_completion_replay_is_byte_equivalent_and_read_only -q
+EXIT: 0
+RESULT: 2 passed in 0.60s
+
+COMMAND: python -B -m pytest -p no:cacheprovider tests/p1-core/execution-transaction -q
+EXIT: 0
+RESULT: 78 passed in 3.95s
+
+COMMAND: python -B -m pytest -p no:cacheprovider tests/p1-core -q
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-NW-P1-Execution-TX
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 85 items
+
+tests\p1-core\execution-transaction\test_broker_persistence.py ......... [ 10%]
+...........                                                              [ 23%]
+tests\p1-core\execution-transaction\test_frozen_findings_remediation.py . [ 24%]
+..........................                                               [ 55%]
+tests\p1-core\execution-transaction\test_terminal_failure_windows.py ... [ 58%]
+...........                                                              [ 71%]
+tests\p1-core\execution-transaction\test_terminal_transaction.py ....... [ 80%]
+..........                                                               [ 91%]
+tests\p1-core\test_asset_store.py ..                                     [ 94%]
+tests\p1-core\test_candidate_publication.py ..                           [ 96%]
+tests\p1-core\test_core_authority.py ...                                 [100%]
+
+============================= 85 passed in 4.52s ==============================
+
+
+COMMAND: python -B -m pytest -p no:cacheprovider tests/p3-execution -q
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-NW-P1-Execution-TX
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 39 items
+
+tests\p3-execution\provider-broker\test_broker.py ................       [ 41%]
+tests\p3-execution\provider-broker\test_model_profile.py ......          [ 56%]
+tests\p3-execution\provider-broker\test_provider.py .............        [ 89%]
+tests\p3-execution\test_job_execution.py ....                            [100%]
+
+============================= 39 passed in 0.70s ==============================
+
+
+
+COMMAND: python -B -m compileall -q backend/plotpilot_core/repositories backend/plotpilot_core/assets backend/plotpilot_core/candidates backend/plotpilot_core/publication backend/plotpilot_core/broker
+EXIT: 0
+COMMAND: git diff --check
+warning: in the working copy of 'backend/plotpilot_core/repositories/execution.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p1-core/execution-transaction/test_broker_persistence.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p1-core/execution-transaction/test_frozen_findings_remediation.py', LF will be replaced by CRLF the next time Git touches it
+EXIT: 0
+RUFF_CONFIGURED: False

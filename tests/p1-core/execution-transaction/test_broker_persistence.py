@@ -1,0 +1,494 @@
+from __future__ import annotations
+
+from concurrent.futures import ThreadPoolExecutor
+import json
+
+import pytest
+
+from backend.plotpilot_core.broker.service import (
+    BrokerInvocationEnvelope,
+    CapabilityBroker,
+    CallerAttemptContext,
+    CapabilityBinding,
+    ChildCreationRequest,
+)
+from backend.plotpilot_core.repositories.execution import ExecutionAuthority
+from backend.plotpilot_plugin_sdk import ContractError, ErrorCode
+from backend.plotpilot_plugin_sdk.verifier import hash_without_field
+
+
+def _request(stack, operation_key="invoke-1"):
+    context = CallerAttemptContext(
+        "job-1", "step-1", "attempt-1", 1,
+        generation_id="generation-1", plugin_release_id="e" * 64,
+    )
+    binding = CapabilityBinding(
+        "binding-1", "writing.chapter.draft/v1", "com.plotpilot.demo", "1.0.0",
+        "candidate-batch/v1", True, True,
+    )
+    input_meta = stack["assets"].put(b"input", mime="text/plain", logical_role="input", provenance="test")
+    envelope = BrokerInvocationEnvelope.from_assets(
+        invocation_id="invocation-1", parent=context, invoke_operation_key=operation_key,
+        binding=binding, input_asset_id=input_meta.asset_id, input_asset_bytes=b"input",
+    )
+    envelope_id = stack["assets"].create_asset(envelope.canonical_bytes(), mime="application/json")
+    return context, binding, ChildCreationRequest(
+        envelope_id, envelope, input_meta.asset_id, None, binding, None,
+        "e" * 64, "generation-1", context,
+    )
+
+
+def test_sqlite_reservation_round_trips_and_rejects_drift(execution_stack):
+    context, _binding, request = _request(execution_stack)
+    ledger = execution_stack["authority"].operation_ledger
+    identity = context.identity()
+    reservation = ledger.reserve(
+        context_identity=identity, method="host.capability.invoke/v1",
+        operation_key="invoke-1", payload_hash=request.envelope.asset_hash,
+    )
+    assert reservation.child_creation is None
+    ledger.attach_envelope(
+        context_identity=identity, method="host.capability.invoke/v1", operation_key="invoke-1",
+        payload_hash=request.envelope.asset_hash, envelope_asset_id=request.envelope_asset_id,
+    )
+    with pytest.raises(ContractError):
+        ledger.reserve(
+            context_identity=identity, method="host.capability.invoke/v1",
+            operation_key="invoke-1", payload_hash="0" * 64,
+        )
+
+
+def test_p3_job_migration_is_registered_from_its_verified_manifest(execution_stack):
+    from pathlib import Path
+    manifest = json.loads(Path("backend/plotpilot_core/jobs/migrations/manifest.json").read_text(encoding="utf-8"))
+    row = execution_stack["repository"]._connection.execute(
+        "SELECT sha256 FROM schema_migration WHERE migration_id='p3-jobs-001'"
+    ).fetchone()
+    assert row is not None and row[0] == manifest["steps"][0]["sha256"]
+
+
+def test_atomic_create_or_recover_child_commits_response_and_single_lineage(execution_stack):
+    context, _binding, request = _request(execution_stack)
+    ledger = execution_stack["authority"].operation_ledger
+    identity = context.identity()
+    ledger.reserve(context_identity=identity, method="host.capability.invoke/v1", operation_key="invoke-1", payload_hash=request.envelope.asset_hash)
+    ledger.attach_envelope(
+        context_identity=identity, method="host.capability.invoke/v1", operation_key="invoke-1",
+        payload_hash=request.envelope.asset_hash, envelope_asset_id=request.envelope_asset_id,
+    )
+    first = execution_stack["authority"].create_or_recover_child(request)
+    second = execution_stack["authority"].create_or_recover_child(request)
+    assert second.to_dict() == first.to_dict()
+    assert ledger.lookup(context_identity=identity, method="host.capability.invoke/v1", operation_key="invoke-1") is not None
+    repository = execution_stack["repository"]
+    assert repository._connection.execute("SELECT count(*) FROM execution_child_creation").fetchone()[0] == 1
+    assert repository._connection.execute("SELECT count(*) FROM p3_broker_child_record").fetchone()[0] == 1
+    assert repository._connection.execute("SELECT count(*) FROM execution_job WHERE job_id=?", (first.child_job_id,)).fetchone()[0] == 1
+    attempt = repository._connection.execute(
+        "SELECT * FROM execution_attempt WHERE attempt_id=?", (first.child_attempt_id,)
+    ).fetchone()
+    assert attempt["state"] == "created" and attempt["package_hash"] is None
+    execution_stack["authority"].start_attempt(
+        job_id=first.child_job_id, step_id=first.child_step_id,
+        attempt_id=first.child_attempt_id, worker_run_id="child-worker-1",
+        plugin_id=request.binding.plugin_id, release_id=request.plugin_release_id,
+        package_hash="b" * 64, capability_id=request.binding.capability_id,
+        generation_id=request.generation_id, lease_epoch=1,
+        preallocated_receipt_id=attempt["preallocated_receipt_id"],
+    )
+    started = repository._connection.execute(
+        "SELECT state,worker_run_id,package_hash FROM execution_attempt WHERE attempt_id=?",
+        (first.child_attempt_id,),
+    ).fetchone()
+    assert tuple(started) == ("running", "child-worker-1", "b" * 64)
+
+
+def test_envelope_only_reservation_recovers_after_repository_restart(execution_stack):
+    context, _binding, request = _request(execution_stack)
+    identity = context.identity()
+    ledger = execution_stack["authority"].operation_ledger
+    ledger.reserve(context_identity=identity, method="host.capability.invoke/v1", operation_key="invoke-1", payload_hash=request.envelope.asset_hash)
+    ledger.attach_envelope(
+        context_identity=identity, method="host.capability.invoke/v1", operation_key="invoke-1",
+        payload_hash=request.envelope.asset_hash, envelope_asset_id=request.envelope_asset_id,
+    )
+    execution_stack["repository"].close()
+    from backend.plotpilot_core.assets import AssetStore
+    from backend.plotpilot_core.repositories.authority import CoreAuthorityRepository
+    reopened = CoreAuthorityRepository(execution_stack["database"])
+    execution_stack["repository"] = reopened
+    authority = ExecutionAuthority(reopened, AssetStore(execution_stack["asset_root"]))
+    execution_stack["authority"] = authority
+    created = authority.create_or_recover_child(request)
+    assert authority.operation_ledger.lookup(
+        context_identity=identity, method="host.capability.invoke/v1", operation_key="invoke-1"
+    ) is not None
+    assert reopened._connection.execute(
+        "SELECT count(*) FROM execution_job WHERE job_id=?", (created.child_job_id,)
+    ).fetchone()[0] == 1
+
+
+@pytest.mark.parametrize(
+    ("table", "operation"),
+    [
+        ("execution_job", "INSERT"),
+        ("execution_step", "INSERT"),
+        ("execution_attempt", "INSERT"),
+        ("execution_child_creation", "INSERT"),
+        ("p3_broker_operation", "UPDATE"),
+        ("p3_broker_child_record", "INSERT"),
+    ],
+)
+def test_child_factory_failure_windows_roll_back_and_retry_once(execution_stack, table, operation):
+    context, _binding, request = _request(execution_stack)
+    ledger = execution_stack["authority"].operation_ledger
+    identity = context.identity()
+    ledger.reserve(context_identity=identity, method="host.capability.invoke/v1", operation_key="invoke-1", payload_hash=request.envelope.asset_hash)
+    ledger.attach_envelope(
+        context_identity=identity, method="host.capability.invoke/v1", operation_key="invoke-1",
+        payload_hash=request.envelope.asset_hash, envelope_asset_id=request.envelope_asset_id,
+    )
+    repository = execution_stack["repository"]
+    before = {
+        name: repository._connection.execute(f"SELECT count(*) FROM {name}").fetchone()[0]
+        for name in ("execution_job", "execution_step", "execution_attempt", "execution_child_creation", "p3_broker_child_record")
+    }
+    trigger = "fail_child_" + table
+    repository._connection.execute(
+        f"CREATE TEMP TRIGGER {trigger} BEFORE {operation} ON {table} BEGIN SELECT RAISE(ABORT,'injected child factory failure'); END"
+    )
+    with pytest.raises(Exception, match="injected"):
+        execution_stack["authority"].create_or_recover_child(request)
+    after = {
+        name: repository._connection.execute(f"SELECT count(*) FROM {name}").fetchone()[0]
+        for name in before
+    }
+    assert after == before
+    reservation = ledger.get_reservation(
+        context_identity=identity, method="host.capability.invoke/v1", operation_key="invoke-1"
+    )
+    assert reservation.child_creation is None and ledger.lookup(
+        context_identity=identity, method="host.capability.invoke/v1", operation_key="invoke-1"
+    ) is None
+    repository._connection.execute(f"DROP TRIGGER {trigger}")
+    created = execution_stack["authority"].create_or_recover_child(request)
+    assert repository._connection.execute(
+        "SELECT count(*) FROM execution_job WHERE job_id=?", (created.child_job_id,)
+    ).fetchone()[0] == 1
+
+
+def test_child_reservation_and_response_are_set_once(execution_stack):
+    context, _binding, request = _request(execution_stack)
+    ledger = execution_stack["authority"].operation_ledger
+    identity = context.identity()
+    ledger.reserve(context_identity=identity, method="host.capability.invoke/v1", operation_key="invoke-1", payload_hash=request.envelope.asset_hash)
+    ledger.attach_envelope(
+        context_identity=identity, method="host.capability.invoke/v1", operation_key="invoke-1",
+        payload_hash=request.envelope.asset_hash, envelope_asset_id=request.envelope_asset_id,
+    )
+    child = execution_stack["authority"].create_or_recover_child(request)
+    drift = child.to_dict(); drift["state"] = "running"
+    with pytest.raises(ContractError):
+        ledger.attach_child(
+            context_identity=identity, method="host.capability.invoke/v1", operation_key="invoke-1",
+            payload_hash=request.envelope.asset_hash, child_creation=drift,
+        )
+    with pytest.raises(ContractError):
+        ledger.record(
+            context_identity=identity, method="host.capability.invoke/v1", operation_key="invoke-1",
+            payload_hash=request.envelope.asset_hash, response=b'{"drift":true}',
+        )
+
+
+def test_committed_child_authority_corruption_fails_closed(execution_stack):
+    context, _binding, request = _request(execution_stack)
+    ledger = execution_stack["authority"].operation_ledger
+    identity = context.identity()
+    ledger.reserve(context_identity=identity, method="host.capability.invoke/v1", operation_key="invoke-1", payload_hash=request.envelope.asset_hash)
+    ledger.attach_envelope(
+        context_identity=identity, method="host.capability.invoke/v1", operation_key="invoke-1",
+        payload_hash=request.envelope.asset_hash, envelope_asset_id=request.envelope_asset_id,
+    )
+    execution_stack["authority"].create_or_recover_child(request)
+    execution_stack["repository"]._connection.execute("DELETE FROM p3_broker_child_record")
+    with pytest.raises(ContractError) as caught:
+        execution_stack["authority"].create_or_recover_child(request)
+    assert caught.value.code == int(ErrorCode.ASSET_ERROR)
+
+
+def test_concurrent_factories_create_one_durable_child(execution_stack):
+    context, _binding, request = _request(execution_stack)
+    ledger = execution_stack["authority"].operation_ledger
+    identity = context.identity()
+    ledger.reserve(context_identity=identity, method="host.capability.invoke/v1", operation_key="invoke-1", payload_hash=request.envelope.asset_hash)
+    ledger.attach_envelope(
+        context_identity=identity, method="host.capability.invoke/v1", operation_key="invoke-1",
+        payload_hash=request.envelope.asset_hash, envelope_asset_id=request.envelope_asset_id,
+    )
+    from backend.plotpilot_core.assets import AssetStore
+    from backend.plotpilot_core.repositories.authority import CoreAuthorityRepository
+    second_repository = CoreAuthorityRepository(execution_stack["database"])
+    second_authority = ExecutionAuthority(second_repository, AssetStore(execution_stack["asset_root"]))
+    try:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            futures = [
+                pool.submit(authority.create_or_recover_child, request)
+                for authority in (execution_stack["authority"], second_authority)
+            ]
+            results = [future.result() for future in futures]
+        assert results[0].to_dict() == results[1].to_dict()
+        assert execution_stack["repository"]._connection.execute(
+            "SELECT count(*) FROM execution_child_creation"
+        ).fetchone()[0] == 1
+        assert execution_stack["repository"]._connection.execute(
+            "SELECT count(*) FROM p3_broker_child_record"
+        ).fetchone()[0] == 1
+    finally:
+        second_repository.close()
+
+
+def test_production_broker_uses_p1_ports_and_replays_after_restart(execution_stack):
+    context, binding, request = _request(execution_stack)
+    class Runtime:
+        @staticmethod
+        def resolve_release(_plugin_id, _requirement): return "e" * 64
+        @staticmethod
+        def current_generation(): return "generation-1"
+    class Execution:
+        pass
+    authority = execution_stack["authority"]
+    broker = CapabilityBroker(
+        core=execution_stack["assets"], execution=Execution(), runtime=Runtime(),
+        bindings={binding.binding_id: binding}, child_factory=authority,
+        operation_ledger=authority.operation_ledger, child_records=authority.child_records,
+        attempt_context=authority,
+    )
+    first = broker.invoke(context, operation_key="invoke-1", binding_id="binding-1", input_asset_id=request.input_asset_id)
+    execution_stack["repository"].close()
+    from backend.plotpilot_core.assets import AssetStore
+    from backend.plotpilot_core.repositories.authority import CoreAuthorityRepository
+    reopened = CoreAuthorityRepository(execution_stack["database"])
+    assets = AssetStore(execution_stack["asset_root"])
+    execution_stack["repository"] = reopened
+    authority = ExecutionAuthority(reopened, assets)
+    broker = CapabilityBroker(
+        core=assets, execution=Execution(), runtime=Runtime(), bindings={binding.binding_id: binding},
+        child_factory=authority, operation_ledger=authority.operation_ledger,
+        child_records=authority.child_records, attempt_context=authority,
+    )
+    second = broker.invoke(context, operation_key="invoke-1", binding_id="binding-1", input_asset_id=request.input_asset_id)
+    assert second.to_dict() == first.to_dict()
+    assert reopened._connection.execute("SELECT count(*) FROM execution_child_creation").fetchone()[0] == 1
+
+
+def test_invoke_response_requires_child_and_child_drift_is_rejected(execution_stack):
+    context, _binding, request = _request(execution_stack)
+    identity = context.identity(); ledger = execution_stack["authority"].operation_ledger
+    ledger.reserve(context_identity=identity, method="host.capability.invoke/v1", operation_key="invoke-1", payload_hash=request.envelope.asset_hash)
+    ledger.attach_envelope(context_identity=identity, method="host.capability.invoke/v1", operation_key="invoke-1", payload_hash=request.envelope.asset_hash, envelope_asset_id=request.envelope_asset_id)
+    with pytest.raises(ContractError) as caught:
+        ledger.record(context_identity=identity, method="host.capability.invoke/v1", operation_key="invoke-1", payload_hash=request.envelope.asset_hash, response=b"{}")
+    assert caught.value.code == int(ErrorCode.INVALID_TRANSITION)
+
+
+def test_committed_child_replay_is_fenced_before_lookup(execution_stack):
+    context, _binding, request = _request(execution_stack)
+    identity = context.identity(); ledger = execution_stack["authority"].operation_ledger
+    ledger.reserve(context_identity=identity, method="host.capability.invoke/v1", operation_key="invoke-1", payload_hash=request.envelope.asset_hash)
+    ledger.attach_envelope(context_identity=identity, method="host.capability.invoke/v1", operation_key="invoke-1", payload_hash=request.envelope.asset_hash, envelope_asset_id=request.envelope_asset_id)
+    execution_stack["authority"].create_or_recover_child(request)
+    execution_stack["repository"]._connection.execute("UPDATE execution_attempt SET lease_epoch=2 WHERE attempt_id='attempt-1'")
+    with pytest.raises(ContractError) as caught:
+        execution_stack["authority"].validate_attempt(context)
+    assert caught.value.code == int(ErrorCode.STALE_LEASE)
+
+
+def _production_broker(stack, *, execution, ledger=None):
+    context, binding, request = _request(stack)
+
+    class Runtime:
+        @staticmethod
+        def resolve_release(_plugin_id, _requirement): return "e" * 64
+
+        @staticmethod
+        def current_generation(): return "generation-1"
+
+    authority = stack["authority"]
+    broker = CapabilityBroker(
+        core=stack["assets"], execution=execution, runtime=Runtime(),
+        bindings={binding.binding_id: binding}, child_factory=authority,
+        operation_ledger=ledger or authority.operation_ledger,
+        child_records=authority.child_records, attempt_context=authority,
+    )
+    return broker, context, request
+
+
+def test_f001_cancel_reservation_precedes_side_effect_and_recovers_record_failure(execution_stack):
+    authority = execution_stack["authority"]
+
+    class FaultOnceLedger:
+        def __init__(self, delegate):
+            self.delegate = delegate
+            self.failed = False
+
+        def __getattr__(self, name):
+            return getattr(self.delegate, name)
+
+        def record(self, **kwargs):
+            if kwargs["method"] == "host.capability.cancel/v1" and not self.failed:
+                self.failed = True
+                raise RuntimeError("injected ACK persistence failure")
+            return self.delegate.record(**kwargs)
+
+    class Execution:
+        def __init__(self): self.cancel_calls = 0
+
+        def cancel(self, _operation_key, _child_job_id):
+            self.cancel_calls += 1
+            return True
+
+    execution = Execution()
+    ledger = FaultOnceLedger(authority.operation_ledger)
+    broker, context, request = _production_broker(execution_stack, execution=execution, ledger=ledger)
+    child = broker.invoke(context, operation_key="invoke-1", binding_id="binding-1", input_asset_id=request.input_asset_id)
+    with pytest.raises(RuntimeError, match="injected"):
+        broker.cancel(context, operation_key="cancel-1", child_job_id=child.child_job_id)
+    replay = broker.cancel(context, operation_key="cancel-1", child_job_id=child.child_job_id)
+    assert replay.accepted and replay.child_state == "cancelling"
+    assert execution.cancel_calls == 1
+    assert execution_stack["repository"]._connection.execute(
+        "SELECT count(*) FROM p3_broker_operation WHERE method='host.capability.cancel/v1'"
+    ).fetchone()[0] == 1
+
+
+def test_f003_required_queued_child_blocks_parent_success_without_mutation(execution_stack):
+    class Execution:
+        pass
+
+    broker, context, request = _production_broker(execution_stack, execution=Execution())
+    broker.invoke(context, operation_key="invoke-1", binding_id="binding-1", input_asset_id=request.input_asset_id)
+    from support import complete_kwargs, make_candidate_bundle
+    bundle, receipt, _ = make_candidate_bundle(execution_stack)
+    with pytest.raises(ContractError) as caught:
+        execution_stack["authority"].complete_attempt(**complete_kwargs(bundle, receipt))
+    assert caught.value.code == int(ErrorCode.INVALID_TRANSITION)
+    connection = execution_stack["repository"]._connection
+    assert connection.execute("SELECT job_state FROM execution_job WHERE job_id='job-1'").fetchone()[0] == "running"
+    assert connection.execute("SELECT count(*) FROM execution_outcome WHERE job_id='job-1'").fetchone()[0] == 0
+
+
+def test_f015_invoke_replay_requires_snapshot_bytes_and_child_identity(execution_stack):
+    class Execution:
+        pass
+
+    broker, context, request = _production_broker(execution_stack, execution=Execution())
+    child = broker.invoke(context, operation_key="invoke-1", binding_id="binding-1", input_asset_id=request.input_asset_id)
+    digest = child.child_run_snapshot_asset_id.removeprefix("asset-sha256-")
+    (execution_stack["assets"].objects / digest[:2] / digest).unlink()
+    with pytest.raises(ContractError) as caught:
+        broker.invoke(context, operation_key="invoke-1", binding_id="binding-1", input_asset_id=request.input_asset_id)
+    assert caught.value.code == int(ErrorCode.ASSET_ERROR)
+
+
+def test_f015_broker_child_exact_completion_replay_is_byte_equivalent_and_read_only(execution_stack):
+    context, _binding, request = _request(execution_stack)
+    identity = context.identity()
+    authority = execution_stack["authority"]
+    ledger = authority.operation_ledger
+    ledger.reserve(
+        context_identity=identity,
+        method="host.capability.invoke/v1",
+        operation_key="invoke-1",
+        payload_hash=request.envelope.asset_hash,
+    )
+    ledger.attach_envelope(
+        context_identity=identity,
+        method="host.capability.invoke/v1",
+        operation_key="invoke-1",
+        payload_hash=request.envelope.asset_hash,
+        envelope_asset_id=request.envelope_asset_id,
+    )
+    child = authority.create_or_recover_child(request)
+    attempt = execution_stack["repository"]._connection.execute(
+        "SELECT * FROM execution_attempt WHERE attempt_id=?",
+        (child.child_attempt_id,),
+    ).fetchone()
+    authority.start_attempt(
+        job_id=child.child_job_id,
+        step_id=child.child_step_id,
+        attempt_id=child.child_attempt_id,
+        worker_run_id="child-worker-1",
+        plugin_id=request.binding.plugin_id,
+        release_id=request.plugin_release_id,
+        package_hash="b" * 64,
+        capability_id=request.binding.capability_id,
+        generation_id=request.generation_id,
+        lease_epoch=child.child_lease_epoch,
+        preallocated_receipt_id=attempt["preallocated_receipt_id"],
+    )
+    receipt = {
+        "schema": "provenance-receipt/v1",
+        "receipt_id": attempt["preallocated_receipt_id"],
+        "plugin_id": request.binding.plugin_id,
+        "release_id": request.plugin_release_id,
+        "package_hash": "b" * 64,
+        "capability_id": request.binding.capability_id,
+        "job_id": child.child_job_id,
+        "step_id": child.child_step_id,
+        "attempt_id": child.child_attempt_id,
+        "lease_epoch": child.child_lease_epoch,
+        "run_snapshot_hash": child.child_run_snapshot_hash,
+        "bundle_id": None,
+        "bundle_hash": None,
+        "parent_receipt_ids": [],
+        "model_receipt_ids": [],
+        "skill_chain_result_refs": [],
+        "staged_items": [],
+        "created_at": "2026-08-28T00:00:00Z",
+    }
+    receipt["receipt_hash"] = hash_without_field(
+        receipt, "receipt_hash", "provenance-receipt/v1"
+    )
+    kwargs = {
+        "job_id": child.child_job_id,
+        "step_id": child.child_step_id,
+        "attempt_id": child.child_attempt_id,
+        "lease_epoch": child.child_lease_epoch,
+        "operation_key": "complete-child-1",
+        "worker_run_id": "child-worker-1",
+        "outcome": "failed",
+        "result_bundle_asset_id": None,
+        "candidate_stage_operation_key": None,
+        "terminal_detail_asset_id": None,
+        "local_seq": 1,
+        "provenance_receipt": receipt,
+        "operation_meta": {
+            "protocol_version": "1",
+            "generation_id": request.generation_id,
+            "plugin_release_id": request.plugin_release_id,
+            "deadline_at": "2026-08-28T01:00:00Z",
+            "context": "attempt",
+            "operation_id": "rpc-complete-child-1",
+            "job_id": child.child_job_id,
+            "step_id": child.child_step_id,
+            "attempt_id": child.child_attempt_id,
+            "lease_epoch": child.child_lease_epoch,
+        },
+    }
+    first = authority.complete_attempt(**kwargs)
+    database_before_replay = execution_stack["repository"]._connection.serialize()
+    assets_before_replay = sorted(
+        str(path.relative_to(execution_stack["assets"].objects))
+        for path in execution_stack["assets"].objects.rglob("*")
+        if path.is_file()
+    )
+    second = authority.complete_attempt(**kwargs)
+    assert not first.replayed and second.replayed
+    assert first.to_dict() == second.to_dict()
+    assert first.response_frame == second.response_frame
+    assert execution_stack["repository"]._connection.serialize() == database_before_replay
+    assert sorted(
+        str(path.relative_to(execution_stack["assets"].objects))
+        for path in execution_stack["assets"].objects.rglob("*")
+        if path.is_file()
+    ) == assets_before_replay

@@ -1,0 +1,21 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-NW-P1-Execution-TX
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 85 items
+
+tests\p1-core\execution-transaction\test_broker_persistence.py ......... [ 10%]
+...........                                                              [ 23%]
+tests\p1-core\execution-transaction\test_frozen_findings_remediation.py . [ 24%]
+..........................                                               [ 55%]
+tests\p1-core\execution-transaction\test_terminal_failure_windows.py ... [ 58%]
+...........                                                              [ 71%]
+tests\p1-core\execution-transaction\test_terminal_transaction.py ....... [ 80%]
+..........                                                               [ 91%]
+tests\p1-core\test_asset_store.py ..                                     [ 94%]
+tests\p1-core\test_candidate_publication.py ..                           [ 96%]
+tests\p1-core\test_core_authority.py ...                                 [100%]
+
+============================= 85 passed in 4.52s ==============================

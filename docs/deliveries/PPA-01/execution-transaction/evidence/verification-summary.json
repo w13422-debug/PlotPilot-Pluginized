@@ -1,0 +1,48 @@
+{
+  "schema": "ppa-execution-transaction-verification/v1",
+  "node_id": "NW-P1-EXECUTION-TX-01",
+  "base": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
+  "base_tree": "ecf773e49f93b20806ebda5dec2fa14db422a1f4",
+  "h_b_acceptance_sha256": "05d45d8fe8edae1359321af412af0184f5db033e2c9736f9be024e4c4a0dfe63",
+  "source_state": "containing commit; final head/tree reported out of band because embedding them would be self-referential",
+  "results": [
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/execution-transaction -q",
+      "result": "47 passed in 2.22s",
+      "exit_code": 0,
+      "raw": "evidence/raw/pytest-execution-transaction.txt",
+      "sha256": "2e8777ad9cd9a6d8d05ada60aff8751dae34fe85faaf7ad10dae2c6c7fa71a2a"
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p3-execution/test_job_execution.py tests/p3-execution/provider-broker -q",
+      "result": "39 passed in 0.94s",
+      "exit_code": 0,
+      "raw": "evidence/raw/pytest-p3-p3b-regression.txt",
+      "sha256": "520d5cab397997560fd612b8f34897cb886aee3e1a80811b93b2a13b85bbfc31"
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core -q",
+      "result": "54 passed in 2.84s",
+      "exit_code": 0,
+      "raw": "evidence/raw/pytest-p1-core-regression.txt",
+      "sha256": "c4984661f1b835308e32b4bc6174f5fdc5f982a1c61a1e476361a408442a0cdc"
+    },
+    {
+      "command": "python -B -m compileall -q backend/plotpilot_core/repositories backend/plotpilot_core/assets backend/plotpilot_core/candidates backend/plotpilot_core/publication",
+      "result": "exit 0",
+      "exit_code": 0,
+      "raw": "evidence/raw/compileall.txt",
+      "sha256": "66d0ac34a043770b15dbe830d9259bfdcd8d97ea00958b45ee03898767ceac6f"
+    },
+    {
+      "command": "git diff --check; git diff --cached --check; git diff HEAD --check",
+      "result": "all exit 0",
+      "exit_code": 0,
+      "raw": "evidence/raw/git-diff-check.txt",
+      "sha256": "389fac57ae8c5fd13edddbb28681d38b681afd653fcc7666c5598162f37a1395"
+    }
+  ],
+  "central_acceptance": "not performed; fresh Sol/max review remains mandatory",
+  "donor_push": "DISABLED",
+  "generated_at": "2026-08-28T01:36:43.299177+08:00"
+}

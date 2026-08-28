@@ -1,0 +1,89 @@
+{
+  "schema": "plotpilot-finding-remediation-evidence/v1",
+  "node_id": "NW-P1-EXECUTION-TX-01",
+  "parent": "d1b6f612b1bb330a28328954fc23e2fdf0ce2d1d",
+  "parent_tree": "16b7c0131f28146c56881cb723e844da288d8f26",
+  "finding_manifest_sha256": "1c47a49309c16af426da5d4c967a0c34ee3e91fea2457bdc8a0e9d54fda2394e",
+  "review_disposition": "pending_original_reviewer",
+  "self_acceptance_performed": false,
+  "mappings": [
+    {"id":"NW-P1-ETX-F-001","test":"test_f001_cancel_reservation_precedes_side_effect_and_recovers_record_failure"},
+    {"id":"NW-P1-ETX-F-002","test":"test_f002_attempt_acquisition_has_one_active_monotonic_fence"},
+    {"id":"NW-P1-ETX-F-003","test":"test_f003_required_queued_child_blocks_parent_success_without_mutation"},
+    {"id":"NW-P1-ETX-F-004","test":"test_f004_frozen_result_contract_rejects_profile_swap"},
+    {"id":"NW-P1-ETX-F-005","test":"test_f005_run_snapshot_workspace_is_rechecked_before_staging"},
+    {"id":"NW-P1-ETX-F-006","test":"test_f006_explicit_plan_freezes_membership_dag_and_output"},
+    {"id":"NW-P1-ETX-F-007","test":"test_f007_core_materializes_receipt_and_rejects_unbound_parent"},
+    {"id":"NW-P1-ETX-F-008","test":"test_f008_plugin_incomplete_stream_is_never_stageable"},
+    {"id":"NW-P1-ETX-F-009","test":"test_f009_publication_requires_complete_execution_evidence"},
+    {"id":"NW-P1-ETX-F-010","test":"test_f010_shared_connection_reader_waits_for_rollback"},
+    {"id":"NW-P1-ETX-F-011","test":"test_f011_candidate_identity_is_scoped_by_attempt_and_bundle"},
+    {"id":"NW-P1-ETX-F-012","test":"test_f012_existing_visible_parent_candidate_is_accepted"},
+    {"id":"NW-P1-ETX-F-013","test":"test_f013_cancelling_wins_with_cancelled_code_and_zero_writes"},
+    {"id":"NW-P1-ETX-F-014","test":"test_f014_plugin_job_event_uses_current_plugin_namespace"},
+    {"id":"NW-P1-ETX-F-015","tests":["test_f015_complete_replay_fails_closed_when_receipt_is_missing","test_f015_invoke_replay_requires_snapshot_bytes_and_child_identity"]}
+  ],
+  "replacement_structural_round": {
+    "parent": "d2a36e1221ff89ded86404812bc5766a3948f0cb",
+    "parent_tree": "0a400ef72599ff0c39c51cafab2f2ca7218f5f80",
+    "replacement_review_sha256": "15254d35abe96c2ce9d3002c90dd21f80c9ba9134a80d2d4850d997804c271ca",
+    "reviewer_thread": "01a045e4-e438-73c2-98e0-a11d81d20ea1",
+    "review_disposition": "pending_replacement_reviewer",
+    "self_acceptance_performed": false,
+    "mappings": [
+      {
+        "id": "NW-P1-ETX-F-006",
+        "tests": [
+          "test_f006_unfrozen_or_incomplete_plan_cannot_terminalize",
+          "test_attempt_terminal_does_not_publish_a_false_job_terminal_with_sibling_steps"
+        ]
+      },
+      {
+        "id": "NW-P1-ETX-F-007",
+        "test": "test_f007_skill_chain_asset_and_identity_must_be_authoritative"
+      },
+      {
+        "id": "NW-P1-ETX-F-009",
+        "tests": [
+          "test_f009_attempt_identity_must_match_snapshot_release_before_terminal",
+          "test_f009_publication_rechecks_snapshot_release_after_terminal_drift"
+        ]
+      },
+      {
+        "id": "NW-P1-ETX-F-015",
+        "tests": [
+          "test_f015_complete_replay_rejects_post_terminal_package_hash_drift",
+          "test_attempt_terminal_does_not_publish_a_false_job_terminal_with_sibling_steps"
+        ]
+      }
+    ]
+  },
+  "final_two_structural_round": {
+    "parent": "5319b7938e942b12d91b2cfc0b7f2ba3af7e4987",
+    "parent_tree": "84f8c77e1d5167c4345a5815c842dcf5e590ddb3",
+    "four_id_rereview_sha256": "a994e8faebb5bd0b8bdf7f14e3097cd13a428988e6fd8356c77e1f028f5926b4",
+    "reviewer_thread": "01a045e4-e438-73c2-98e0-a11d81d20ea1",
+    "scope": [
+      "NW-P1-ETX-F-007",
+      "NW-P1-ETX-F-015"
+    ],
+    "review_disposition": "pending_same_reviewer",
+    "self_acceptance_performed": false,
+    "mappings": [
+      {
+        "id": "NW-P1-ETX-F-007",
+        "test": "test_f007_wrong_chain_hash_is_rejected_before_materialization",
+        "evidence": "Exact Asset ID/hash and Snapshot/Bundle/item anchors are accepted as preconditions, while the existing verify_skill_chain semantic verifier rejects the sole canonical chain_hash drift before any authority write."
+      },
+      {
+        "id": "NW-P1-ETX-F-015",
+        "tests": [
+          "test_f015_broker_child_exact_completion_replay_is_byte_equivalent_and_read_only",
+          "test_f015_invoke_replay_requires_snapshot_bytes_and_child_identity",
+          "test_f015_complete_replay_rejects_post_terminal_package_hash_drift"
+        ],
+        "evidence": "Replay dispatches by persisted Snapshot profile, reuses the existing Broker child binding verifier, and proves exact replay returns the frozen result/frame without database or Asset writes while drift remains fail-closed."
+      }
+    ]
+  }
+}

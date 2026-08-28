@@ -1,0 +1,8 @@
+COMMAND: python -B -m compileall -q backend/plotpilot_core/repositories backend/plotpilot_core/assets backend/plotpilot_core/candidates backend/plotpilot_core/publication backend/plotpilot_core/broker
+EXIT: 0
+COMMAND: git diff --check
+warning: in the working copy of 'backend/plotpilot_core/repositories/execution.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p1-core/execution-transaction/test_broker_persistence.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p1-core/execution-transaction/test_frozen_findings_remediation.py', LF will be replaced by CRLF the next time Git touches it
+EXIT: 0
+RUFF_CONFIGURED: False

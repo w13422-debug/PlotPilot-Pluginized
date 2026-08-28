@@ -4,10 +4,11 @@ from dataclasses import dataclass
 import hashlib
 import json
 import uuid
+from typing import Any
 
 from ..assets import AssetStore
 from ..domain.entities import utc_now
-from ..repositories import CoreAuthorityRepository, NotFoundError
+from ..repositories import CoreAuthorityRepository
 
 
 class CandidateError(ValueError): pass
@@ -35,8 +36,34 @@ class CandidateService:
         return raw.decode(),hashlib.sha256(raw).hexdigest()
 
     def stage(self, operation_key: str, item: dict) -> StagedCandidate:
+        with self.repository.transaction() as connection:
+            return self.stage_in_transaction(connection, operation_key, item)
+
+    def stage_in_transaction(
+        self,
+        connection: Any,
+        operation_key: str,
+        item: dict,
+        *,
+        initial_status: str = "staged",
+        context_identity: str | None = None,
+        method: str = "candidate.stage/v1",
+        expected_workspace_id: str | None = None,
+    ) -> StagedCandidate:
+        """Stage under a caller-owned P1 transaction.
+
+        ``prepared`` is used by Job completion so Publication cannot observe a
+        candidate until the terminal transaction promotes it to ``staged``.
+        """
+        if initial_status not in {"prepared", "staged"}:
+            raise CandidateError("invalid candidate initial status")
         raw,item_hash=self._canonical(item); item_id=item["item_id"]
-        existing=self.repository._connection.execute("SELECT candidate_id,item_hash,item_json FROM candidate WHERE operation_key=? AND item_id=?",(operation_key,item_id)).fetchone()
+        scoped_operation_key = operation_key
+        if context_identity is not None:
+            scoped_operation_key = hashlib.sha256(
+                f"candidate-operation/v1\n{context_identity}\n{method}\n{operation_key}".encode("utf-8")
+            ).hexdigest()
+        existing=connection.execute("SELECT candidate_id,item_hash,item_json,status FROM candidate WHERE operation_key=? AND item_id=?",(scoped_operation_key,item_id)).fetchone()
         if existing:
             if existing["item_hash"]!=item_hash: raise CandidateError("operation key reused with different payload")
             saved=json.loads(existing["item_json"])
@@ -45,42 +72,47 @@ class CandidateService:
         if item["status"] in {"failed","skipped"}:
             return StagedCandidate(item_id,None,"not_created","ineligible")
         target=item["target"]
-        if item["item_kind"] not in {"document","incomplete_stream"} or target["entity_kind"]!="document":
+        if item["item_kind"] == "incomplete_stream":
+            raise CandidateError("incomplete_stream is Core durable-stream authority only")
+        if item["item_kind"] != "document" or target["entity_kind"]!="document":
             raise CandidateError("first Core slice supports document publication only")
+        if expected_workspace_id is not None and target["workspace_id"] != expected_workspace_id:
+            raise CandidateError("candidate target is outside the RunSnapshot workspace")
         if item["mutation"]["mode"] not in {"replace","append_text"}: raise CandidateError("unsupported document mutation")
         asset=self.assets.describe(item["payload_asset_id"])
         if asset.sha256 != item["mutation"]["payload_hash"]: raise CandidateError("payload hash mismatch")
-        doc=self.repository.get_document(target["entity_id"])
-        if doc.workspace_id != target["workspace_id"]: raise CandidateError("target workspace mismatch")
+        self.assets.require(item["payload_asset_id"], sha256=item["mutation"]["payload_hash"])
+        doc=connection.execute("SELECT workspace_id,current_revision_id FROM document WHERE document_id=?",(target["entity_id"],)).fetchone()
+        if not doc: raise CandidateError("target document missing")
+        if doc["workspace_id"] != target["workspace_id"]: raise CandidateError("target workspace mismatch")
         base=item["base"]
-        if doc.current_revision_id != base["revision_id"]: raise CandidateError("stale candidate base")
-        current=self.repository.get_revision(base["revision_id"])
-        if current.content_hash != base["content_hash"]: raise CandidateError("base hash mismatch")
+        if doc["current_revision_id"] != base["revision_id"]: raise CandidateError("stale candidate base")
+        current=connection.execute("SELECT workspace_id,revision_id,content_hash FROM revision WHERE revision_id=?",(base["revision_id"],)).fetchone()
+        if not current or current["content_hash"] != base["content_hash"]: raise CandidateError("base hash mismatch")
+        if current["workspace_id"] != target["workspace_id"] or (
+            expected_workspace_id is not None and current["workspace_id"] != expected_workspace_id
+        ):
+            raise CandidateError("candidate base is outside the RunSnapshot workspace")
         if len(item["write_set"])!=1 or item["write_set"][0] != {"workspace_id":target["workspace_id"],"entity_kind":"document","entity_id":target["entity_id"],"revision_id":base["revision_id"],"content_hash":base["content_hash"]}:
             raise CandidateError("write-set is not the exact target base")
         for source in item["source_refs"]:
             if set(source)!={"workspace_id","source_type","source_id","revision_or_hash"}: raise CandidateError("invalid source reference fields")
             source_workspace=source["workspace_id"]
             if source_workspace is not None:
-                try: self.repository.get_workspace(source_workspace)
-                except NotFoundError as exc: raise CandidateError("source workspace missing") from exc
+                if not connection.execute("SELECT 1 FROM workspace WHERE workspace_id=?",(source_workspace,)).fetchone():
+                    raise CandidateError("source workspace missing")
                 if source["source_type"]=="document":
-                    try: source_doc=self.repository.get_document(source["source_id"])
-                    except NotFoundError as exc: raise CandidateError("source document missing") from exc
-                    if source_doc.workspace_id!=source_workspace: raise CandidateError("source workspace mismatch")
+                    source_doc=connection.execute("SELECT workspace_id FROM document WHERE document_id=?",(source["source_id"],)).fetchone()
+                    if not source_doc: raise CandidateError("source document missing")
+                    if source_doc["workspace_id"]!=source_workspace: raise CandidateError("source workspace mismatch")
                 elif source["source_type"]=="revision":
-                    try: source_revision=self.repository.get_revision(source["source_id"])
-                    except NotFoundError as exc: raise CandidateError("source revision missing") from exc
-                    if source_revision.workspace_id!=source_workspace or source["revision_or_hash"] not in {source_revision.revision_id,source_revision.content_hash}: raise CandidateError("source revision mismatch")
-        eligibility="eligible" if item["status"]=="complete" or item["item_kind"]=="incomplete_stream" else "review_only"
-        with self.repository.transaction() as c:
-            existing=c.execute("SELECT candidate_id,item_hash FROM candidate WHERE operation_key=? AND item_id=?",(operation_key,item_id)).fetchone()
-            if existing:
-                if existing["item_hash"]!=item_hash: raise CandidateError("operation key reused with different payload")
-                return StagedCandidate(item_id,existing["candidate_id"],"idempotent",eligibility)
-            for parent in item["parent_candidate_ids"]:
-                row=c.execute("SELECT status FROM candidate WHERE candidate_id=?",(parent,)).fetchone()
-                if not row or row["status"] in {"rejected","deleted","expired"}: raise CandidateError("invalid parent candidate")
-            cid=f"candidate-{uuid.uuid4().hex}"
-            c.execute("INSERT INTO candidate VALUES(?,?,?,?,?,?,?)",(cid,item_id,operation_key,item_hash,raw,"staged",utc_now()))
+                    source_revision=connection.execute("SELECT workspace_id,revision_id,content_hash FROM revision WHERE revision_id=?",(source["source_id"],)).fetchone()
+                    if not source_revision: raise CandidateError("source revision missing")
+                    if source_revision["workspace_id"]!=source_workspace or source["revision_or_hash"] not in {source_revision["revision_id"],source_revision["content_hash"]}: raise CandidateError("source revision mismatch")
+        eligibility="eligible" if item["status"]=="complete" else "review_only"
+        for parent in item["parent_candidate_ids"]:
+            row=connection.execute("SELECT status FROM candidate WHERE candidate_id=?",(parent,)).fetchone()
+            if not row or row["status"] in {"rejected","deleted","expired","prepared"}: raise CandidateError("invalid parent candidate")
+        cid=f"candidate-{uuid.uuid4().hex}"
+        connection.execute("INSERT INTO candidate VALUES(?,?,?,?,?,?,?)",(cid,item_id,scoped_operation_key,item_hash,raw,initial_status,utc_now()))
         return StagedCandidate(item_id,cid,"created",eligibility)

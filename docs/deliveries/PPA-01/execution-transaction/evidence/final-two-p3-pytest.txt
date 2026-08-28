@@ -1,0 +1,14 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-NW-P1-Execution-TX
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 39 items
+
+tests\p3-execution\provider-broker\test_broker.py ................       [ 41%]
+tests\p3-execution\provider-broker\test_model_profile.py ......          [ 56%]
+tests\p3-execution\provider-broker\test_provider.py .............        [ 89%]
+tests\p3-execution\test_job_execution.py ....                            [100%]
+
+============================= 39 passed in 0.70s ==============================
