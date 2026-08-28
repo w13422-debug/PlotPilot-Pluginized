@@ -37,7 +37,7 @@ from ..broker.service import (
 from ..candidates import CandidateError, CandidateService
 from ..domain.entities import utc_now
 from ..jobs.states import ATTEMPT_EDGES, JOB_EDGES, STEP_EDGES, can_transition
-from .authority import CoreAuthorityRepository
+from .authority import CoreAuthorityRepository, verify_attempt_snapshot_binding
 
 
 _INVOKE = "host.capability.invoke/v1"
@@ -71,6 +71,42 @@ def _broker_context_identity(job_id: str, step_id: str, attempt_id: str) -> str:
 
 def _id(prefix: str, seed: str) -> str:
     return f"{prefix}-{sha256_hex(seed.encode('utf-8'))[:48]}"
+
+
+def _dependency_ids(raw: str) -> tuple[str, ...]:
+    value = json.loads(raw)
+    members = value.get("ids", ()) if isinstance(value, dict) else value
+    if not isinstance(members, list) or not all(isinstance(item, str) for item in members):
+        raise ContractValidationError("execution Step dependency authority is invalid")
+    return tuple(members)
+
+
+def _require_frozen_plan(
+    connection: sqlite3.Connection,
+    job_id: str,
+    *,
+    plan_frozen: int,
+    output_step_id: str | None,
+) -> None:
+    if plan_frozen != 1 or output_step_id is None:
+        raise ContractError(ErrorCode.INVALID_TRANSITION, "Job plan must be frozen before terminal commit")
+    frozen_steps = connection.execute(
+        "SELECT step_id,step_ordinal,dependency_step_ids_json,is_output FROM execution_step "
+        "WHERE job_id=? ORDER BY step_ordinal,step_id",
+        (job_id,),
+    ).fetchall()
+    frozen_step_ids = {row["step_id"] for row in frozen_steps}
+    if (
+        not frozen_steps
+        or [row["step_ordinal"] for row in frozen_steps] != list(range(1, len(frozen_steps) + 1))
+        or sum(row["is_output"] for row in frozen_steps) != 1
+        or next(row["step_id"] for row in frozen_steps if row["is_output"]) != output_step_id
+        or any(
+            not set(_dependency_ids(row["dependency_step_ids_json"])).issubset(frozen_step_ids)
+            for row in frozen_steps
+        )
+    ):
+        raise ContractError(ErrorCode.INVALID_TRANSITION, "frozen Job plan membership is incomplete")
 
 
 @dataclass(frozen=True, slots=True)
@@ -593,10 +629,19 @@ class ExecutionAuthority:
     def _validate_complete_replay_closure(self, connection: sqlite3.Connection, previous: sqlite3.Row) -> None:
         result = _load(previous["response_json"])
         frame = decode_frame(bytes(previous["response_frame"]))
-        if frame.get("result") != result:
+        if (
+            previous["ledger_payload_hash"] != previous["payload_hash"]
+            or frame.get("jsonrpc") != "2.0"
+            or set(frame) != {"jsonrpc", "id", "result"}
+            or frame.get("result") != result
+        ):
             raise ContractError(ErrorCode.ASSET_ERROR, "completion response frame drifted from its outcome")
+        try:
+            validate_rpc_result(_COMPLETE, result)
+        except Exception as exc:
+            raise ContractError(ErrorCode.ASSET_ERROR, "completion response result drifted") from exc
         attempt = connection.execute(
-            "SELECT a.*,s.state AS step_state,s.active_attempt_id,s.is_output,j.job_state,j.run_snapshot_hash,j.run_snapshot_asset_id,j.run_snapshot_json,j.result_bundle_asset_id AS job_bundle,j.provenance_receipt_id AS job_receipt,j.job_event_high_water,j.core_event_high_water FROM execution_attempt a JOIN execution_step s ON s.step_id=a.step_id JOIN execution_job j ON j.job_id=a.job_id WHERE a.attempt_id=?",
+            "SELECT a.*,s.state AS step_state,s.active_attempt_id,s.is_output,j.job_state,j.run_snapshot_hash,j.run_snapshot_asset_id,j.run_snapshot_json,j.result_bundle_asset_id AS job_bundle,j.provenance_receipt_id AS job_receipt,j.job_event_high_water,j.core_event_high_water,j.plan_frozen,j.output_step_id FROM execution_attempt a JOIN execution_step s ON s.step_id=a.step_id JOIN execution_job j ON j.job_id=a.job_id WHERE a.attempt_id=?",
             (previous["attempt_id"],),
         ).fetchone()
         if (
@@ -605,14 +650,46 @@ class ExecutionAuthority:
             or attempt["step_id"] != previous["step_id"]
             or attempt["state"] != previous["outcome"]
             or attempt["step_state"] != previous["outcome"]
+            or previous["context_identity"] != derive_operation_context_identity(
+                {
+                    "protocol_version": "1",
+                    "context": "attempt",
+                    "operation_id": "replay-closure",
+                    "deadline_at": "9999-12-31T23:59:59Z",
+                    "job_id": attempt["job_id"],
+                    "step_id": attempt["step_id"],
+                    "attempt_id": attempt["attempt_id"],
+                    "lease_epoch": attempt["lease_epoch"],
+                    "generation_id": attempt["generation_id"],
+                    "plugin_release_id": attempt["release_id"],
+                },
+                expected_lease_epoch=attempt["lease_epoch"],
+            )
+            or result.get("accepted") is not True
+            or result.get("attempt_state") != previous["outcome"]
+            or result.get("step_state") != previous["outcome"]
+            or result.get("provenance_receipt_id") != previous["provenance_receipt_id"]
             or attempt["job_event_high_water"] < result["job_event_seq"]
             or attempt["core_event_high_water"] < result["core_event_high_water"]
         ):
             raise ContractError(ErrorCode.ASSET_ERROR, "committed completion state closure is incomplete")
+        try:
+            _require_frozen_plan(
+                connection,
+                attempt["job_id"],
+                plan_frozen=attempt["plan_frozen"],
+                output_step_id=attempt["output_step_id"],
+            )
+        except ContractError as exc:
+            raise ContractError(ErrorCode.ASSET_ERROR, "committed frozen Job plan drifted") from exc
         snapshot = _load(attempt["run_snapshot_json"])
         verify_snapshot(snapshot)
         if snapshot["snapshot_hash"] != attempt["run_snapshot_hash"]:
             raise ContractError(ErrorCode.ASSET_ERROR, "committed RunSnapshot authority drifted")
+        try:
+            verify_attempt_snapshot_binding(snapshot, attempt)
+        except Exception as exc:
+            raise ContractError(ErrorCode.ASSET_ERROR, "committed Attempt release binding drifted") from exc
         if attempt["run_snapshot_asset_id"] is not None:
             try:
                 self.assets.require(attempt["run_snapshot_asset_id"], sha256=attempt["run_snapshot_hash"])
@@ -630,13 +707,60 @@ class ExecutionAuthority:
             receipt, "receipt_hash", "provenance-receipt/v1"
         ):
             raise ContractError(ErrorCode.ASSET_ERROR, "committed completion receipt drifted")
+        expected_receipt_identity = (
+            attempt["preallocated_receipt_id"], attempt["job_id"], attempt["step_id"], attempt["attempt_id"],
+            attempt["lease_epoch"], attempt["plugin_id"], attempt["release_id"], attempt["package_hash"],
+            attempt["capability_id"], attempt["run_snapshot_hash"], previous["provenance_receipt_id"],
+        )
+        actual_receipt_identity = (
+            receipt["receipt_id"], receipt["job_id"], receipt["step_id"], receipt["attempt_id"],
+            receipt["lease_epoch"], receipt["plugin_id"], receipt["release_id"], receipt["package_hash"],
+            receipt["capability_id"], receipt["run_snapshot_hash"], receipt_row["receipt_id"],
+        )
+        if actual_receipt_identity != expected_receipt_identity:
+            raise ContractError(ErrorCode.ASSET_ERROR, "committed completion receipt identity drifted")
         if previous["result_bundle_asset_id"] is not None:
             try:
                 bundle_bytes = self.assets.read(previous["result_bundle_asset_id"])
             except Exception as exc:
                 raise ContractError(ErrorCode.ASSET_ERROR, "committed result Bundle Asset is missing") from exc
             bundle = parse_json_bytes(bundle_bytes)
-            if not isinstance(bundle, Mapping) or receipt["bundle_id"] != bundle.get("bundle_id") or receipt["bundle_hash"] != hashlib.sha256(bundle_bytes).hexdigest():
+            if not isinstance(bundle, Mapping):
+                raise ContractError(ErrorCode.ASSET_ERROR, "committed result Bundle closure drifted")
+            known_parent_ids = {
+                parent
+                for item in bundle.get("items", ())
+                if isinstance(item, Mapping)
+                for parent in item.get("parent_candidate_ids", ())
+                if isinstance(parent, str)
+                and connection.execute(
+                    "SELECT 1 FROM candidate WHERE candidate_id=? AND status NOT IN ('prepared','rejected','deleted','expired')",
+                    (parent,),
+                ).fetchone()
+            }
+            try:
+                verify_result_bundle(
+                    bundle,
+                    snapshot_hash_value=attempt["run_snapshot_hash"],
+                    snapshot_workspace_id=snapshot["workspace_id"],
+                    known_parent_ids=known_parent_ids,
+                )
+            except Exception as exc:
+                raise ContractError(ErrorCode.ASSET_ERROR, "committed result Bundle is invalid") from exc
+            producer_identity = tuple(
+                bundle["producer"][name]
+                for name in ("job_id", "step_id", "attempt_id", "lease_epoch", "plugin_id", "release_id", "capability_id")
+            )
+            expected_producer_identity = (
+                attempt["job_id"], attempt["step_id"], attempt["attempt_id"], attempt["lease_epoch"],
+                attempt["plugin_id"], attempt["release_id"], attempt["capability_id"],
+            )
+            if (
+                receipt["bundle_id"] != bundle.get("bundle_id")
+                or receipt["bundle_hash"] != hashlib.sha256(bundle_bytes).hexdigest()
+                or receipt["skill_chain_result_refs"] != bundle["skill_chain_result_refs"]
+                or producer_identity != expected_producer_identity
+            ):
                 raise ContractError(ErrorCode.ASSET_ERROR, "committed result Bundle closure drifted")
         event = connection.execute(
             "SELECT event_json FROM execution_job_event WHERE job_id=? AND job_event_seq=? AND attempt_id=?",
@@ -645,20 +769,50 @@ class ExecutionAuthority:
         if event is None:
             raise ContractError(ErrorCode.ASSET_ERROR, "committed completion Job Event is missing")
         event_value = _load(event["event_json"])
-        if event_value.get("event_type") != f"plugin.{attempt['plugin_id']}.job.{previous['outcome']}":
+        assert_valid("plugin-job-event/v1", event_value)
+        expected_event_identity = (
+            previous["job_id"], previous["step_id"], previous["attempt_id"], result["job_event_seq"],
+            f"plugin.{attempt['plugin_id']}.job.{previous['outcome']}", attempt["plugin_id"], attempt["release_id"],
+        )
+        actual_event_identity = tuple(
+            event_value[name]
+            for name in ("job_id", "step_id", "attempt_id", "job_event_seq", "event_type", "plugin_id", "release_id")
+        )
+        if actual_event_identity != expected_event_identity:
             raise ContractError(ErrorCode.ASSET_ERROR, "committed completion Job Event drifted")
-        terminal_core = connection.execute(
-            "SELECT 1 FROM execution_core_event WHERE aggregate_id=? AND json_extract(event_json,'$.causation_id')=? AND json_extract(event_json,'$.event_type')='job.terminal'",
+        if event_value["payload_asset_id"] is not None:
+            try:
+                self.assets.require(event_value["payload_asset_id"], sha256=event_value["payload_hash"])
+            except Exception as exc:
+                raise ContractError(ErrorCode.ASSET_ERROR, "committed completion Job Event payload drifted") from exc
+        expected_core_types = {"job.state.changed"}
+        if result["job_state"] in {"succeeded", "partial", "failed", "cancelled"}:
+            expected_core_types.add("job.terminal")
+        core_rows = connection.execute(
+            "SELECT event_json FROM execution_core_event WHERE aggregate_id=? AND json_extract(event_json,'$.causation_id')=? AND json_extract(event_json,'$.event_type') IN ('job.state.changed','job.terminal')",
             (previous["job_id"], previous["attempt_id"]),
-        ).fetchone()
-        if result["job_state"] in {"succeeded", "partial", "failed", "cancelled"} and terminal_core is None:
-            raise ContractError(ErrorCode.ASSET_ERROR, "committed completion terminal Core Event is missing")
-        state_core = connection.execute(
-            "SELECT 1 FROM execution_core_event WHERE aggregate_id=? AND json_extract(event_json,'$.causation_id')=? AND json_extract(event_json,'$.event_type')='job.state.changed'",
-            (previous["job_id"], previous["attempt_id"]),
-        ).fetchone()
-        if state_core is None:
-            raise ContractError(ErrorCode.ASSET_ERROR, "committed completion state Core Event is missing")
+        ).fetchall()
+        core_values = [_load(row["event_json"]) for row in core_rows]
+        if {value.get("event_type") for value in core_values} != expected_core_types:
+            raise ContractError(ErrorCode.ASSET_ERROR, "committed completion Core Event set is incomplete")
+        aggregate_revisions = {value.get("aggregate_revision") for value in core_values}
+        for core_value in core_values:
+            assert_valid("core-event-v1", core_value)
+            core_identity = (
+                core_value["workspace_id"], core_value["aggregate_id"], core_value["correlation_id"],
+                core_value["causation_id"], core_value["producer"], core_value["payload_asset_id"],
+                core_value["payload_hash"],
+            )
+            expected_core_identity = (
+                snapshot["workspace_id"], previous["job_id"], previous["operation_key"],
+                previous["attempt_id"],
+                {"producer_type": "core", "producer_id": "execution-authority", "release_id": None},
+                event_value["payload_asset_id"], event_value["payload_hash"],
+            )
+            if core_identity != expected_core_identity or core_value["core_event_seq"] > result["core_event_high_water"]:
+                raise ContractError(ErrorCode.ASSET_ERROR, "committed completion Core Event drifted")
+        if len(aggregate_revisions) != 1:
+            raise ContractError(ErrorCode.ASSET_ERROR, "committed completion Core Event revision drifted")
         if result["job_state"] in {"succeeded", "partial", "failed", "cancelled"} and attempt["is_output"]:
             if attempt["job_bundle"] != previous["result_bundle_asset_id"] or attempt["job_receipt"] != previous["provenance_receipt_id"]:
                 raise ContractError(ErrorCode.ASSET_ERROR, "committed Job output anchors drifted")
@@ -924,7 +1078,7 @@ class ExecutionAuthority:
                 operation_meta, expected_lease_epoch=attempt["lease_epoch"]
             )
             previous = connection.execute(
-                "SELECT o.*,l.response_frame FROM execution_outcome o JOIN p3_host_operation_ledger l ON l.context_identity=o.context_identity AND l.method=? AND l.operation_key=o.operation_key WHERE o.context_identity=? AND o.operation_key=?",
+                "SELECT o.*,l.payload_hash AS ledger_payload_hash,l.response_frame FROM execution_outcome o JOIN p3_host_operation_ledger l ON l.context_identity=o.context_identity AND l.method=? AND l.operation_key=o.operation_key WHERE o.context_identity=? AND o.operation_key=?",
                 (_COMPLETE, context_identity, operation_key),
             ).fetchone()
             if previous is not None:
@@ -932,6 +1086,20 @@ class ExecutionAuthority:
                     raise ContractError(ErrorCode.DUPLICATE_REQUEST, "completion key reused with different payload")
                 self._validate_complete_replay_closure(connection, previous)
                 return TerminalCommit(_load(previous["response_json"]), bytes(previous["response_frame"]), True)
+            _require_frozen_plan(
+                connection,
+                job_id,
+                plan_frozen=attempt["plan_frozen"],
+                output_step_id=attempt["output_step_id"],
+            )
+            snapshot = _load(attempt["run_snapshot_json"])
+            if snapshot.get("schema") == "run-snapshot/v1":
+                try:
+                    verify_attempt_snapshot_binding(snapshot, attempt)
+                except Exception as exc:
+                    raise ContractError(
+                        ErrorCode.INCOMPATIBLE_GENERATION, "Attempt is not bound to its RunSnapshot release"
+                    ) from exc
             if (
                 attempt["state"] == "cancelling" or attempt["job_state"] == "cancelling"
             ) and outcome in {"succeeded", "partial"}:
@@ -1045,6 +1213,58 @@ class ExecutionAuthority:
             bundle_skill_refs = [] if bundle is None else list(bundle["skill_chain_result_refs"])
             if submitted_receipt["skill_chain_result_refs"] != bundle_skill_refs:
                 raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "receipt Skill refs do not match the verified Bundle")
+            bundle_item_ids = set() if bundle is None else {item["item_id"] for item in bundle["items"]}
+            for ref in bundle_skill_refs:
+                if ref["asset_id"] is None or ref["asset_hash"] is None:
+                    raise ContractError(
+                        ErrorCode.RESULT_CONTRACT_MISMATCH,
+                        "Skill-chain result requires an authoritative Asset",
+                    )
+                try:
+                    self.assets.require(ref["asset_id"], sha256=ref["asset_hash"])
+                    chain_value = parse_json_bytes(self.assets.read(ref["asset_id"]))
+                    if not isinstance(chain_value, Mapping):
+                        raise ContractValidationError("Skill-chain result Asset is not an object")
+                    assert_valid("skill-chain-result/v1", chain_value)
+                except ContractError:
+                    raise
+                except Exception as exc:
+                    raise ContractError(
+                        ErrorCode.ASSET_ERROR, "Skill-chain result Asset is missing or invalid"
+                    ) from exc
+                expected_chain_identity = (
+                    ref["chain_result_id"],
+                    attempt["run_snapshot_hash"],
+                    bundle["bundle_id"],
+                    ref["result_item_id"],
+                    ref["stream_id"],
+                    ref["acked_prefix_hash"],
+                )
+                actual_chain_identity = (
+                    chain_value["chain_id"],
+                    chain_value["run_snapshot_hash"],
+                    chain_value["result_bundle_id"],
+                    chain_value["result_item_id"],
+                    chain_value["stream_id"],
+                    chain_value["acked_prefix_hash"],
+                )
+                if (
+                    actual_chain_identity != expected_chain_identity
+                    or ref["result_bundle_id"] != bundle["bundle_id"]
+                    or ref["result_item_id"] not in bundle_item_ids
+                ):
+                    raise ContractError(
+                        ErrorCode.RESULT_CONTRACT_MISMATCH, "Skill-chain result identity drift"
+                    )
+                if chain_value["final_output_asset_id"] is not None:
+                    try:
+                        self.assets.require(
+                            chain_value["final_output_asset_id"], sha256=chain_value["final_output_hash"]
+                        )
+                    except Exception as exc:
+                        raise ContractError(
+                            ErrorCode.ASSET_ERROR, "Skill-chain final output Asset drifted"
+                        ) from exc
 
             if contract_id == "candidate-batch/v1":
                 for item in bundle["items"]:  # type: ignore[index]
@@ -1188,12 +1408,14 @@ class ExecutionAuthority:
             job_bundle_asset_id = attempt["result_bundle_asset_id"]
             job_receipt_id = attempt["provenance_receipt_id"]
             if job_is_terminal:
-                output_step_id = attempt["output_step_id"] or step_id
+                output_step_id = attempt["output_step_id"]
                 if output_step_id == step_id:
                     job_bundle_asset_id, job_receipt_id = result_bundle_asset_id, receipt_id
                 else:
                     output = connection.execute(
-                        "SELECT result_bundle_asset_id,provenance_receipt_id FROM execution_outcome WHERE job_id=? AND step_id=? ORDER BY created_at,attempt_id LIMIT 1",
+                        "SELECT o.result_bundle_asset_id,o.provenance_receipt_id FROM execution_step s "
+                        "JOIN execution_outcome o ON o.attempt_id=s.active_attempt_id "
+                        "WHERE s.job_id=? AND s.step_id=?",
                         (job_id, output_step_id),
                     ).fetchone()
                     if output is None:

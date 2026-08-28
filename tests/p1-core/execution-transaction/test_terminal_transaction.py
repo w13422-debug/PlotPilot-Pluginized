@@ -71,7 +71,8 @@ def test_terminal_ledger_uses_the_frozen_operation_context_identity(execution_st
     assert row[0] == expected
 
 
-def test_attempt_terminal_does_not_publish_a_false_job_terminal_with_sibling_steps(execution_stack):
+def test_attempt_terminal_does_not_publish_a_false_job_terminal_with_sibling_steps(execution_two_step_stack):
+    execution_stack = execution_two_step_stack
     authority = execution_stack["authority"]
     authority.start_attempt(
         job_id="job-1", step_id="step-2", attempt_id="attempt-2",
@@ -81,7 +82,8 @@ def test_attempt_terminal_does_not_publish_a_false_job_terminal_with_sibling_ste
         preallocated_receipt_id="receipt-2",
     )
     bundle_asset, receipt, _item = make_candidate_bundle(execution_stack)
-    commit = authority.complete_attempt(**complete_kwargs(bundle_asset, receipt))
+    first_kwargs = complete_kwargs(bundle_asset, receipt)
+    commit = authority.complete_attempt(**first_kwargs)
     assert commit.result["attempt_state"] == "succeeded"
     assert commit.result["step_state"] == "succeeded"
     assert commit.result["job_state"] == "running"
@@ -125,6 +127,8 @@ def test_attempt_terminal_does_not_publish_a_false_job_terminal_with_sibling_ste
         )
     ]
     assert events == ["job.state.changed", "job.state.changed", "job.terminal"]
+    replayed_first = authority.complete_attempt(**first_kwargs)
+    assert replayed_first.replayed and replayed_first.result["job_state"] == "running"
 
 
 @pytest.mark.parametrize(

@@ -11,13 +11,15 @@
 
 ## Decisive evidence
 
-Raw command transcripts are under `evidence/raw/`.
+Raw command transcripts are under `evidence/`.
 
 - Owned transaction suite: **47 passed**.
 - Existing P3/P3B regression: **39 passed**.
 - P1 Core regression including the new suite: **54 passed**.
 - Targeted `compileall`: exit 0.
 - Final `git diff --check`: recorded separately after the evidence set is staged.
+
+The replacement structural round adds frozen-plan terminal gating, authoritative Skill-chain Asset/identity checks, exact RunSnapshot release binding at terminal/replay/Publication, and complete replay identity closure. Its final current-tree regressions are **76 ETX passed**, **83 complete P1 passed**, and **39 P3/P3B passed**; see `evidence/replacement-structural-raw-validation.txt`.
 
 Coverage includes terminal success/partial/failed/cancelled, canonical context and stale fence before replay, byte-exact restart replay, different-payload rejection, multi-Step Job aggregation, every authoritative terminal write failure, receipt/Event/Publication binding rollback, missing committed lineage, reservation/envelope restart, six child factory SQL failure windows, set-once drift, two-connection child creation and committed child replay.
 

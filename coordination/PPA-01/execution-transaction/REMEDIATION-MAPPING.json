@@ -22,5 +22,40 @@
     {"id":"NW-P1-ETX-F-013","test":"test_f013_cancelling_wins_with_cancelled_code_and_zero_writes"},
     {"id":"NW-P1-ETX-F-014","test":"test_f014_plugin_job_event_uses_current_plugin_namespace"},
     {"id":"NW-P1-ETX-F-015","tests":["test_f015_complete_replay_fails_closed_when_receipt_is_missing","test_f015_invoke_replay_requires_snapshot_bytes_and_child_identity"]}
-  ]
+  ],
+  "replacement_structural_round": {
+    "parent": "d2a36e1221ff89ded86404812bc5766a3948f0cb",
+    "parent_tree": "0a400ef72599ff0c39c51cafab2f2ca7218f5f80",
+    "replacement_review_sha256": "15254d35abe96c2ce9d3002c90dd21f80c9ba9134a80d2d4850d997804c271ca",
+    "reviewer_thread": "01a045e4-e438-73c2-98e0-a11d81d20ea1",
+    "review_disposition": "pending_replacement_reviewer",
+    "self_acceptance_performed": false,
+    "mappings": [
+      {
+        "id": "NW-P1-ETX-F-006",
+        "tests": [
+          "test_f006_unfrozen_or_incomplete_plan_cannot_terminalize",
+          "test_attempt_terminal_does_not_publish_a_false_job_terminal_with_sibling_steps"
+        ]
+      },
+      {
+        "id": "NW-P1-ETX-F-007",
+        "test": "test_f007_skill_chain_asset_and_identity_must_be_authoritative"
+      },
+      {
+        "id": "NW-P1-ETX-F-009",
+        "tests": [
+          "test_f009_attempt_identity_must_match_snapshot_release_before_terminal",
+          "test_f009_publication_rechecks_snapshot_release_after_terminal_drift"
+        ]
+      },
+      {
+        "id": "NW-P1-ETX-F-015",
+        "tests": [
+          "test_f015_complete_replay_rejects_post_terminal_package_hash_drift",
+          "test_attempt_terminal_does_not_publish_a_false_job_terminal_with_sibling_steps"
+        ]
+      }
+    ]
+  }
 }

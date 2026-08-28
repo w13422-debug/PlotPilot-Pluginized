@@ -1,0 +1,70 @@
+NW-P1-EXECUTION-TX-01 replacement structural remediation raw validation
+parent=d2a36e1221ff89ded86404812bc5766a3948f0cb
+started_at=2026-08-28T10:08:41.5934608+08:00
+
+> python -B -m pytest -p no:cacheprovider tests/p1-core/execution-transaction -q
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-NW-P1-Execution-TX
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 76 items
+
+tests\p1-core\execution-transaction\test_broker_persistence.py ......... [ 11%]
+..........                                                               [ 25%]
+tests\p1-core\execution-transaction\test_frozen_findings_remediation.py . [ 26%]
+.........................                                                [ 59%]
+tests\p1-core\execution-transaction\test_terminal_failure_windows.py ... [ 63%]
+...........                                                              [ 77%]
+tests\p1-core\execution-transaction\test_terminal_transaction.py ....... [ 86%]
+..........                                                               [100%]
+
+============================= 76 passed in 4.58s ==============================
+exit_code=0
+
+> python -B -m pytest -p no:cacheprovider tests/p1-core -q
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-NW-P1-Execution-TX
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 83 items
+
+tests\p1-core\execution-transaction\test_broker_persistence.py ......... [ 10%]
+..........                                                               [ 22%]
+tests\p1-core\execution-transaction\test_frozen_findings_remediation.py . [ 24%]
+.........................                                                [ 54%]
+tests\p1-core\execution-transaction\test_terminal_failure_windows.py ... [ 57%]
+...........                                                              [ 71%]
+tests\p1-core\execution-transaction\test_terminal_transaction.py ....... [ 79%]
+..........                                                               [ 91%]
+tests\p1-core\test_asset_store.py ..                                     [ 93%]
+tests\p1-core\test_candidate_publication.py ..                           [ 96%]
+tests\p1-core\test_core_authority.py ...                                 [100%]
+
+============================= 83 passed in 5.46s ==============================
+exit_code=0
+
+> python -B -m pytest -p no:cacheprovider tests/p3-execution -q
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-NW-P1-Execution-TX
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 39 items
+
+tests\p3-execution\provider-broker\test_broker.py ................       [ 41%]
+tests\p3-execution\provider-broker\test_model_profile.py ......          [ 56%]
+tests\p3-execution\provider-broker\test_provider.py .............        [ 89%]
+tests\p3-execution\test_job_execution.py ....                            [100%]
+
+============================= 39 passed in 1.07s ==============================
+exit_code=0
+
+> python -B -m compileall -q backend/plotpilot_core backend/plotpilot_plugin_sdk tests/p1-core/execution-transaction
+exit_code=0
+
+finished_at=2026-08-28T10:08:56.5534197+08:00

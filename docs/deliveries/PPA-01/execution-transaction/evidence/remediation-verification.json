@@ -35,5 +35,37 @@
     }
   ],
   "raw_output": "remediation-raw-validation.txt",
+  "replacement_structural_round": {
+    "parent": "d2a36e1221ff89ded86404812bc5766a3948f0cb",
+    "parent_tree": "0a400ef72599ff0c39c51cafab2f2ca7218f5f80",
+    "replacement_review_sha256": "15254d35abe96c2ce9d3002c90dd21f80c9ba9134a80d2d4850d997804c271ca",
+    "reviewer_thread": "01a045e4-e438-73c2-98e0-a11d81d20ea1",
+    "source_commit": "containing commit",
+    "self_acceptance_performed": false,
+    "results": [
+      {
+        "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/execution-transaction -q",
+        "exit_code": 0,
+        "summary": "76 passed in 4.58s"
+      },
+      {
+        "command": "python -B -m pytest -p no:cacheprovider tests/p1-core -q",
+        "exit_code": 0,
+        "summary": "83 passed in 5.46s"
+      },
+      {
+        "command": "python -B -m pytest -p no:cacheprovider tests/p3-execution -q",
+        "exit_code": 0,
+        "summary": "39 passed in 1.07s"
+      },
+      {
+        "command": "python -B -m compileall -q backend/plotpilot_core backend/plotpilot_plugin_sdk tests/p1-core/execution-transaction",
+        "exit_code": 0,
+        "summary": "no output"
+      }
+    ],
+    "raw_output": "replacement-structural-raw-validation.txt",
+    "disposition": "pending replacement reviewer"
+  },
   "disposition": "pending original reviewer"
 }

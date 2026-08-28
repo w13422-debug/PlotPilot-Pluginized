@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from contextlib import contextmanager
 from dataclasses import replace
 import hashlib
@@ -8,6 +9,8 @@ from pathlib import Path
 import sqlite3
 from threading import RLock
 import uuid
+
+from backend.plotpilot_plugin_sdk import verify_snapshot
 
 from ..domain.entities import Document, Node, Page, Relation, Revision, TextPage, Workspace, utc_now
 from .migrations import Migration, MigrationRunner
@@ -32,6 +35,33 @@ def _load_p3_job_migrations() -> tuple[Migration, ...]:
 
 
 P3_JOB_MIGRATIONS = _load_p3_job_migrations()
+
+
+def verify_attempt_snapshot_binding(snapshot: Mapping[str, object], attempt: Mapping[str, object]) -> None:
+    """Bind an Attempt to the one immutable plugin release in its RunSnapshot."""
+    verify_snapshot(snapshot)
+    releases = [
+        release
+        for release in snapshot["plugin_releases"]  # type: ignore[index]
+        if release["plugin_id"] == attempt["plugin_id"]  # type: ignore[index]
+    ]
+    if len(releases) != 1:
+        raise ValueError("Attempt plugin is not uniquely bound by the RunSnapshot")
+    release = releases[0]
+    expected = (
+        release["release_id"],
+        release["package_hash"],
+        release["data_generation_id"],
+        snapshot["scope"]["operation"],  # type: ignore[index]
+    )
+    actual = (
+        attempt["release_id"],
+        attempt["package_hash"],
+        attempt["generation_id"],
+        attempt["capability_id"],
+    )
+    if actual != expected:
+        raise ValueError("Attempt release identity is not bound by the RunSnapshot")
 
 
 EXECUTION_MIGRATIONS = (

@@ -27,6 +27,11 @@
       "id": "P0-EXEC-TX-05",
       "requirement": "If P0 requires a full run-snapshot/v1 for Broker children, compose the missing P2 release/package/settings/model lineage before replacing the accepted binding-attestation profile.",
       "reason": "ChildCreationRequest does not carry enough authoritative P2 data to synthesize a full Snapshot; this source task does not invent it."
+    },
+    {
+      "id": "P0-EXEC-TX-06",
+      "requirement": "Call ExecutionAuthority.freeze_plan with the complete deterministic Step DAG and output Step before acquiring any root worker Attempt.",
+      "reason": "P1 now rejects terminal commit and replay unless the complete frozen membership remains authoritative; this task intentionally does not add P0 runtime wiring."
     }
   ],
   "forbidden": [

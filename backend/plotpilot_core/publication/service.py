@@ -12,6 +12,7 @@ from backend.plotpilot_plugin_sdk.verifier import hash_without_field
 from ..assets import AssetStore
 from ..domain.entities import utc_now
 from ..repositories import ConflictError, CoreAuthorityRepository, NotFoundError
+from ..repositories.authority import verify_attempt_snapshot_binding
 
 
 @dataclass(frozen=True, slots=True)
@@ -138,7 +139,7 @@ class PublicationService:
         if binding is None:
             return
         authority = connection.execute(
-            "SELECT o.*,j.workspace_id,j.run_snapshot_hash,j.run_snapshot_json,j.job_state,a.lease_epoch,a.plugin_id,a.release_id,a.package_hash,a.capability_id,r.receipt_hash,r.receipt_json "
+            "SELECT o.*,j.workspace_id,j.run_snapshot_hash,j.run_snapshot_json,j.job_state,a.lease_epoch,a.plugin_id,a.release_id,a.package_hash,a.capability_id,a.generation_id,r.receipt_hash,r.receipt_json "
             "FROM execution_outcome o JOIN execution_job j ON j.job_id=o.job_id "
             "JOIN execution_attempt a ON a.attempt_id=o.attempt_id "
             "JOIN execution_receipt r ON r.receipt_id=o.provenance_receipt_id "
@@ -156,6 +157,7 @@ class PublicationService:
             verify_snapshot(snapshot)
             if snapshot["snapshot_hash"] != authority["run_snapshot_hash"] or snapshot["workspace_id"] != authority["workspace_id"]:
                 raise ValueError("RunSnapshot drift")
+            verify_attempt_snapshot_binding(snapshot, authority)
             bundle_bytes = self.assets.read(authority["result_bundle_asset_id"])
             bundle = parse_json_bytes(bundle_bytes)
             if not isinstance(bundle, dict):
@@ -178,6 +180,17 @@ class PublicationService:
             matches = [value for value in bundle["items"] if value["item_id"] == binding["item_id"]]
             if len(matches) != 1 or matches[0] != item or bundle["bundle_id"] != binding["bundle_id"]:
                 raise ValueError("Candidate/Bundle item drift")
+            producer = bundle["producer"]
+            producer_identity = tuple(
+                producer[name]
+                for name in ("job_id", "step_id", "attempt_id", "lease_epoch", "plugin_id", "release_id", "capability_id")
+            )
+            expected_producer_identity = (
+                authority["job_id"], authority["step_id"], authority["attempt_id"], authority["lease_epoch"],
+                authority["plugin_id"], authority["release_id"], authority["capability_id"],
+            )
+            if producer_identity != expected_producer_identity:
+                raise ValueError("Bundle producer identity drift")
             receipt = json.loads(authority["receipt_json"])
             assert_valid("provenance-receipt/v1", receipt)
             if (
@@ -189,11 +202,13 @@ class PublicationService:
                 authority["job_id"], authority["step_id"], authority["attempt_id"], authority["lease_epoch"],
                 authority["plugin_id"], authority["release_id"], authority["package_hash"], authority["capability_id"],
                 bundle["bundle_id"], hashlib.sha256(bundle_bytes).hexdigest(),
+                authority["run_snapshot_hash"], authority["provenance_receipt_id"], True,
             )
             actual = (
                 receipt["job_id"], receipt["step_id"], receipt["attempt_id"], receipt["lease_epoch"],
                 receipt["plugin_id"], receipt["release_id"], receipt["package_hash"], receipt["capability_id"],
                 receipt["bundle_id"], receipt["bundle_hash"],
+                receipt["run_snapshot_hash"], receipt["receipt_id"], binding["item_id"] in receipt["staged_items"],
             )
             if actual != expected:
                 raise ValueError("execution receipt lineage drift")

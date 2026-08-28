@@ -1,7 +1,7 @@
 {
   "schema": "active-work/v1",
-  "revision": 4,
-  "status": "remediation_source_complete_pending_original_review",
+  "revision": 6,
+  "status": "replacement_structural_remediation_ready_for_review",
   "node_id": "NW-P1-EXECUTION-TX-01",
   "objective": "Atomic Job terminal transaction across bundle/assets/candidate/publication/receipt/event/outcome, including durable reservation and create_or_recover_child adapters inside P1 authority.",
   "identity": {
@@ -11,7 +11,9 @@
     "donor_push": "DISABLED",
     "source_commit": "containing commit",
     "remediation_parent": "d1b6f612b1bb330a28328954fc23e2fdf0ce2d1d",
-    "remediation_parent_tree": "16b7c0131f28146c56881cb723e844da288d8f26"
+    "remediation_parent_tree": "16b7c0131f28146c56881cb723e844da288d8f26",
+    "structural_parent": "d2a36e1221ff89ded86404812bc5766a3948f0cb",
+    "structural_parent_tree": "0a400ef72599ff0c39c51cafab2f2ca7218f5f80"
   },
   "worktree_protection": "Exact base was clean before work; all changed paths are inside the exclusive write set.",
   "reuse_decision": {
@@ -22,29 +24,20 @@
   },
   "tasks": [
     {
-      "task_id": "NW-P1-ETX-REM-001-005",
-      "agent": "/root/architecture_audit",
-      "input": "Frozen findings F-001..005",
-      "write_set": [],
-      "output": "read-only minimal fix/test mapping",
-      "status": "completed",
-      "model": "gpt-5.6-sol/high"
-    },
-    {
-      "task_id": "NW-P1-ETX-REM-006-010",
+      "task_id": "NW-P1-ETX-STRUCT-006-007",
       "agent": "/root/reservation_audit",
-      "input": "Frozen findings F-006..010",
+      "input": "Replacement review F-006/F-007",
       "write_set": [],
-      "output": "read-only minimal fix/test mapping",
+      "output": "read-only structural fix/test mapping",
       "status": "completed",
       "model": "gpt-5.6-sol/high"
     },
     {
-      "task_id": "NW-P1-ETX-REM-011-015",
+      "task_id": "NW-P1-ETX-STRUCT-009-015",
       "agent": "/root/test_audit",
-      "input": "Frozen findings F-011..015",
+      "input": "Replacement review F-009/F-015",
       "write_set": [],
-      "output": "read-only minimal fix/test mapping",
+      "output": "read-only authority/replay fix/test mapping",
       "status": "completed",
       "model": "gpt-5.6-sol/high"
     }
@@ -55,39 +48,48 @@
     "Implemented authoritative terminal UoW, multi-Step aggregation, immutable receipt/event/outcome replay, Candidate visibility and Publication consistency.",
     "Implemented durable P3B reservation/child records/atomic create_or_recover_child plus child worker start package binding.",
     "Added decisive failure-window, drift, restart, concurrency and consistency tests.",
-    "Captured raw validation evidence and P0 composition dependencies."
+    "Captured raw validation evidence and P0 composition dependencies.",
+    "Replacement F-006: terminal/replay require complete frozen plan membership and deterministic active output Attempt.",
+    "Replacement F-007: Skill-chain ref Asset existence/hash and chain/Snapshot/Bundle/item identity are validated before receipt materialization.",
+    "Replacement F-009: terminal/replay/Publication share exact RunSnapshot plugin release, package, generation and capability binding.",
+    "Replacement F-015: complete replay closes ledger/frame/outcome, Attempt/Snapshot/receipt, Bundle, Job/Core Event and Candidate identities."
   ],
-  "in_progress": null,
+  "in_progress": "Awaiting replacement reviewer 01a045e4-e438-73c2-98e0-a11d81d20ea1; source task performs no self-acceptance.",
   "next_steps": [
-    "Create the one permitted remediation source commit containing implementation, tests and evidence.",
-    "Return exact identity and raw validation to original reviewer 01a044cf-1e97-76a0-9165-ad159ced0669.",
-    "Do not self-close findings or perform central acceptance."
+    "Create the one permitted source commit on structural parent d2a36e1221ff89ded86404812bc5766a3948f0cb.",
+    "Return exact commit/tree/path/test evidence to replacement reviewer 01a045e4-e438-73c2-98e0-a11d81d20ea1.",
+    "Leave merge eligibility and per-ID disposition to that reviewer."
   ],
   "validation": [
     {
       "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/execution-transaction -q",
       "exit_code": 0,
-      "result": "64 passed in 3.46s"
-    },
-    {
-      "command": "python -B -m pytest -p no:cacheprovider tests/p3-execution/test_job_execution.py tests/p3-execution/provider-broker -q",
-      "exit_code": 0,
-      "result": "39 passed in 0.68s"
+      "summary": "76 passed in 4.58s"
     },
     {
       "command": "python -B -m pytest -p no:cacheprovider tests/p1-core -q",
       "exit_code": 0,
-      "result": "71 passed in 3.29s"
+      "summary": "83 passed in 5.46s"
     },
     {
-      "command": "python -B -m compileall -q backend/plotpilot_core/repositories backend/plotpilot_core/assets backend/plotpilot_core/candidates backend/plotpilot_core/publication backend/plotpilot_core/broker",
+      "command": "python -B -m pytest -p no:cacheprovider tests/p3-execution -q",
       "exit_code": 0,
-      "result": "no output"
+      "summary": "39 passed in 1.07s"
+    },
+    {
+      "command": "python -B -m compileall -q backend/plotpilot_core backend/plotpilot_plugin_sdk tests/p1-core/execution-transaction",
+      "exit_code": 0,
+      "summary": "no output"
     },
     {
       "command": "git diff --check",
       "exit_code": 0,
-      "result": "no output"
+      "summary": "no whitespace errors; only Git LF-to-CRLF working-copy warnings"
+    },
+    {
+      "command": "Ruff configuration probe",
+      "exit_code": 0,
+      "summary": "not run: no [tool.ruff] configuration exists"
     }
   ],
   "blockers": [],
@@ -95,7 +97,8 @@
     "report": "docs/deliveries/PPA-01/execution-transaction/README.md",
     "verification": "docs/deliveries/PPA-01/execution-transaction/evidence/verification-summary.json",
     "p0_dependencies": "coordination/PPA-01/execution-transaction/P0-COMPOSITION-DEPENDENCIES.json",
-    "parent_state_request": "coordination/PPA-01/execution-transaction/PARENT-STATE-UPDATE-REQUEST.json"
+    "parent_state_request": "coordination/PPA-01/execution-transaction/PARENT-STATE-UPDATE-REQUEST.json",
+    "replacement_raw_validation": "docs/deliveries/PPA-01/execution-transaction/evidence/replacement-structural-raw-validation.txt"
   },
   "prohibitions": [
     "No writes outside the exclusive write set.",
@@ -103,7 +106,7 @@
     "No final Windows artifacts or unrelated full builds.",
     "No self-acceptance."
   ],
-  "updated_at": "2026-08-28T07:57:05.6003752+08:00",
+  "updated_at": "2026-08-28T10:10:29+08:00",
   "finding_manifest": {
     "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\findings\\nw-p1-execution-tx-fresh-sol-block-v1.json",
     "sha256": "1c47a49309c16af426da5d4c967a0c34ee3e91fea2457bdc8a0e9d54fda2394e",
@@ -117,5 +120,27 @@
     "verification": "docs/deliveries/PPA-01/execution-transaction/evidence/remediation-verification.json",
     "raw_output": "docs/deliveries/PPA-01/execution-transaction/evidence/remediation-raw-validation.txt",
     "disposition": "pending original reviewer; no self-acceptance"
+  },
+  "replacement_review": {
+    "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\nw-p1-execution-tx-replacement-sol-block-v1.json",
+    "sha256": "15254d35abe96c2ce9d3002c90dd21f80c9ba9134a80d2d4850d997804c271ca",
+    "ids": [
+      "NW-P1-ETX-F-006",
+      "NW-P1-ETX-F-007",
+      "NW-P1-ETX-F-009",
+      "NW-P1-ETX-F-015"
+    ],
+    "verdict": "BLOCK",
+    "frozen": true
+  },
+  "reuse_decision_structural": {
+    "local_knowledge": {
+      "id": "kb-plotpilot-pluginized-ppa05-planning-remediation-20260828",
+      "sha256": "13c4ea62a893ffb9073be2791992001993adf2fd86f4cd7af53548e29151dbde",
+      "use": "record evidence without self-closing reviewer findings"
+    },
+    "source_library": "No relevant candidate; selector returned unrelated media/Git/hardware tools.",
+    "github": "Skipped: current repository contains the exact authority/verifier primitives; external code has no additional reuse benefit.",
+    "decision": "Thin-adapt current SQLite authority and existing read-only SDK verifier; add no dependency."
   }
 }

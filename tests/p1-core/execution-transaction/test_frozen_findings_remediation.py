@@ -68,6 +68,41 @@ def _second_candidate(stack, *, parent_ids=()):
     return kwargs
 
 
+def _skill_chain_ref(stack, *, chain_id="chain-1"):
+    chain = {
+        "schema": "skill-chain-result/v1",
+        "chain_id": chain_id,
+        "run_snapshot_hash": stack["snapshot"]["snapshot_hash"],
+        "result_bundle_id": "bundle-1",
+        "result_item_id": "item-1",
+        "stream_id": None,
+        "acked_prefix_hash": None,
+        "receipt_ids": ["skill-receipt-1"],
+        "receipt_hashes": ["b" * 64],
+        "chain_status": "succeeded",
+        "input_hash": "a" * 64,
+        "final_output_asset_id": None,
+        "final_output_hash": None,
+        "chain_hash": "c" * 64,
+    }
+    asset = stack["assets"].put(
+        canonical_bytes(chain),
+        mime="application/json",
+        logical_role="skill_chain_result",
+        provenance="skill:test",
+    )
+    return {
+        "schema": "skill-chain-ref/v1",
+        "chain_result_id": chain_id,
+        "asset_id": asset.asset_id,
+        "asset_hash": asset.sha256,
+        "result_bundle_id": "bundle-1",
+        "result_item_id": "item-1",
+        "stream_id": None,
+        "acked_prefix_hash": None,
+    }
+
+
 def test_f002_attempt_acquisition_has_one_active_monotonic_fence(execution_stack):
     authority = execution_stack["authority"]
     with pytest.raises(ContractError):
@@ -162,6 +197,34 @@ def test_f006_explicit_plan_freezes_membership_dag_and_output(execution_stack):
     )] == ["plan-a", "plan-b"]
 
 
+@pytest.mark.parametrize(
+    "corruption",
+    [
+        "UPDATE execution_job SET plan_frozen=0 WHERE job_id='job-1'",
+        "UPDATE execution_step SET is_output=0 WHERE step_id='step-1'",
+    ],
+)
+def test_f006_unfrozen_or_incomplete_plan_cannot_terminalize(execution_stack, corruption):
+    bundle_asset, receipt, _ = make_candidate_bundle(execution_stack)
+    connection = execution_stack["repository"]._connection
+    connection.execute(corruption)
+    before = authority_rows(execution_stack["repository"])
+    before_states = tuple(connection.execute(
+        "SELECT j.job_state,s.state,a.state FROM execution_job j "
+        "JOIN execution_step s ON s.job_id=j.job_id JOIN execution_attempt a ON a.step_id=s.step_id "
+        "WHERE a.attempt_id='attempt-1'"
+    ).fetchone())
+    with pytest.raises(ContractError) as caught:
+        execution_stack["authority"].complete_attempt(**complete_kwargs(bundle_asset, receipt))
+    assert caught.value.code == int(ErrorCode.INVALID_TRANSITION)
+    assert authority_rows(execution_stack["repository"]) == before
+    assert tuple(connection.execute(
+        "SELECT j.job_state,s.state,a.state FROM execution_job j "
+        "JOIN execution_step s ON s.job_id=j.job_id JOIN execution_attempt a ON a.step_id=s.step_id "
+        "WHERE a.attempt_id='attempt-1'"
+    ).fetchone()) == before_states == ("running", "running", "running")
+
+
 def test_f007_core_materializes_receipt_and_rejects_unbound_parent(execution_stack):
     bundle_asset, receipt, _ = make_candidate_bundle(execution_stack)
     forged = copy.deepcopy(receipt)
@@ -174,6 +237,29 @@ def test_f007_core_materializes_receipt_and_rejects_unbound_parent(execution_sta
     stored = json.loads(execution_stack["repository"]._connection.execute("SELECT receipt_json FROM execution_receipt").fetchone()[0])
     assert stored["created_at"] != receipt["created_at"]
     assert stored["receipt_hash"] == hash_without_field(stored, "receipt_hash", "provenance-receipt/v1")
+
+
+@pytest.mark.parametrize("drift", ["missing", "hash", "identity"])
+def test_f007_skill_chain_asset_and_identity_must_be_authoritative(execution_stack, drift):
+    bundle_asset, receipt, _ = make_candidate_bundle(execution_stack)
+    ref = _skill_chain_ref(execution_stack, chain_id="chain-authority")
+    if drift == "missing":
+        ref.update(asset_id=f"asset-sha256-{'d' * 64}", asset_hash="d" * 64)
+    elif drift == "hash":
+        ref["asset_hash"] = "e" * 64
+    else:
+        ref["chain_result_id"] = "chain-ref-drift"
+    bad_asset, bad_receipt, _ = _replace_bundle(
+        execution_stack, bundle_asset, receipt,
+        lambda bundle: bundle.update(skill_chain_result_refs=[ref]),
+    )
+    before = authority_rows(execution_stack["repository"])
+    with pytest.raises(ContractError):
+        execution_stack["authority"].complete_attempt(**complete_kwargs(bad_asset, bad_receipt))
+    assert authority_rows(execution_stack["repository"]) == before
+    assert execution_stack["repository"]._connection.execute(
+        "SELECT job_state FROM execution_job WHERE job_id='job-1'"
+    ).fetchone()[0] == "running"
 
 
 def test_f008_plugin_incomplete_stream_is_never_stageable(execution_stack):
@@ -201,6 +287,41 @@ def test_f009_publication_requires_complete_execution_evidence(execution_stack):
     with pytest.raises(Exception):
         PublicationService(execution_stack["repository"], execution_stack["assets"]).accept(
             "publish-without-evidence", candidate_id, created_by="user"
+        )
+    assert execution_stack["repository"].get_document("doc-1").current_revision_id == before
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("plugin_id", "com.plotpilot.other"),
+        ("release_id", "f" * 64),
+        ("package_hash", "b" * 64),
+        ("generation_id", "generation-other"),
+        ("capability_id", "writing.other/v1"),
+    ],
+)
+def test_f009_attempt_identity_must_match_snapshot_release_before_terminal(execution_stack, field, value):
+    bundle_asset, receipt, _ = make_candidate_bundle(execution_stack)
+    connection = execution_stack["repository"]._connection
+    connection.execute(f"UPDATE execution_attempt SET {field}=? WHERE attempt_id='attempt-1'", (value,))
+    before = authority_rows(execution_stack["repository"])
+    with pytest.raises(ContractError) as caught:
+        execution_stack["authority"].complete_attempt(**complete_kwargs(bundle_asset, receipt))
+    assert caught.value.code == int(ErrorCode.INCOMPATIBLE_GENERATION)
+    assert authority_rows(execution_stack["repository"]) == before
+
+
+def test_f009_publication_rechecks_snapshot_release_after_terminal_drift(execution_stack):
+    bundle_asset, receipt, _ = make_candidate_bundle(execution_stack)
+    execution_stack["authority"].complete_attempt(**complete_kwargs(bundle_asset, receipt))
+    connection = execution_stack["repository"]._connection
+    candidate_id = connection.execute("SELECT candidate_id FROM candidate").fetchone()[0]
+    connection.execute("UPDATE execution_attempt SET generation_id='generation-drift' WHERE attempt_id='attempt-1'")
+    before = execution_stack["repository"].get_document("doc-1").current_revision_id
+    with pytest.raises(Exception):
+        PublicationService(execution_stack["repository"], execution_stack["assets"]).accept(
+            "publish-generation-drift", candidate_id, created_by="user"
         )
     assert execution_stack["repository"].get_document("doc-1").current_revision_id == before
 
@@ -234,7 +355,8 @@ def test_f010_shared_connection_reader_waits_for_rollback(execution_stack):
         assert reader_future.result(5) == "old"
 
 
-def test_f011_candidate_identity_is_scoped_by_attempt_and_bundle(execution_stack):
+def test_f011_candidate_identity_is_scoped_by_attempt_and_bundle(execution_two_step_stack):
+    execution_stack = execution_two_step_stack
     _start_second(execution_stack)
     first_asset, first_receipt, _ = make_candidate_bundle(execution_stack)
     execution_stack["authority"].complete_attempt(**complete_kwargs(first_asset, first_receipt))
@@ -246,7 +368,8 @@ def test_f011_candidate_identity_is_scoped_by_attempt_and_bundle(execution_stack
     assert {row["attempt_id"] for row in rows} == {"attempt-1", "attempt-2"}
 
 
-def test_f012_existing_visible_parent_candidate_is_accepted(execution_stack):
+def test_f012_existing_visible_parent_candidate_is_accepted(execution_two_step_stack):
+    execution_stack = execution_two_step_stack
     _start_second(execution_stack)
     first_asset, first_receipt, _ = make_candidate_bundle(execution_stack)
     execution_stack["authority"].complete_attempt(**complete_kwargs(first_asset, first_receipt))
@@ -294,3 +417,16 @@ def test_f015_complete_replay_fails_closed_when_receipt_is_missing(execution_sta
     with pytest.raises(ContractError) as caught:
         execution_stack["authority"].complete_attempt(**kwargs)
     assert caught.value.code == int(ErrorCode.ASSET_ERROR)
+
+
+def test_f015_complete_replay_rejects_post_terminal_package_hash_drift(execution_stack):
+    bundle_asset, receipt, _ = make_candidate_bundle(execution_stack)
+    kwargs = complete_kwargs(bundle_asset, receipt)
+    execution_stack["authority"].complete_attempt(**kwargs)
+    connection = execution_stack["repository"]._connection
+    connection.execute("UPDATE execution_attempt SET package_hash=? WHERE attempt_id='attempt-1'", ("b" * 64,))
+    before = authority_rows(execution_stack["repository"])
+    with pytest.raises(ContractError) as caught:
+        execution_stack["authority"].complete_attempt(**kwargs)
+    assert caught.value.code == int(ErrorCode.ASSET_ERROR)
+    assert authority_rows(execution_stack["repository"]) == before

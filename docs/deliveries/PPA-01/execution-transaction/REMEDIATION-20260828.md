@@ -33,3 +33,20 @@
 P0 still owns runtime wiring of plan freeze/acquisition, worker lease renewal/cancel composition, public endpoint exposure and merge order. This remediation adds no public contract and performs no P0 wiring.
 
 The original fresh reviewer remains the authority for per-Finding disposition and merge eligibility.
+
+## Replacement structural remediation
+
+- Parent: `d2a36e1221ff89ded86404812bc5766a3948f0cb`
+- Parent tree: `0a400ef72599ff0c39c51cafab2f2ca7218f5f80`
+- Replacement review SHA-256: `15254d35abe96c2ce9d3002c90dd21f80c9ba9134a80d2d4850d997804c271ca`
+- Scope is limited to `NW-P1-ETX-F-006`, `F-007`, `F-009`, and `F-015`.
+- No Finding is marked closed or accepted by this source task.
+
+| Finding | Structural source evidence | Decisive counterexample |
+|---|---|---|
+| F-006 | `complete_attempt` and committed replay require a nonempty frozen plan, contiguous deterministic ordinals, closed dependencies, and exactly one matching output Step. Job output recovery reads the active output Attempt rather than an arbitrary historical outcome. | `test_f006_unfrozen_or_incomplete_plan_cannot_terminalize`; the two-Step test proves an incomplete member set keeps Job state `running` and historic replay byte-exact. |
+| F-007 | Before Candidate/receipt/event/outcome writes, every Skill ref must bind a content-addressed Skill-chain result Asset by ID/hash; its schema, `chain_result_id`, RunSnapshot, Bundle/item and stream anchors must match, and any final output Asset/hash must exist. | `test_f007_skill_chain_asset_and_identity_must_be_authoritative` covers missing Asset, hash drift, and chain identity drift with zero authority mutation. |
+| F-009 | One shared internal verifier binds Attempt plugin/release/package/generation/capability to the verified RunSnapshot release member and operation. Terminal commit, committed replay, and Publication all reuse it; Publication also closes Bundle producer, receipt Snapshot/identity, and staged-item evidence before Revision CAS. | `test_f009_attempt_identity_must_match_snapshot_release_before_terminal` covers all five fields; `test_f009_publication_rechecks_snapshot_release_after_terminal_drift` proves post-terminal drift blocks Publication. |
+| F-015 | Complete replay cross-checks ledger/outcome payload, closed response frame/result, canonical context identity, frozen plan, RunSnapshot, full receipt identity, verified Bundle/producer, Job Event payload, Core Event producer/correlation/causation/revision/payload, Candidate bindings, and Job anchors. | `test_f015_complete_replay_rejects_post_terminal_package_hash_drift`; the two-Step historic replay test prevents incorrectly comparing a frozen earlier `running` response with the later terminal Job projection. |
+
+Final raw validation for this round is in `evidence/replacement-structural-raw-validation.txt`. The same replacement reviewer remains the only authority for per-ID disposition.
