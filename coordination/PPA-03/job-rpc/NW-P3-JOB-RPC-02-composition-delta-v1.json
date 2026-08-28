@@ -1,0 +1,65 @@
+{
+  "schema": "plotpilot-composition-delta/v1",
+  "delta_id": "NW-P3-JOB-RPC-02-COMPOSITION-DELTA-01",
+  "node_id": "NW-P3-JOB-RPC-02",
+  "baseline": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+  "status": "scoped_slices_stopped",
+  "rule": "No unowned contract or authority change is implemented by this source node.",
+  "implemented_boundary": {
+    "job_commands": [
+      "ExecutionAuthority.create_from_verified_snapshot",
+      "ExecutionAuthority.freeze_plan",
+      "ExecutionAuthority.start_attempt"
+    ],
+    "job_queries": [
+      "workspace-scoped job-snapshot/v1 projection",
+      "workspace-scoped job-event-page/v1 projection"
+    ],
+    "host_rpc": [
+      "validated host_request dispatch to injected durable handlers",
+      "validated success response through PluginProcessSupervisor.respond_host_request",
+      "host_request_duplicate suppression",
+      "host_replay passthrough because P2 already sends the durable frame"
+    ]
+  },
+  "gaps": [
+    {
+      "owner": "P1 Job authority",
+      "slice": "host.job.complete/v1",
+      "evidence": "Frozen wire params contain no provenance_receipt, while ExecutionAuthority.complete_attempt requires provenance_receipt with no default.",
+      "required_resolution": "Publish an internal receipt resolution/terminal request seam owned by P1; do not synthesize provenance lineage in this adapter."
+    },
+    {
+      "owner": "P1 Job authority",
+      "slice": "host.job.event/v1, host.job.await_user/v1 and Job cancel/pause/resume/retry mutations",
+      "evidence": "Accepted ExecutionAuthority exposes no authoritative methods for these atomic mutations.",
+      "required_resolution": "Publish transaction-owning P1 methods; raw adapter SQL and a second ledger remain forbidden."
+    },
+    {
+      "owner": "P2 supervisor",
+      "slice": "outbound job.start/job.resume/job.pause/job.cancel and Host error replies",
+      "evidence": "PluginProcessSupervisor exposes neither request_worker nor respond_host_error; only private session machinery exists.",
+      "required_resolution": "Publish lifecycle-locked request_worker and validated Host error response ports."
+    },
+    {
+      "owner": "P0 HTTP integration",
+      "slice": "public Job HTTP route and mutation matrix",
+      "evidence": "No accepted list/snapshot routes, operation-key placement, or stale/terminal HTTP mapping are frozen; legacy frontend assumptions return a different DTO.",
+      "required_resolution": "Freeze the P0 route, DTO and error mapping before mounting this framework-neutral adapter."
+    },
+    {
+      "owner": "checkpoint/stream source nodes",
+      "slice": "job-snapshot/v1 extension projection",
+      "evidence": "The accepted baseline has no checkpoint/stream authority mounted in the Job repository.",
+      "required_resolution": "Compose a JobSnapshotExtensionReader explicitly; this node provides no silent empty production fallback."
+    }
+  ],
+  "forbidden_workarounds": [
+    "new database or ledger",
+    "raw Job mutation SQL",
+    "fabricated provenance receipt",
+    "access to supervisor private records/session",
+    "automatic Publication",
+    "legacy HTTP contract promotion"
+  ]
+}

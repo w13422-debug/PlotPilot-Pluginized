@@ -1,0 +1,27 @@
+NW-P3-JOB-RPC-02 validation record
+Baseline: 8e3d3a7268e0d28559a7212790e3ab9f22c1453a
+Interpreter: Codex bundled Python 3.12.13
+Temporary dependencies: workspace-external pytest-deps; no project manifest/lock changes
+
+[required-owned]
+python -B -m pytest -p no:cacheprovider tests/p3-execution/job-rpc -q
+RESULT: 16 passed in 0.86s (final source state)
+
+[required-adjacent]
+python -B -m pytest -p no:cacheprovider tests/p3-execution/test_job_execution.py tests/p3-execution/provider-broker -q
+RESULT: 39 passed in 0.85s
+
+[required-static]
+python -B -m compileall -q backend/plotpilot_core/api/v1/jobs/rpc backend/plotpilot_core/jobs/http_rpc
+RESULT: exit 0 (final source state; generated __pycache__ removed afterward)
+python -B tools/integration/generate_contract_manifest.py --check
+RESULT: contract manifest is deterministic (141 files); exit 0
+git diff --cached --check
+RESULT: exit 0 on all 11 staged source/evidence paths
+
+[additional-seam-regression]
+python -B -m pytest -p no:cacheprovider tests/p1-core/execution-transaction/test_terminal_transaction.py tests/p1-core/execution-transaction/test_terminal_failure_windows.py tests/p2-plugin-platform/supervisor/test_rpc.py tests/p2-plugin-platform/supervisor/test_lifecycle.py -q
+RESULT: 107 passed, 1 failed in 5.31s
+FAILURE: tests/p2-plugin-platform/supervisor/test_lifecycle.py::test_stale_lease_and_release_callbacks_cannot_affect_replacement
+CAUSE EVIDENCE: fixture FakeInterpreterProbe is fixed at 3.12.10 while the test writes platform.python_version()=3.12.13 into its replacement venv marker; accepted validate_venv_identity rejects the mismatch with code 1001.
+REPRO: isolated rerun failed identically (1 failed in 0.54s). The failing test and supervisor sources are outside this node's write set; required P2-neutral Job/Provider gates passed.
