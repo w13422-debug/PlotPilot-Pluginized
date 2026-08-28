@@ -12,6 +12,7 @@ import re
 from dataclasses import dataclass, field
 from enum import Enum
 from hashlib import sha256
+from threading import Lock, RLock
 from types import MappingProxyType
 from typing import Any, Mapping, NoReturn, Sequence
 
@@ -88,6 +89,7 @@ class ChapterOperation(str, Enum):
 
 class SessionState(str, Enum):
     RUNNING = "running"
+    FINALIZING = "finalizing"
     PAUSED = "paused"
     CANCELLED = "cancelled"
     COMPLETED = "completed"
@@ -126,6 +128,8 @@ class RewriteSelection:
         ):
             _fail("rewrite selection must be a non-empty codepoint range")
         _require_text(self.selected_text, "selected_text")
+        if self.end_codepoint - self.start_codepoint != len(self.selected_text):
+            _fail("rewrite selection range length does not match selected_text codepoints")
         _require_hash(self.selected_hash, "selected_hash")
         if sha256(self.selected_text.encode("utf-8")).hexdigest() != self.selected_hash:
             _fail("rewrite selection hash mismatch")
@@ -166,6 +170,12 @@ class ChapterRequest:
         if not isinstance(self.operation, ChapterOperation):
             _fail("operation must be ChapterOperation")
         _require_text(self.instruction, "instruction")
+        if not isinstance(self.context_plan, FrozenContextPlan):
+            _fail("context_plan must be FrozenContextPlan")
+        try:
+            self.context_plan.validate()
+        except ValueError as exc:
+            raise WorkflowError(f"invalid frozen context plan: {exc}") from exc
         if self.context_plan.operation != self.operation.capability_id:
             _fail("context plan operation does not match chapter operation")
         for skill in self.context_plan.skills:
@@ -278,6 +288,7 @@ class SettlementResult:
     chapter_publication: PublicationReceipt
     story_state_candidate_ids: tuple[str, ...]
     bundle_ids: tuple[str, ...]
+    settlement_receipt_id: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -310,31 +321,91 @@ class _Session:
     candidate: ChapterCandidate | None = None
     error: str | None = None
     skill_chain_refs: list[Mapping[str, Any]] = field(default_factory=list)
+    rewrite_selection_receipt: Mapping[str, Any] | None = None
+    transition_epoch: int = 0
+    pending_transition: _PendingTransition | None = None
+    state_lock: RLock = field(default_factory=RLock, repr=False)
+    finalizer_lock: Lock = field(default_factory=Lock, repr=False)
+
+
+@dataclass(frozen=True, slots=True)
+class _TransitionToken:
+    invocation_id: str | None
+    phase: str
+    transition_epoch: int
+    last_event_seq: int
+
+
+@dataclass(slots=True)
+class _PendingTransition:
+    kind: str
+    output: bytes
+    skill_chain_refs: tuple[Mapping[str, Any], ...]
+    terminal_state: SessionState | None = None
+    candidate_status: str | None = None
+    next_skill_index: int | None = None
+    input_asset_id: str | None = None
+    payload_asset_id: str | None = None
+    candidate_bundle: Mapping[str, Any] | None = None
+    persisted_bundle_id: str | None = None
+    candidate_ids: tuple[str, ...] | None = None
+
+
+@dataclass(slots=True)
+class _PendingSettlement:
+    publication: PublicationReceipt
+    bundles: tuple[Mapping[str, Any], ...]
+    bundle_ids: tuple[str, ...]
+    batch_fingerprint: str
+    persisted_ids: list[str] = field(default_factory=list)
 
 
 class ChapterWorkflow:
     """State machine for one or more isolated chapter sessions."""
 
-    def __init__(self, *, core: object, broker: object, result_bundles: object, publication: object | None = None, story_state: object | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        core: object,
+        broker: object,
+        result_bundles: object,
+        publication: object | None = None,
+        story_state: object | None = None,
+        rewrite_selections: object | None = None,
+        settlement_batch: object | None = None,
+    ) -> None:
         self._core = core
         self._broker = broker
         self._result_bundles = result_bundles
         self._publication = publication
         self._story_state = story_state
+        self._rewrite_selections = rewrite_selections
+        self._settlement_batch = settlement_batch
         self._sessions: dict[str, _Session] = {}
         self._operation_sessions: dict[str, str] = {}
         self._publication_receipts: dict[str, PublicationReceipt] = {}
         self._accepted_publications: dict[str, PublicationReceipt] = {}
         self._settlements: dict[str, SettlementResult] = {}
+        self._pending_settlements: dict[str, _PendingSettlement] = {}
+        self._publication_lock = RLock()
+        self._settlement_lock = RLock()
 
     def start(self, request: ChapterRequest) -> SessionSnapshot:
+        if not isinstance(request, ChapterRequest):
+            _fail("start requires a typed ChapterRequest")
+        try:
+            request.context_plan.validate()
+        except ValueError as exc:
+            raise WorkflowError(f"invalid frozen context plan at workflow start: {exc}") from exc
         existing_id = self._operation_sessions.get(request.operation_key)
         if existing_id is not None:
             existing = self._sessions[existing_id]
             if existing.request != request:
                 _fail("operation_key was reused with a different chapter request")
-            return self._snapshot(existing)
-        context_bytes = self._assemble_context(request)
+            with existing.state_lock:
+                return self._snapshot(existing)
+        rewrite_receipt = self._read_rewrite_selection(request)
+        context_bytes = self._assemble_context(request, rewrite_receipt)
         asset_id = self._create_asset(context_bytes, mime="application/vnd.plotpilot.chapter-context+json")
         session_hash = sha256(_stable_bytes({
             "operation_key": request.operation_key,
@@ -346,15 +417,16 @@ class ChapterWorkflow:
         bundle_id = f"chapter-bundle-{session_hash}"
         item_id = f"chapter-item-{session_hash}"
         session = _Session(
-            session_id,
-            request,
-            SessionState.RUNNING,
-            "raw",
-            -1,
-            None,
-            bundle_id,
-            item_id,
+            session_id=session_id,
+            request=request,
+            state=SessionState.RUNNING,
+            phase="raw",
+            skill_index=-1,
+            invocation_id=None,
+            result_bundle_id=bundle_id,
+            result_item_id=item_id,
             phase_input=context_bytes,
+            rewrite_selection_receipt=rewrite_receipt,
         )
         invocation = BrokerInvocation(
             invocation_key=f"{request.operation_key}:raw",
@@ -374,11 +446,36 @@ class ChapterWorkflow:
 
     def poll(self, session_id: str) -> SessionSnapshot:
         session = self._session(session_id)
-        if session.state is not SessionState.RUNNING:
+        with session.state_lock:
+            if session.state is SessionState.FINALIZING:
+                retry_pending = True
+                token = None
+                invocation_id = None
+                last_event_seq = 0
+            elif session.state is not SessionState.RUNNING:
+                return self._snapshot(session)
+            else:
+                if session.invocation_id is None:
+                    _fail("running chapter session has no Broker invocation")
+                retry_pending = False
+                token = self._transition_token(session)
+                invocation_id = session.invocation_id
+                last_event_seq = session.last_event_seq
+        if retry_pending:
+            self._resume_pending(session)
+            with session.state_lock:
+                return self._snapshot(session)
+
+        events = self._call_events("poll", invocation_id, last_event_seq)
+        with session.state_lock:
+            if not self._transition_matches(session, token):
+                return self._snapshot(session)
+            self._apply_events(session, events)
+            should_finalize = session.state is SessionState.FINALIZING
+        if should_finalize:
+            self._resume_pending(session)
+        with session.state_lock:
             return self._snapshot(session)
-        events = self._call_events("poll", session.invocation_id, session.last_event_seq)
-        self._apply_events(session, events)
-        return self._snapshot(session)
 
     def pause(self, session_id: str) -> SessionSnapshot:
         return self._control(session_id, "pause")
@@ -388,143 +485,208 @@ class ChapterWorkflow:
 
     def accept(self, session_id: str, *, accepted_by: str, publication_operation_key: str) -> PublicationReceipt:
         session = self._session(session_id)
-        if session.state is not SessionState.COMPLETED or session.candidate is None or session.candidate.partial:
-            _fail("only a complete chapter Candidate can be accepted")
+        with session.state_lock:
+            if session.state is not SessionState.COMPLETED or session.candidate is None or session.candidate.partial:
+                _fail("only a complete chapter Candidate can be accepted")
+            candidate = session.candidate
+        self._validate_document_bytes(candidate.content, complete=True)
         _require_id(accepted_by, "accepted_by")
         _require_id(publication_operation_key, "publication_operation_key")
-        previous = self._publication_receipts.get(publication_operation_key)
-        if previous is not None:
-            if previous.candidate_id != session.candidate.candidate_id:
-                _fail("publication_operation_key was reused for another Candidate")
-            return previous
-        if self._publication is None:
-            _fail("injected Publication port is required")
-        command = {
-            "schema": "publication-command/v1",
-            "publication_operation_key": publication_operation_key,
-            "workspace_id": session.request.target.workspace_id,
-            "candidate_id": session.candidate.candidate_id,
-            "accepted_by": accepted_by,
-        }
-        publisher = getattr(self._publication, "publish", None)
-        if not callable(publisher):
-            _fail("injected Publication port must expose publish(command)")
-        try:
-            raw = _mapping(publisher(command), "Publication result")
-        except WorkflowError:
-            raise
-        except Exception as exc:
-            raise WorkflowError(f"Publication port failed: {exc}") from exc
-        receipt = self._parse_publication(raw, command, session.candidate)
-        self._publication_receipts[publication_operation_key] = receipt
-        self._accepted_publications[receipt.publication_id] = receipt
-        return receipt
+        with self._publication_lock:
+            previous = self._publication_receipts.get(publication_operation_key)
+            if previous is not None:
+                if previous.candidate_id != candidate.candidate_id:
+                    _fail("publication_operation_key was reused for another Candidate")
+                return previous
+            if self._publication is None:
+                _fail("injected Publication port is required")
+            command = MappingProxyType(
+                {
+                    "schema": "publication-command/v1",
+                    "publication_operation_key": publication_operation_key,
+                    "workspace_id": candidate.target.workspace_id,
+                    "candidate_id": candidate.candidate_id,
+                    "accepted_by": accepted_by,
+                }
+            )
+            publisher = getattr(self._publication, "publish", None)
+            if not callable(publisher):
+                _fail("injected Publication port must expose publish(command)")
+            try:
+                raw = _mapping(publisher(command), "Publication result")
+            except WorkflowError:
+                raise
+            except Exception as exc:
+                raise WorkflowError(f"Publication port failed: {exc}") from exc
+            receipt = self._parse_publication(raw, candidate)
+            self._publication_receipts[publication_operation_key] = receipt
+            self._accepted_publications[receipt.publication_id] = receipt
+            return receipt
 
     def settle_story_state(self, publication: PublicationReceipt, *, operation_key: str) -> SettlementResult:
         _require_id(operation_key, "settlement operation_key")
-        accepted = self._accepted_publications.get(publication.publication_id)
-        if accepted != publication:
-            _fail("Story State settlement requires this workflow's typed Publication result")
-        previous = self._settlements.get(operation_key)
-        if previous is not None:
-            if previous.chapter_publication != publication:
+        with self._settlement_lock:
+            accepted = self._accepted_publications.get(publication.publication_id)
+            if accepted != publication:
+                _fail("Story State settlement requires this workflow's typed Publication result")
+            previous = self._settlements.get(operation_key)
+            if previous is not None:
+                if previous.chapter_publication != publication:
+                    _fail("settlement operation_key was reused for another Publication")
+                return previous
+            pending = self._pending_settlements.get(operation_key)
+            if pending is not None and pending.publication != publication:
                 _fail("settlement operation_key was reused for another Publication")
-            return previous
-        if self._story_state is None:
-            _fail("injected Story State settlement port is required")
-        proposer = getattr(self._story_state, "propose_after_chapter", None)
-        if not callable(proposer):
-            _fail("Story State port must expose propose_after_chapter(request)")
-        request = {
-            "schema": "post-chapter-story-state-request/v1",
-            "operation_key": operation_key,
-            "workspace_id": publication.workspace_id,
-            "chapter_candidate_id": publication.candidate_id,
-            "chapter_publication_id": publication.publication_id,
-            "chapter_document_id": publication.entity_id,
-            "chapter_revision_id": publication.revision_id,
-            "chapter_content_hash": publication.content_hash,
-        }
-        try:
-            bundles = tuple(proposer(MappingProxyType(request)))
-        except Exception as exc:
-            raise WorkflowError(f"Story State proposal port failed: {exc}") from exc
-        bundle_ids: list[str] = []
-        candidate_ids: list[str] = []
-        seen_bundles: set[str] = set()
-        for index, raw_bundle in enumerate(bundles):
-            bundle = dict(_mapping(raw_bundle, f"Story State bundle[{index}]"))
-            self._verify_story_state_bundle(bundle, publication)
-            bundle_id = self._persist_bundle(bundle)
-            if bundle_id in seen_bundles:
-                _fail("Story State settlement returned duplicate bundle_id")
-            seen_bundles.add(bundle_id)
-            staged = self._stage_candidate(f"{operation_key}:{index}", bundle_id)
-            bundle_ids.append(bundle_id)
-            candidate_ids.extend(staged)
-        if len(candidate_ids) != len(set(candidate_ids)):
-            _fail("Story State settlement staged duplicate Candidate identities")
-        result = SettlementResult(publication, tuple(candidate_ids), tuple(bundle_ids))
-        self._settlements[operation_key] = result
-        return result
+            if pending is None:
+                pending = self._prepare_settlement(publication, operation_key)
+                self._pending_settlements[operation_key] = pending
+
+            while len(pending.persisted_ids) < len(pending.bundles):
+                index = len(pending.persisted_ids)
+                declared_id = pending.bundle_ids[index]
+                persisted_id = self._persist_bundle(pending.bundles[index])
+                if persisted_id != declared_id:
+                    _fail("Story State ResultBundle port changed the declared bundle identity")
+                pending.persisted_ids.append(persisted_id)
+
+            result = self._stage_story_state_batch(operation_key, pending)
+            self._settlements[operation_key] = result
+            del self._pending_settlements[operation_key]
+            return result
 
     def _control(self, session_id: str, action: str) -> SessionSnapshot:
         session = self._session(session_id)
-        if session.state in {SessionState.PAUSED, SessionState.CANCELLED}:
-            return self._snapshot(session)
-        if session.state is not SessionState.RUNNING or session.invocation_id is None:
-            _fail(f"cannot {action} a terminal chapter session")
-        events = self._call_events(action, session.request.operation_key, session.invocation_id)
-        self._apply_events(session, events)
-        expected = SessionState.PAUSED if action == "pause" else SessionState.CANCELLED
-        if session.state is not expected:
-            _fail(f"Broker {action} did not return a matching terminal event")
-        return self._snapshot(session)
-
-    def _apply_events(self, session: _Session, events: Sequence[BrokerEvent]) -> None:
-        self._preflight_events(session, events)
-        terminal_seen = False
-        for event in events:
-            if not isinstance(event, BrokerEvent):
-                _fail("Broker returned an untyped event")
-            if terminal_seen:
-                _fail("Broker returned events after a terminal event")
-            if event.event_seq != session.last_event_seq + 1:
-                _fail("Broker event sequence is not contiguous")
-            session.last_event_seq = event.event_seq
-            if event.kind == "acked":
-                session.acked.extend(event.chunk)
-                if event.prefix_size != len(session.acked):
-                    _fail("Broker ACK prefix_size does not match exact received bytes")
-                if event.prefix_hash != sha256(bytes(session.acked)).hexdigest():
-                    _fail("Broker ACK prefix_hash does not match exact received bytes")
+        expected_kind = "paused" if action == "pause" else "cancelled"
+        expected_state = SessionState.PAUSED if action == "pause" else SessionState.CANCELLED
+        while True:
+            with session.state_lock:
+                if session.state in {SessionState.PAUSED, SessionState.CANCELLED}:
+                    return self._snapshot(session)
+                if session.state is SessionState.FINALIZING:
+                    retry_pending = True
+                    token = None
+                    invocation_id = None
+                elif session.state is SessionState.RUNNING and session.invocation_id is not None:
+                    retry_pending = False
+                    token = self._transition_token(session)
+                    invocation_id = session.invocation_id
+                else:
+                    _fail(f"cannot {action} a terminal chapter session")
+            if retry_pending:
+                self._resume_pending(session)
+                with session.state_lock:
+                    if session.state is SessionState.FINALIZING:
+                        return self._snapshot(session)
                 continue
-            terminal_seen = True
-            local_hash = sha256(bytes(session.acked)).hexdigest()
-            if event.prefix_hash is not None and event.prefix_hash != local_hash:
-                _fail("Broker terminal hash does not match the exact ACK prefix")
-            if event.kind == "completed":
-                if session.phase == "skill":
-                    if event.skill_chain_ref is None:
-                        _fail("completed Skill phase requires bundle-backed chain evidence")
-                    self._verify_skill_chain_ref(event.skill_chain_ref, session)
-                    session.skill_chain_refs.append(event.skill_chain_ref)
-                elif event.skill_chain_ref is not None:
-                    _fail("raw generation cannot claim Skill chain evidence")
-                self._complete_phase(session)
-            elif event.kind in {"paused", "cancelled"}:
-                session.state = SessionState.PAUSED if event.kind == "paused" else SessionState.CANCELLED
-                self._materialize_candidate(session, status="partial")
-            else:
-                session.state = SessionState.FAILED
-                session.error = event.error
 
-    def _preflight_events(self, session: _Session, events: Sequence[BrokerEvent]) -> None:
+            events = self._call_events(action, session.request.operation_key, invocation_id)
+            with session.state_lock:
+                if not self._transition_matches(session, token):
+                    return self._snapshot(session)
+                self._apply_events(session, events, required_terminal_kind=expected_kind)
+                should_finalize = session.state is SessionState.FINALIZING
+            if should_finalize:
+                self._resume_pending(session)
+            with session.state_lock:
+                if session.state in {SessionState.PAUSED, SessionState.CANCELLED}:
+                    return self._snapshot(session)
+                if session.state is SessionState.FINALIZING:
+                    return self._snapshot(session)
+                if session.state is not expected_state:
+                    _fail(f"Broker {action} did not return a matching terminal event")
+                return self._snapshot(session)
+
+    def _apply_events(
+        self,
+        session: _Session,
+        events: Sequence[BrokerEvent],
+        *,
+        required_terminal_kind: str | None = None,
+    ) -> None:
+        prefix, last_event_seq, terminal = self._preflight_events(session, events)
+        if required_terminal_kind is not None and (terminal is None or terminal.kind != required_terminal_kind):
+            _fail(f"Broker control did not return {required_terminal_kind}")
+        if not events:
+            return
+        if terminal is None:
+            session.acked = bytearray(prefix)
+            session.last_event_seq = last_event_seq
+            session.transition_epoch += 1
+            return
+        if terminal.kind == "failed":
+            session.acked = bytearray(prefix)
+            session.last_event_seq = last_event_seq
+            session.state = SessionState.FAILED
+            session.error = terminal.error
+            session.transition_epoch += 1
+            return
+
+        refs = tuple(session.skill_chain_refs)
+        if terminal.kind == "completed" and terminal.skill_chain_ref is not None:
+            refs += (MappingProxyType(dict(terminal.skill_chain_ref)),)
+        if terminal.kind == "completed":
+            try:
+                self._validate_document_bytes(prefix, complete=True)
+            except WorkflowError as exc:
+                session.acked = bytearray(prefix)
+                session.last_event_seq = last_event_seq
+                session.state = SessionState.FAILED
+                session.error = str(exc)
+                session.transition_epoch += 1
+                return
+            next_index = session.skill_index + 1
+            if next_index < len(session.request.context_plan.skills):
+                pending = _PendingTransition(
+                    kind="next_skill",
+                    output=prefix,
+                    skill_chain_refs=refs,
+                    next_skill_index=next_index,
+                )
+            else:
+                pending = _PendingTransition(
+                    kind="candidate",
+                    output=prefix,
+                    skill_chain_refs=refs,
+                    terminal_state=SessionState.COMPLETED,
+                    candidate_status="complete",
+                )
+        else:
+            output = prefix
+            if not output and session.phase == "skill":
+                output = session.phase_input
+            try:
+                self._validate_document_bytes(output, complete=False)
+            except WorkflowError as exc:
+                session.acked = bytearray(prefix)
+                session.last_event_seq = last_event_seq
+                session.state = SessionState.FAILED
+                session.error = str(exc)
+                session.transition_epoch += 1
+                return
+            pending = _PendingTransition(
+                kind="candidate",
+                output=output,
+                skill_chain_refs=refs,
+                terminal_state=SessionState.PAUSED if terminal.kind == "paused" else SessionState.CANCELLED,
+                candidate_status="partial",
+            )
+
+        session.acked = bytearray(prefix)
+        session.last_event_seq = last_event_seq
+        session.pending_transition = pending
+        session.state = SessionState.FINALIZING
+        session.error = None
+        session.transition_epoch += 1
+
+    def _preflight_events(
+        self, session: _Session, events: Sequence[BrokerEvent]
+    ) -> tuple[bytes, int, BrokerEvent | None]:
         """Validate a returned event batch before any durable terminal effect."""
 
         expected_seq = session.last_event_seq
         prefix = bytes(session.acked)
         terminal_seen = False
+        terminal: BrokerEvent | None = None
         for event in events:
             if not isinstance(event, BrokerEvent):
                 _fail("Broker returned an untyped event")
@@ -550,42 +712,125 @@ class ChapterWorkflow:
                     self._verify_skill_chain_ref(event.skill_chain_ref, session)
                 elif event.skill_chain_ref is not None:
                     _fail("raw generation cannot claim Skill chain evidence")
+            terminal = event
+        return prefix, expected_seq, terminal
 
-    def _complete_phase(self, session: _Session) -> None:
-        output = bytes(session.acked)
-        if session.request.context_plan.skills and session.skill_index + 1 < len(session.request.context_plan.skills):
-            session.skill_index += 1
-            skill = session.request.context_plan.skills[session.skill_index]
-            input_asset_id = self._create_asset(output, mime="text/plain;charset=utf-8")
-            invocation = BrokerInvocation(
-                invocation_key=f"{session.request.operation_key}:skill:{skill.order}",
-                operation_key=session.request.operation_key,
-                capability_id="writing.skill.apply/v1",
-                input_asset_id=input_asset_id,
-                input_hash=sha256(output).hexdigest(),
-                expected_result_contract="candidate-batch/v1",
-                result_bundle_id=session.result_bundle_id,
-                result_item_id=session.result_item_id,
-                phase="skill",
-                skill=skill,
+    def _resume_pending(self, session: _Session) -> bool:
+        if not session.finalizer_lock.acquire(blocking=False):
+            return False
+        pending: _PendingTransition | None = None
+        try:
+            with session.state_lock:
+                if session.state is not SessionState.FINALIZING or session.pending_transition is None:
+                    return False
+                pending = session.pending_transition
+
+            if pending.kind == "next_skill":
+                if pending.input_asset_id is None:
+                    asset_id = self._create_asset(pending.output, mime="text/plain;charset=utf-8")
+                    with session.state_lock:
+                        if session.pending_transition is not pending:
+                            _fail("chapter transition changed during Skill Asset creation")
+                        pending.input_asset_id = asset_id
+                if pending.next_skill_index is None or pending.input_asset_id is None:
+                    _fail("pending Skill transition is incomplete")
+                skill = session.request.context_plan.skills[pending.next_skill_index]
+                invocation = BrokerInvocation(
+                    invocation_key=f"{session.request.operation_key}:skill:{skill.order}",
+                    operation_key=session.request.operation_key,
+                    capability_id="writing.skill.apply/v1",
+                    input_asset_id=pending.input_asset_id,
+                    input_hash=sha256(pending.output).hexdigest(),
+                    expected_result_contract="candidate-batch/v1",
+                    result_bundle_id=session.result_bundle_id,
+                    result_item_id=session.result_item_id,
+                    phase="skill",
+                    skill=skill,
+                )
+                with session.state_lock:
+                    token = self._transition_token(session)
+                invocation_id = self._broker_start(invocation)
+                with session.state_lock:
+                    if session.pending_transition is not pending or not self._transition_matches(
+                        session, token, required_state=SessionState.FINALIZING
+                    ):
+                        _fail("chapter transition changed during Broker start")
+                    session.phase = "skill"
+                    session.skill_index = pending.next_skill_index
+                    session.phase_input = pending.output
+                    session.acked.clear()
+                    session.last_event_seq = 0
+                    session.invocation_id = invocation_id
+                    session.skill_chain_refs = list(pending.skill_chain_refs)
+                    session.pending_transition = None
+                    session.state = SessionState.RUNNING
+                    session.error = None
+                    session.transition_epoch += 1
+                return True
+
+            if pending.kind != "candidate" or pending.terminal_state is None or pending.candidate_status is None:
+                _fail("unknown pending chapter transition")
+            self._validate_document_bytes(pending.output, complete=pending.candidate_status == "complete")
+            if pending.payload_asset_id is None:
+                asset_id = self._create_asset(pending.output, mime="text/plain;charset=utf-8")
+                with session.state_lock:
+                    if session.pending_transition is not pending:
+                        _fail("chapter transition changed during payload Asset creation")
+                    pending.payload_asset_id = asset_id
+            if pending.candidate_bundle is None:
+                bundle = self._build_candidate_bundle(session, pending)
+                self._verify_result_bundle(
+                    bundle,
+                    workspace_id=session.request.target.workspace_id,
+                    snapshot_hash=session.request.producer.input_snapshot_hash,
+                )
+                pending.candidate_bundle = bundle
+            if pending.persisted_bundle_id is None:
+                persisted_id = self._persist_bundle(pending.candidate_bundle)
+                if persisted_id != session.result_bundle_id:
+                    _fail("ResultBundle port changed the deterministic bundle identity")
+                pending.persisted_bundle_id = persisted_id
+            if pending.candidate_ids is None:
+                candidate_ids = self._stage_candidate(
+                    f"{session.request.operation_key}:candidate", session.result_bundle_id
+                )
+                if len(candidate_ids) != 1:
+                    _fail("chapter ResultBundle must stage exactly one Candidate")
+                pending.candidate_ids = candidate_ids
+            candidate = ChapterCandidate(
+                pending.candidate_ids[0],
+                session.result_bundle_id,
+                pending.payload_asset_id,
+                pending.output,
+                sha256(pending.output).hexdigest(),
+                pending.candidate_status,
+                session.request.operation,
+                session.request.target,
             )
-            session.phase = "skill"
-            session.phase_input = output
-            session.acked.clear()
-            session.last_event_seq = 0
-            session.invocation_id = self._broker_start(invocation)
-            return
-        session.state = SessionState.COMPLETED
-        self._materialize_candidate(session, status="complete")
+            with session.state_lock:
+                if session.pending_transition is not pending:
+                    _fail("chapter transition changed before Candidate commit")
+                session.skill_chain_refs = list(pending.skill_chain_refs)
+                session.candidate = candidate
+                session.pending_transition = None
+                session.state = pending.terminal_state
+                session.error = None
+                session.transition_epoch += 1
+            return True
+        except WorkflowError as exc:
+            with session.state_lock:
+                if pending is not None and session.pending_transition is pending:
+                    session.error = str(exc)
+            raise
+        finally:
+            session.finalizer_lock.release()
 
-    def _materialize_candidate(self, session: _Session, *, status: str) -> None:
-        if session.candidate is not None:
-            return
-        content = bytes(session.acked)
-        if status == "partial" and not content and session.phase == "skill":
-            content = session.phase_input
+    def _build_candidate_bundle(self, session: _Session, pending: _PendingTransition) -> Mapping[str, Any]:
+        if pending.payload_asset_id is None or pending.candidate_status is None:
+            _fail("Candidate transition is missing its payload Asset")
+        content = pending.output
         content_hash = sha256(content).hexdigest()
-        payload_asset_id = self._create_asset(content, mime="text/plain;charset=utf-8")
+        payload_asset_id = pending.payload_asset_id
         bundle_id = session.result_bundle_id
         item_id = session.result_item_id
         request = session.request
@@ -602,9 +847,9 @@ class ChapterWorkflow:
             source_refs.append(
                 {
                     "workspace_id": request.target.workspace_id,
-                    "source_type": "rewrite-selection",
-                    "source_id": request.target.document_id,
-                    "revision_or_hash": request.rewrite_selection.selected_hash,
+                    "source_type": "revision",
+                    "source_id": request.target.base_revision_id,
+                    "revision_or_hash": request.target.base_content_hash,
                 }
             )
         bundle = {
@@ -644,27 +889,46 @@ class ChapterWorkflow:
                     ],
                     "parent_candidate_ids": [],
                     "source_refs": source_refs,
-                    "status": status,
+                    "status": pending.candidate_status,
                 }
             ],
             "warnings": [],
-            "partial": status == "partial",
+            "partial": pending.candidate_status == "partial",
             "provenance_receipt_id": request.producer.provenance_receipt_id,
-            "skill_chain_result_refs": [dict(ref) for ref in session.skill_chain_refs],
+            "skill_chain_result_refs": [dict(ref) for ref in pending.skill_chain_refs],
         }
-        self._verify_result_bundle(
-            bundle,
-            workspace_id=request.target.workspace_id,
-            snapshot_hash=request.producer.input_snapshot_hash,
+        return bundle
+
+    @staticmethod
+    def _validate_document_bytes(content: bytes, *, complete: bool) -> str:
+        try:
+            text = bytes(content).decode("utf-8", errors="strict")
+        except UnicodeDecodeError as exc:
+            raise WorkflowError("chapter document bytes must be strict UTF-8") from exc
+        if complete and not text.strip():
+            _fail("complete chapter output must be non-blank text")
+        return text
+
+    @staticmethod
+    def _transition_token(session: _Session) -> _TransitionToken:
+        return _TransitionToken(
+            session.invocation_id,
+            session.phase,
+            session.transition_epoch,
+            session.last_event_seq,
         )
-        persisted_id = self._persist_bundle(bundle)
-        if persisted_id != bundle_id:
-            _fail("ResultBundle port changed the deterministic bundle identity")
-        candidate_ids = self._stage_candidate(f"{request.operation_key}:candidate", bundle_id)
-        if len(candidate_ids) != 1:
-            _fail("chapter ResultBundle must stage exactly one Candidate")
-        session.candidate = ChapterCandidate(
-            candidate_ids[0], bundle_id, payload_asset_id, content, content_hash, status, request.operation, request.target
+
+    @staticmethod
+    def _transition_matches(
+        session: _Session,
+        token: _TransitionToken | None,
+        *,
+        required_state: SessionState = SessionState.RUNNING,
+    ) -> bool:
+        return (
+            token is not None
+            and session.state is required_state
+            and ChapterWorkflow._transition_token(session) == token
         )
 
     @staticmethod
@@ -672,8 +936,76 @@ class ChapterWorkflow:
         del request
         return "core/document-text/v1"
 
+    def _read_rewrite_selection(self, request: ChapterRequest) -> Mapping[str, Any] | None:
+        selection = request.rewrite_selection
+        if selection is None:
+            return None
+        if self._rewrite_selections is None:
+            _fail("injected Rewrite selection receipt port is required")
+        reader = getattr(self._rewrite_selections, "read_rewrite_selection", None)
+        if not callable(reader):
+            _fail("Rewrite selection receipt port must expose read_rewrite_selection(request)")
+        command = MappingProxyType(
+            {
+                "schema": "rewrite-selection-read/v1",
+                "workspace_id": request.target.workspace_id,
+                "document_id": request.target.document_id,
+                "base_revision_id": request.target.base_revision_id,
+                "base_content_hash": request.target.base_content_hash,
+                "start_codepoint": selection.start_codepoint,
+                "end_codepoint": selection.end_codepoint,
+                "selected_text": selection.selected_text,
+                "selected_hash": selection.selected_hash,
+            }
+        )
+        try:
+            raw = _mapping(reader(command), "Rewrite selection receipt")
+            receipt = json.loads(_stable_bytes(raw).decode("utf-8"))
+        except WorkflowError:
+            raise
+        except Exception as exc:
+            raise WorkflowError(f"Rewrite selection receipt port failed: {exc}") from exc
+        expected = {
+            "schema",
+            "receipt_id",
+            "workspace_id",
+            "document_id",
+            "base_revision_id",
+            "base_content_hash",
+            "current_revision_id",
+            "total_codepoints",
+            "start_codepoint",
+            "end_codepoint",
+            "selected_text",
+            "selected_hash",
+        }
+        if set(receipt) != expected or receipt.get("schema") != "rewrite-selection-receipt/v1":
+            _fail("Rewrite selection receipt is not closed rewrite-selection-receipt/v1")
+        _require_id(receipt.get("receipt_id"), "rewrite selection receipt_id")
+        total = receipt.get("total_codepoints")
+        if not isinstance(total, int) or isinstance(total, bool) or total < 0:
+            _fail("Rewrite selection receipt total_codepoints must be a non-negative integer")
+        bindings = {
+            "workspace_id": request.target.workspace_id,
+            "document_id": request.target.document_id,
+            "base_revision_id": request.target.base_revision_id,
+            "base_content_hash": request.target.base_content_hash,
+            "current_revision_id": request.target.base_revision_id,
+            "start_codepoint": selection.start_codepoint,
+            "end_codepoint": selection.end_codepoint,
+            "selected_text": selection.selected_text,
+            "selected_hash": selection.selected_hash,
+        }
+        if any(receipt.get(name) != value for name, value in bindings.items()):
+            _fail("Rewrite selection receipt does not bind the requested base Revision and exact selection")
+        if selection.end_codepoint > total:
+            _fail("Rewrite selection range is outside the bound base Revision")
+        return MappingProxyType(receipt)
+
     @staticmethod
-    def _assemble_context(request: ChapterRequest) -> bytes:
+    def _assemble_context(
+        request: ChapterRequest, rewrite_receipt: Mapping[str, Any] | None
+    ) -> bytes:
         selection: dict[str, Any] | None = None
         if request.rewrite_selection is not None:
             selection = {
@@ -714,8 +1046,129 @@ class ChapterWorkflow:
             ],
             "context_fingerprint": request.context_plan.fingerprint,
             "rewrite_selection": selection,
+            "rewrite_selection_receipt": dict(rewrite_receipt) if rewrite_receipt is not None else None,
         }
         return _stable_bytes(value)
+
+    def _prepare_settlement(self, publication: PublicationReceipt, operation_key: str) -> _PendingSettlement:
+        if self._story_state is None:
+            _fail("injected Story State settlement port is required")
+        proposer = getattr(self._story_state, "propose_after_chapter", None)
+        if not callable(proposer):
+            _fail("Story State port must expose propose_after_chapter(request)")
+        request = MappingProxyType(
+            {
+                "schema": "post-chapter-story-state-request/v1",
+                "operation_key": operation_key,
+                "workspace_id": publication.workspace_id,
+                "chapter_candidate_id": publication.candidate_id,
+                "chapter_publication_id": publication.publication_id,
+                "chapter_document_id": publication.entity_id,
+                "chapter_revision_id": publication.revision_id,
+                "chapter_content_hash": publication.content_hash,
+            }
+        )
+        try:
+            raw_bundles = tuple(proposer(request))
+            bundles = tuple(
+                json.loads(_stable_bytes(_mapping(raw, f"Story State bundle[{index}]")).decode("utf-8"))
+                for index, raw in enumerate(raw_bundles)
+            )
+        except WorkflowError:
+            raise
+        except Exception as exc:
+            raise WorkflowError(f"Story State proposal port failed: {exc}") from exc
+
+        bundle_ids: list[str] = []
+        seen_bundle_ids: set[str] = set()
+        seen_item_ids: set[str] = set()
+        for index, bundle in enumerate(bundles):
+            self._verify_story_state_bundle(bundle, publication)
+            bundle_id = _require_id(bundle.get("bundle_id"), f"Story State bundle[{index}] bundle_id")
+            if bundle_id in seen_bundle_ids:
+                _fail("Story State settlement returned duplicate bundle_id")
+            seen_bundle_ids.add(bundle_id)
+            bundle_ids.append(bundle_id)
+            for item in bundle["items"]:
+                item_id = _require_id(item.get("item_id"), "Story State item_id")
+                if item_id in seen_item_ids:
+                    _fail("Story State settlement returned duplicate item_id")
+                seen_item_ids.add(item_id)
+
+        fingerprint_material = {
+            "operation_key": operation_key,
+            "chapter_publication_id": publication.publication_id,
+            "bundles": [sha256(_stable_bytes(bundle)).hexdigest() for bundle in bundles],
+        }
+        fingerprint = sha256(_stable_bytes(fingerprint_material)).hexdigest()
+        return _PendingSettlement(publication, bundles, tuple(bundle_ids), fingerprint)
+
+    def _stage_story_state_batch(
+        self, operation_key: str, pending: _PendingSettlement
+    ) -> SettlementResult:
+        if self._settlement_batch is None:
+            _fail("injected atomic Story State Candidate batch port is required")
+        stager = getattr(self._settlement_batch, "stage_story_state_batch", None)
+        if not callable(stager):
+            _fail("atomic Story State Candidate batch port must expose stage_story_state_batch(command)")
+        command = MappingProxyType(
+            {
+                "schema": "story-state-candidate-batch-stage/v1",
+                "operation_key": operation_key,
+                "chapter_publication_id": pending.publication.publication_id,
+                "batch_fingerprint": pending.batch_fingerprint,
+                "bundle_ids": pending.bundle_ids,
+            }
+        )
+        try:
+            raw = _mapping(stager(command), "Story State atomic batch result")
+            result = json.loads(_stable_bytes(raw).decode("utf-8"))
+        except WorkflowError:
+            raise
+        except Exception as exc:
+            raise WorkflowError(f"Story State atomic Candidate batch failed: {exc}") from exc
+        expected = {
+            "schema",
+            "receipt_id",
+            "operation_key",
+            "chapter_publication_id",
+            "batch_fingerprint",
+            "bundle_ids",
+            "candidate_groups",
+            "idempotent",
+        }
+        if set(result) != expected or result.get("schema") != "story-state-candidate-batch-result/v1":
+            _fail("Story State atomic batch result is not closed")
+        if (
+            result.get("operation_key") != operation_key
+            or result.get("chapter_publication_id") != pending.publication.publication_id
+            or result.get("batch_fingerprint") != pending.batch_fingerprint
+            or result.get("bundle_ids") != list(pending.bundle_ids)
+        ):
+            _fail("Story State atomic batch result is not bound to the requested batch")
+        if not isinstance(result.get("idempotent"), bool):
+            _fail("Story State atomic batch idempotent must be boolean")
+        groups = result.get("candidate_groups")
+        if not isinstance(groups, list) or len(groups) != len(pending.bundles):
+            _fail("Story State atomic batch result has the wrong Candidate groups")
+        candidate_ids: list[str] = []
+        for bundle, bundle_id, group in zip(pending.bundles, pending.bundle_ids, groups, strict=True):
+            group = _mapping(group, "Story State Candidate group")
+            if set(group) != {"bundle_id", "candidate_ids"} or group.get("bundle_id") != bundle_id:
+                _fail("Story State Candidate group is not bound to its ResultBundle")
+            values = group.get("candidate_ids")
+            if not isinstance(values, list) or len(values) != len(bundle["items"]):
+                _fail("Story State Candidate group cardinality does not match its ResultBundle")
+            for value in values:
+                candidate_ids.append(_require_id(value, "Story State candidate_id"))
+        if len(candidate_ids) != len(set(candidate_ids)):
+            _fail("Story State atomic batch returned duplicate Candidate identities")
+        return SettlementResult(
+            pending.publication,
+            tuple(candidate_ids),
+            pending.bundle_ids,
+            _require_id(result.get("receipt_id"), "Story State settlement receipt_id"),
+        )
 
     def _create_asset(self, content: bytes, *, mime: str) -> str:
         creator = getattr(self._core, "create_asset", None)
@@ -738,7 +1191,8 @@ class ChapterWorkflow:
         if not callable(persister):
             _fail("injected ResultBundle port must expose persist_result_bundle(bundle)")
         try:
-            return _require_id(persister(MappingProxyType(dict(bundle))), "persisted bundle_id")
+            isolated = json.loads(_stable_bytes(bundle).decode("utf-8"))
+            return _require_id(persister(MappingProxyType(isolated)), "persisted bundle_id")
         except WorkflowError:
             raise
         except Exception as exc:
@@ -779,13 +1233,17 @@ class ChapterWorkflow:
             raise WorkflowError(f"Broker {method} failed: {exc}") from exc
 
     @staticmethod
-    def _parse_publication(raw: Mapping[str, Any], command: Mapping[str, Any], candidate: ChapterCandidate) -> PublicationReceipt:
+    def _parse_publication(raw: Mapping[str, Any], candidate: ChapterCandidate) -> PublicationReceipt:
+        raw = json.loads(_stable_bytes(raw).decode("utf-8"))
         expected = {
             "schema", "publication_id", "candidate_id", "workspace_id", "entity_kind", "entity_id", "resulting_revision", "idempotent"
         }
         if set(raw) != expected or raw.get("schema") != "publication-result/v1":
             _fail("Publication result is not closed publication-result/v1")
-        if raw.get("candidate_id") != command["candidate_id"] or raw.get("workspace_id") != command["workspace_id"]:
+        if (
+            raw.get("candidate_id") != candidate.candidate_id
+            or raw.get("workspace_id") != candidate.target.workspace_id
+        ):
             _fail("Publication result is not bound to the accepted Candidate")
         if raw.get("entity_kind") != "document" or raw.get("entity_id") != candidate.target.document_id:
             _fail("Publication result target does not match the chapter")
@@ -794,9 +1252,9 @@ class ChapterWorkflow:
         if set(revision) != required:
             _fail("Publication resulting_revision is not closed")
         if (
-            revision.get("workspace_id") != raw["workspace_id"]
+            revision.get("workspace_id") != candidate.target.workspace_id
             or revision.get("entity_kind") != "document"
-            or revision.get("entity_id") != raw["entity_id"]
+            or revision.get("entity_id") != candidate.target.document_id
         ):
             _fail("Publication resulting Revision crosses identity")
         revision_number = revision.get("revision_number")
@@ -811,7 +1269,7 @@ class ChapterWorkflow:
             _require_id(raw.get("entity_id"), "publication entity_id"),
             _require_id(revision.get("revision_id"), "publication revision_id"),
             _require_hash(revision.get("content_hash"), "publication content_hash"),
-            MappingProxyType(dict(raw)),
+            MappingProxyType({**raw, "resulting_revision": MappingProxyType(dict(revision))}),
         )
 
     @staticmethod

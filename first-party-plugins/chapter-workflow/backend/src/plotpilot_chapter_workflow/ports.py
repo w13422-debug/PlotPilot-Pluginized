@@ -57,10 +57,36 @@ class StoryStateSettlementPort(Protocol):
     def propose_after_chapter(self, request: Mapping[str, Any]) -> Sequence[Mapping[str, Any]]: ...
 
 
+@runtime_checkable
+class RewriteSelectionReceiptPort(Protocol):
+    """P0 composition-only read seam for an exact Core Revision selection.
+
+    This is intentionally not represented as a published SDK authority.  P0
+    composes it from the accepted read APIs without giving this plugin a Core
+    repository handle.
+    """
+
+    def read_rewrite_selection(self, request: Mapping[str, Any]) -> Mapping[str, Any]: ...
+
+
+@runtime_checkable
+class SettlementCandidateBatchPort(Protocol):
+    """P0 composition-only atomic Candidate batch staging seam.
+
+    The adapter binds an immutable ordered batch to ``operation_key`` and
+    persists a durable receipt.  A call is all-or-none and retrying the same
+    command returns the same receipt instead of exposing a partial batch.
+    """
+
+    def stage_story_state_batch(self, command: Mapping[str, Any]) -> Mapping[str, Any]: ...
+
+
 __all__ = [
     "BrokerPort",
     "CoreAuthorityPort",
     "PublicationPort",
     "ResultBundlePort",
+    "RewriteSelectionReceiptPort",
+    "SettlementCandidateBatchPort",
     "StoryStateSettlementPort",
 ]

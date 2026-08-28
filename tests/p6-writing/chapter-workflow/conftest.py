@@ -31,6 +31,10 @@ class FakeCore:
     assets: dict[str, bytes] = field(default_factory=dict)
     asset_mimes: dict[str, str] = field(default_factory=dict)
     stage_calls: list[tuple[str, str]] = field(default_factory=list)
+    selection_calls: list[dict[str, Any]] = field(default_factory=list)
+    selection_response: dict[str, Any] | None = None
+    batch_calls: list[dict[str, Any]] = field(default_factory=list)
+    batch_receipts: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     def create_asset(self, content: bytes, *, mime: str) -> Mapping[str, Any]:
         asset_id = f"asset-{len(self.assets) + 1}"
@@ -45,6 +49,58 @@ class FakeCore:
             self.stage_calls.append(call)
         index = self.stage_calls.index(call) + 1
         return [f"candidate-{index}"]
+
+    def read_rewrite_selection(self, request: Mapping[str, Any]) -> Mapping[str, Any]:
+        self.selection_calls.append(dict(request))
+        if self.selection_response is not None:
+            return deepcopy(self.selection_response)
+        return {
+            "schema": "rewrite-selection-receipt/v1",
+            "receipt_id": "selection-receipt-1",
+            "workspace_id": request["workspace_id"],
+            "document_id": request["document_id"],
+            "base_revision_id": request["base_revision_id"],
+            "base_content_hash": request["base_content_hash"],
+            "current_revision_id": request["base_revision_id"],
+            "total_codepoints": 100,
+            "start_codepoint": request["start_codepoint"],
+            "end_codepoint": request["end_codepoint"],
+            "selected_text": request["selected_text"],
+            "selected_hash": request["selected_hash"],
+        }
+
+    def stage_story_state_batch(self, command: Mapping[str, Any]) -> Mapping[str, Any]:
+        copied = dict(command)
+        self.batch_calls.append(copied)
+        operation_key = copied["operation_key"]
+        previous = self.batch_receipts.get(operation_key)
+        if previous is not None:
+            if (
+                previous["chapter_publication_id"] != copied["chapter_publication_id"]
+                or previous["batch_fingerprint"] != copied["batch_fingerprint"]
+                or previous["bundle_ids"] != list(copied["bundle_ids"])
+            ):
+                raise ValueError("atomic batch operation_key reused with different input")
+            replay = deepcopy(previous)
+            replay["idempotent"] = True
+            return replay
+        first_index = len(self.stage_calls) + 1
+        groups = [
+            {"bundle_id": bundle_id, "candidate_ids": [f"candidate-{first_index + index}"]}
+            for index, bundle_id in enumerate(copied["bundle_ids"])
+        ]
+        receipt = {
+            "schema": "story-state-candidate-batch-result/v1",
+            "receipt_id": f"settlement-receipt-{len(self.batch_receipts) + 1}",
+            "operation_key": operation_key,
+            "chapter_publication_id": copied["chapter_publication_id"],
+            "batch_fingerprint": copied["batch_fingerprint"],
+            "bundle_ids": list(copied["bundle_ids"]),
+            "candidate_groups": groups,
+            "idempotent": False,
+        }
+        self.batch_receipts[operation_key] = deepcopy(receipt)
+        return receipt
 
 
 @dataclass
@@ -179,7 +235,15 @@ def make_request(
 @pytest.fixture
 def ports():
     core, broker, bundles, publication, story = FakeCore(), FakeBroker(), FakeBundles(), FakePublication(), FakeStoryState()
-    workflow = ChapterWorkflow(core=core, broker=broker, result_bundles=bundles, publication=publication, story_state=story)
+    workflow = ChapterWorkflow(
+        core=core,
+        broker=broker,
+        result_bundles=bundles,
+        publication=publication,
+        story_state=story,
+        rewrite_selections=core,
+        settlement_batch=core,
+    )
     return workflow, core, broker, bundles, publication, story
 
 

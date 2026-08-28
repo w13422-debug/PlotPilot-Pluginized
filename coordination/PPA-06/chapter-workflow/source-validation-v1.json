@@ -3,25 +3,41 @@
   "node_id": "NW-P6-CHAPTER-WORKFLOW-02",
   "base_commit": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
   "base_tree": "eab64b7d5b1e3ad652aeaf48bd0085d930beca5d",
+  "remediation_parent": "7be5b7397d116ca46aaaf9a385cb3f8068ce82d9",
+  "reviewed_tree": "c6fb7328967737864c684f9f62395c0767299549",
+  "finding_manifest_sha256": "7824e3d01d3cfcd03ee17078aa2a3cfb86b9f23229650c7fc9b24695c72152f3",
   "source_readiness": "source_ready_integration_deferred",
+  "review_status": "awaiting_same_reviewer_directed_recheck",
   "environment": {
-    "python": "3.12.13",
+    "python": "3.12.10",
     "pytest": "8.4.2",
-    "dependency_note": "The host PATH had no python command. Tests used an existing audit venv and temporary uncommitted rfc8785/jsonschema packages; no root manifest or lock changed."
+    "dependency_note": "Validation used the existing repository environment. No root manifest, dependency or lock file changed."
   },
   "results": [
     {
       "scope": "tests/p6-writing/chapter-workflow",
       "command": "python -B -m pytest -p no:cacheprovider tests/p6-writing/chapter-workflow -q",
       "exit_code": 0,
-      "raw_result": "33 passed in 0.49s"
+      "raw_result": "66 passed in 1.12s"
     },
     {
       "scope": "tests/p6-writing",
       "command": "python -B -m pytest -p no:cacheprovider tests/p6-writing -q",
       "exit_code": 0,
-      "raw_result": "80 passed, 4 warnings in 4.39s",
-      "warnings": "Existing fpdf2 uni parameter deprecation in export-suite/domain.py"
+      "raw_result": "113 passed, 4 warnings in 5.32s",
+      "warnings": "Existing fpdf2 uni parameter deprecation in first-party-plugins/export-suite/backend/src/plotpilot_export_suite/domain.py:206"
+    },
+    {
+      "scope": "first-party-plugins/chapter-workflow",
+      "command": "python -B -m compileall -q first-party-plugins/chapter-workflow",
+      "exit_code": 0,
+      "raw_result": "compileall exit=0"
+    },
+    {
+      "scope": "working-tree-diff",
+      "command": "git diff --check",
+      "exit_code": 0,
+      "raw_result": "exit 0"
     }
   ],
   "boundaries": {
@@ -29,8 +45,12 @@
     "direct_core_repository_import": false,
     "direct_body_write": false,
     "direct_story_state_write": false,
+    "public_contract_change": false,
+    "root_dependency_or_lock_change": false,
     "plugin_json_created": false,
     "production_integration_claimed": false,
-    "review_or_acceptance_claimed": false
+    "review_or_acceptance_claimed": false,
+    "composition_only_rewrite_receipt_port": true,
+    "composition_only_atomic_settlement_batch_port": true
   }
 }
