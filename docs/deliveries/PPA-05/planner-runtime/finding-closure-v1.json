@@ -1,0 +1,97 @@
+{
+  "schema": "plotpilot-source-finding-remediation-submission/v1",
+  "node_id": "NW-P5-PLANNER-RUNTIME-02",
+  "remediation_parent": "b1d747957ff21223e10fa61eb45de3d1780b5551",
+  "candidate_identity": "the direct-child commit containing this artifact",
+  "finding_manifest": "C:/Users/Administrator/Desktop/Novel-Agent- (2)/novel-agent/cases/plotpilot-pluginized-seven-project-construction-20260826/evidence/findings/wave-d-nw-p5-planner-runtime-sol-block-v1.json",
+  "finding_manifest_sha256": "c1fdf581aade8d71f12301a0a0e08454475a80e001a756f092c8bc4e7e49caaa",
+  "review_result_sha256": "f3ee5a198872cc78d0d0e520413ebee950d11e3fba0c578d850972722579c7c2",
+  "reviewer_agent_id": "01a04834-0a4e-7f90-8bf1-80774c803c0e",
+  "review_mode_requested": "Finding-ID-only closure",
+  "self_acceptance_claimed": false,
+  "production_integration_claimed": false,
+  "closures": [
+    {
+      "finding_id": "NW-P5-PLAN-SOL-F-001",
+      "submission_status": "remediation_submitted",
+      "change": "Added the exact runtime-integration-delta-v1 machine gate with source_ready_integration_deferred, production_integration_claimed=false, the exact five dependencies and explicit host.capability.cancel/v1 impact; removed the competing under-specified runtime gate.",
+      "evidence": [
+        "coordination/PPA-05/planner-runtime/runtime-integration-delta-v1.json",
+        "tests/p5-planning/planner-runtime/test_runtime.py::test_runtime_integration_delta_is_exact_and_includes_cancel_impact"
+      ]
+    },
+    {
+      "finding_id": "NW-P5-PLAN-SOL-F-002",
+      "submission_status": "remediation_submitted",
+      "change": "Made the frozen run type internal and sealed; every public proposal boundary re-verifies the embedded RunSnapshot, reconstructs all derived fields and recomputes the binding fingerprint.",
+      "evidence": [
+        "first-party-plugins/project-planner/src/plotpilot_project_planner/runtime.py::_verified_frozen_run",
+        "tests/p5-planning/planner-runtime/test_runtime.py::test_prepare_boundary_revalidates_opaque_frozen_run",
+        "tests/p5-planning/planner-runtime/test_runtime.py::test_prepare_boundary_revalidates_embedded_snapshot"
+      ]
+    },
+    {
+      "finding_id": "NW-P5-PLAN-SOL-F-003",
+      "submission_status": "remediation_submitted",
+      "change": "Fixed the Planner operation/capability, bound settings scope to the frozen Workspace or valid global scope, and restricted Prompt selection to the explicit source-local compatibility designation while keeping production Prompt verification deferred.",
+      "evidence": [
+        "first-party-plugins/project-planner/src/plotpilot_project_planner/runtime.py::_freeze_planner_run_impl",
+        "tests/p5-planning/planner-runtime/test_runtime.py::test_freeze_rejects_operation_and_settings_scope_drift",
+        "tests/p5-planning/planner-runtime/test_runtime.py::test_arbitrary_skill_cannot_be_designated_as_prompt"
+      ]
+    },
+    {
+      "finding_id": "NW-P5-PLAN-SOL-F-004",
+      "submission_status": "remediation_submitted",
+      "change": "Removed public Result Bundle materialization, so free-form producer mappings cannot create attributed output; typed current-Attempt producer binding remains an explicit integration prerequisite.",
+      "evidence": [
+        "first-party-plugins/project-planner/src/plotpilot_project_planner/__init__.py",
+        "tests/p5-planning/planner-runtime/test_runtime.py::test_producer_asset_receipt_and_skill_chain_strings_have_no_finalization_surface",
+        "coordination/PPA-05/planner-runtime/runtime-integration-delta-v1.json"
+      ]
+    },
+    {
+      "finding_id": "NW-P5-PLAN-SOL-F-005",
+      "submission_status": "remediation_submitted",
+      "change": "Stopped final Bundle materialization until authoritative Asset bytes, a complete provenance receipt and ordered Skill-chain results/receipts can be verified in the owning Host transaction; arbitrary IDs/hashes no longer enter a Bundle.",
+      "evidence": [
+        "first-party-plugins/project-planner/src/plotpilot_project_planner/runtime.py::__all__",
+        "tests/p5-planning/planner-runtime/test_runtime.py::test_frozen_run_type_and_finalization_values_are_not_public",
+        "tests/p5-planning/planner-runtime/test_runtime.py::test_producer_asset_receipt_and_skill_chain_strings_have_no_finalization_surface"
+      ]
+    },
+    {
+      "finding_id": "NW-P5-PLAN-SOL-F-006",
+      "submission_status": "remediation_submitted",
+      "change": "Requires three distinct snapshot-backed document targets and accepts only unique, same-Workspace, hash-backed core.revision/core.asset source references.",
+      "evidence": [
+        "first-party-plugins/project-planner/src/plotpilot_project_planner/runtime.py::_validated_source_refs",
+        "tests/p5-planning/planner-runtime/test_runtime.py::test_distinct_role_targets_are_required",
+        "tests/p5-planning/planner-runtime/test_runtime.py::test_unfrozen_or_cross_workspace_sources_fail_closed"
+      ]
+    },
+    {
+      "finding_id": "NW-P5-PLAN-SOL-F-007",
+      "submission_status": "remediation_submitted",
+      "change": "Binds every proposal to a deterministic operation key and canonical payload hash, converges exact retries, rejects key/payload drift, and stops parent/rerun finalization until the P1/P3 durable ledger and previous-version CAS exist; delivery claims were narrowed to proposals.",
+      "evidence": [
+        "first-party-plugins/project-planner/src/plotpilot_project_planner/runtime.py::planner_prepare_operation_key",
+        "tests/p5-planning/planner-runtime/test_runtime.py::test_exact_retry_converges_on_operation_payload_and_proposal_identity",
+        "tests/p5-planning/planner-runtime/test_runtime.py::test_same_operation_key_with_conflicting_payload_is_rejected",
+        "tests/p5-planning/planner-runtime/test_runtime.py::test_rerun_and_parent_lineage_stop_without_authoritative_cas"
+      ]
+    },
+    {
+      "finding_id": "NW-P5-PLAN-SOL-F-008",
+      "submission_status": "remediation_submitted",
+      "change": "Regenerated compileall evidence with the exact command, cwd, interpreter, bytecode prefix, stdout, stderr and exit code, and synchronized the validation index.",
+      "evidence": [
+        "docs/deliveries/PPA-05/planner-runtime/evidence/raw/compileall.txt",
+        "docs/deliveries/PPA-05/planner-runtime/validation-evidence.json",
+        "tests/p5-planning/planner-runtime/test_runtime.py::test_compileall_raw_evidence_has_auditable_command_streams_and_exit_code"
+      ]
+    }
+  ],
+  "validation_index": "docs/deliveries/PPA-05/planner-runtime/validation-evidence.json",
+  "reviewer_disposition": "pending"
+}
