@@ -1,0 +1,47 @@
+{
+  "schema": "plugin-api-source-state/v1",
+  "generation_id": "NW-P2-PLUGIN-API-G2",
+  "task_id": "WAVE-D-G2-NW-P2-PLUGIN-API-SOURCE-01",
+  "status": "source_content_complete",
+  "base": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+  "branch": "codex/nw-p2-plugin-api-g2",
+  "route_allowlist": [
+    "GET /api/v1/plugins/releases",
+    "GET /api/v1/plugins/releases/{plugin_id}/{version}",
+    "GET /api/v1/plugins/workers/{worker_id}/status"
+  ],
+  "finding_targets": {
+    "preserved_closed": [
+      "NW-P2-API-SOL-F-001",
+      "NW-P2-API-SOL-F-002",
+      "NW-P2-API-SOL-F-003",
+      "NW-P2-API-SOL-F-004",
+      "NW-P2-API-SOL-F-005"
+    ],
+    "implemented_closure_surface": [
+      "NW-P2-API-SOL-F-006",
+      "NW-P2-API-SOL-F-007",
+      "NW-P2-API-SOL-F-008"
+    ],
+    "review_status": "pending fresh gpt-5.6-sol/max structural review"
+  },
+  "dependencies": [
+    "accepted H_C PackageStore, Lifecycle and PluginProcessSupervisor",
+    "Plugin Management G2 activation follows this source",
+    "P0 authoritative Workspace Plan-switch CAS",
+    "NW-P0-RUNTIME-COMPOSITION-02",
+    "P0 public error-family adjudication"
+  ],
+  "stopped_capabilities": [
+    "installation, Generation and retirement GETs without composed authority",
+    "all install, Settings, LKG promotion, safe-mode, Plan-switch and retirement mutations",
+    "external pin releaser and app mount",
+    "public schema and generated SDK changes"
+  ],
+  "next_steps": [
+    "Controller performs identity/write-set intake.",
+    "A fresh gpt-5.6-sol/max reviewer evaluates all eight inherited Findings."
+  ],
+  "central_pass_claimed": false,
+  "merge_eligible_claimed": false
+}

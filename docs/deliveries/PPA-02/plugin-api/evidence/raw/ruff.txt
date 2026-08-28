@@ -1,0 +1,3 @@
+command: python -B -m ruff check --no-cache backend/plotpilot_core/api/v1/plugins tests/p2-plugin-platform/plugin-api
+exit_code: 0
+All checks passed!
