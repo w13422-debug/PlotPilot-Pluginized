@@ -105,6 +105,9 @@ _SCHEMA_STATEMENTS = (
     )
     """,
     """
+    INSERT OR IGNORE INTO p2_plugin_generation_pointer(singleton) VALUES(1)
+    """,
+    """
     CREATE TABLE IF NOT EXISTS p2_plugin_install_attempt(
         install_operation_id TEXT PRIMARY KEY,
         request_hash TEXT NOT NULL,

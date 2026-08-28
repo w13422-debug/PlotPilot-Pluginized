@@ -7,17 +7,71 @@ import threading
 
 import pytest
 from plotpilot_core.plugins.lifecycle import (
+    LIFECYCLE_MIGRATIONS,
     LifecycleError,
     LifecycleRepository,
     VerifiedQualification,
     initial_transition,
 )
+from plotpilot_core.repositories.migrations import MigrationRunner
 from plotpilot_plugin_sdk.errors import ErrorCode
 
 
 def _repository(connection: sqlite3.Connection) -> LifecycleRepository:
     LifecycleRepository.initialize_standalone_schema_for_tests(connection)
     return LifecycleRepository(connection)
+
+
+def test_f012_formal_migration_initializes_pointer_once() -> None:
+    connection = sqlite3.connect(":memory:", isolation_level=None)
+    runner = MigrationRunner(connection)
+
+    runner.apply(LIFECYCLE_MIGRATIONS)
+    repository = LifecycleRepository(connection)
+    first = repository.generation_state()
+    first_row = connection.execute(
+        """
+        SELECT singleton,current_generation_id,lkg_generation_id,safe_mode,
+               safe_mode_reason,revision
+          FROM p2_plugin_generation_pointer
+        """
+    ).fetchall()
+
+    connection.execute(
+        """
+        UPDATE p2_plugin_generation_pointer
+           SET safe_mode=1,safe_mode_reason='preserve-on-reapply',revision=7
+         WHERE singleton=1
+        """
+    )
+    mutated_row = connection.execute(
+        """
+        SELECT singleton,current_generation_id,lkg_generation_id,safe_mode,
+               safe_mode_reason,revision
+          FROM p2_plugin_generation_pointer
+        """
+    ).fetchall()
+
+    runner.apply(LIFECYCLE_MIGRATIONS)
+    second = repository.generation_state()
+    second_row = connection.execute(
+        """
+        SELECT singleton,current_generation_id,lkg_generation_id,safe_mode,
+               safe_mode_reason,revision
+          FROM p2_plugin_generation_pointer
+        """
+    ).fetchall()
+
+    assert first.current is None and first.lkg is None and first.safe_mode is False
+    assert first_row == [(1, None, None, 0, None, 0)]
+    assert second.current is None and second.lkg is None and second.safe_mode is True
+    assert second_row == mutated_row == [
+        (1, None, None, 1, "preserve-on-reapply", 7)
+    ]
+    assert connection.execute(
+        "SELECT COUNT(*),MAX(sha256) FROM schema_migration WHERE migration_id=?",
+        (LIFECYCLE_MIGRATIONS[0].migration_id,),
+    ).fetchone() == (1, LIFECYCLE_MIGRATIONS[0].sha256)
 
 
 def _write_event(*_args) -> None:

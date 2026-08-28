@@ -1,0 +1,3 @@
+command: git diff --check
+warning: in the working copy of 'tests/p2-plugin-platform/lifecycle/test_repository_reconciliation.py', LF will be replaced by CRLF the next time Git touches it
+exit_code: 0
