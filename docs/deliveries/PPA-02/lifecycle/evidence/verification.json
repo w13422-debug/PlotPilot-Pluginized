@@ -1,0 +1,54 @@
+{
+  "schema": "ppa-02-lifecycle-verification/v1",
+  "recorded_at": "2026-08-28T02:21:45+08:00",
+  "identity": {
+    "node": "NW-P2-LIFECYCLE-02",
+    "branch": "codex/nw-p2-lifecycle-02",
+    "base": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
+    "h_b_acceptance_sha256": "05d45d8fe8edae1359321af412af0184f5db033e2c9736f9be024e4c4a0dfe63",
+    "donor_push": "DISABLED"
+  },
+  "validation": [
+    {
+      "command": "python -B -m ruff check <owned changed Python paths>",
+      "exit_code": 0,
+      "result": "All checks passed!",
+      "raw": "raw/ruff.txt"
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p2-plugin-platform/lifecycle -q",
+      "exit_code": 0,
+      "result": "30 passed in 1.11s",
+      "raw": "raw/pytest-lifecycle.txt"
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p2-plugin-platform -q",
+      "exit_code": 0,
+      "result": "62 passed in 1.49s",
+      "raw": "raw/pytest-p2-regression.txt"
+    },
+    {
+      "command": "python -B -m compileall -q backend/plotpilot_core/plugins",
+      "exit_code": 0,
+      "result": "PASS",
+      "raw": "raw/compileall.txt"
+    },
+    {
+      "command": "python -B tools/integration/generate_contract_manifest.py --check",
+      "exit_code": 0,
+      "result": "contract manifest is deterministic (137 files)",
+      "raw": "raw/contract-manifest.txt"
+    },
+    {
+      "command": "git diff --check; git diff --cached --check",
+      "exit_code": 0,
+      "result": "PASS; unstaged and staged checks both exited 0",
+      "raw": "raw/git-diff-check.txt"
+    }
+  ],
+  "delta": [
+    "coordination/PPA-02/lifecycle/P0-PLAN-SWITCH-CAS-DELTA.md",
+    "coordination/PPA-02/lifecycle/P1-LIFECYCLE-AUTHORITY-PORTS-DELTA.md"
+  ],
+  "central_acceptance_claimed": false
+}
