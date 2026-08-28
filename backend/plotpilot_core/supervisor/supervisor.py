@@ -1,10 +1,11 @@
 """Lease- and release-fenced lazy worker lifecycle."""
 from __future__ import annotations
 
+import math
 import threading
 import time
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
@@ -26,6 +27,9 @@ from .models import (
 )
 from .rpc import FramedRpcSession, RpcEvent
 
+_TERMINAL = {WorkerState.STOPPED, WorkerState.CRASHED, WorkerState.FAILED, WorkerState.FENCED}
+_PROTOCOL_STATES = {WorkerState.STARTING, WorkerState.READY}
+
 
 class SystemClock:
     def monotonic(self) -> float:
@@ -40,14 +44,36 @@ class SupervisorConfig:
     shutdown_timeout: float = 5.0
     termination_timeout: float = 5.0
     stderr_limit_bytes: int = 64 * 1024
+    event_queue_limit: int = 64
+    rpc_pending_limit: int = 64
+    rpc_inbound_limit: int = 64
 
     def __post_init__(self) -> None:
-        for name in ("handshake_timeout", "heartbeat_timeout", "idle_timeout", "shutdown_timeout", "termination_timeout"):
+        for name in (
+            "handshake_timeout",
+            "heartbeat_timeout",
+            "idle_timeout",
+            "shutdown_timeout",
+            "termination_timeout",
+        ):
             value = getattr(self, name)
-            if not isinstance(value, (int, float)) or isinstance(value, bool) or value <= 0:
-                raise ValueError(f"{name} must be positive")
-        if not isinstance(self.stderr_limit_bytes, int) or isinstance(self.stderr_limit_bytes, bool) or self.stderr_limit_bytes < 1024:
+            if (
+                not isinstance(value, (int, float))
+                or isinstance(value, bool)
+                or not math.isfinite(value)
+                or value <= 0
+            ):
+                raise ValueError(f"{name} must be finite and positive")
+        if (
+            not isinstance(self.stderr_limit_bytes, int)
+            or isinstance(self.stderr_limit_bytes, bool)
+            or self.stderr_limit_bytes < 1024
+        ):
             raise ValueError("stderr_limit_bytes must be an integer >= 1024")
+        for name in ("event_queue_limit", "rpc_pending_limit", "rpc_inbound_limit"):
+            value = getattr(self, name)
+            if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+                raise ValueError(f"{name} must be a positive integer")
 
 
 @dataclass
@@ -58,9 +84,13 @@ class _Record:
     process: ManagedProcess
     session: FramedRpcSession
     state: WorkerState
-    clients: int
+    retains: set[str]
+    retain_sequence: int
     started_at: float
     last_heartbeat: float
+    worker_instance_id: str | None = None
+    attempt_fence: AttemptFence | None = None
+    install_fence: InstallFence | None = None
     idle_since: float | None = None
     stop_deadline: float | None = None
     failure: str | None = None
@@ -69,8 +99,14 @@ class _Record:
     termination_target: WorkerState | None = None
     termination_deadline: float | None = None
     kill_sent: bool = False
+    attempt_reconcile_required: bool = False
+    attempt_reconciled: bool = False
+    reconcile_reason: str | None = None
     stderr_tail: bytearray = field(default_factory=bytearray)
     events: list[RpcEvent] = field(default_factory=list)
+    cleanup_lock: threading.Lock = field(default_factory=threading.Lock)
+    rpc_lock: threading.RLock = field(default_factory=threading.RLock)
+    deferred_terminal_ack: bool = False
 
 
 class PluginProcessSupervisor:
@@ -85,6 +121,8 @@ class PluginProcessSupervisor:
         clock: Clock | None = None,
         config: SupervisorConfig | None = None,
         id_factory: Callable[[], str] | None = None,
+        retain_id_factory: Callable[[], str] | None = None,
+        durable_host_replay: Callable[[Mapping[str, object]], bytes | None] | None = None,
         utc_now: Callable[[], datetime] | None = None,
     ) -> None:
         self._authority = authority
@@ -93,9 +131,14 @@ class PluginProcessSupervisor:
         self._clock = clock or SystemClock()
         self._config = config or SupervisorConfig()
         self._id_factory = id_factory or (lambda: str(uuid.uuid4()))
+        self._retain_id_factory = retain_id_factory or (lambda: str(uuid.uuid4()))
+        self._durable_host_replay = durable_host_replay
         self._utc_now = utc_now or (lambda: datetime.now(timezone.utc))
-        self._records: dict[str, _Record] = {}
-        self._pending_releases: list[tuple[WorkerFence, str]] = []
+        self._records: dict[tuple[str, str], _Record] = {}
+        self._current: dict[str, str] = {}
+        self._pending_releases: dict[tuple[str, str], tuple[WorkerFence, str]] = {}
+        self._worker_locks: dict[str, threading.Lock] = {}
+        self._pending_retry_lock = threading.Lock()
         self._lock = threading.RLock()
 
     def _deadline(self, seconds: float) -> str:
@@ -103,18 +146,23 @@ class PluginProcessSupervisor:
         value = value.astimezone(timezone.utc).replace(microsecond=0)
         return value.isoformat().replace("+00:00", "Z")
 
-    @staticmethod
-    def _ticket(record: _Record) -> WorkerTicket:
-        return WorkerTicket(
-            worker_id=record.fence.worker_id,
-            lifecycle_id=record.lifecycle_id,
-            release_id=record.fence.release_id,
-            pin_epoch=record.fence.pin_epoch,
-            retire_epoch=record.fence.retire_epoch,
-        )
+    def _worker_lock(self, worker_id: str) -> threading.Lock:
+        with self._lock:
+            return self._worker_locks.setdefault(worker_id, threading.Lock())
 
     @staticmethod
-    def _matches_ticket(record: _Record, ticket: WorkerTicket) -> bool:
+    def _key(worker_id: str, lifecycle_id: str) -> tuple[str, str]:
+        return worker_id, lifecycle_id
+
+    def _current_record_locked(self, worker_id: str) -> _Record | None:
+        lifecycle_id = self._current.get(worker_id)
+        return None if lifecycle_id is None else self._records.get(self._key(worker_id, lifecycle_id))
+
+    def _record_locked(self, worker_id: str, lifecycle_id: str) -> _Record | None:
+        return self._records.get(self._key(worker_id, lifecycle_id))
+
+    @staticmethod
+    def _matches_lifecycle(record: _Record, ticket: WorkerTicket) -> bool:
         return (
             record.lifecycle_id == ticket.lifecycle_id
             and record.fence.worker_id == ticket.worker_id
@@ -123,59 +171,232 @@ class PluginProcessSupervisor:
             and record.fence.retire_epoch == ticket.retire_epoch
         )
 
-    def _begin_termination(self, record: _Record, target: WorkerState, failure: str | None) -> None:
+    @staticmethod
+    def _ticket(record: _Record, retain_id: str) -> WorkerTicket:
+        return WorkerTicket(
+            worker_id=record.fence.worker_id,
+            lifecycle_id=record.lifecycle_id,
+            retain_id=retain_id,
+            release_id=record.fence.release_id,
+            pin_epoch=record.fence.pin_epoch,
+            retire_epoch=record.fence.retire_epoch,
+        )
+
+    def _new_retain_id_locked(self, record: _Record) -> str:
+        record.retain_sequence += 1
+        return f"{self._retain_id_factory()}:{record.retain_sequence}"
+
+    def _is_current_locked(self, record: _Record) -> bool:
+        return self._current.get(record.fence.worker_id) == record.lifecycle_id
+
+    @staticmethod
+    def _is_busy(record: _Record) -> bool:
+        return bool(record.retains) or record.attempt_fence is not None or record.install_fence is not None
+
+    def _mark_termination_locked(
+        self,
+        record: _Record,
+        target: WorkerState,
+        failure: str | None,
+        *,
+        reconcile_attempt: bool = False,
+    ) -> bool:
+        if reconcile_attempt and record.attempt_fence is not None:
+            record.attempt_reconcile_required = True
+            record.reconcile_reason = failure or "worker terminated"
         if record.state == WorkerState.TERMINATING:
-            if target == WorkerState.FAILED:
+            if target in {WorkerState.FAILED, WorkerState.FENCED}:
                 record.termination_target = target
             if failure:
                 record.failure = failure
-            return
+            return False
+        if record.state in _TERMINAL:
+            return False
         record.state = WorkerState.TERMINATING
         record.termination_target = target
         record.failure = failure
         record.stop_deadline = None
         record.termination_deadline = self._clock.monotonic() + self._config.termination_timeout
-        try:
-            record.process.terminate()
-        except Exception as exc:  # noqa: BLE001 -- injected process adapter boundary
-            record.failure = f"{failure or 'termination'}; terminate failed: {exc}"
+        return True
 
-    def _current_authority(self, record: _Record) -> bool:
-        return record.fence.same_authority(self._authority.snapshot(record.fence.worker_id)) and self._authority.holds(
-            record.fence,
-            record.lifecycle_id,
-        )
-
-    def _release_claim(self, record: _Record) -> None:
-        if record.claim_released:
+    def _begin_termination(
+        self,
+        key: tuple[str, str],
+        target: WorkerState,
+        failure: str | None,
+        *,
+        reconcile_attempt: bool = False,
+    ) -> None:
+        process: ManagedProcess | None = None
+        with self._lock:
+            record = self._records.get(key)
+            if record is not None and self._mark_termination_locked(
+                record,
+                target,
+                failure,
+                reconcile_attempt=reconcile_attempt,
+            ):
+                process = record.process
+        if process is None:
             return
         try:
-            record.claim_released = self._authority.release(record.fence, record.lifecycle_id)
+            process.terminate()
+        except Exception as exc:  # noqa: BLE001 -- injected process adapter boundary
+            with self._lock:
+                record = self._records.get(key)
+                if record is not None:
+                    record.failure = f"{record.failure or 'termination'}; terminate failed: {exc}"
+
+    def _defer_termination_for_terminal_ack(
+        self,
+        key: tuple[str, str],
+        *,
+        attempt: AttemptFence | None = None,
+        install: InstallFence | None = None,
+        failure: str,
+    ) -> bool:
+        """Fence a lifecycle while leaving stdin open for one staged terminal ACK."""
+
+        with self._lock:
+            record = self._records.get(key)
+        if record is None:
+            return False
+        replay: tuple[str, bytes] | None = None
+        with record.rpc_lock:
+            try:
+                exact_commit = (
+                    attempt is not None
+                    and record.session.has_terminal_attempt_commit(attempt)
+                    or install is not None
+                    and record.session.has_terminal_install_commit(install)
+                )
+                if not exact_commit:
+                    replay = record.session.stage_terminal_replay(attempt=attempt, install=install)
+                    exact_commit = replay is not None
+                pending = record.session.terminal_commit_write_pending()
+            except ContractError:
+                return False
+            with self._lock:
+                current = self._records.get(key)
+                if current is not record or record.state in _TERMINAL or not exact_commit or not pending:
+                    return False
+                self._mark_termination_locked(record, WorkerState.FENCED, failure)
+                record.deferred_terminal_ack = True
+                process = record.process
+        if replay is not None:
+            request_id, frame = replay
+            try:
+                process.write(
+                    frame,
+                    on_written=lambda: self._mark_host_frame_written(record, request_id, frame),
+                )
+            except Exception as exc:  # noqa: BLE001 -- exact lifecycle is failed closed
+                with self._lock:
+                    current = self._records.get(key)
+                    if current is record:
+                        record.deferred_terminal_ack = False
+                        record.failure = f"terminal Host replay write failed: {exc}"
+                try:
+                    process.terminate()
+                except Exception:  # noqa: BLE001, S110 -- kill deadline remains armed
+                    pass
+        return True
+
+    def _release_or_enqueue(self, fence: WorkerFence, lifecycle_id: str) -> bool:
+        key = self._key(fence.worker_id, lifecycle_id)
+        try:
+            released = self._authority.release(fence, lifecycle_id)
         except Exception:  # noqa: BLE001 -- injected authority adapter boundary
-            record.claim_released = False
+            released = False
+        with self._lock:
+            if released:
+                self._pending_releases.pop(key, None)
+            else:
+                self._pending_releases[key] = (fence, lifecycle_id)
+        return released
+
+    def _current_authority(self, record: _Record) -> bool:
+        try:
+            snapshot = self._authority.snapshot(record.fence.worker_id)
+            return record.fence.same_authority(snapshot) and self._authority.holds(record.fence, record.lifecycle_id)
+        except Exception:  # noqa: BLE001 -- fail closed at the authority boundary
+            return False
+
+    def _reconcile_and_release(self, key: tuple[str, str]) -> None:
+        with self._lock:
+            record = self._records.get(key)
+        if record is None:
+            return
+        with record.cleanup_lock:
+            self._reconcile_and_release_serial(key)
+
+    def _reconcile_and_release_serial(self, key: tuple[str, str]) -> None:
+        with self._lock:
+            record = self._records.get(key)
+            if record is None:
+                return
+            if record.claim_released:
+                if not self._is_current_locked(record):
+                    self._records.pop(key, None)
+                return
+            if record.exit_code is None:
+                return
+            fence = record.fence
+            lifecycle_id = record.lifecycle_id
+            attempt = record.attempt_fence
+            reconcile = record.attempt_reconcile_required and not record.attempt_reconciled and attempt is not None
+            reason = record.reconcile_reason or "worker exited unexpectedly"
+        if reconcile and attempt is not None:
+            try:
+                held = self._authority.holds_attempt(fence, attempt, lifecycle_id)
+                reconciled = not held or self._authority.interrupt_attempt(fence, attempt, lifecycle_id, reason)
+            except Exception:  # noqa: BLE001 -- retry exact reconciliation on tick
+                reconciled = False
+            if not reconciled:
+                return
+            with self._lock:
+                record = self._records.get(key)
+                if record is None:
+                    return
+                record.attempt_reconciled = True
+        released = self._release_or_enqueue(fence, lifecycle_id)
+        with self._lock:
+            record = self._records.get(key)
+            if record is None:
+                return
+            record.claim_released = released
+            if released and not self._is_current_locked(record):
+                self._records.pop(key, None)
 
     def acquire(self, worker_id: str) -> WorkerTicket:
         """Lazy-start or retain the exact worker currently authorized by Core."""
 
-        with self._lock:
-            old = self._records.get(worker_id)
+        with self._worker_lock(worker_id):
             current = self._authority.snapshot(worker_id)
-            if old is not None and old.fence.same_authority(current) and old.state in {WorkerState.STARTING, WorkerState.READY}:
-                was_idle = old.clients == 0
-                old.clients += 1
-                old.idle_since = None
-                if was_idle and old.state == WorkerState.READY:
-                    # Heartbeats are attempt-profile notifications.  An idle
-                    # worker is not required to emit them; a new retain starts
-                    # a fresh watchdog grace period without fabricating one.
-                    old.last_heartbeat = self._clock.monotonic()
-                return self._ticket(old)
-            if old is not None and old.state not in {WorkerState.STOPPED, WorkerState.CRASHED, WorkerState.FAILED, WorkerState.FENCED}:
-                self._begin_termination(old, WorkerState.FENCED, "replaced by a new Core authority fence")
+            terminate_key: tuple[str, str] | None = None
+            with self._lock:
+                old = self._current_record_locked(worker_id)
+                if old is not None and old.fence.same_authority(current) and old.state in _PROTOCOL_STATES:
+                    retain_id = self._new_retain_id_locked(old)
+                    was_idle = not old.retains
+                    old.retains.add(retain_id)
+                    old.idle_since = None
+                    if was_idle and old.state == WorkerState.READY:
+                        old.last_heartbeat = self._clock.monotonic()
+                    return self._ticket(old, retain_id)
+                if old is not None and old.state not in _TERMINAL:
+                    terminate_key = self._key(worker_id, old.lifecycle_id)
+                elif old is not None and old.claim_released:
+                    self._records.pop(self._key(worker_id, old.lifecycle_id), None)
+            if terminate_key is not None:
+                self._begin_termination(
+                    terminate_key,
+                    WorkerState.FENCED,
+                    "replaced by a new Core authority fence",
+                    reconcile_attempt=True,
+                )
 
             lifecycle_id = self._id_factory()
-            # This is the atomic pin-vs-retirement boundary.  A plain read
-            # followed by spawn would permit retirement to win in between.
             fence = self._authority.claim(worker_id, lifecycle_id)
             if fence is None or not fence.allowed:
                 raise ContractError(ErrorCode.RELEASE_RETIRING, "Core authority rejected the worker pin")
@@ -187,30 +408,25 @@ class PluginProcessSupervisor:
                     release_id=fence.release_id,
                     expected_capabilities=route.capabilities,
                     id_factory=self._id_factory,
-                    attempt_authority=lambda attempt: self._authority.holds_attempt(
-                        fence,
-                        attempt,
-                        lifecycle_id,
-                    ),
-                    install_authority=lambda install: self._authority.holds_install(
-                        fence,
-                        install,
-                        lifecycle_id,
-                    ),
+                    attempt_authority=lambda attempt: self._authority.holds_attempt(fence, attempt, lifecycle_id),
+                    install_authority=lambda install: self._authority.holds_install(fence, install, lifecycle_id),
+                    durable_host_replay=self._durable_host_replay,
+                    pending_limit=self._config.rpc_pending_limit,
+                    inbound_limit=self._config.rpc_inbound_limit,
                 )
                 handshake = session.begin_handshake(
                     data_generation_id=fence.data_generation_id,
                     deadline_at=self._deadline(self._config.handshake_timeout),
                 )
             except Exception:
-                self._authority.release(fence, lifecycle_id)
+                self._release_or_enqueue(fence, lifecycle_id)
                 raise
 
             callback_lock = threading.Lock()
-            pending_callbacks: list[tuple[str, bytes | int]] = []
+            pending_callbacks: list[tuple[str, bytes | int | str]] = []
             callbacks_armed = False
 
-            def dispatch(kind: str, payload: bytes | int) -> None:
+            def dispatch(kind: str, payload: bytes | int | str) -> None:
                 nonlocal callbacks_armed
                 with callback_lock:
                     if not callbacks_armed:
@@ -222,30 +438,27 @@ class PluginProcessSupervisor:
                 elif kind == "stderr":
                     assert isinstance(payload, bytes)
                     self._on_stderr(worker_id, lifecycle_id, payload)
+                elif kind == "transport":
+                    assert isinstance(payload, str)
+                    self._on_transport_error(worker_id, lifecycle_id, payload)
                 else:
                     assert isinstance(payload, int)
-                    self._on_exit(worker_id, lifecycle_id, fence, payload)
-
-            def on_stdout(data: bytes) -> None:
-                dispatch("stdout", data)
-
-            def on_stderr(data: bytes) -> None:
-                dispatch("stderr", data)
-
-            def on_exit(code: int) -> None:
-                dispatch("exit", code)
+                    self._on_exit(worker_id, lifecycle_id, payload)
 
             try:
                 process = self._processes.start(
                     route,
-                    on_stdout=on_stdout,
-                    on_stderr=on_stderr,
-                    on_exit=on_exit,
+                    on_stdout=lambda data: dispatch("stdout", data),
+                    on_stderr=lambda data: dispatch("stderr", data),
+                    on_exit=lambda code: dispatch("exit", code),
+                    on_transport_error=lambda error: dispatch("transport", error),
                 )
             except Exception:
-                self._authority.release(fence, lifecycle_id)
+                self._release_or_enqueue(fence, lifecycle_id)
                 raise
+
             now = self._clock.monotonic()
+            retain_id = f"{self._retain_id_factory()}:1"
             record = _Record(
                 lifecycle_id=lifecycle_id,
                 fence=fence,
@@ -253,70 +466,131 @@ class PluginProcessSupervisor:
                 process=process,
                 session=session,
                 state=WorkerState.STARTING,
-                clients=1,
+                retains={retain_id},
+                retain_sequence=1,
                 started_at=now,
                 last_heartbeat=now,
             )
-            self._records[worker_id] = record
+            key = self._key(worker_id, lifecycle_id)
+            with self._lock:
+                previous_lifecycle = self._current.get(worker_id)
+                self._records[key] = record
+                self._current[worker_id] = lifecycle_id
+                if previous_lifecycle is not None and previous_lifecycle != lifecycle_id:
+                    previous_key = self._key(worker_id, previous_lifecycle)
+                    previous = self._records.get(previous_key)
+                    if previous is not None and previous.claim_released:
+                        self._records.pop(previous_key, None)
             with callback_lock:
                 callbacks_armed = True
                 queued = tuple(pending_callbacks)
                 pending_callbacks.clear()
             for kind, payload in queued:
                 dispatch(kind, payload)
-            if record.state in {WorkerState.STOPPED, WorkerState.CRASHED, WorkerState.FAILED, WorkerState.FENCED}:
+            with self._lock:
+                live = self._records.get(key)
+                startup_committed = live is not None and live.state == WorkerState.STARTING
+            if not startup_committed:
                 raise ContractError(ErrorCode.INVALID_TRANSITION, "worker exited before startup committed")
             try:
                 process.write(handshake)
             except Exception as exc:
-                self._begin_termination(record, WorkerState.FAILED, f"handshake write failed: {exc}")
+                self._begin_termination(key, WorkerState.FAILED, f"handshake write failed: {exc}", reconcile_attempt=True)
                 raise
-            return self._ticket(record)
+            return self._ticket(record, retain_id)
 
     def _on_stdout(self, worker_id: str, lifecycle_id: str, data: bytes) -> None:
+        key = self._key(worker_id, lifecycle_id)
         with self._lock:
-            record = self._records.get(worker_id)
-            if record is None or record.lifecycle_id != lifecycle_id:
+            record = self._records.get(key)
+            if record is None or record.state not in _PROTOCOL_STATES:
                 return
-            if not self._current_authority(record):
-                self._begin_termination(record, WorkerState.FENCED, "Core authority fence changed")
-                return
+        if not self._current_authority(record):
+            self._begin_termination(key, WorkerState.FENCED, "Core authority fence changed", reconcile_attempt=True)
+            return
+        failure: str | None = None
+        replay_frames: list[tuple[str, bytes]] = []
+        with record.rpc_lock:
             try:
                 events = record.session.feed(data)
-            except Exception as exc:  # noqa: BLE001 -- close the process on any transport callback failure
-                self._begin_termination(record, WorkerState.FAILED, f"RPC protocol failure: {exc}")
+                replay_by_id = {
+                    str(event.message["id"]): record.session.host_replay_frame(str(event.message["id"]))
+                    for event in events
+                    if event.kind == "host_replay"
+                }
+            except Exception as exc:  # noqa: BLE001 -- protocol is closed on every parser error
+                failure = f"RPC protocol failure: {exc}"
+                events = ()
+                replay_by_id = {}
+        with self._lock:
+            record = self._records.get(key)
+            if record is None or record.state not in _PROTOCOL_STATES:
                 return
             now = self._clock.monotonic()
-            for event in events:
-                record.events.append(event)
-                if event.kind == "handshake":
-                    record.state = WorkerState.READY
-                    record.last_heartbeat = now
-                elif event.kind == "heartbeat":
-                    record.last_heartbeat = now
+            if failure is None:
+                for event in events:
+                    if event.kind == "handshake":
+                        if record.state != WorkerState.STARTING:
+                            failure = "RPC protocol failure: late or duplicate handshake"
+                            break
+                        record.state = WorkerState.READY
+                        record.last_heartbeat = now
+                        record.worker_instance_id = str(event.message["result"]["worker_instance_id"])
+                    elif event.kind == "heartbeat":
+                        record.last_heartbeat = now
+                    elif event.kind == "host_replay":
+                        frame = replay_by_id.get(str(event.message["id"]))
+                        if frame is not None:
+                            replay_frames.append((str(event.message["id"]), frame))
+                    else:
+                        if len(record.events) >= self._config.event_queue_limit:
+                            failure = "RPC event capacity exceeded"
+                            break
+                        record.events.append(event)
+        if failure is not None:
+            self._begin_termination(key, WorkerState.FAILED, failure, reconcile_attempt=True)
+            return
+        for request_id, frame in replay_frames:
+            try:
+                record.process.write(
+                    frame,
+                    on_written=lambda request_id=request_id, frame=frame: self._mark_host_frame_written(
+                        record,
+                        request_id,
+                        frame,
+                    ),
+                )
+            except Exception as exc:  # noqa: BLE001 -- isolate transport failure to this lifecycle
+                self._begin_termination(key, WorkerState.FAILED, f"Host replay write failed: {exc}", reconcile_attempt=True)
+                return
 
     def _on_stderr(self, worker_id: str, lifecycle_id: str, data: bytes) -> None:
         with self._lock:
-            record = self._records.get(worker_id)
-            if record is None or record.lifecycle_id != lifecycle_id:
+            record = self._record_locked(worker_id, lifecycle_id)
+            if record is None:
                 return
             record.stderr_tail.extend(data)
             overflow = len(record.stderr_tail) - self._config.stderr_limit_bytes
             if overflow > 0:
                 del record.stderr_tail[:overflow]
 
-    def _on_exit(self, worker_id: str, lifecycle_id: str, fence: WorkerFence, code: int) -> None:
+    def _on_transport_error(self, worker_id: str, lifecycle_id: str, error: str) -> None:
+        self._begin_termination(
+            self._key(worker_id, lifecycle_id),
+            WorkerState.FAILED,
+            f"RPC transport failure: {error}",
+            reconcile_attempt=True,
+        )
+
+    def _on_exit(self, worker_id: str, lifecycle_id: str, code: int) -> None:
+        key = self._key(worker_id, lifecycle_id)
         with self._lock:
-            record = self._records.get(worker_id)
-            if record is None or record.lifecycle_id != lifecycle_id:
-                # Replacement callbacks still release only their exact old
-                # pin/epoch; Core's CAS makes this a no-op for a new owner.
-                try:
-                    released = self._authority.release(fence, lifecycle_id)
-                except Exception:  # noqa: BLE001 -- injected authority adapter boundary
-                    released = False
-                if not released and (fence, lifecycle_id) not in self._pending_releases:
-                    self._pending_releases.append((fence, lifecycle_id))
+            record = self._records.get(key)
+        if record is None:
+            return
+        with record.rpc_lock, self._lock:
+            current = self._records.get(key)
+            if current is not record or record.exit_code is not None:
                 return
             record.exit_code = code
             try:
@@ -324,187 +598,381 @@ class PluginProcessSupervisor:
             except ContractError as exc:
                 record.termination_target = WorkerState.FAILED
                 record.failure = f"RPC EOF protocol failure: {exc}"
+                if record.attempt_fence is not None:
+                    record.attempt_reconcile_required = True
+                    record.reconcile_reason = record.failure
             if record.termination_target is not None:
                 record.state = record.termination_target
             elif record.state == WorkerState.STOPPING:
                 record.state = WorkerState.STOPPED
                 record.failure = None if code == 0 else f"shutdown exited with code {code}"
+                if code != 0 and record.attempt_fence is not None:
+                    record.attempt_reconcile_required = True
+                    record.reconcile_reason = record.failure
             else:
                 record.state = WorkerState.CRASHED
                 record.failure = f"worker exited with code {code}"
-            self._release_claim(record)
+                if record.attempt_fence is not None:
+                    record.attempt_reconcile_required = True
+                    record.reconcile_reason = record.failure
+        self._reconcile_and_release(key)
 
     def feed_stdout(self, ticket: WorkerTicket, data: bytes) -> None:
-        """Injected transport seam used by adapters and deterministic tests."""
-
         with self._lock:
-            record = self._records.get(ticket.worker_id)
-            if record is None or not self._matches_ticket(record, ticket):
+            record = self._record_locked(ticket.worker_id, ticket.lifecycle_id)
+            if record is None or not self._matches_lifecycle(record, ticket):
                 raise ContractError(ErrorCode.STALE_LEASE, "late process bytes belong to an old lifecycle")
         self._on_stdout(ticket.worker_id, ticket.lifecycle_id, data)
 
     def process_exited(self, ticket: WorkerTicket, code: int) -> None:
         with self._lock:
-            record = self._records.get(ticket.worker_id)
-            if record is None or not self._matches_ticket(record, ticket):
+            record = self._record_locked(ticket.worker_id, ticket.lifecycle_id)
+            if record is None or not self._matches_lifecycle(record, ticket):
                 return
-        with self._lock:
-            record = self._records.get(ticket.worker_id)
-            assert record is not None
-            fence = record.fence
-        self._on_exit(ticket.worker_id, ticket.lifecycle_id, fence, code)
+        self._on_exit(ticket.worker_id, ticket.lifecycle_id, code)
 
     def release(self, ticket: WorkerTicket) -> None:
         with self._lock:
-            record = self._records.get(ticket.worker_id)
-            if record is None or not self._matches_ticket(record, ticket):
+            record = self._record_locked(ticket.worker_id, ticket.lifecycle_id)
+            if record is None or not self._matches_lifecycle(record, ticket):
                 return
-            if record.clients <= 0:
-                raise ContractError(ErrorCode.INVALID_TRANSITION, "worker retain count is already zero")
-            record.clients -= 1
-            if record.clients == 0:
+            if ticket.retain_id not in record.retains:
+                return
+            record.retains.remove(ticket.retain_id)
+            if not self._is_busy(record):
                 record.idle_since = self._clock.monotonic()
 
-    def bind_attempt(self, ticket: WorkerTicket, fence: AttemptFence) -> None:
+    def _ticket_record(
+        self,
+        ticket: WorkerTicket,
+        *,
+        allowed_states: frozenset[WorkerState] = frozenset({WorkerState.READY}),
+    ) -> _Record:
         with self._lock:
-            record = self._records.get(ticket.worker_id)
-            if record is None or not self._matches_ticket(record, ticket) or not self._current_authority(record):
-                raise ContractError(ErrorCode.STALE_LEASE, "Attempt binding belongs to an old worker")
-            if fence.owner_id != ticket.lifecycle_id:
-                raise ContractError(ErrorCode.STALE_LEASE, "Attempt owner is not the current worker connection")
-            if not self._authority.holds_attempt(record.fence, fence, record.lifecycle_id):
-                raise ContractError(ErrorCode.STALE_LEASE, "Core authority rejected the Attempt fence")
-            record.session.bind_attempt(fence)
+            record = self._record_locked(ticket.worker_id, ticket.lifecycle_id)
+            if (
+                record is None
+                or not self._matches_lifecycle(record, ticket)
+                or not self._is_current_locked(record)
+                or record.state not in allowed_states
+            ):
+                raise ContractError(ErrorCode.STALE_LEASE, "operation belongs to an old worker lifecycle")
+            return record
+
+    def bind_attempt(self, ticket: WorkerTicket, fence: AttemptFence) -> None:
+        record = self._ticket_record(ticket)
+        if fence.owner_id != ticket.lifecycle_id or not self._current_authority(record):
+            raise ContractError(ErrorCode.STALE_LEASE, "Attempt binding belongs to an old worker")
+        if not self._authority.holds_attempt(record.fence, fence, record.lifecycle_id):
+            raise ContractError(ErrorCode.STALE_LEASE, "Core authority rejected the Attempt fence")
+        with record.rpc_lock, self._lock:
+            current = self._records.get(self._key(ticket.worker_id, ticket.lifecycle_id))
+            if current is not record or record.state != WorkerState.READY or not self._is_current_locked(record):
+                raise ContractError(ErrorCode.STALE_LEASE, "Attempt binding raced worker replacement")
+            record.session.bind_attempt(fence, authority_checked=True)
+            record.attempt_fence = fence
             record.last_heartbeat = self._clock.monotonic()
+            record.idle_since = None
 
     def unbind_attempt(self, ticket: WorkerTicket, fence: AttemptFence) -> None:
-        with self._lock:
-            record = self._records.get(ticket.worker_id)
+        record = self._ticket_record(
+            ticket,
+            allowed_states=frozenset({WorkerState.READY, WorkerState.TERMINATING}),
+        )
+        if not self._current_authority(record):
+            raise ContractError(ErrorCode.STALE_LEASE, "Attempt unbind belongs to an old worker")
+        held = self._authority.holds_attempt(record.fence, fence, record.lifecycle_id)
+        with record.rpc_lock, self._lock:
+            terminal_commit = record.session.has_terminal_attempt_commit(fence)
             if (
-                record is None
-                or not self._matches_ticket(record, ticket)
-                or not self._current_authority(record)
-                or not self._authority.holds_attempt(record.fence, fence, record.lifecycle_id)
+                record.state not in {WorkerState.READY, WorkerState.TERMINATING}
+                or not self._is_current_locked(record)
+                or (not held and not terminal_commit)
+                or (record.state == WorkerState.TERMINATING and not terminal_commit)
             ):
-                raise ContractError(ErrorCode.STALE_LEASE, "Attempt unbind belongs to an old worker")
+                raise ContractError(ErrorCode.STALE_LEASE, "Attempt unbind raced worker termination")
             record.session.unbind_attempt(fence)
+            record.attempt_fence = None
+            if not self._is_busy(record):
+                record.idle_since = self._clock.monotonic()
 
     def bind_install(self, ticket: WorkerTicket, fence: InstallFence) -> None:
-        with self._lock:
-            record = self._records.get(ticket.worker_id)
-            if (
-                record is None
-                or not self._matches_ticket(record, ticket)
-                or not self._current_authority(record)
-                or not self._authority.holds_install(record.fence, fence, record.lifecycle_id)
-            ):
-                raise ContractError(ErrorCode.STALE_LEASE, "install binding belongs to an old worker")
-            record.session.bind_install(fence)
+        record = self._ticket_record(ticket)
+        if not self._current_authority(record) or not self._authority.holds_install(record.fence, fence, record.lifecycle_id):
+            raise ContractError(ErrorCode.STALE_LEASE, "install binding belongs to an old worker")
+        with record.rpc_lock, self._lock:
+            if record.state != WorkerState.READY or not self._is_current_locked(record):
+                raise ContractError(ErrorCode.STALE_LEASE, "install binding raced worker termination")
+            record.session.bind_install(fence, authority_checked=True)
+            record.install_fence = fence
+            record.idle_since = None
 
     def unbind_install(self, ticket: WorkerTicket, fence: InstallFence) -> None:
-        with self._lock:
-            record = self._records.get(ticket.worker_id)
+        record = self._ticket_record(
+            ticket,
+            allowed_states=frozenset({WorkerState.READY, WorkerState.TERMINATING}),
+        )
+        if not self._current_authority(record):
+            raise ContractError(ErrorCode.STALE_LEASE, "install unbind belongs to an old worker")
+        held = self._authority.holds_install(record.fence, fence, record.lifecycle_id)
+        with record.rpc_lock, self._lock:
+            terminal_commit = record.session.has_terminal_install_commit(fence)
             if (
-                record is None
-                or not self._matches_ticket(record, ticket)
-                or not self._current_authority(record)
-                or not self._authority.holds_install(record.fence, fence, record.lifecycle_id)
+                record.state not in {WorkerState.READY, WorkerState.TERMINATING}
+                or not self._is_current_locked(record)
+                or (not held and not terminal_commit)
+                or (record.state == WorkerState.TERMINATING and not terminal_commit)
             ):
-                raise ContractError(ErrorCode.STALE_LEASE, "install unbind belongs to an old worker")
+                raise ContractError(ErrorCode.STALE_LEASE, "install unbind raced worker termination")
             record.session.unbind_install(fence)
+            record.install_fence = None
+            if not self._is_busy(record):
+                record.idle_since = self._clock.monotonic()
+
+    def _retry_pending_releases(self) -> None:
+        with self._pending_retry_lock:
+            self._retry_pending_releases_serial()
+
+    def _retry_pending_releases_serial(self) -> None:
+        with self._lock:
+            pending = tuple(self._pending_releases.values())
+        for fence, lifecycle_id in pending:
+            key = self._key(fence.worker_id, lifecycle_id)
+            with self._lock:
+                record = self._records.get(key)
+            cleanup_lock = record.cleanup_lock if record is not None else threading.Lock()
+            with cleanup_lock:
+                with self._lock:
+                    record = self._records.get(key)
+                    if key not in self._pending_releases or (record is not None and record.claim_released):
+                        continue
+                released = self._release_or_enqueue(fence, lifecycle_id)
+                if released:
+                    with self._lock:
+                        record = self._records.get(key)
+                        if record is None:
+                            continue
+                        record.claim_released = True
+                        if not self._is_current_locked(record):
+                            self._records.pop(key, None)
 
     def tick(self) -> None:
         """Run watchdog/idle transitions without changing Core authority."""
 
+        self._retry_pending_releases()
+        now = self._clock.monotonic()
         with self._lock:
-            now = self._clock.monotonic()
-            pending: list[tuple[WorkerFence, str]] = []
-            for fence, owner_id in self._pending_releases:
+            keys = tuple(self._records)
+        for key in keys:
+            with self._lock:
+                record = self._records.get(key)
+                if record is None:
+                    continue
+                state = record.state
+                termination_deadline = record.termination_deadline
+                kill_sent = record.kill_sent
+                process = record.process
+                current = self._is_current_locked(record)
+            if state in _TERMINAL:
+                self._reconcile_and_release(key)
+                continue
+            if state == WorkerState.TERMINATING:
+                if termination_deadline is not None and now >= termination_deadline and not kill_sent:
+                    with self._lock:
+                        live = self._records.get(key)
+                        if live is None or live.state != WorkerState.TERMINATING or live.kill_sent:
+                            continue
+                        live.kill_sent = True
+                    try:
+                        process.kill()
+                    except Exception as exc:  # noqa: BLE001 -- injected process adapter boundary
+                        with self._lock:
+                            live = self._records.get(key)
+                            if live is not None:
+                                live.failure = f"{live.failure or 'termination'}; kill failed: {exc}"
+                continue
+            if not current or not self._current_authority(record):
+                self._begin_termination(key, WorkerState.FENCED, "Core authority fence changed", reconcile_attempt=True)
+                continue
+
+            attempt = record.attempt_fence
+            install = record.install_fence
+            if attempt is not None:
                 try:
-                    released = self._authority.release(fence, owner_id)
-                except Exception:  # noqa: BLE001 -- injected authority adapter boundary
-                    released = False
-                if not released:
-                    pending.append((fence, owner_id))
-            self._pending_releases = pending
-            for record in tuple(self._records.values()):
-                if record.state in {WorkerState.STOPPED, WorkerState.CRASHED, WorkerState.FAILED, WorkerState.FENCED}:
-                    if record.exit_code is not None and not record.claim_released:
-                        self._release_claim(record)
+                    attempt_live = self._authority.holds_attempt(record.fence, attempt, record.lifecycle_id)
+                except Exception:  # noqa: BLE001 -- fail closed
+                    attempt_live = False
+                if not attempt_live:
+                    if self._defer_termination_for_terminal_ack(
+                        key,
+                        attempt=attempt,
+                        failure="Attempt lease fence changed",
+                    ):
+                        continue
+                    self._begin_termination(key, WorkerState.FENCED, "Attempt lease fence changed", reconcile_attempt=False)
                     continue
-                if record.state == WorkerState.TERMINATING:
-                    code = record.process.poll()
-                    if code is None and record.termination_deadline is not None and now >= record.termination_deadline and not record.kill_sent:
-                        record.kill_sent = True
-                        try:
-                            record.process.kill()
-                        except Exception as exc:  # noqa: BLE001 -- injected process adapter boundary
-                            record.failure = f"{record.failure or 'termination'}; kill failed: {exc}"
+            if install is not None:
+                try:
+                    install_live = self._authority.holds_install(record.fence, install, record.lifecycle_id)
+                except Exception:  # noqa: BLE001 -- fail closed
+                    install_live = False
+                if not install_live:
+                    if self._defer_termination_for_terminal_ack(
+                        key,
+                        install=install,
+                        failure="install lease fence changed",
+                    ):
+                        continue
+                    self._begin_termination(key, WorkerState.FENCED, "install lease fence changed", reconcile_attempt=True)
                     continue
-                if not self._current_authority(record):
-                    self._begin_termination(record, WorkerState.FENCED, "Core authority fence changed")
+
+            with self._lock:
+                record = self._records.get(key)
+                if record is None:
                     continue
-                if record.state == WorkerState.STARTING and now - record.started_at >= self._config.handshake_timeout:
-                    self._begin_termination(record, WorkerState.FAILED, "runtime.handshake timeout")
-                    continue
-                if (
-                    record.state == WorkerState.READY
-                    and record.session.attempt_fence is not None
+                state = record.state
+                if state == WorkerState.STARTING and now - record.started_at >= self._config.handshake_timeout:
+                    action = (WorkerState.FAILED, "runtime.handshake timeout", False)
+                elif (
+                    state == WorkerState.READY
+                    and attempt is not None
                     and now - record.last_heartbeat >= self._config.heartbeat_timeout
                 ):
-                    attempt = record.session.attempt_fence
-                    assert attempt is not None
-                    if not self._authority.holds_attempt(record.fence, attempt, record.lifecycle_id):
-                        self._begin_termination(record, WorkerState.FENCED, "Attempt lease fence changed")
-                    else:
+                    action = (WorkerState.FAILED, "runtime.heartbeat timeout", True)
+                else:
+                    action = None
+            if action is not None:
+                target, reason, reconcile = action
+                if reconcile and attempt is not None:
+                    try:
                         interrupted = self._authority.interrupt_attempt(
                             record.fence,
                             attempt,
                             record.lifecycle_id,
-                            "runtime.heartbeat timeout",
+                            reason,
                         )
-                        target = WorkerState.FAILED if interrupted else WorkerState.FENCED
-                        self._begin_termination(record, target, "runtime.heartbeat timeout")
+                    except Exception:  # noqa: BLE001 -- exact retry occurs after exit
+                        interrupted = False
+                    with self._lock:
+                        live = self._records.get(key)
+                        if live is not None:
+                            live.attempt_reconcile_required = True
+                            live.attempt_reconciled = interrupted
+                            live.reconcile_reason = reason
+                self._begin_termination(key, target, reason, reconcile_attempt=reconcile)
+                continue
+
+            shutdown_frame: bytes | None = None
+            with record.rpc_lock, self._lock:
+                record = self._records.get(key)
+                if record is None:
                     continue
                 if (
                     record.state == WorkerState.READY
-                    and record.clients == 0
+                    and not self._is_busy(record)
                     and record.idle_since is not None
                     and now - record.idle_since >= self._config.idle_timeout
                 ):
                     try:
-                        deadline = self._deadline(self._config.shutdown_timeout)
-                        record.process.write(record.session.build_shutdown(reason="idle", deadline_at=deadline))
+                        shutdown_frame = record.session.build_shutdown(
+                            reason="idle",
+                            deadline_at=self._deadline(self._config.shutdown_timeout),
+                        )
                         record.state = WorkerState.STOPPING
                         record.stop_deadline = now + self._config.shutdown_timeout
-                    except Exception as exc:  # noqa: BLE001 -- injected transport/process boundary
-                        self._begin_termination(record, WorkerState.FAILED, f"idle shutdown failed: {exc}")
-                    continue
-                if record.state == WorkerState.STOPPING and record.stop_deadline is not None and now >= record.stop_deadline:
-                    self._begin_termination(record, WorkerState.STOPPED, "graceful shutdown timeout")
+                    except Exception as exc:  # noqa: BLE001 -- session boundary
+                        action = (WorkerState.FAILED, f"idle shutdown failed: {exc}", True)
+                    else:
+                        action = None
+                elif (
+                    record.state == WorkerState.STOPPING
+                    and record.stop_deadline is not None
+                    and now >= record.stop_deadline
+                ):
+                    action = (WorkerState.STOPPED, "graceful shutdown timeout", False)
+                else:
+                    action = None
+            if shutdown_frame is not None:
+                try:
+                    process.write(shutdown_frame)
+                except Exception as exc:  # noqa: BLE001 -- isolate writer failure
+                    self._begin_termination(key, WorkerState.FAILED, f"idle shutdown failed: {exc}", reconcile_attempt=True)
+            elif action is not None:
+                self._begin_termination(key, action[0], action[1], reconcile_attempt=action[2])
 
     def drain_events(self, ticket: WorkerTicket) -> tuple[RpcEvent, ...]:
         with self._lock:
-            record = self._records.get(ticket.worker_id)
-            if record is None or not self._matches_ticket(record, ticket):
+            record = self._record_locked(ticket.worker_id, ticket.lifecycle_id)
+            if record is None or not self._matches_lifecycle(record, ticket):
                 raise ContractError(ErrorCode.STALE_LEASE, "event read belongs to an old lifecycle")
             values = tuple(record.events)
             record.events.clear()
             return values
 
     def respond_host_request(self, ticket: WorkerTicket, request_id: str, result: dict[str, object]) -> None:
-        """Return a verifier-bound success response from the injected Host dispatcher."""
+        """Enqueue the canonical response produced by the durable Host dispatcher."""
 
         with self._lock:
-            record = self._records.get(ticket.worker_id)
-            if record is None or not self._matches_ticket(record, ticket) or not self._current_authority(record):
+            record = self._record_locked(ticket.worker_id, ticket.lifecycle_id)
+            if (
+                record is None
+                or not self._matches_lifecycle(record, ticket)
+                or not self._is_current_locked(record)
+                or record.state in _TERMINAL
+            ):
                 raise ContractError(ErrorCode.STALE_LEASE, "Host response belongs to an old lifecycle")
+        if not self._current_authority(record):
+            raise ContractError(ErrorCode.STALE_LEASE, "Host response belongs to an old lifecycle")
+        with record.rpc_lock:
             frame = record.session.build_host_success(request_id, result)
-            record.process.write(frame)
+        with self._lock:
+            current = self._records.get(self._key(ticket.worker_id, ticket.lifecycle_id))
+            if current is not record or record.state in _TERMINAL:
+                raise ContractError(ErrorCode.STALE_LEASE, "Host response raced worker termination")
+            process = record.process
+        # A failed transport write leaves the canonical frame available for
+        # exact retry. Capacity overflow is a local lifecycle failure instead
+        # of back-pressuring the global supervisor.
+        try:
+            process.write(
+                frame,
+                on_written=lambda: self._mark_host_frame_written(record, request_id, frame),
+            )
+        except BufferError:
+            self._begin_termination(
+                self._key(ticket.worker_id, ticket.lifecycle_id),
+                WorkerState.FAILED,
+                "Host response writer capacity exceeded",
+                reconcile_attempt=True,
+            )
+            raise
+
+    def _mark_host_frame_written(self, record: _Record, request_id: str, frame: bytes) -> None:
+        process: ManagedProcess | None = None
+        with record.rpc_lock:
+            record.session.mark_host_success_written(request_id, frame)
+            with self._lock:
+                key = self._key(record.fence.worker_id, record.lifecycle_id)
+                if (
+                    self._records.get(key) is record
+                    and record.state == WorkerState.TERMINATING
+                    and record.deferred_terminal_ack
+                    and not record.session.terminal_commit_write_pending()
+                ):
+                    record.deferred_terminal_ack = False
+                    process = record.process
+        if process is not None:
+            try:
+                process.terminate()
+            except Exception as exc:  # noqa: BLE001 -- injected process adapter boundary
+                with self._lock:
+                    current = self._records.get(self._key(record.fence.worker_id, record.lifecycle_id))
+                    if current is record:
+                        record.failure = f"{record.failure or 'termination'}; terminate failed: {exc}"
 
     def status(self, worker_id: str) -> WorkerStatus | None:
         with self._lock:
-            record = self._records.get(worker_id)
+            record = self._current_record_locked(worker_id)
             if record is None:
                 return None
             return WorkerStatus(
@@ -514,8 +982,8 @@ class PluginProcessSupervisor:
                 release_id=record.fence.release_id,
                 pin_epoch=record.fence.pin_epoch,
                 retire_epoch=record.fence.retire_epoch,
-                clients=record.clients,
-                worker_instance_id=record.session.worker_instance_id,
+                clients=len(record.retains),
+                worker_instance_id=record.worker_instance_id,
                 failure=record.failure,
                 exit_code=record.exit_code,
                 stderr_tail=bytes(record.stderr_tail),

@@ -3,7 +3,6 @@ from __future__ import annotations
 import hashlib
 import itertools
 import json
-import platform
 import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
@@ -25,6 +24,7 @@ from plotpilot_core.supervisor import (
     SupervisorConfig,
     WorkerFence,
 )
+from plotpilot_core.supervisor.venv import InterpreterIdentity
 
 RELEASE_A = "a" * 64
 RELEASE_B = "b" * 64
@@ -53,6 +53,9 @@ class FakeAuthority:
     attempts: dict[tuple[str, str], AttemptFence] = field(default_factory=dict)
     installs: dict[tuple[str, str], InstallFence] = field(default_factory=dict)
     release_failures: int = 0
+    release_exceptions: int = 0
+    interrupt_failures: int = 0
+    interrupt_exceptions: int = 0
 
     def claim(self, worker_id: str, owner_id: str) -> WorkerFence | None:
         fence = self.values.get(worker_id)
@@ -75,6 +78,9 @@ class FakeAuthority:
 
     def release(self, fence: WorkerFence, owner_id: str) -> bool:
         self.releases.append((fence, owner_id))
+        if self.release_exceptions > 0:
+            self.release_exceptions -= 1
+            raise RuntimeError("injected release failure")
         if self.release_failures > 0:
             self.release_failures -= 1
             return False
@@ -84,10 +90,43 @@ class FakeAuthority:
         return True
 
     def interrupt_attempt(self, fence: WorkerFence, attempt: AttemptFence, owner_id: str, reason: str) -> bool:
+        if self.interrupt_exceptions > 0:
+            self.interrupt_exceptions -= 1
+            raise RuntimeError("injected interrupt failure")
+        if self.interrupt_failures > 0:
+            self.interrupt_failures -= 1
+            return False
         if not self.holds_attempt(fence, attempt, owner_id):
             return False
         self.interruptions.append((fence, attempt, owner_id, reason))
+        self.attempts.pop((fence.pin_id, owner_id), None)
         return True
+
+
+@dataclass
+class FakeInterpreterProbe:
+    """Return exact target identities without executing fixture byte files."""
+
+    implementation: str = "cpython"
+    version: str = "3.12.10"
+    results: list[tuple[str, str, Path | None] | Exception] = field(default_factory=list)
+    calls: list[Path] = field(default_factory=list)
+
+    def probe(self, python: Path) -> InterpreterIdentity:
+        self.calls.append(python)
+        value: tuple[str, str, Path | None] | Exception
+        if self.results:
+            value = self.results.pop(0)
+        else:
+            value = (self.implementation, self.version, None)
+        if isinstance(value, Exception):
+            raise value
+        implementation, version, executable = value
+        return InterpreterIdentity(
+            implementation=implementation,
+            version=version,
+            executable=(executable or python).resolve(strict=True),
+        )
 
 
 @dataclass
@@ -126,17 +165,30 @@ class FakePackageStore:
 
 
 class FakeProcess:
-    def __init__(self, on_stdout: Callable[[bytes], None], on_stderr: Callable[[bytes], None], on_exit: Callable[[int], None]) -> None:
+    def __init__(
+        self,
+        on_stdout: Callable[[bytes], None],
+        on_stderr: Callable[[bytes], None],
+        on_exit: Callable[[int], None],
+        on_transport_error: Callable[[str], None] | None = None,
+    ) -> None:
         self.on_stdout = on_stdout
         self.on_stderr = on_stderr
         self.on_exit = on_exit
+        self.on_transport_error = on_transport_error or (lambda message: None)
         self.writes: list[bytes] = []
+        self.write_failures = 0
         self.terminations = 0
         self.kills = 0
         self.code: int | None = None
 
-    def write(self, data: bytes) -> None:
+    def write(self, data: bytes, *, on_written: Callable[[], None] | None = None) -> None:
+        if self.write_failures > 0:
+            self.write_failures -= 1
+            raise BrokenPipeError("injected worker write failure")
         self.writes.append(bytes(data))
+        if on_written is not None:
+            on_written()
 
     def terminate(self) -> None:
         self.terminations += 1
@@ -153,6 +205,9 @@ class FakeProcess:
     def emit_stderr(self, data: bytes) -> None:
         self.on_stderr(data)
 
+    def emit_transport_error(self, message: str = "injected transport failure") -> None:
+        self.on_transport_error(message)
+
     def exit(self, code: int) -> None:
         self.code = code
         self.on_exit(code)
@@ -162,9 +217,9 @@ class FakeProcess:
 class FakeProcessFactory:
     processes: list[FakeProcess] = field(default_factory=list)
 
-    def start(self, route, *, on_stdout, on_stderr, on_exit) -> FakeProcess:
+    def start(self, route, *, on_stdout, on_stderr, on_exit, on_transport_error) -> FakeProcess:
         del route
-        process = FakeProcess(on_stdout, on_stderr, on_exit)
+        process = FakeProcess(on_stdout, on_stderr, on_exit, on_transport_error)
         self.processes.append(process)
         return process
 
@@ -179,12 +234,17 @@ class Harness:
     clock: FakeClock
     fence: WorkerFence
     route: RuntimeRoute
+    interpreter_probe: FakeInterpreterProbe
 
 
 @pytest.fixture
 def harness(tmp_path: Path) -> Harness:
     package_root = tmp_path / "package"
     package_root.mkdir()
+    working_root = tmp_path / "runtime" / "worker-1"
+    working_root.mkdir(parents=True)
+    private_data_root = tmp_path / "data" / "com.plotpilot.test" / "generations" / "data-generation-1"
+    private_data_root.mkdir(parents=True)
     venv_root = tmp_path / "venvs" / "com.plotpilot.test" / PACKAGE_HASH
     python_executable = venv_root / "Scripts" / "python.exe"
     python_executable.parent.mkdir(parents=True)
@@ -196,7 +256,8 @@ def harness(tmp_path: Path) -> Harness:
                 "plugin_id": "com.plotpilot.test",
                 "release_id": RELEASE_A,
                 "package_hash": PACKAGE_HASH,
-                "python_version": platform.python_version(),
+                "python_implementation": "cpython",
+                "python_version": "3.12.10",
             }
         ),
         encoding="utf-8",
@@ -222,6 +283,8 @@ def harness(tmp_path: Path) -> Harness:
         retire_epoch=fence.retire_epoch,
         package_root=package_root,
         venv_root=venv_root,
+        working_root=working_root,
+        private_data_root=private_data_root,
         python_executable=python_executable,
         entrypoint="plugin_worker:main",
         ui_entry="ui/worker.js",
@@ -254,10 +317,12 @@ def harness(tmp_path: Path) -> Harness:
     packages = FakePackageStore(package)
     processes = FakeProcessFactory()
     clock = FakeClock()
+    interpreter_probe = FakeInterpreterProbe()
     counter = itertools.count(1)
+    retain_counter = itertools.count(1)
     supervisor = PluginProcessSupervisor(
         authority=authority,
-        lookup=ImmutableRuntimeLookup(routes, packages, authority),
+        lookup=ImmutableRuntimeLookup(routes, packages, authority, interpreter_probe),
         processes=processes,
         clock=clock,
         config=SupervisorConfig(
@@ -269,6 +334,7 @@ def harness(tmp_path: Path) -> Harness:
             stderr_limit_bytes=1024,
         ),
         id_factory=lambda: f"00000000-0000-4000-8000-{next(counter):012x}",
+        retain_id_factory=lambda: f"retain-{next(retain_counter)}",
         utc_now=lambda: __import__("datetime").datetime(2026, 8, 28, tzinfo=__import__("datetime").timezone.utc),
     )
-    return Harness(supervisor, authority, routes, packages, processes, clock, fence, route)
+    return Harness(supervisor, authority, routes, packages, processes, clock, fence, route, interpreter_probe)

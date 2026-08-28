@@ -4,13 +4,13 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import platform
 import re
 import shutil
 import subprocess
+import sys
 import uuid
-import venv
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 from urllib.parse import quote
@@ -44,9 +44,92 @@ class CommandRunner(Protocol):
     def run(self, argv: Sequence[str], *, cwd: Path, env: Mapping[str, str]) -> None: ...
 
 
+@dataclass(frozen=True)
+class InterpreterIdentity:
+    implementation: str
+    version: str
+    executable: Path
+
+
+class InterpreterProbe(Protocol):
+    def probe(self, python: Path) -> InterpreterIdentity: ...
+
+
+class SubprocessInterpreterProbe:
+    """Interrogate the target interpreter instead of trusting a marker file."""
+
+    _SCRIPT = (
+        "import json,platform,sys;"
+        "print(json.dumps({'implementation':platform.python_implementation().lower(),"
+        "'version':platform.python_version(),'executable':sys.executable},"
+        "sort_keys=True,separators=(',',':')))"
+    )
+
+    def __init__(self, *, timeout_seconds: float = 10.0) -> None:
+        self.timeout_seconds = timeout_seconds
+
+    def probe(self, python: Path) -> InterpreterIdentity:
+        try:
+            result = subprocess.run(
+                [str(python), "-I", "-c", self._SCRIPT],
+                cwd=str(python.parent),
+                env=isolated_environment(python),
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                check=True,
+                timeout=self.timeout_seconds,
+            )
+            payload = json.loads(result.stdout.decode("utf-8", errors="strict"))
+            reported = Path(payload["executable"]).resolve(strict=True)
+            expected = python.resolve(strict=True)
+        except (OSError, subprocess.SubprocessError, UnicodeError, ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+            raise ContractError(ErrorCode.INCOMPATIBLE_GENERATION, "target Python identity probe failed") from exc
+        implementation = payload.get("implementation")
+        version = payload.get("version")
+        if implementation != "cpython" or not isinstance(version, str) or reported != expected:
+            raise ContractError(ErrorCode.INCOMPATIBLE_GENERATION, "target Python identity is not exact CPython")
+        return InterpreterIdentity(implementation=implementation, version=version, executable=reported)
+
+
+def _probe_exact(
+    probe: InterpreterProbe,
+    python: Path,
+    *,
+    version_prefix: str = "3.12.",
+) -> InterpreterIdentity:
+    """Enforce identity even when a test or production adapter injects a probe."""
+
+    identity = probe.probe(python)
+    try:
+        expected = python.resolve(strict=True)
+        reported = identity.executable.resolve(strict=True)
+    except OSError as exc:
+        raise ContractError(ErrorCode.INCOMPATIBLE_GENERATION, "target Python identity path is invalid") from exc
+    if (
+        identity.implementation != "cpython"
+        or not identity.version.startswith(version_prefix)
+        or reported != expected
+    ):
+        raise ContractError(ErrorCode.INCOMPATIBLE_GENERATION, "target Python identity is not exact CPython 3.12")
+    return InterpreterIdentity("cpython", identity.version, expected)
+
+
 class StdlibVenvBuilder:
+    """Create a venv using one explicitly selected, probed base interpreter."""
+
+    def __init__(self, base_python: Path | None = None, *, probe: InterpreterProbe | None = None) -> None:
+        self.base_python = (base_python or Path(sys.executable)).resolve(strict=True)
+        self._probe = probe or SubprocessInterpreterProbe()
+        _probe_exact(self._probe, self.base_python)
+
     def create(self, destination: Path) -> None:
-        venv.EnvBuilder(with_pip=True, clear=False, symlinks=False, upgrade=False).create(destination)
+        subprocess.run(
+            [str(self.base_python), "-I", "-m", "venv", str(destination)],
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            check=True,
+            shell=False,
+        )
 
 
 class SubprocessCommandRunner:
@@ -94,17 +177,23 @@ def _validate_content_address(route: RuntimeRoute) -> None:
         )
 
 
-def _expected_marker(route: RuntimeRoute, python_version: str) -> dict[str, object]:
+def _expected_marker(route: RuntimeRoute, identity: InterpreterIdentity) -> dict[str, object]:
     return {
         "schema": "plotpilot-venv/v1",
         "plugin_id": route.plugin_id,
         "release_id": route.release_id,
         "package_hash": route.package_hash,
-        "python_version": python_version,
+        "python_implementation": identity.implementation,
+        "python_version": identity.version,
     }
 
 
-def validate_venv_identity(route: RuntimeRoute, *, python_compatibility: str) -> Path:
+def validate_venv_identity(
+    route: RuntimeRoute,
+    *,
+    python_compatibility: str,
+    probe: InterpreterProbe | None = None,
+) -> Path:
     """Verify the exact marker and standard interpreter before any spawn."""
 
     destination = route.venv_root
@@ -120,6 +209,7 @@ def validate_venv_identity(route: RuntimeRoute, *, python_compatibility: str) ->
         "plugin_id",
         "release_id",
         "package_hash",
+        "python_implementation",
         "python_version",
     }:
         raise ContractError(ErrorCode.INCOMPATIBLE_GENERATION, "venv identity marker is not closed")
@@ -130,6 +220,7 @@ def validate_venv_identity(route: RuntimeRoute, *, python_compatibility: str) ->
         or marker.get("plugin_id") != route.plugin_id
         or marker.get("release_id") != route.release_id
         or marker.get("package_hash") != route.package_hash
+        or marker.get("python_implementation") != "cpython"
         or not isinstance(version, str)
         or not version.startswith(expected_prefix)
     ):
@@ -137,7 +228,10 @@ def validate_venv_identity(route: RuntimeRoute, *, python_compatibility: str) ->
     python = _python_at(destination)
     if route.python_executable != python or not python.is_file() or python.is_symlink():
         raise ContractError(ErrorCode.ASSET_ERROR, "venv route does not select its standard interpreter")
-    return python.resolve(strict=True)
+    identity = _probe_exact(probe or SubprocessInterpreterProbe(), python, version_prefix=expected_prefix)
+    if identity.version != version:
+        raise ContractError(ErrorCode.INCOMPATIBLE_GENERATION, "venv marker differs from probed target interpreter")
+    return identity.executable
 
 
 def validate_offline_lock(lock: Path, wheelhouse: Path) -> None:
@@ -193,8 +287,11 @@ class OfflineVenvProvisioner:
         *,
         builder: VenvBuilder | None = None,
         runner: CommandRunner | None = None,
+        probe: InterpreterProbe | None = None,
+        base_python: Path | None = None,
     ) -> None:
-        self._builder = builder or StdlibVenvBuilder()
+        self._probe = probe or SubprocessInterpreterProbe()
+        self._builder = builder or StdlibVenvBuilder(base_python, probe=self._probe)
         self._runner = runner or SubprocessCommandRunner()
 
     def _existing(self, route: RuntimeRoute, *, python_compatibility: str) -> Path | None:
@@ -202,7 +299,7 @@ class OfflineVenvProvisioner:
         _validate_content_address(route)
         if not destination.exists():
             return None
-        return validate_venv_identity(route, python_compatibility=python_compatibility)
+        return validate_venv_identity(route, python_compatibility=python_compatibility, probe=self._probe)
 
     def ensure(self, route: RuntimeRoute, package: VerifiedPackageLike) -> Path:
         """Create then non-replacing-publish a release venv.
@@ -251,11 +348,13 @@ class OfflineVenvProvisioner:
         temporary = destination.parent / f".build-{uuid.uuid4().hex}.tmp"
         if temporary.exists():
             raise ContractError(ErrorCode.ASSET_ERROR, "venv temporary path already exists")
+        published = False
         try:
             self._builder.create(temporary)
             python = _python_at(temporary)
             if not python.is_file() or python.is_symlink():
                 raise ContractError(ErrorCode.ASSET_ERROR, "venv builder did not create an isolated Python")
+            identity = _probe_exact(self._probe, python)
             env = isolated_environment(python)
             env.update(
                 {
@@ -282,21 +381,30 @@ class OfflineVenvProvisioner:
                 env=env,
             )
             self._runner.run([*common, "--no-deps", str(wheel)], cwd=package_root, env=env)
+            post_install_identity = _probe_exact(self._probe, python)
+            if post_install_identity != identity:
+                raise ContractError(ErrorCode.INCOMPATIBLE_GENERATION, "target interpreter identity changed during install")
             marker = json.dumps(
-                _expected_marker(route, platform.python_version()),
+                _expected_marker(route, identity),
                 sort_keys=True,
                 separators=(",", ":"),
             ) + "\n"
             (temporary / _MARKER).write_text(marker, encoding="utf-8", newline="\n")
             try:
                 temporary.rename(destination)
+                published = True
             except FileExistsError:
                 # A cross-process publisher won.  Adopt only the exact marker.
                 existing = self._existing(route, python_compatibility=python_compatibility)
                 if existing is None:
                     raise
                 return existing
-            return _python_at(destination).resolve(strict=True)
+            try:
+                return validate_venv_identity(route, python_compatibility=python_compatibility, probe=self._probe)
+            except Exception:
+                if published:
+                    shutil.rmtree(destination, ignore_errors=True)
+                raise
         finally:
             if temporary.exists():
                 shutil.rmtree(temporary, ignore_errors=True)
@@ -304,9 +412,12 @@ class OfflineVenvProvisioner:
 
 __all__ = [
     "CommandRunner",
+    "InterpreterIdentity",
+    "InterpreterProbe",
     "OfflineVenvProvisioner",
     "StdlibVenvBuilder",
     "SubprocessCommandRunner",
+    "SubprocessInterpreterProbe",
     "VenvBuilder",
     "validate_offline_lock",
     "validate_venv_identity",

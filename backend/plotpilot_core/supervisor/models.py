@@ -85,6 +85,8 @@ class RuntimeRoute:
     retire_epoch: int
     package_root: Path
     venv_root: Path
+    working_root: Path
+    private_data_root: Path | None
     python_executable: Path
     entrypoint: str
     ui_entry: str | None
@@ -103,6 +105,11 @@ class RuntimeRoute:
         _require_hash(self.package_hash, "package_hash")
         if self.data_generation_id is not None:
             _require_id(self.data_generation_id, "data_generation_id")
+        if (self.data_generation_id is None) != (self.private_data_root is None):
+            raise ContractError(
+                ErrorCode.RESULT_CONTRACT_MISMATCH,
+                "private_data_root must exist exactly when data_generation_id exists",
+            )
         if not isinstance(self.retire_epoch, int) or isinstance(self.retire_epoch, bool) or self.retire_epoch < 1:
             raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "retire_epoch must be positive")
         if _ENTRYPOINT.fullmatch(self.entrypoint) is None:
@@ -117,6 +124,8 @@ class RuntimeRoute:
 class ResolvedWorkerRoute:
     route: RuntimeRoute
     package_root: Path
+    working_root: Path
+    private_data_root: Path | None
     python_executable: Path
     capabilities: tuple[str, ...]
 
@@ -198,7 +207,7 @@ class ImmutableRouteSource(Protocol):
 
 
 class ManagedProcess(Protocol):
-    def write(self, data: bytes) -> None: ...
+    def write(self, data: bytes, *, on_written: Callable[[], None] | None = None) -> None: ...
     def terminate(self) -> None: ...
     def kill(self) -> None: ...
     def poll(self) -> int | None: ...
@@ -212,6 +221,7 @@ class ProcessFactory(Protocol):
         on_stdout: Callable[[bytes], None],
         on_stderr: Callable[[bytes], None],
         on_exit: Callable[[int], None],
+        on_transport_error: Callable[[str], None],
     ) -> ManagedProcess: ...
 
 
@@ -234,6 +244,7 @@ class WorkerState(str, Enum):
 class WorkerTicket:
     worker_id: str
     lifecycle_id: str
+    retain_id: str
     release_id: str
     pin_epoch: int
     retire_epoch: int

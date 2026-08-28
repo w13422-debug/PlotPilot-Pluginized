@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from plotpilot_plugin_sdk.errors import ContractError, ErrorCode
-from plotpilot_plugin_sdk.framing import FrameDecoder, encode_frame
+from plotpilot_plugin_sdk.framing import FrameDecoder, decode_frame, encode_frame
 from plotpilot_plugin_sdk.rpc import (
     HOST_METHODS,
     WORKER_METHODS,
@@ -25,6 +25,13 @@ class RpcEvent:
     message: Mapping[str, Any]
 
 
+@dataclass
+class _InboundCall:
+    request: Mapping[str, Any]
+    response_frame: bytes | None = None
+    written: bool = False
+
+
 class FramedRpcSession:
     """Track request IDs and reject every unbound message shape."""
 
@@ -38,6 +45,9 @@ class FramedRpcSession:
         id_factory: Callable[[], str] | None = None,
         attempt_authority: Callable[[AttemptFence], bool] | None = None,
         install_authority: Callable[[InstallFence], bool] | None = None,
+        durable_host_replay: Callable[[Mapping[str, Any]], bytes | None] | None = None,
+        pending_limit: int = 64,
+        inbound_limit: int = 64,
     ) -> None:
         self.plugin_id = plugin_id
         self.generation_id = generation_id
@@ -46,9 +56,21 @@ class FramedRpcSession:
         self._id_factory = id_factory or (lambda: str(uuid.uuid4()))
         self._attempt_authority = attempt_authority
         self._install_authority = install_authority
+        self._durable_host_replay = durable_host_replay
         self._decoder = FrameDecoder()
+        if (
+            not isinstance(pending_limit, int)
+            or isinstance(pending_limit, bool)
+            or pending_limit < 1
+            or not isinstance(inbound_limit, int)
+            or isinstance(inbound_limit, bool)
+            or inbound_limit < 1
+        ):
+            raise ValueError("RPC queue limits must be positive")
+        self._pending_limit = pending_limit
+        self._inbound_limit = inbound_limit
         self._pending: dict[str, Mapping[str, Any]] = {}
-        self._inbound: dict[str, Mapping[str, Any]] = {}
+        self._inbound: dict[str, _InboundCall] = {}
         self._handshake_request: Mapping[str, Any] | None = None
         self._handshake_complete = False
         self._worker_instance_id: str | None = None
@@ -73,10 +95,18 @@ class FramedRpcSession:
     def install_fence(self) -> InstallFence | None:
         return self._install
 
-    def bind_attempt(self, fence: AttemptFence) -> None:
+    @property
+    def pending_count(self) -> int:
+        return len(self._pending)
+
+    @property
+    def inbound_count(self) -> int:
+        return len(self._inbound)
+
+    def bind_attempt(self, fence: AttemptFence, *, authority_checked: bool = False) -> None:
         if self._closed or not self._handshake_complete:
             raise ContractError(ErrorCode.INVALID_TRANSITION, "Attempt binding requires a ready session")
-        if self._attempt_authority is not None and not self._attempt_authority(fence):
+        if not authority_checked and self._attempt_authority is not None and not self._attempt_authority(fence):
             raise ContractError(ErrorCode.STALE_LEASE, "Core authority rejected the Attempt fence")
         self._attempt = fence
         self._heartbeat_seq = 0
@@ -87,10 +117,10 @@ class FramedRpcSession:
         self._attempt = None
         self._heartbeat_seq = 0
 
-    def bind_install(self, fence: InstallFence) -> None:
+    def bind_install(self, fence: InstallFence, *, authority_checked: bool = False) -> None:
         if self._closed or not self._handshake_complete:
             raise ContractError(ErrorCode.INVALID_TRANSITION, "install binding requires a ready session")
-        if self._install_authority is not None and not self._install_authority(fence):
+        if not authority_checked and self._install_authority is not None and not self._install_authority(fence):
             raise ContractError(ErrorCode.STALE_LEASE, "Core authority rejected the install fence")
         self._install = fence
 
@@ -107,6 +137,14 @@ class FramedRpcSession:
             deadline_at=deadline_at,
         )
 
+    def _reserve_pending(self, request: Mapping[str, Any]) -> None:
+        request_id = str(request["id"])
+        if request_id in self._pending:
+            raise ContractError(ErrorCode.DUPLICATE_REQUEST, "outbound RPC id is already pending")
+        if len(self._pending) >= self._pending_limit:
+            raise ContractError(ErrorCode.INVALID_TRANSITION, "outbound RPC pending capacity exceeded")
+        self._pending[request_id] = request
+
     def begin_handshake(self, *, data_generation_id: str | None, deadline_at: str) -> bytes:
         if self._closed or self._handshake_request is not None:
             raise ContractError(ErrorCode.INVALID_TRANSITION, "handshake may be started exactly once")
@@ -122,8 +160,8 @@ class FramedRpcSession:
             request_id=self._id_factory(),
         )
         validate_rpc_request(request)
+        self._reserve_pending(request)
         self._handshake_request = request
-        self._pending[str(request["id"])] = request
         return encode_frame(request)
 
     def build_shutdown(self, *, reason: str, deadline_at: str) -> bytes:
@@ -136,7 +174,7 @@ class FramedRpcSession:
             request_id=self._id_factory(),
         )
         validate_rpc_request(request)
-        self._pending[str(request["id"])] = request
+        self._reserve_pending(request)
         return encode_frame(request)
 
     def build_worker_request(
@@ -153,20 +191,138 @@ class FramedRpcSession:
             raise ContractError(ErrorCode.INVALID_TRANSITION, "method is not a callable worker operation")
         request = build_request(method, params, meta, request_id=request_id or self._id_factory())
         self._validate_request(request)
-        self._pending[str(request["id"])] = request
+        self._reserve_pending(request)
         return encode_frame(request)
 
     def build_host_success(self, request_id: str, result: Mapping[str, Any]) -> bytes:
         if self._closed or not self._handshake_complete:
             raise ContractError(ErrorCode.INVALID_TRANSITION, "Host response requires a completed handshake")
-        request = self._inbound.get(request_id)
-        if request is None:
+        call = self._inbound.get(request_id)
+        if call is None:
             raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "Host response id is not pending")
-        self._validate_request(request)
         response = {"jsonrpc": "2.0", "id": request_id, "result": dict(result)}
-        validate_rpc_response(response, request=request)
-        self._inbound.pop(request_id, None)
-        return encode_frame(response)
+        validate_rpc_response(response, request=call.request)
+        frame = encode_frame(response)
+        if call.response_frame is not None:
+            if call.response_frame != frame:
+                raise ContractError(ErrorCode.DUPLICATE_REQUEST, "Host response differs from canonical first response")
+            return call.response_frame
+        call.response_frame = frame
+        return frame
+
+    def mark_host_success_written(self, request_id: str, frame: bytes) -> None:
+        call = self._inbound.get(request_id)
+        if call is None or call.response_frame != frame:
+            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "Host response write does not match canonical frame")
+        call.written = True
+
+    def host_replay_frame(self, request_id: str) -> bytes | None:
+        call = self._inbound.get(request_id)
+        return None if call is None else call.response_frame
+
+    def _reserve_inbound(self, request_id: str, call: _InboundCall) -> None:
+        if len(self._inbound) >= self._inbound_limit:
+            written_id = next((key for key, value in self._inbound.items() if value.written), None)
+            if written_id is None:
+                raise ContractError(ErrorCode.INVALID_TRANSITION, "inbound Host RPC capacity exceeded")
+            self._inbound.pop(written_id)
+        self._inbound[request_id] = call
+
+    def _durable_replay(self, message: Mapping[str, Any]) -> bytes | None:
+        if self._durable_host_replay is None:
+            return None
+        frame = self._durable_host_replay(message)
+        if frame is None:
+            return None
+        try:
+            response = decode_frame(frame)
+            validate_rpc_response(response, request=message)
+        except Exception as exc:
+            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "durable Host replay frame is invalid") from exc
+        if encode_frame(response) != frame:
+            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "durable Host replay frame is not canonical")
+        return frame
+
+    def has_terminal_attempt_commit(self, fence: AttemptFence) -> bool:
+        terminal_methods = {"host.job.await_user/v1", "host.job.complete/v1"}
+        for call in self._inbound.values():
+            meta = call.request.get("meta")
+            if (
+                call.response_frame is not None
+                and call.request.get("method") in terminal_methods
+                and isinstance(meta, Mapping)
+                and meta.get("job_id") == fence.job_id
+                and meta.get("step_id") == fence.step_id
+                and meta.get("attempt_id") == fence.attempt_id
+                and meta.get("lease_epoch") == fence.lease_epoch
+            ):
+                return True
+        return False
+
+    def has_terminal_install_commit(self, fence: InstallFence) -> bool:
+        for call in self._inbound.values():
+            meta = call.request.get("meta")
+            if (
+                call.response_frame is not None
+                and call.request.get("method") == "host.migration.lease.release/v1"
+                and isinstance(meta, Mapping)
+                and meta.get("install_operation_id") == fence.install_operation_id
+                and meta.get("install_lease_epoch") == fence.install_lease_epoch
+            ):
+                return True
+        return False
+
+    def stage_terminal_replay(
+        self,
+        *,
+        attempt: AttemptFence | None = None,
+        install: InstallFence | None = None,
+    ) -> tuple[str, bytes] | None:
+        """Recover one exact durable terminal ACK after authority was consumed."""
+
+        if (attempt is None) == (install is None):
+            raise ValueError("exactly one terminal fence is required")
+        for request_id, call in self._inbound.items():
+            meta = call.request.get("meta")
+            if not isinstance(meta, Mapping):
+                continue
+            attempt_match = (
+                attempt is not None
+                and call.request.get("method") in {"host.job.await_user/v1", "host.job.complete/v1"}
+                and meta.get("job_id") == attempt.job_id
+                and meta.get("step_id") == attempt.step_id
+                and meta.get("attempt_id") == attempt.attempt_id
+                and meta.get("lease_epoch") == attempt.lease_epoch
+            )
+            install_match = (
+                install is not None
+                and call.request.get("method") == "host.migration.lease.release/v1"
+                and meta.get("install_operation_id") == install.install_operation_id
+                and meta.get("install_lease_epoch") == install.install_lease_epoch
+            )
+            if not attempt_match and not install_match:
+                continue
+            frame = call.response_frame or self._durable_replay(call.request)
+            if frame is None:
+                return None
+            call.response_frame = frame
+            return request_id, frame
+        return None
+
+    def terminal_commit_write_pending(self) -> bool:
+        """Return whether a staged terminal mutation ACK has not reached stdin."""
+
+        terminal_methods = {
+            "host.job.await_user/v1",
+            "host.job.complete/v1",
+            "host.migration.lease.release/v1",
+        }
+        return any(
+            call.request.get("method") in terminal_methods
+            and call.response_frame is not None
+            and not call.written
+            for call in self._inbound.values()
+        )
 
     def _assert_identity(self, message: Mapping[str, Any]) -> None:
         meta = message.get("meta")
@@ -237,7 +393,32 @@ class FramedRpcSession:
 
         if "method" in message:
             method = message.get("method")
-            self._validate_request(message)
+            request_id = str(message.get("id"))
+            existing = self._inbound.get(request_id) if "id" in message else None
+            if existing is not None:
+                if existing.request != message:
+                    raise ContractError(ErrorCode.DUPLICATE_REQUEST, "worker reused a Host RPC id with different bytes")
+                if existing.response_frame is None:
+                    try:
+                        self._validate_request(message)
+                    except ContractError as exc:
+                        if exc.code != ErrorCode.STALE_LEASE or method not in HOST_METHODS:
+                            raise
+                        replay = self._durable_replay(message)
+                        if replay is None:
+                            raise
+                        existing.response_frame = replay
+                return RpcEvent("host_replay" if existing.response_frame is not None else "host_request_duplicate", message)
+            try:
+                self._validate_request(message)
+            except ContractError as exc:
+                if exc.code != ErrorCode.STALE_LEASE or method not in HOST_METHODS or "id" not in message:
+                    raise
+                replay = self._durable_replay(message)
+                if replay is None:
+                    raise
+                self._reserve_inbound(request_id, _InboundCall(message, response_frame=replay))
+                return RpcEvent("host_replay", message)
             if method == "runtime.heartbeat":
                 params = message["params"]
                 if params["worker_instance_id"] != self._worker_instance_id:
@@ -250,9 +431,7 @@ class FramedRpcSession:
             if method not in HOST_METHODS:
                 raise ContractError(ErrorCode.INVALID_TRANSITION, "worker may call only published Host RPC methods")
             request_id = str(message["id"])
-            if request_id in self._inbound:
-                raise ContractError(ErrorCode.DUPLICATE_REQUEST, "worker reused a pending Host RPC id")
-            self._inbound[request_id] = message
+            self._reserve_inbound(request_id, _InboundCall(message))
             return RpcEvent("host_request", message)
 
         request_id = message.get("id")

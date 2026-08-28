@@ -1,0 +1,40 @@
+{
+  "schema": "nw-p2-supervisor-remediation-validation/v1",
+  "commands": [
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p2-plugin-platform/supervisor -q",
+      "exit_code": 0,
+      "result": "120 passed in 3.84s"
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p2-plugin-platform -q",
+      "exit_code": 0,
+      "result": "152 passed in 4.09s"
+    },
+    {
+      "command": "python -B -m compileall -q backend/plotpilot_core/supervisor",
+      "exit_code": 0,
+      "result": "no diagnostics"
+    },
+    {
+      "command": "python -m ruff check backend/plotpilot_core/supervisor tests/p2-plugin-platform/supervisor",
+      "exit_code": 0,
+      "result": "All checks passed!"
+    },
+    {
+      "command": "python -B tools/integration/generate_contract_manifest.py --check",
+      "exit_code": 0,
+      "result": "contract manifest is deterministic (137 files)"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "result": "only Git LF-to-CRLF advisory lines"
+    },
+    {
+      "command": "git diff --cached --check",
+      "exit_code": 0,
+      "result": "no diagnostics"
+    }
+  ]
+}

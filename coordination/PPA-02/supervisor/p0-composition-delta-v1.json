@@ -12,12 +12,32 @@
     {
       "id": "production-authority-adapter",
       "owner": "P0/Core",
-      "requirement": "Compose SupervisorAuthority against the accepted worker-pin/release-retirement and Attempt/install lease CAS authorities; claim, holds, interrupt and release must remain exact and transactional."
+      "requirement": "Compose SupervisorAuthority against the accepted worker-pin/release-retirement and Attempt/install lease CAS authorities; claim, holds, interrupt and release must remain exact, idempotent and transactional. interrupt_attempt must report the reconciled terminal outcome so a worker claim is never released before the exact Attempt is durably reconciled."
     },
     {
       "id": "immutable-runtime-route-source",
       "owner": "P0/Core",
-      "requirement": "Compose ImmutableRouteSource from the accepted Generation member and verified PackageStore without introducing a mutable route or second truth source."
+      "requirement": "Compose ImmutableRouteSource from the accepted Generation member and verified PackageStore without introducing a mutable route or second truth source. Every route must provide four absolute, non-reparse, disjoint roots: immutable package, content-addressed venv, mutable working directory and exact <plugin_id>/generations/<data_generation_id> private-data directory containing plugin.db. Any public worker API that exposes plugin.db remains P0-owned; do not substitute an ambient mutable path."
+    },
+    {
+      "id": "trusted-python-312-provisioning",
+      "owner": "P0/Core",
+      "requirement": "Select and probe a trusted CPython 3.12 base interpreter, compose OfflineVenvProvisioner.ensure() before publishing a worker route, and require the target interpreter identity probe to pass before and after install and after non-replacing publication. Never fall back to the host application's default interpreter."
+    },
+    {
+      "id": "durable-host-lifecycle-reconciliation",
+      "owner": "P0/Core",
+      "requirement": "Persist host/lifecycle identity in the existing Core authority and run idempotent startup reconciliation after confirmed host loss. First interrupt/reconcile the exact Attempt and revoke or recover the exact install lease; only after both reach authoritative terminal outcomes may the reconciler exact-CAS release the old worker pin. Repeated or concurrent reconciliation must not affect a replacement lifecycle and must not create a Supervisor-local authority database."
+    },
+    {
+      "id": "durable-host-rpc-first-response",
+      "owner": "P0/Core Host dispatcher",
+      "requirement": "Commit each Host mutation and its canonical first response in the existing durable operation ledger in one transaction. Inject the exact-request durable_host_replay resolver into PluginProcessSupervisor; after local bounded replay eviction it must supply the byte-equivalent canonical frame on ACK loss, while unknown or different stale requests fail closed. Supervisor owns only bounded transport replay state, not the durable mutation ledger."
+    },
+    {
+      "id": "windows-contained-process-factory",
+      "owner": "P0",
+      "requirement": "On Windows compose the contained IsolatedVenvProcessFactory path: suspended spawn, fail-closed Job Object assignment with KILL_ON_JOB_CLOSE, bounded stdin writer and bounded stdout/stderr drain. Do not substitute a parent-PID-only process adapter."
     },
     {
       "id": "plugin-worker-http-mount",
@@ -32,7 +52,7 @@
     {
       "id": "response-policy-and-lifecycle-composition",
       "owner": "P0",
-      "requirement": "Apply the frozen CSP/media type and compose supervisor tick/start/stop with Core runtime decisions. Do not infer process authority from local timeouts."
+      "requirement": "Apply the frozen CSP/media type and compose supervisor tick/start/stop with Core runtime decisions. Timeouts may terminate only the exact release/worker lifecycle and never grant or restore authority; live worker, Attempt and install decisions remain Core lease/CAS decisions."
     }
   ],
   "prohibited_for_this_node": [

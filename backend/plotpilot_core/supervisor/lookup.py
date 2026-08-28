@@ -5,6 +5,7 @@ import hashlib
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Protocol
+from urllib.parse import quote
 
 from plotpilot_plugin_sdk.errors import ContractError, ErrorCode
 
@@ -16,7 +17,7 @@ from .models import (
     UiBundle,
     WorkerFence,
 )
-from .venv import validate_venv_identity
+from .venv import InterpreterProbe, SubprocessInterpreterProbe, validate_venv_identity
 
 
 class VerifiedPackageLike(Protocol):
@@ -48,6 +49,52 @@ def _strict_absolute_file(path: Path, root: Path, label: str) -> Path:
     return resolved
 
 
+def _is_reparse(path: Path) -> bool:
+    is_junction = getattr(path, "is_junction", None)
+    return path.is_symlink() or (callable(is_junction) and is_junction())
+
+
+def _has_reparse_component(path: Path) -> bool:
+    current = Path(path.anchor)
+    for part in path.parts[1:]:
+        current /= part
+        if _is_reparse(current):
+            return True
+    return False
+
+
+def _strict_root(path: Path, label: str) -> Path:
+    if not path.is_absolute() or _has_reparse_component(path):
+        raise ContractError(ErrorCode.ASSET_ERROR, f"{label} must be an absolute non-reparse directory")
+    try:
+        resolved = path.resolve(strict=True)
+    except OSError as exc:
+        raise ContractError(ErrorCode.ASSET_ERROR, f"{label} is missing") from exc
+    if not resolved.is_dir() or _is_reparse(resolved):
+        raise ContractError(ErrorCode.ASSET_ERROR, f"{label} must be a regular directory")
+    return resolved
+
+
+def _assert_disjoint_roots(roots: Mapping[str, Path]) -> None:
+    values = tuple(roots.items())
+    for index, (left_name, left) in enumerate(values):
+        for right_name, right in values[index + 1 :]:
+            try:
+                left.relative_to(right)
+                related = True
+            except ValueError:
+                try:
+                    right.relative_to(left)
+                    related = True
+                except ValueError:
+                    related = False
+            if related:
+                raise ContractError(
+                    ErrorCode.ASSET_ERROR,
+                    f"{left_name} and {right_name} roots must be disjoint",
+                )
+
+
 class ImmutableRuntimeLookup:
     """Resolve only an exact Core-published generation/release/epoch tuple."""
 
@@ -56,10 +103,12 @@ class ImmutableRuntimeLookup:
         routes: ImmutableRouteSource,
         packages: PackageStoreLike,
         authority: SupervisorAuthority,
+        interpreter_probe: InterpreterProbe | None = None,
     ) -> None:
         self._routes = routes
         self._packages = packages
         self._authority = authority
+        self._interpreter_probe = interpreter_probe or SubprocessInterpreterProbe()
 
     def _route(self, fence: WorkerFence, owner_id: str) -> RuntimeRoute:
         current = self._authority.snapshot(fence.worker_id)
@@ -128,10 +177,41 @@ class ImmutableRuntimeLookup:
         compatibility = package.manifest.get("compatibility")
         if not isinstance(compatibility, Mapping) or compatibility.get("python") != "3.12.*":
             raise ContractError(ErrorCode.INCOMPATIBLE_GENERATION, "package Python compatibility is not frozen 3.12.*")
-        executable = validate_venv_identity(route, python_compatibility="3.12.*")
+        package_root = _strict_root(route.package_root, "package")
+        venv_root = _strict_root(route.venv_root, "venv")
+        working_root = _strict_root(route.working_root, "working")
+        roots: dict[str, Path] = {
+            "package": package_root,
+            "venv": venv_root,
+            "working": working_root,
+        }
+        if route.data_generation_id is not None:
+            if route.private_data_root is None:
+                raise ContractError(ErrorCode.INCOMPATIBLE_GENERATION, "data generation has no private root")
+            private_root = _strict_root(route.private_data_root, "private data")
+            plugin_component = quote(route.plugin_id, safe=".-_~")
+            generation_component = quote(route.data_generation_id, safe=".-_~")
+            if (
+                private_root.name != generation_component
+                or private_root.parent.name != "generations"
+                or private_root.parent.parent.name != plugin_component
+            ):
+                raise ContractError(
+                    ErrorCode.INCOMPATIBLE_GENERATION,
+                    "private data root is not bound to plugin/data generation identity",
+                )
+            roots["private data"] = private_root
+        _assert_disjoint_roots(roots)
+        executable = validate_venv_identity(
+            route,
+            python_compatibility="3.12.*",
+            probe=self._interpreter_probe,
+        )
         return ResolvedWorkerRoute(
             route=route,
-            package_root=route.package_root.resolve(strict=True),
+            package_root=package_root,
+            working_root=working_root,
+            private_data_root=roots.get("private data"),
             python_executable=executable,
             capabilities=tuple(capabilities),
         )
