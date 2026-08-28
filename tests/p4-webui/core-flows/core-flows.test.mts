@@ -144,6 +144,93 @@ test('rejects a cross-Workspace document page instead of projecting a second tru
   await assert.rejects(() => flows.loadWorkbench('ws-1'), /crossed Workspace/)
 })
 
+test('rejects Workspace page offset, limit, and cursor drift', async (t) => {
+  const cases = [
+    { name: 'offset', page: { offset: 1, limit: 100, total: 0, next_offset: null }, error: /requested offset or limit/ },
+    { name: 'limit', page: { offset: 0, limit: 99, total: 0, next_offset: null }, error: /requested offset or limit/ },
+    { name: 'cursor', page: { offset: 0, limit: 100, total: 2, next_offset: 2 }, error: /cursor drifted/ },
+  ] as const
+
+  for (const entry of cases) {
+    await t.test(entry.name, async () => {
+      const flows = createCoreFlows({ gateway: gateway(() => ({
+        schema: 'core-workspace-page/v1', items: entry.name === 'cursor' ? [workspace('ws-1')] : [], ...entry.page,
+      })) })
+      await assert.rejects(() => flows.listProjects(), entry.error)
+    })
+  }
+})
+
+test('rejects a Workspace entity repeated across pages', async () => {
+  const flows = createCoreFlows({ gateway: gateway((_route, request) => {
+    if (request.schema !== 'core-workspace-query/v1') throw new Error('wrong query')
+    return { schema: 'core-workspace-page/v1', items: [workspace('ws-1')], offset: request.offset, limit: 100,
+      total: 2, next_offset: request.offset === 0 ? 1 : null }
+  }) })
+  await assert.rejects(() => flows.listProjects(), /pagination repeated ws-1/)
+})
+
+test('rejects Document page offset, limit, and cursor drift', async (t) => {
+  const cases = [
+    { name: 'offset', page: { items: [], offset: 1, limit: 100, total: 0, next_offset: null }, error: /requested offset or limit/ },
+    { name: 'limit', page: { items: [], offset: 0, limit: 99, total: 0, next_offset: null }, error: /requested offset or limit/ },
+    { name: 'cursor', page: { items: [document('doc-1', 'ws-1', '第一章')], offset: 0, limit: 100, total: 2, next_offset: 2 }, error: /cursor drifted/ },
+  ] as const
+  for (const entry of cases) {
+    await t.test(entry.name, async () => {
+      const flows = createCoreFlows({ gateway: gateway((route) => {
+        if (route === 'workspace.get') return workspace('ws-1')
+        return { schema: 'core-document-page/v1', ...entry.page }
+      }) })
+      await assert.rejects(() => flows.loadWorkbench('ws-1'), entry.error)
+    })
+  }
+})
+
+test('rejects a Document entity repeated across pages', async () => {
+  const flows = createCoreFlows({ gateway: gateway((route, request) => {
+    if (route === 'workspace.get') return workspace('ws-1')
+    if (request.schema !== 'core-document-query/v1') throw new Error('wrong query')
+    return { schema: 'core-document-page/v1', items: [document('doc-1', 'ws-1', '第一章')], offset: request.offset,
+      limit: 100, total: 2, next_offset: request.offset === 0 ? 1 : null }
+  }) })
+  await assert.rejects(() => flows.loadWorkbench('ws-1'), /pagination repeated doc-1/)
+})
+
+test('rejects a revision.get response that drifts from the Document current Revision', async () => {
+  const routes: CoreFlowRouteId[] = []
+  const flows = createCoreFlows({ gateway: gateway((route) => {
+    routes.push(route)
+    if (route === 'document.get') return document('doc-1', 'ws-1', '第一章', 'rev-current')
+    if (route === 'revision.get') return { schema: 'core-revision/v1', revision_id: 'rev-other', workspace_id: 'ws-1',
+      document_id: 'doc-1', node_id: null, parent_revision_id: null, content_hash: '1'.repeat(64), created_by: 'user-a',
+      source_candidate_id: null, created_at: NOW, revision_number: 1, payload_schema: 'core.document-text/v1' }
+    throw new Error(`unexpected ${route}`)
+  }) })
+  const chapter = { documentId: 'doc-1', workspaceId: 'ws-1', title: '第一章', displayIndex: 1, revision: 1,
+    currentRevisionId: 'rev-current', createdAt: NOW, updatedAt: NOW }
+
+  await assert.rejects(() => flows.openChapter(chapter), /exact current Revision identity/)
+  assert.deepEqual(routes, ['document.get', 'revision.get'])
+})
+
+test('rejects a non-text current Revision before requesting its content', async () => {
+  const routes: CoreFlowRouteId[] = []
+  const flows = createCoreFlows({ gateway: gateway((route) => {
+    routes.push(route)
+    if (route === 'document.get') return document('doc-1', 'ws-1', '第一章', 'rev-current')
+    if (route === 'revision.get') return { schema: 'core-revision/v1', revision_id: 'rev-current', workspace_id: 'ws-1',
+      document_id: 'doc-1', node_id: null, parent_revision_id: null, content_hash: '1'.repeat(64), created_by: 'user-a',
+      source_candidate_id: null, created_at: NOW, revision_number: 1, payload_schema: 'core.other/v1' }
+    throw new Error(`unexpected ${route}`)
+  }) })
+  const chapter = { documentId: 'doc-1', workspaceId: 'ws-1', title: '第一章', displayIndex: 1, revision: 1,
+    currentRevisionId: 'rev-current', createdAt: NOW, updatedAt: NOW }
+
+  await assert.rejects(() => flows.openChapter(chapter), /text payload/)
+  assert.deepEqual(routes, ['document.get', 'revision.get'])
+})
+
 test('edit is pure and preserves the opened chapter snapshot', () => {
   const opened: CoreOpenedChapter = { chapter: { documentId: 'doc-1', workspaceId: 'ws-1', title: '第一章', displayIndex: 1,
     revision: 1, currentRevisionId: 'rev-1', createdAt: NOW, updatedAt: NOW }, savedContent: 'a', draftContent: 'a',
@@ -187,6 +274,29 @@ test('reuses save identities across retry and rejects a mismatched parent revisi
   await assert.rejects(() => flows.saveChapter(opened), /timeout/)
   await assert.rejects(() => flows.saveChapter(opened), /crossed its chapter identity/)
   assert.deepEqual(commands[0], commands[1])
+})
+
+test('binds a saved Revision result to actor, source Candidate, and payload schema', async (t) => {
+  const drifts = [
+    { name: 'created_by', patch: { created_by: 'other-user' } },
+    { name: 'source_candidate_id', patch: { source_candidate_id: 'candidate-other' } },
+    { name: 'payload_schema', patch: { payload_schema: 'core.other/v1' } },
+  ] as const
+  for (const drift of drifts) {
+    await t.test(drift.name, async () => {
+      const flows = createCoreFlows({ ids: ids(), createdBy: 'user-a', gateway: gateway((_route, request) => {
+        if (request.schema !== 'core-document-revision-create-command/v1') throw new Error('wrong command')
+        return { schema: 'core-revision/v1', revision_id: request.revision_id, workspace_id: request.workspace_id,
+          document_id: request.document_id, node_id: null, parent_revision_id: request.base_revision_id,
+          content_hash: '3'.repeat(64), created_by: request.created_by, source_candidate_id: request.source_candidate_id,
+          created_at: NOW, revision_number: 2, payload_schema: request.payload_schema, ...drift.patch }
+      }) })
+      const opened: CoreOpenedChapter = { chapter: { documentId: 'doc-1', workspaceId: 'ws-1', title: '第一章', displayIndex: 1,
+        revision: 1, currentRevisionId: 'rev-1', createdAt: NOW, updatedAt: NOW }, savedContent: 'a', draftContent: 'b',
+        revisionId: 'rev-1', dirty: true }
+      await assert.rejects(() => flows.saveChapter(opened), /crossed its chapter identity/)
+    })
+  }
 })
 
 test('rejects a delete result whose CAS receipt is not exact', async () => {

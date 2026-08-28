@@ -417,7 +417,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineAsyncComponent, h, ref, onMounted, computed, nextTick } from 'vue'
+import { defineAsyncComponent, h, ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMessage, NIcon } from 'naive-ui'
 import TaskDrawer from '@/components/jobs/TaskDrawer.vue'
@@ -427,6 +427,7 @@ import { storageKeys } from '@/config/storageKeys'
 import { readStorageBoolean } from '@/utils/storage'
 import type { CoreProjectListItem } from '@/core/flows/coreFlows.ts'
 import { requireCoreFlowRuntime } from '@/core/flows/runtime.ts'
+import { reconcilePartialDeleteSelection, ScopedRequestGeneration } from '@/core/flows/asyncGeneration.ts'
 import {
   NOVEL_LENGTH_TIER_OPTIONS,
   getNovelStageLabel,
@@ -500,6 +501,7 @@ const modalSearchQuery = ref('')
 const selectedBooks = ref<string[]>([])
 const showBatchDeleteConfirm = ref(false)
 const batchDeleting = ref(false)
+const projectListGeneration = new ScopedRequestGeneration()
 
 const PREMISE_MAX_LEN = 2000
 
@@ -566,10 +568,12 @@ const isPartialSelected = computed(() => {
   return selectedBooks.value.length > 0 && selectedBooks.value.length < filteredBooks.value.length
 })
 
-const fetchBooks = async () => {
+const fetchBooks = async (): Promise<boolean> => {
+  const requestGeneration = projectListGeneration.begin('project-list')
   loading.value = true
   try {
     const projects = await requireCoreFlowRuntime().listProjects()
+    if (!projectListGeneration.isCurrent(requestGeneration)) return false
     books.value = projects.map(project => ({
       slug: project.workspaceId,
       title: project.title,
@@ -578,10 +582,15 @@ const fetchBooks = async () => {
       genre: '',
       core: project,
     }))
+    const authoritativeIds = new Set(projects.map(project => project.workspaceId))
+    selectedBooks.value = selectedBooks.value.filter(id => authoritativeIds.has(id))
+    return true
   } catch (error: unknown) {
+    if (!projectListGeneration.isCurrent(requestGeneration)) return false
     message.error(error instanceof Error ? error.message : '加载失败')
+    throw error
   } finally {
-    loading.value = false
+    if (projectListGeneration.isCurrent(requestGeneration)) loading.value = false
   }
 }
 
@@ -620,9 +629,15 @@ const handleDeleteBook = async (slug: string) => {
     const project = books.value.find(book => book.slug === slug)?.core
     if (project === undefined) throw new Error('项目不在当前 Core 列表中')
     await requireCoreFlowRuntime().deleteProject(project)
+    projectListGeneration.invalidate()
     message.success('书目已删除')
     books.value = books.value.filter(b => b.slug !== slug)
     selectedBooks.value = selectedBooks.value.filter(s => s !== slug)
+    try {
+      await fetchBooks()
+    } catch {
+      // fetchBooks already surfaced the authoritative resync failure.
+    }
   } catch (error: unknown) {
     message.error(error instanceof Error ? error.message : '删除失败')
   } finally {
@@ -651,27 +666,37 @@ const toggleSelectAll = (checked: boolean) => {
 const handleBatchDelete = async () => {
   batchDeleting.value = true
   try {
-    let successCount = 0
-    let failCount = 0
-    
-    for (const slug of selectedBooks.value) {
+    projectListGeneration.invalidate()
+    const selectedSnapshot = [...selectedBooks.value]
+    const succeededIds = new Set<string>()
+    const failedDeletes: Array<{ slug: string; reason: string }> = []
+
+    for (const slug of selectedSnapshot) {
       try {
         const project = books.value.find(book => book.slug === slug)?.core
         if (project === undefined) throw new Error('项目不在当前 Core 列表中')
         await requireCoreFlowRuntime().deleteProject(project)
-        successCount++
-      } catch {
-        failCount++
+        succeededIds.add(slug)
+      } catch (error: unknown) {
+        failedDeletes.push({ slug, reason: error instanceof Error ? error.message : '未知错误' })
       }
     }
-    
-    if (successCount > 0) {
-      message.success(`成功删除 ${successCount} 本书目`)
-      books.value = books.value.filter(b => !selectedBooks.value.includes(b.slug))
-      selectedBooks.value = []
+
+    if (succeededIds.size > 0) {
+      books.value = books.value.filter(book => !succeededIds.has(book.slug))
+      message.success(`成功删除 ${succeededIds.size} 本书目`)
     }
-    if (failCount > 0) {
-      message.warning(`${failCount} 本删除失败`)
+    const localAuthorityIds = new Set(books.value.map(book => book.slug))
+    selectedBooks.value = reconcilePartialDeleteSelection(selectedBooks.value, succeededIds, localAuthorityIds)
+    for (const failure of failedDeletes) {
+      const title = books.value.find(book => book.slug === failure.slug)?.title ?? failure.slug
+      message.warning(`「${title}」删除失败：${failure.reason}`)
+    }
+
+    try {
+      await fetchBooks()
+    } catch {
+      // fetchBooks already surfaced the authoritative resync failure; keep only failed items selected locally.
     }
     showBatchDeleteConfirm.value = false
   } finally {
@@ -688,8 +713,11 @@ const focusCreateInput = () => {
 }
 
 const handleRefreshList = async () => {
-  await fetchBooks()
-  message.success('列表已刷新')
+  try {
+    if (await fetchBooks()) message.success('列表已刷新')
+  } catch {
+    // fetchBooks reports the latest request failure and deliberately propagates it here.
+  }
 }
 
 const getStageType = (stage: string) => {
@@ -697,7 +725,11 @@ const getStageType = (stage: string) => {
 }
 
 onMounted(() => {
-  fetchBooks()
+  void fetchBooks().catch(() => undefined)
+})
+
+onUnmounted(() => {
+  projectListGeneration.invalidate()
 })
 </script>
 

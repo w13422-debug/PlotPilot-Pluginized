@@ -1,0 +1,97 @@
+{
+  "schema": "plotpilot-finding-closure-request/v1",
+  "node_id": "NW-P4-CORE-FLOWS-02",
+  "request_kind": "finding_id_only_closure",
+  "reviewer_agent_id": "01a04834-0e24-7042-a80c-a8bbd3e9811f",
+  "candidate_commit_locator": "the single direct child of 06a42cfaa7b654e9ac9e2004131f64a813f1b8dc containing this record",
+  "parent": "06a42cfaa7b654e9ac9e2004131f64a813f1b8dc",
+  "branch": "codex/nw-p4-core-flows-02",
+  "frozen_inputs": {
+    "finding_manifest": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\findings\\wave-d-nw-p4-core-flows-sol-block-v1.json",
+    "finding_manifest_sha256": "9a583db4c6895822d8a98792c462a7f226bc3e534b2df0a56b78f42825ead061",
+    "review_result": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\wave-d-nw-p4-core-flows-sol-block-v1.json",
+    "review_result_sha256": "789e9f8e1908b8e81660ceb3150196bde01e149e8c4f1f6c2356e9972afe4ce8"
+  },
+  "findings": [
+    {
+      "id": "NW-P4-CF-SOL-F-001",
+      "source_status": "addressed_pending_same_reviewer",
+      "closure_evidence": [
+        "revision.get is bound to Document.current_revision_id and core.document-text/v1 before content read",
+        "revision create result is bound to created_by, source_candidate_id, and payload_schema",
+        "negative tests cover Revision identity, text payload, actor, source Candidate, and payload drift"
+      ]
+    },
+    {
+      "id": "NW-P4-CF-SOL-F-002",
+      "source_status": "addressed_pending_same_reviewer",
+      "closure_evidence": [
+        "Workspace generation plus desk/open/save sequences gate every async commit",
+        "slug transition immediately clears old visible state and invalidates pending navigation",
+        "dirty drafts are retained under Workspace and Document compound identity"
+      ]
+    },
+    {
+      "id": "NW-P4-CF-SOL-F-003",
+      "source_status": "addressed_pending_same_reviewer",
+      "closure_evidence": [
+        "batch delete removes only succeeded IDs",
+        "failed authoritative items remain selected with per-item reasons",
+        "the list is resynchronized from Core Authority after the attempt set"
+      ]
+    },
+    {
+      "id": "NW-P4-CF-SOL-F-004",
+      "source_status": "addressed_pending_same_reviewer",
+      "closure_evidence": [
+        "project list requests use latest-request generation ownership",
+        "stale success and failure are silent and cannot commit or clear a newer loading owner",
+        "latest failure propagates and refresh success is emitted only for a committed latest response"
+      ]
+    },
+    {
+      "id": "NW-P4-CF-SOL-F-005",
+      "source_status": "addressed_pending_same_reviewer",
+      "closure_evidence": [
+        "Workspace and Document pages bind response offset, limit, and next_offset to each request",
+        "Workspace and Document identities are rejected when repeated within or across pages",
+        "negative tests cover offset, limit, cursor, and cross-page duplicate drift for both page types"
+      ]
+    }
+  ],
+  "validation": [
+    {
+      "command": "node --experimental-strip-types --test tests/p4-webui/core-flows/*.test.mts",
+      "exit_code": 0,
+      "result": "40 tests, 40 pass, 0 fail"
+    },
+    {
+      "command": "node --experimental-strip-types --test tests/p4-webui/*.test.mts",
+      "exit_code": 0,
+      "result": "13 tests, 13 pass, 0 fail"
+    },
+    {
+      "command": "temporary isolated frontend copy plus read-only main-worktree dependencies: vue-tsc --noEmit -p frontend/tsconfig.app.json --incremental false",
+      "exit_code": 0,
+      "result": "equivalent strict source check completed"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "result": "no whitespace errors"
+    }
+  ],
+  "constraints": {
+    "outside_exclusive_write_set": 0,
+    "runtime_mount_changed": false,
+    "public_contract_or_sdk_changed": false,
+    "forbidden_final_or_gui_gates_run": [],
+    "donor_push": "DISABLED"
+  },
+  "claims": {
+    "self_reviewed": false,
+    "findings_closed_by_source": false,
+    "central_pass": false,
+    "merge_eligible": false
+  }
+}

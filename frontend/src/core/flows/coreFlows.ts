@@ -123,11 +123,19 @@ export function createCoreFlows(options: CreateCoreFlowsOptions) {
 
   async function listProjects(): Promise<CoreProjectListItem[]> {
     const projects: CoreProjectListItem[] = []
+    const seenWorkspaceIds = new Set<string>()
     let offset = 0
     for (let pageCount = 0; pageCount < MAX_PAGE_REQUESTS; pageCount += 1) {
       const page = await gateway.request('workspace.list', {
         schema: 'core-workspace-query/v1', workspace_id: null, offset, limit: PAGE_LIMIT,
       })
+      if (page.offset !== offset || page.limit !== PAGE_LIMIT) throw new Error('Core workspace page drifted from the requested offset or limit')
+      const expectedNextOffset = offset + page.items.length < page.total ? offset + page.items.length : null
+      if (page.next_offset !== expectedNextOffset) throw new Error('Core workspace pagination cursor drifted')
+      for (const item of page.items) {
+        if (seenWorkspaceIds.has(item.workspace_id)) throw new Error(`Core workspace pagination repeated ${item.workspace_id}`)
+        seenWorkspaceIds.add(item.workspace_id)
+      }
       projects.push(...page.items.filter(item => item.workspace_kind === 'WritingProject').map(projectFromWorkspace))
       if (page.next_offset === null) return projects
       if (page.next_offset <= offset) throw new Error('Core workspace pagination did not advance')
@@ -196,12 +204,20 @@ export function createCoreFlows(options: CreateCoreFlowsOptions) {
 
   async function listDocuments(workspaceId: string): Promise<Readonly<CoreDocument>[]> {
     const documents: Readonly<CoreDocument>[] = []
+    const seenDocumentIds = new Set<string>()
     let offset = 0
     for (let pageCount = 0; pageCount < MAX_PAGE_REQUESTS; pageCount += 1) {
       const page = await gateway.request('document.list', {
         schema: 'core-document-query/v1', workspace_id: workspaceId, document_id: null, offset, limit: PAGE_LIMIT,
       })
+      if (page.offset !== offset || page.limit !== PAGE_LIMIT) throw new Error('Core document page drifted from the requested offset or limit')
+      const expectedNextOffset = offset + page.items.length < page.total ? offset + page.items.length : null
+      if (page.next_offset !== expectedNextOffset) throw new Error('Core document pagination cursor drifted')
       if (page.items.some(item => item.workspace_id !== workspaceId)) throw new Error('Core document page crossed Workspace')
+      for (const item of page.items) {
+        if (seenDocumentIds.has(item.document_id)) throw new Error(`Core document pagination repeated ${item.document_id}`)
+        seenDocumentIds.add(item.document_id)
+      }
       documents.push(...page.items)
       if (page.next_offset === null) return documents
       if (page.next_offset <= offset) throw new Error('Core document pagination did not advance')
@@ -252,8 +268,12 @@ export function createCoreFlows(options: CreateCoreFlowsOptions) {
       const revision = await gateway.request('revision.get', {
         schema: 'core-revision-get-query/v1', workspace_id: chapter.workspaceId, revision_id: document.current_revision_id,
       })
-      if (revision.workspace_id !== chapter.workspaceId || revision.document_id !== chapter.documentId || revision.node_id !== null) {
-        throw new Error('Core chapter revision crossed Workspace or document identity')
+      if (revision.workspace_id !== chapter.workspaceId
+        || revision.document_id !== chapter.documentId
+        || revision.node_id !== null
+        || revision.revision_id !== document.current_revision_id
+        || revision.payload_schema !== 'core.document-text/v1') {
+        throw new Error('Core chapter revision crossed its exact current Revision identity or text payload')
       }
       content = await readRevisionContent(chapter.workspaceId, revision.revision_id)
     }
@@ -299,7 +319,10 @@ export function createCoreFlows(options: CreateCoreFlowsOptions) {
       || revision.document_id !== command.document_id
       || revision.node_id !== null
       || revision.revision_id !== command.revision_id
-      || revision.parent_revision_id !== command.base_revision_id) {
+      || revision.parent_revision_id !== command.base_revision_id
+      || revision.created_by !== command.created_by
+      || revision.source_candidate_id !== command.source_candidate_id
+      || revision.payload_schema !== command.payload_schema) {
       throw new Error('Core revision create result crossed its chapter identity')
     }
     pendingSaveCommands.delete(pendingKey)

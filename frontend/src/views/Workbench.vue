@@ -86,7 +86,12 @@ import {
   editCoreChapter,
   type CoreChapterListItem,
   type CoreOpenedChapter,
+  type CoreWorkbenchSnapshot,
 } from '../core/flows/coreFlows.ts'
+import {
+  ScopedRequestGeneration,
+  type ScopedGenerationToken,
+} from '../core/flows/asyncGeneration.ts'
 import { requireCoreFlowRuntime } from '../core/flows/runtime.ts'
 import { WORKBENCH_SPLIT } from '../design/layoutDensity'
 import { storageKeys } from '@/config/storageKeys'
@@ -108,10 +113,46 @@ const chapterLoading = ref(false)
 const chapterSaving = ref(false)
 const openedChapter = ref<CoreOpenedChapter | null>(null)
 const draftByDocument = new Map<string, string>()
+const workspaceGeneration = new ScopedRequestGeneration()
 let openSequence = 0
+let saveSequence = 0
+let deskSequence = 0
 
-async function loadDesk() {
-  const snapshot = await requireCoreFlowRuntime().loadWorkbench(slug.value)
+function isWorkspaceCurrent(token: Readonly<ScopedGenerationToken>, workspaceId: string): boolean {
+  return workspaceGeneration.isCurrent(token) && token.scope === workspaceId && slug.value === workspaceId
+}
+
+function workspaceDraftKey(workspaceId: string, documentId: string): string {
+  return `${workspaceId}\u0000${documentId}`
+}
+
+function beginWorkspaceTransition(workspaceId: string): ScopedGenerationToken {
+  const token = workspaceGeneration.begin(workspaceId)
+  openSequence += 1
+  saveSequence += 1
+  deskSequence += 1
+  chapterDeskReload.cancel()
+  bookTitle.value = workspaceId
+  chapters.value = []
+  currentDocumentId.value = null
+  openedChapter.value = null
+  chapterContent.value = ''
+  chapterLoading.value = false
+  chapterSaving.value = false
+  pageLoading.value = true
+  return token
+}
+
+async function loadDesk(workspaceId: string, token: Readonly<ScopedGenerationToken>): Promise<boolean> {
+  const requestSequence = ++deskSequence
+  let snapshot: CoreWorkbenchSnapshot
+  try {
+    snapshot = await requireCoreFlowRuntime().loadWorkbench(workspaceId)
+  } catch (error: unknown) {
+    if (!isWorkspaceCurrent(token, workspaceId) || requestSequence !== deskSequence) return false
+    throw error
+  }
+  if (!isWorkspaceCurrent(token, workspaceId) || requestSequence !== deskSequence) return false
   bookTitle.value = snapshot.project.title
   chapters.value = snapshot.chapters
   if (currentDocumentId.value !== null && !chapters.value.some(chapter => chapter.documentId === currentDocumentId.value)) {
@@ -119,33 +160,31 @@ async function loadDesk() {
     openedChapter.value = null
     chapterContent.value = ''
   }
-}
-
-async function reloadDeskForSlugChange() {
-  openSequence += 1
-  draftByDocument.clear()
-  currentDocumentId.value = null
-  openedChapter.value = null
-  chapterContent.value = ''
-  await loadDesk()
+  return true
 }
 
 function goHome() {
   void router.push('/')
 }
 
-async function goToChapter(documentId: string) {
+async function goToChapter(documentId: string, token = workspaceGeneration.capture()) {
+  const requestSequence = ++openSequence
+  if (token === null || !isWorkspaceCurrent(token, token.scope)) {
+    chapterLoading.value = false
+    return
+  }
+  const workspaceId = token.scope
   const target = chapters.value.find(chapter => chapter.documentId === documentId)
-  if (target === undefined) {
+  if (target === undefined || target.workspaceId !== workspaceId) {
+    chapterLoading.value = false
     message.error('章节不在当前 Core 文档列表中')
     return
   }
-  const requestSequence = ++openSequence
   chapterLoading.value = true
   try {
     let opened = await requireCoreFlowRuntime().openChapter(target)
-    if (requestSequence !== openSequence) return
-    const pendingDraft = draftByDocument.get(documentId)
+    if (!isWorkspaceCurrent(token, workspaceId) || requestSequence !== openSequence) return
+    const pendingDraft = draftByDocument.get(workspaceDraftKey(workspaceId, documentId))
     if (pendingDraft !== undefined) opened = editCoreChapter(opened, pendingDraft)
     currentDocumentId.value = documentId
     openedChapter.value = opened
@@ -154,10 +193,10 @@ async function goToChapter(documentId: string) {
       await router.replace({ query: { ...route.query, chapter: documentId } })
     }
   } catch (error: unknown) {
-    if (requestSequence !== openSequence) return
+    if (!isWorkspaceCurrent(token, workspaceId) || requestSequence !== openSequence) return
     message.error(error instanceof Error ? error.message : '加载章节失败')
   } finally {
-    if (requestSequence === openSequence) chapterLoading.value = false
+    if (isWorkspaceCurrent(token, workspaceId) && requestSequence === openSequence) chapterLoading.value = false
   }
 }
 
@@ -166,35 +205,52 @@ async function handleChapterSelect(documentId: string) {
 }
 
 function handleChapterEdit(content: string) {
-  chapterContent.value = content
-  if (openedChapter.value !== null) {
-    openedChapter.value = editCoreChapter(openedChapter.value, content)
-    draftByDocument.set(openedChapter.value.chapter.documentId, content)
+  const opened = openedChapter.value
+  if (opened !== null && opened.chapter.workspaceId === slug.value) {
+    chapterContent.value = content
+    openedChapter.value = editCoreChapter(opened, content)
+    const draftKey = workspaceDraftKey(
+      openedChapter.value.chapter.workspaceId,
+      openedChapter.value.chapter.documentId,
+    )
+    if (openedChapter.value.dirty) draftByDocument.set(draftKey, content)
+    else draftByDocument.delete(draftKey)
   }
 }
 
 async function handleChapterSave() {
   if (openedChapter.value === null || !openedChapter.value.dirty) return
+  const token = workspaceGeneration.capture()
+  if (token === null || !isWorkspaceCurrent(token, token.scope)) return
+  const savingChapter = openedChapter.value
+  const savingDocumentId = savingChapter.chapter.documentId
+  const workspaceId = token.scope
+  if (savingChapter.chapter.workspaceId !== workspaceId || currentDocumentId.value !== savingDocumentId) return
+  const requestSequence = ++saveSequence
   chapterSaving.value = true
   try {
-    const savingDocumentId = openedChapter.value.chapter.documentId
-    const saved = await requireCoreFlowRuntime().saveChapter(openedChapter.value)
-    draftByDocument.delete(savingDocumentId)
-    if (currentDocumentId.value === savingDocumentId) {
-      openedChapter.value = saved
-      chapterContent.value = saved.draftContent
-    }
+    const saved = await requireCoreFlowRuntime().saveChapter(savingChapter)
+    if (!isWorkspaceCurrent(token, workspaceId)
+      || requestSequence !== saveSequence
+      || currentDocumentId.value !== savingDocumentId
+      || openedChapter.value?.chapter.documentId !== savingDocumentId
+      || openedChapter.value.draftContent !== savingChapter.draftContent) return
+    draftByDocument.delete(workspaceDraftKey(workspaceId, savingDocumentId))
+    openedChapter.value = saved
+    chapterContent.value = saved.draftContent
     message.success('保存成功')
     handleChapterUpdated()
   } catch (error: unknown) {
+    if (!isWorkspaceCurrent(token, workspaceId) || requestSequence !== saveSequence) return
     message.error(error instanceof Error ? error.message : '保存失败')
   } finally {
-    chapterSaving.value = false
+    if (isWorkspaceCurrent(token, workspaceId) && requestSequence === saveSequence) chapterSaving.value = false
   }
 }
 
 async function runChapterDeskReload() {
-  await loadDesk()
+  const token = workspaceGeneration.capture()
+  if (token !== null) await loadDesk(token.scope, token)
 }
 
 /** 合并短时间内的多次「整桌刷新」：全托管状态抖动 / 多源 emit 时只拉一次 API，减轻闪烁与日志刷屏 */
@@ -230,47 +286,61 @@ function parseChapterQuery(q: unknown): string | null {
   return typeof raw === 'string' && raw.length > 0 ? raw : null
 }
 
-async function syncChapterFromRoute() {
+async function syncChapterFromRoute(token = workspaceGeneration.capture()) {
+  if (token === null || !isWorkspaceCurrent(token, token.scope)) return
   const documentId = parseChapterQuery(route.query.chapter)
   if (documentId !== null && documentId !== currentDocumentId.value) {
-    await goToChapter(documentId)
+    await goToChapter(documentId, token)
   }
 }
 
 onMounted(async () => {
+  const workspaceId = slug.value
+  const token = beginWorkspaceTransition(workspaceId)
   try {
-    await loadDesk()
-    await syncChapterFromRoute()
+    if (await loadDesk(workspaceId, token)) await syncChapterFromRoute(token)
   } catch (error: unknown) {
+    if (!isWorkspaceCurrent(token, workspaceId)) return
     message.error(error instanceof Error ? error.message : '加载 Core 工作台失败')
-    bookTitle.value = slug.value
+    bookTitle.value = workspaceId
   } finally {
-    pageLoading.value = false
+    if (isWorkspaceCurrent(token, workspaceId)) pageLoading.value = false
   }
 })
 
 onUnmounted(() => {
+  workspaceGeneration.invalidate()
   openSequence += 1
+  saveSequence += 1
+  deskSequence += 1
   chapterDeskReload.cancel()
 })
 
 watch(
   () => route.query.chapter,
   () => {
-    void syncChapterFromRoute()
+    const token = workspaceGeneration.capture()
+    void syncChapterFromRoute(token)
   }
 )
 
 watch(
   slug,
   async (next, prev) => {
-    if (!next || prev === next) return
+    if (prev === next) return
+    const token = beginWorkspaceTransition(next)
+    if (!next) {
+      pageLoading.value = false
+      return
+    }
     try {
-      await reloadDeskForSlugChange()
-      await syncChapterFromRoute()
+      if (await loadDesk(next, token)) await syncChapterFromRoute(token)
     } catch (error: unknown) {
+      if (!isWorkspaceCurrent(token, next)) return
       message.error(error instanceof Error ? error.message : '切换 Core 项目失败')
       bookTitle.value = next
+    } finally {
+      if (isWorkspaceCurrent(token, next)) pageLoading.value = false
     }
   }
 )
