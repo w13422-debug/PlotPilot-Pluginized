@@ -4,8 +4,10 @@
 
 - Node: `NW-P3-EVENT-SSE-03`
 - Branch: `codex/nw-p3-event-sse-03`
-- Exact parent: `8e3d3a7268e0d28559a7212790e3ab9f22c1453a`
-- Parent tree: `eab64b7d5b1e3ad652aeaf48bd0085d930beca5d`
+- Initial source parent: `8e3d3a7268e0d28559a7212790e3ab9f22c1453a`
+- Bounded remediation parent: `4790cbcdb83b2e0bbfad9636552e8fedb22b0d2d`
+- Frozen Finding Manifest SHA-256: `9df4ca6e1254f228acb82a34c276a679105a68da466bbdbbb0ecbb669490f4f7`
+- Frozen review result SHA-256: `a3af596003bbaed500702224496da9679a8352a950ce4be27fd022c7736b253b`
 - Source-only: yes
 - Public contracts, generated SDKs, shared Job router/state/ledger/ports/migrations and `app.py`: unchanged
 - Runtime mount and public HTTP error mapping: deferred to their existing P3 assembly/P0 owners
@@ -34,6 +36,8 @@ Local evidence consulted:
 - Core Event append requires a caller-owned active authority transaction so aggregate mutation and Event publication cannot split.
 - Core high-water is read from `sqlite_sequence`, so prefix retention and reopen cannot rewind it.
 - Plugin Job Event append atomically advances the Job-local high-water and binds Job, Step, Attempt, plugin, release and local sequence.
+- Supplied Event connections must already be in a transaction; test-only CAS failure injection proves Job Event INSERT and high-water advance roll back together.
+- Contract-valid global Core Events fail closed with `MIGRATION_FAILED` until the authority owner accepts nullable Workspace storage; no sentinel Workspace or second log is fabricated.
 - Core and Job payload Asset ID/hash pairs fail closed when half-present.
 - Plugin Events must use `plugin.<plugin_id>.` and cannot use Core Event types or the reserved `plugin.generation.*` prefix.
 - Replay verifies stored JSON identity against every authoritative row identity column.
@@ -53,14 +57,18 @@ Local evidence consulted:
 - Normal replay is HTTP 200 `text/event-stream`; filtered empty pages still advance browser `Last-Event-ID` with a cursor-only field.
 - A retention gap is exposed as HTTP 409 JSON `sse-recovery/v1`, carrying the immutable snapshot Asset reference.
 - Job snapshots and `job-event-page/v1` are materialized as canonical immutable Assets.
-- `JobPollProjectionStore` implements the accepted Broker child snapshot port, including authoritative internal `child_state` for terminal projection.
+- Event windows use a dedicated connection and explicit SQLite read transaction, pinning high-water, retention floor and retained rows against a second writer.
+- `JobPollProjectionStore` shares one pinned read transaction across terminal/result anchors, Job aggregate snapshot and Event page; a second-connection append/prune regression proves generation consistency.
+- `job-event-page.next_job_event_seq` is a next-unread cursor and must be converted to exclusive `after_job_event_seq` with `next_job_event_seq - 1`.
 
 ## Verification
 
-Machine-readable results are in [`validation-evidence.json`](validation-evidence.json). The required directed suites report `13 passed` and `4 passed`; compileall, contract-manifest determinism and diff checks are clean. These are source validation results, not an independent review or central acceptance claim.
+Machine-readable results are in [`validation-evidence.json`](validation-evidence.json), and Finding-addressed evidence is in [`remediation-closure.json`](remediation-closure.json). These are source validation results, not an independent review or central acceptance claim; Finding closure remains reviewer-owned.
 
 ## Integration notes
 
 - P3 assembly must provide the real checkpoint/stream read projection to `JobSnapshotStore` and export/mount the accepted modules.
+- `NW-P3-JOB-RPC-02` must use `next_job_event_seq_to_after` at the page/RPC continuation boundary and prove the first unread Event is not skipped.
+- The authority/migration owner must adjudicate [`authority-and-cursor-delta.md`](../../../../coordination/PPA-03/event-sse/authority-and-cursor-delta.md) before global Core Event persistence/subscription assembly proceeds.
 - Core mutation owners may pass their existing transaction to `CoreEventStore.append`; the store intentionally refuses standalone Core Event writes.
 - P0 remains the only owner of public route mounting and public 400/409 error-envelope mapping.

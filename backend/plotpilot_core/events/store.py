@@ -93,6 +93,34 @@ def _require_limit(value: int) -> None:
         raise ContractError(ErrorCode.INVALID_TRANSITION, "event replay limit must be between 1 and 10000")
 
 
+@contextmanager
+def pinned_read_transaction(repository: CoreAuthorityRepository) -> Iterator[sqlite3.Connection]:
+    """Open an independent, read-only SQLite snapshot for one projection.
+
+    The accepted repository reader serializes access to its process-local
+    connection, but an autocommit reader does not pin a snapshot against a
+    second process.  Event projections use a dedicated connection and an
+    explicit deferred transaction so every SELECT observes the same WAL
+    snapshot while concurrent writers remain able to commit.
+    """
+
+    connection = sqlite3.connect(
+        repository.database,
+        isolation_level=None,
+        check_same_thread=False,
+    )
+    connection.row_factory = sqlite3.Row
+    try:
+        connection.execute("PRAGMA foreign_keys=ON")
+        connection.execute("PRAGMA query_only=ON")
+        connection.execute("BEGIN")
+        yield connection
+    finally:
+        if connection.in_transaction:
+            connection.rollback()
+        connection.close()
+
+
 @dataclass(frozen=True, slots=True)
 class ReplayWindow:
     stream_kind: StreamKind
@@ -115,9 +143,27 @@ class _SQLiteEventStore:
     @contextmanager
     def _writer(self, connection: sqlite3.Connection | None) -> Iterator[sqlite3.Connection]:
         if connection is not None:
+            if not connection.in_transaction:
+                raise ContractError(
+                    ErrorCode.INVALID_TRANSITION,
+                    "Event append requires an active SQLite transaction",
+                )
             yield connection
             return
         with self.repository.transaction() as owned:
+            yield owned
+
+    @contextmanager
+    def _reader(self, connection: sqlite3.Connection | None) -> Iterator[sqlite3.Connection]:
+        if connection is not None:
+            if not connection.in_transaction:
+                raise ContractError(
+                    ErrorCode.INVALID_TRANSITION,
+                    "Event projection requires an active SQLite read transaction",
+                )
+            yield connection
+            return
+        with pinned_read_transaction(self.repository) as owned:
             yield owned
 
 
@@ -136,7 +182,7 @@ class CoreEventStore(_SQLiteEventStore):
         return 0 if row is None else int(row[0])
 
     def high_water(self) -> int:
-        with self.repository.read_connection() as connection:
+        with self._reader(None) as connection:
             return self._high_water(connection)
 
     def append(
@@ -162,7 +208,6 @@ class CoreEventStore(_SQLiteEventStore):
         payload_pair = (candidate.get("payload_asset_id"), candidate.get("payload_hash"))
         if (payload_pair[0] is None) != (payload_pair[1] is None):
             raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "Core Event payload ID/hash must be paired")
-
         with self._writer(connection) as writer:
             existing = writer.execute(
                 "SELECT event_json FROM execution_core_event WHERE event_id=?", (event_id,)
@@ -180,6 +225,11 @@ class CoreEventStore(_SQLiteEventStore):
                 raise ContractError(ErrorCode.INVALID_TRANSITION, "Core Event sequence is not the next durable cursor")
             stored = {**candidate, "core_event_seq": sequence}
             assert_valid("core-event-v1", stored)
+            if stored["workspace_id"] is None:
+                raise ContractError(
+                    ErrorCode.MIGRATION_FAILED,
+                    "Global Core Events require the nullable-workspace authority migration",
+                )
             writer.execute(
                 "INSERT INTO execution_core_event(core_event_seq,event_id,workspace_id,aggregate_id,aggregate_revision,event_json) "
                 "VALUES(?,?,?,?,?,?)",
@@ -209,17 +259,18 @@ class CoreEventStore(_SQLiteEventStore):
         workspace_id: str | None = None,
         event_types: Sequence[str] = (),
         limit: int = 1000,
+        connection: sqlite3.Connection | None = None,
     ) -> ReplayWindow:
         _require_after_seq(after_seq)
         _require_limit(limit)
         normalized_types = tuple(sorted(set(event_types)))
         if any(not isinstance(item, str) or not item for item in normalized_types):
             raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "Core Event type filter is invalid")
-        with self.repository.read_connection() as connection:
-            high_water = self._high_water(connection)
+        with self._reader(connection) as reader:
+            high_water = self._high_water(reader)
             if after_seq > high_water:
                 raise ContractError(ErrorCode.INVALID_TRANSITION, "SSE cursor is ahead of the durable high-water mark")
-            first = connection.execute(
+            first = reader.execute(
                 "SELECT MIN(core_event_seq) FROM execution_core_event"
             ).fetchone()[0]
             replay_floor = high_water if first is None else int(first) - 1
@@ -235,7 +286,7 @@ class CoreEventStore(_SQLiteEventStore):
                     + ")"
                 )
                 parameters.extend(normalized_types)
-            rows = connection.execute(
+            rows = reader.execute(
                 "SELECT core_event_seq,event_id,workspace_id,aggregate_id,aggregate_revision,event_json "
                 "FROM execution_core_event WHERE "
                 + " AND ".join(clauses)
@@ -264,7 +315,7 @@ class JobEventStore(_SQLiteEventStore):
         return row
 
     def high_water(self, job_id: str) -> int:
-        with self.repository.read_connection() as connection:
+        with self._reader(None) as connection:
             return int(self._job_row(connection, job_id)["job_event_high_water"])
 
     def append(
@@ -356,18 +407,25 @@ class JobEventStore(_SQLiteEventStore):
             )
             return int(cursor.rowcount)
 
-    def window(self, job_id: str, after_seq: int, *, limit: int = 1000) -> ReplayWindow:
+    def window(
+        self,
+        job_id: str,
+        after_seq: int,
+        *,
+        limit: int = 1000,
+        connection: sqlite3.Connection | None = None,
+    ) -> ReplayWindow:
         _require_after_seq(after_seq)
         _require_limit(limit)
-        with self.repository.read_connection() as connection:
-            high_water = int(self._job_row(connection, job_id)["job_event_high_water"])
+        with self._reader(connection) as reader:
+            high_water = int(self._job_row(reader, job_id)["job_event_high_water"])
             if after_seq > high_water:
                 raise ContractError(ErrorCode.INVALID_TRANSITION, "SSE cursor is ahead of the durable high-water mark")
-            first = connection.execute(
+            first = reader.execute(
                 "SELECT MIN(job_event_seq) FROM execution_job_event WHERE job_id=?", (job_id,)
             ).fetchone()[0]
             replay_floor = high_water if first is None else int(first) - 1
-            rows = connection.execute(
+            rows = reader.execute(
                 "SELECT job_id,job_event_seq,event_id,attempt_id,local_seq,event_json FROM execution_job_event "
                 "WHERE job_id=? AND job_event_seq>? AND job_event_seq<=? "
                 "ORDER BY job_event_seq LIMIT ?",
@@ -382,4 +440,10 @@ class JobEventStore(_SQLiteEventStore):
         )
 
 
-__all__ = ["CoreEventStore", "JobEventStore", "ReplayWindow", "StreamKind"]
+__all__ = [
+    "CoreEventStore",
+    "JobEventStore",
+    "ReplayWindow",
+    "StreamKind",
+    "pinned_read_transaction",
+]

@@ -5,6 +5,11 @@
     "head": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
     "tree": "eab64b7d5b1e3ad652aeaf48bd0085d930beca5d"
   },
+  "remediation": {
+    "parent": "4790cbcdb83b2e0bbfad9636552e8fedb22b0d2d",
+    "finding_manifest_sha256": "9df4ca6e1254f228acb82a34c276a679105a68da466bbdbbb0ecbb669490f4f7",
+    "review_result_sha256": "a3af596003bbaed500702224496da9679a8352a950ce4be27fd022c7736b253b"
+  },
   "runtime": {
     "python": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
     "python_version": "3.12.13",
@@ -15,12 +20,17 @@
     {
       "command": "python -B -m pytest -p no:cacheprovider tests/p3-execution/event-sse -q",
       "exit_code": 0,
-      "result": "13 passed in 1.17s"
+      "result": "20 passed in 1.13s"
     },
     {
       "command": "python -B -m pytest -p no:cacheprovider tests/p3-execution/test_job_execution.py -q",
       "exit_code": 0,
-      "result": "4 passed in 0.49s"
+      "result": "4 passed in 0.82s"
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/execution-transaction/test_terminal_transaction.py -q",
+      "exit_code": 0,
+      "result": "17 passed in 1.34s"
     },
     {
       "command": "python -B -m compileall -q backend/plotpilot_core/api/v1/jobs/sse backend/plotpilot_core/events",
@@ -53,9 +63,14 @@
     "strict Last-Event-ID grammar, after_seq conflict, cursor ahead and domain mix",
     "409 snapshot recovery, pre-capture high-water retry and post-snapshot tail convergence",
     "Core aggregate projector and Job runtime projection injection",
-    "immutable Job snapshot/Event page Assets and running/terminal Broker projection"
+    "immutable Job snapshot/Event page Assets and running/terminal Broker projection",
+    "Job Event INSERT/high-water CAS rollback under injected second-statement failure",
+    "supplied autocommit rejection and supplied active transaction success",
+    "schema-valid nullable global Core Event fail-closed before authority INSERT",
+    "real pinned read transaction under second-connection atomic append/prune/terminal update",
+    "next-unread Job page cursor conversion to exclusive after cursor"
   ],
   "source_review_status": "not_self_reviewed",
   "central_acceptance_claimed": false,
-  "recorded_at": "2026-08-28T17:25:56.0419350+08:00"
+  "recorded_at": "2026-08-28T21:02:54.9906052+08:00"
 }

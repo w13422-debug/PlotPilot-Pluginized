@@ -15,7 +15,9 @@ from backend.plotpilot_core.events import (
     JobEventStore,
     JobPollProjectionStore,
     JobSnapshotStore,
+    next_job_event_seq_to_after,
 )
+from backend.plotpilot_core.repositories.authority import CoreAuthorityRepository
 from backend.plotpilot_plugin_sdk import ContractError, ErrorCode, verify_sse_recovery
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -243,3 +245,63 @@ def test_after_seq_conflict_and_broker_poll_assets(event_stack) -> None:
     )
     assert terminal["terminal"] is True
     assert terminal["child_state"] == "succeeded"
+
+
+def test_poll_projection_is_pinned_against_second_connection_append_and_prune(event_stack) -> None:
+    primary_jobs = JobEventStore(event_stack["repository"])
+    assert primary_jobs.append(job_event(1))["job_event_seq"] == 1
+    second_repository = CoreAuthorityRepository(event_stack["database"])
+    second_jobs = JobEventStore(second_repository)
+    raced = {"done": False}
+
+    def race_during_aggregate_read(connection, job_id):
+        assert connection.in_transaction
+        assert job_id == "job-1"
+        with second_repository.transaction() as writer:
+            assert second_jobs.append(job_event(2), connection=writer)["job_event_seq"] == 2
+            assert writer.execute(
+                "DELETE FROM execution_job_event WHERE job_id='job-1' AND job_event_seq<=1"
+            ).rowcount == 1
+            writer.execute(
+                "UPDATE execution_job SET job_state='succeeded' WHERE job_id='job-1'"
+            )
+        raced["done"] = True
+        return {"current_checkpoint_id": None, "stream_high_waters": []}
+
+    try:
+        snapshots = JobSnapshotStore(
+            event_stack["repository"],
+            event_stack["assets"],
+            race_during_aggregate_read,
+        )
+        pages = JobEventPageStore(primary_jobs, event_stack["assets"])
+        projection = JobPollProjectionStore(event_stack["repository"], snapshots, pages)
+        value = projection.project_poll(
+            child_job_id="job-1",
+            after_job_event_seq=0,
+            execution_terminal=False,
+            execution_events=[job_event(1)],
+        )
+        assert raced["done"]
+        snapshot = json.loads(event_stack["assets"].read(value["job_snapshot_asset_id"]))
+        page = json.loads(event_stack["assets"].read(value["job_event_page_asset_id"]))
+        assert snapshot["job_event_high_water"] == page["high_water_seq"] == 1
+        assert snapshot["job_state"] == value["child_state"] == "running"
+        assert [item["job_event_seq"] for item in page["events"]] == [1]
+        assert value["terminal"] is False
+        assert value["next_job_event_seq"] == 2
+        assert next_job_event_seq_to_after(value["next_job_event_seq"]) == 1
+
+        current = second_jobs.window("job-1", 0)
+        assert current.gap is True
+        assert current.replay_floor_seq == 1
+        assert current.durable_high_water_seq == 2
+        assert [item["job_event_seq"] for item in current.events] == [2]
+    finally:
+        second_repository.close()
+
+
+@pytest.mark.parametrize("value", [True, 0, -1, "2"])
+def test_next_job_event_seq_conversion_rejects_non_positive_values(value) -> None:
+    with pytest.raises(ValueError):
+        next_job_event_seq_to_after(value)

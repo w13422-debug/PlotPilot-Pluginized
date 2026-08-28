@@ -9,6 +9,7 @@ from .snapshots import (
     PersistedJobEventPage,
     PersistedSnapshot,
     SnapshotHighWaterChanged,
+    next_job_event_seq_to_after,
 )
 from .store import CoreEventStore, JobEventStore, ReplayWindow, StreamKind
 
@@ -29,4 +30,5 @@ __all__ = [
     "SnapshotProvider",
     "SnapshotHighWaterChanged",
     "StreamKind",
+    "next_job_event_seq_to_after",
 ]

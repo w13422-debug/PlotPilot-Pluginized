@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 import json
+import sqlite3
 import sys
 
 import pytest
 
 from backend.plotpilot_core.events import CoreEventStore, JobEventStore
 from backend.plotpilot_core.repositories.authority import CoreAuthorityRepository
-from backend.plotpilot_plugin_sdk import ContractError, ErrorCode
+from backend.plotpilot_plugin_sdk import ContractError, ErrorCode, assert_valid
 
 sys.path.insert(0, str(Path(__file__).parent))
 from conftest import append_core, core_event, job_event  # noqa: E402
@@ -109,6 +110,58 @@ def test_job_local_sequence_and_attempt_binding_are_enforced(event_stack) -> Non
     with pytest.raises(ContractError) as payload_pair:
         jobs.append({**job_event(2), "payload_asset_id": "asset-only"})
     assert payload_pair.value.code == int(ErrorCode.RESULT_CONTRACT_MISMATCH)
+
+
+def test_job_insert_and_high_water_cas_roll_back_together(event_stack) -> None:
+    repository = event_stack["repository"]
+    jobs = JobEventStore(repository)
+    with repository.transaction() as connection:
+        connection.execute(
+            "CREATE TRIGGER inject_job_high_water_failure "
+            "BEFORE UPDATE OF job_event_high_water ON execution_job "
+            "BEGIN SELECT RAISE(ABORT, 'injected CAS failure'); END"
+        )
+
+    with pytest.raises(sqlite3.IntegrityError, match="injected CAS failure"):
+        jobs.append(job_event(1))
+
+    with repository.read_connection() as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM execution_job_event WHERE job_id='job-1'"
+        ).fetchone()[0] == 0
+        assert connection.execute(
+            "SELECT job_event_high_water FROM execution_job WHERE job_id='job-1'"
+        ).fetchone()[0] == 0
+    with repository.transaction() as connection:
+        connection.execute("DROP TRIGGER inject_job_high_water_failure")
+    assert jobs.append(job_event(1))["job_event_seq"] == 1
+
+    with repository.transaction() as connection:
+        assert jobs.append(job_event(2), connection=connection)["job_event_seq"] == 2
+    assert jobs.high_water("job-1") == 2
+
+    external = sqlite3.connect(event_stack["database"], isolation_level=None)
+    try:
+        with pytest.raises(ContractError) as autocommit:
+            jobs.append(job_event(3), connection=external)
+        assert autocommit.value.code == int(ErrorCode.INVALID_TRANSITION)
+    finally:
+        external.close()
+    assert jobs.high_water("job-1") == 2
+
+
+def test_nullable_global_core_event_fails_closed_until_authority_delta(event_stack) -> None:
+    repository = event_stack["repository"]
+    core = CoreEventStore(repository)
+    value = {**core_event(1), "workspace_id": None}
+    assert_valid("core-event-v1", {**value, "core_event_seq": 1})
+    with pytest.raises(ContractError) as blocked:
+        append_core(core, value)
+    assert blocked.value.code == int(ErrorCode.MIGRATION_FAILED)
+    assert "nullable-workspace authority migration" in str(blocked.value)
+    assert core.high_water() == 0
+    with repository.read_connection() as connection:
+        assert connection.execute("SELECT COUNT(*) FROM execution_core_event").fetchone()[0] == 0
 
 
 def test_high_water_survives_repository_reopen(event_stack) -> None:
