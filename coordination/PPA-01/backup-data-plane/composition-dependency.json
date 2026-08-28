@@ -3,20 +3,20 @@
   "node_id": "NW-P1-BACKUP-DATA-01",
   "owner": "P0",
   "status": "deferred_by_binding_decision",
-  "reason": "The accepted authority has no honest global backup epoch, Core event high-water/state-Asset snapshot builder, durable P2 current/LKG view, or P3 quiesce composition.",
+  "reason": "This remediation provides the production SQLite-to-CoreSnapshot/AssetStore adapter and exact high-water binding, while the durable barrier producer, P2 current/LKG view, and P3 quiesce composition remain P0-owned.",
   "required_ports": [
     "backend.plotpilot_core.backup.BackupBarrierPort",
-    "backend.plotpilot_core.backup.CoreSnapshotPort",
+    "backend.plotpilot_core.backup.SqliteCoreSnapshotAdapter as CoreSnapshotPort",
     "backend.plotpilot_core.backup.GenerationBackupPort",
     "backend.plotpilot_core.backup.PluginDataBackupPort"
   ],
   "binding_rules": [
-    "Barrier epoch and timestamp must equal BackupRequest.",
-    "CoreSnapshotCapture must bind the barrier token, frozen SQLite SHA-256, exact frozen-DB Asset roots, workspace IDs, Core 1.2.0 compatibility, authoritative scoped workspace snapshot hash, and additional Core Asset roots.",
+    "Barrier epoch and timestamp must equal BackupRequest; its independent durable core_event_high_water must not be derived from backup_epoch.",
+    "P0 must compose SqliteCoreSnapshotAdapter as CoreSnapshotPort; capture binds the barrier token/high-water, frozen SQLite SHA-256, exact frozen-DB Asset roots, workspace IDs, Core 1.2.0 compatibility, scoped workspace snapshot hash, and state Assets created through AssetStore.",
     "P2 and P3 captures must bind the same barrier token and accepted Core snapshot hash, explicitly report compatibility, and enumerate declared Asset roots.",
     "P2 package descriptors must bijectively bind each package_present release_id/package_hash to one verified file; P3 frozen plugin SQLite is rescanned from staged bytes.",
     "No empty default, fabricated compatibility, caller-selected Core version, or filesystem inference is permitted in production composition."
   ],
   "public_contract_delta_required": false,
-  "affected_slice_stopped": "runtime composition only; source coordinator and tests are complete"
+  "affected_slice_stopped": "runtime barrier/P2/P3 composition only; remediation remains pending the same authoritative reviewer"
 }

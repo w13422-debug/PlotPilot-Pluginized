@@ -9,22 +9,24 @@ the root dependency set, or P0 composition:
 - Asset closure derived from the frozen Core database, CoreSnapshot state
   Assets, explicit Core/P2/P3 contributor roots, and staged P3 SQLite files,
   then verified against the existing content-addressed `AssetStore` layout;
-- accepted `core-snapshot/v1` ingestion through a mandatory injected authority
-  port, rather than fabricating the currently absent event high-water/state
-  Asset authority;
-- canonical `backup-bundle/v1` plus a deterministic internal receipt binding the
-  barrier, Core snapshot, SQLite bytes, Asset closure, and file manifest;
+- production `SqliteCoreSnapshotAdapter` reconstruction from the frozen Core
+  SQLite authority, with aggregate state published through `AssetStore` and an
+  independently supplied durable event high-water;
+- canonical `backup-bundle/v1` plus a deterministic closed internal receipt
+  binding the Core snapshot, SQLite bytes, Asset closure, package semantics,
+  and file manifest while excluding ephemeral barrier tokens;
 - restore-to-new-root staging with complete pre/post-copy verification,
   unique-generation interrupted staging, exact idempotent replay, and no root
   switch.
 
 ## Consistency boundary
 
-`BackupDataPlane.create_backup()` requires all four ports and has no production
-fallback:
+`BackupDataPlane.create_backup()` requires all four ports; this slice provides
+the production CoreSnapshot adapter while runtime composition remains explicit:
 
 1. `BackupBarrierPort` holds the durable epoch across every contributor.
-2. `CoreSnapshotPort` returns a valid `core-snapshot/v1` bound out-of-band to the
+2. `SqliteCoreSnapshotAdapter` implements `CoreSnapshotPort` and returns a valid
+   `core-snapshot/v1` bound out-of-band to the
    frozen database hash, frozen-database Asset roots, exact workspaces, current
    Core `1.2.0` compatibility, additional required Assets, and (for workspace
    mode) that same scoped snapshot's authoritative hash.
@@ -43,10 +45,10 @@ the digest encoded by its Asset ID/path; ambient AssetStore objects are excluded
 Contributor files are copied only when their declared size/hash matches, and
 SQLite contributors also pass `integrity_check` and `foreign_key_check`.
 
-The current accepted repository does not own a durable global backup epoch,
-Core event high-water/aggregate state-Asset builder, P2 current/LKG persistence,
-or P3 quiesce/composition. Therefore those capabilities remain explicit P0
-composition dependencies. Missing or mismatched ports fail before publication.
+The current accepted repository still does not own the durable barrier/high-water
+producer, P2 current/LKG persistence, or P3 quiesce/composition. Those remain
+explicit P0 composition dependencies. The Core SQLite-to-state-Asset builder is
+now provided here; missing or mismatched ports fail before publication.
 
 ## Publication and restore
 

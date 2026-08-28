@@ -3,13 +3,13 @@
   "node_id": "NW-P1-BACKUP-DATA-01",
   "branch": "codex/nw-p1-backup-data-01",
   "base": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
-  "status": "source_complete_reviewer_approved",
-  "outcome": "SQLite online backup, contributor-first Core/P2/P3 Asset closure, exact package binding, and verified restore-to-new-root staging",
+  "status": "bounded_remediation_pending_same_reviewer",
+  "outcome": "Production SQLite CoreSnapshot adapter, exact durable high-water and Asset/package identity bindings, closed receipt, and isolated recoverable restore/backup staging",
   "public_contract_changes": [],
   "dependency_changes": [],
   "composition_dependencies": [
     "P0/P3 must provide a durable monotonic BackupBarrierPort implementation.",
-    "P0/P1 must compose a CoreSnapshotPort backed by real Core event high-water and aggregate state Assets.",
+    "P0/P1 must compose the provided SqliteCoreSnapshotAdapter with the durable barrier high-water producer.",
     "P0/P2 must compose durable current/LKG generation, release, package, and projection state through GenerationBackupPort.",
     "P0/P3 must compose quiesced independent SQLite/files through PluginDataBackupPort."
   ],
@@ -24,7 +24,7 @@
     "unowned/reparse interrupted staging generation",
     "existing, overlapping, raced, or bundle-conflicting restore root"
   ],
-  "source_review": "same_fresh_sol_max_approved_6_closed_0_open",
+  "source_review": "NW-P1-BDP-F-001..015 remediated_pending_same_reviewer",
   "central_pass_claimed": false,
   "donor_push": "DISABLED"
 }

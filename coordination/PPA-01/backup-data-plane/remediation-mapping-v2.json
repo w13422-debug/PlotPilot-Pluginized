@@ -1,0 +1,114 @@
+{
+  "schema": "ppa-bounded-remediation/v1",
+  "node_id": "NW-P1-BACKUP-DATA-01",
+  "parent_commit": "e05892c0285b23d3c17e8d077ea30d00a685f8ba",
+  "parent_tree": "54958c9c8006eec3f1debc3438633b8fa4cb8787",
+  "authoritative_review": {
+    "thread_id": "01a044cf-5005-7511-bb4e-e2262112a2e2",
+    "final_message_id": "msg_0c73402045abe060016a909f583c0487d181eda7f226de2280",
+    "index_sha256": "827dcb63c4299d75caadda320ff455a2fa2008878788844e7deef67fa75236fa",
+    "verdict": "BLOCK",
+    "open_findings": 15
+  },
+  "status": "remediated_pending_same_reviewer",
+  "findings": [
+    {
+      "id": "NW-P1-BDP-F-001",
+      "status": "remediated_pending_same_reviewer",
+      "implementation": "SqliteCoreSnapshotAdapter reads the frozen Core authority and writes deterministic aggregate state through AssetStore.",
+      "test": "test_production_core_snapshot_adapter_materializes_authority_state_asset"
+    },
+    {
+      "id": "NW-P1-BDP-F-002",
+      "status": "remediated_pending_same_reviewer",
+      "implementation": "BackupBarrier carries an independent core_event_high_water and CoreSnapshot capture/verification requires exact equality.",
+      "test": "test_core_snapshot_high_water_must_equal_durable_barrier"
+    },
+    {
+      "id": "NW-P1-BDP-F-003",
+      "status": "remediated_pending_same_reviewer",
+      "implementation": "PackageStoreArchiveAdapter emits deterministic ZIP_STORED artifacts; service separates artifact SHA-256 from SDK semantic package_hash and calls verify_package on create/verify/restore.",
+      "test": "test_package_semantic_identity_rejects_repacked_bytes_after_outer_rehash; test_package_store_archive_adapter_is_deterministic_and_keeps_semantic_identity"
+    },
+    {
+      "id": "NW-P1-BDP-F-004",
+      "status": "remediated_pending_same_reviewer",
+      "implementation": "P3 is restricted to plugin_db/metadata and bundle verification requires exactly one core_db at core/core.db.",
+      "test": "test_p3_cannot_contribute_a_second_core_database_role"
+    },
+    {
+      "id": "NW-P1-BDP-F-005",
+      "status": "remediated_pending_same_reviewer",
+      "implementation": "Creation and bundle replay require state_hash to equal the digest encoded by state_asset_id.",
+      "test": "test_core_snapshot_state_hash_must_bind_state_asset_id"
+    },
+    {
+      "id": "NW-P1-BDP-F-006",
+      "status": "remediated_pending_same_reviewer",
+      "implementation": "Verification rebuilds workspace IDs from frozen SQLite and enforces workspace versus full/data scope and workspace_snapshot_hash rules.",
+      "test": "test_workspace_scope_rebuild_rejects_multi_workspace_frozen_database"
+    },
+    {
+      "id": "NW-P1-BDP-F-007",
+      "status": "remediated_pending_same_reviewer",
+      "implementation": "Direct Asset columns are closed and structured JSON uses strict parsing while scanning both keys and values.",
+      "test": "test_asset_scanner_is_closed_for_direct_values_keys_and_json"
+    },
+    {
+      "id": "NW-P1-BDP-F-008",
+      "status": "remediated_pending_same_reviewer",
+      "implementation": "Asset metadata is parsed against the exact AssetMetadata field set and exact Python scalar types.",
+      "test": "test_asset_metadata_uses_exact_assetstore_schema"
+    },
+    {
+      "id": "NW-P1-BDP-F-009",
+      "status": "remediated_pending_same_reviewer",
+      "implementation": "Restore source_root_id must equal verified manifest library_root_id before replay or staging.",
+      "test": "test_restore_source_identity_is_bound_before_target_replay_or_copy"
+    },
+    {
+      "id": "NW-P1-BDP-F-010",
+      "status": "remediated_pending_same_reviewer",
+      "implementation": "Stage marker v2 binds state and full lexical target parent; cleanup accepts only the exact hidden generation and never a published target.",
+      "test": "test_cleanup_restore_staging_never_deletes_published_root; test_restore_cleanup_binds_complete_target_parent"
+    },
+    {
+      "id": "NW-P1-BDP-F-011",
+      "status": "remediated_pending_same_reviewer",
+      "implementation": "Lexical no-reparse checks precede resolve/read for roots, control files, target components and publication boundaries.",
+      "test": "test_verify_rejects_reparse_control_file_before_read; test_restore_rejects_reparse_target_component_before_staging"
+    },
+    {
+      "id": "NW-P1-BDP-F-012",
+      "status": "remediated_pending_same_reviewer",
+      "implementation": "The verified callback runs before final bundle/report/marker validation; no mutable staging callback runs after final prepublish validation.",
+      "test": "test_restore_revalidates_after_verified_callback_before_publish"
+    },
+    {
+      "id": "NW-P1-BDP-F-013",
+      "status": "remediated_pending_same_reviewer",
+      "implementation": "Ephemeral barrier tokens are excluded from the durable receipt.",
+      "test": "test_random_barrier_tokens_do_not_change_receipt_or_restore_replay"
+    },
+    {
+      "id": "NW-P1-BDP-F-014",
+      "status": "remediated_pending_same_reviewer",
+      "implementation": "The internal receipt and compatibility evidence use exact closed field sets, scalar/list/hash gates, and created_at binding.",
+      "test": "test_receipt_v1_is_closed_and_time_bound"
+    },
+    {
+      "id": "NW-P1-BDP-F-015",
+      "status": "remediated_pending_same_reviewer",
+      "implementation": "cleanup_backup_staging provides exact generation recovery and create_backup reuses a fully verified equivalent published bundle after a publish-window interruption.",
+      "test": "test_interrupted_backup_has_exact_cleanup_retry; test_backup_publish_window_interruption_recovers_existing_bundle"
+    }
+  ],
+  "self_closed_findings": [],
+  "central_pass_claimed": false,
+  "runtime_composition": {
+    "core_snapshot_adapter": "provided in this remediation",
+    "durable_barrier_provider": "P0/P3 composition dependency",
+    "p2_generation_provider": "P0/P2 composition dependency",
+    "p3_plugin_data_provider": "P0/P3 composition dependency"
+  }
+}

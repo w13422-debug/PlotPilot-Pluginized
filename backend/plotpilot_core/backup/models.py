@@ -27,6 +27,7 @@ class BackupBarrier:
 
     token: str
     backup_epoch: int
+    core_event_high_water: int
     created_at: str
 
 
@@ -36,6 +37,7 @@ class CoreSnapshotCapture:
 
     barrier_token: str
     bound_database_sha256: str
+    bound_core_event_high_water: int
     bound_asset_ids: tuple[str, ...]
     bound_workspace_ids: tuple[str, ...]
     core_contract_version: str
