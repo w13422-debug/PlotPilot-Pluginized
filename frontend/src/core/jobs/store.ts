@@ -37,11 +37,29 @@ function cloneSnapshot(snapshot: Readonly<JobSnapshot>): Readonly<JobSnapshot> {
   }) as Readonly<JobSnapshot>
 }
 
+function classifySnapshotPosition(
+  current: Readonly<JobSnapshot> | undefined,
+  incoming: Readonly<JobSnapshot>,
+  minimumCoveredCursor: number,
+): SnapshotApplyResult {
+  if (current == null) return incoming.job_event_high_water < minimumCoveredCursor ? 'stale' : 'inserted'
+  if (incoming.job_revision < current.job_revision
+    || incoming.job_event_high_water < current.job_event_high_water) return 'stale'
+  if (incoming.job_revision === current.job_revision
+    && incoming.job_event_high_water === current.job_event_high_water) {
+    if (incoming.snapshot_hash !== current.snapshot_hash) {
+      throw new Error('conflicting job snapshots share the same revision and event high-water')
+    }
+    return incoming.job_event_high_water < minimumCoveredCursor ? 'stale' : 'duplicate'
+  }
+  return incoming.job_event_high_water < minimumCoveredCursor ? 'stale' : 'replaced'
+}
+
 /** Authoritative in-memory projection. Snapshot application always replaces, never patches. */
 export class JobDrawerStore {
   private workspaceId: string | undefined
   private readonly snapshots = new Map<string, Readonly<JobSnapshot>>()
-  private readonly cursors = new Map<string, number>()
+  private readonly observedCursors = new Map<string, number>()
   private readonly connections = new Map<string, JobConnectionState>()
   private readonly listeners = new Set<Listener>()
 
@@ -72,8 +90,19 @@ export class JobDrawerStore {
     return this.snapshots.get(jobId)
   }
 
+  /** Highest contiguous event observed, whether or not a Snapshot covers it yet. */
+  observedCursor(jobId: string): number {
+    return this.observedCursors.get(jobId) ?? this.projectionCursor(jobId)
+  }
+
+  /** Durable cursor covered by the currently rendered authoritative Snapshot. */
+  projectionCursor(jobId: string): number {
+    return this.snapshots.get(jobId)?.job_event_high_water ?? 0
+  }
+
+  /** Compatibility alias for callers that need the observed stream position. */
   cursor(jobId: string): number {
-    return this.cursors.get(jobId) ?? this.snapshots.get(jobId)?.job_event_high_water ?? 0
+    return this.observedCursor(jobId)
   }
 
   connection(jobId: string): JobConnectionState {
@@ -84,52 +113,42 @@ export class JobDrawerStore {
     return Object.freeze(Object.fromEntries(this.connections))
   }
 
-  replaceSnapshot(snapshot: Readonly<JobSnapshot>): SnapshotApplyResult {
+  replaceSnapshot(snapshot: Readonly<JobSnapshot>, minimumCoveredCursor = this.observedCursor(snapshot.job_id)): SnapshotApplyResult {
     assertSnapshotIdentity(snapshot, this.workspaceId)
     const current = this.snapshots.get(snapshot.job_id)
-    const observedCursor = this.cursor(snapshot.job_id)
-    if (current != null) {
-      if (snapshot.job_revision < current.job_revision
-        || snapshot.job_event_high_water < current.job_event_high_water
-        || snapshot.job_event_high_water < observedCursor) return 'stale'
-      if (snapshot.job_revision === current.job_revision
-        && snapshot.job_event_high_water === current.job_event_high_water) {
-        if (snapshot.snapshot_hash !== current.snapshot_hash) {
-          throw new Error('conflicting job snapshots share the same revision and event high-water')
-        }
-        return 'duplicate'
-      }
-    }
+    const result = classifySnapshotPosition(current, snapshot, minimumCoveredCursor)
+    if (result === 'duplicate' || result === 'stale') return result
     this.snapshots.set(snapshot.job_id, cloneSnapshot(snapshot))
-    this.cursors.set(snapshot.job_id, snapshot.job_event_high_water)
+    this.observedCursors.set(
+      snapshot.job_id,
+      Math.max(this.observedCursor(snapshot.job_id), snapshot.job_event_high_water),
+    )
     this.emit()
-    return current == null ? 'inserted' : 'replaced'
+    return result
   }
 
   /** Replace one workspace listing atomically; absent records are intentionally removed. */
   replaceWorkspaceSnapshots(workspaceId: string, snapshots: ReadonlyArray<Readonly<JobSnapshot>>): void {
     const ids = new Set<string>()
     const nextSnapshots = new Map<string, Readonly<JobSnapshot>>()
-    const nextCursors = new Map<string, number>()
+    const nextObservedCursors = new Map<string, number>()
     for (const snapshot of snapshots) {
       assertSnapshotIdentity(snapshot, workspaceId)
       if (ids.has(snapshot.job_id)) throw new Error('job discovery returned duplicate job IDs')
       ids.add(snapshot.job_id)
       const current = this.snapshots.get(snapshot.job_id)
-      const observedCursor = this.cursor(snapshot.job_id)
-      if (current != null && (snapshot.job_revision < current.job_revision
-        || snapshot.job_event_high_water < current.job_event_high_water
-        || snapshot.job_event_high_water < observedCursor)) {
+      const observedCursor = this.observedCursor(snapshot.job_id)
+      if (classifySnapshotPosition(current, snapshot, observedCursor) === 'stale') {
         throw new Error(`job discovery returned stale snapshot for ${snapshot.job_id}`)
       }
       nextSnapshots.set(snapshot.job_id, cloneSnapshot(snapshot))
-      nextCursors.set(snapshot.job_id, snapshot.job_event_high_water)
+      nextObservedCursors.set(snapshot.job_id, Math.max(observedCursor, snapshot.job_event_high_water))
     }
     this.workspaceId = workspaceId
     this.snapshots.clear()
-    this.cursors.clear()
+    this.observedCursors.clear()
     for (const [jobId, snapshot] of nextSnapshots) this.snapshots.set(jobId, snapshot)
-    for (const [jobId, cursor] of nextCursors) this.cursors.set(jobId, cursor)
+    for (const [jobId, cursor] of nextObservedCursors) this.observedCursors.set(jobId, cursor)
     for (const jobId of this.connections.keys()) {
       if (!ids.has(jobId)) this.connections.delete(jobId)
     }
@@ -139,10 +158,10 @@ export class JobDrawerStore {
   recordEvent(jobId: string, sequence: number): EventApplyResult {
     if (!this.snapshots.has(jobId)) throw new Error(`event references unknown job ${jobId}`)
     if (!Number.isInteger(sequence) || sequence < 1) throw new Error('job event sequence must be a positive integer')
-    const cursor = this.cursor(jobId)
+    const cursor = this.observedCursor(jobId)
     if (sequence <= cursor) return 'duplicate'
     if (sequence !== cursor + 1) return 'gap'
-    this.cursors.set(jobId, sequence)
+    this.observedCursors.set(jobId, sequence)
     this.emit()
     return 'applied'
   }
@@ -157,7 +176,7 @@ export class JobDrawerStore {
 
   clear(): void {
     this.snapshots.clear()
-    this.cursors.clear()
+    this.observedCursors.clear()
     this.connections.clear()
     this.emit()
   }

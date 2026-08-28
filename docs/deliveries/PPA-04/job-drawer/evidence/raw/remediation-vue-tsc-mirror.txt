@@ -1,0 +1,4 @@
+command=C:\Users\Administrator\.codex\visualizations\2026\08\28\01a0477f-855e-7d33-8dde-f6705cc4f7b9\job-drawer-vue-tsc-20260828-1700\frontend\node_modules\.bin\vue-tsc.cmd --noEmit -p C:\Users\Administrator\.codex\visualizations\2026\08\28\01a0477f-855e-7d33-8dde-f6705cc4f7b9\job-drawer-vue-tsc-20260828-1700\frontend\tsconfig.app.json --incremental false
+source_file_count=263
+source_hash_differences=0
+exit_code=0

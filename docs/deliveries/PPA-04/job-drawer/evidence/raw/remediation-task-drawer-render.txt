@@ -1,0 +1,14 @@
+source_file_count=263
+source_hash_differences=0
+✔ real TaskDrawer render opens, refreshes and presents connection, progress, Step and Attempt states (675.4011ms)
+✔ real TaskDrawer render enforces action truth table and emits only valid explicit intents (5.173ms)
+✔ real TaskDrawer render isolates pending/disabled/loading and action error state per Job (1.6836ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 841.1722
+exit_code=0

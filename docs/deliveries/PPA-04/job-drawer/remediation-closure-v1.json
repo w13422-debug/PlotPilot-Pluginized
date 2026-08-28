@@ -1,0 +1,217 @@
+{
+  "schema": "plotpilot-finding-remediation-evidence/v1",
+  "node_id": "NW-P4-JOB-DRAWER-02",
+  "reviewed_candidate_parent": "e0c46f94c45dfb0dd41eb418347974a21f1e91ec",
+  "candidate_locator": "the single enclosing direct-child remediation commit",
+  "finding_manifest": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\findings\\wave-d-nw-p4-job-drawer-sol-block-v1.json",
+  "finding_manifest_sha256": "6699dfbf837ec42104eb9faae4a337757c6a40ee1daf4fe8d2a3c3b8b49ed8a7",
+  "review_disposition": "same_sol_reviewer_targeted_recheck_required",
+  "self_acceptance_claimed": false,
+  "findings": [
+    {
+      "id": "NW-P4-JD-SOL-F-001",
+      "remediation_status": "candidate_addressed",
+      "changed_paths": [
+        "frontend/src/core/jobs/controller.ts",
+        "tests/p4-webui/job-drawer/controller.test.mts"
+      ],
+      "verification_commands": [
+        "node --experimental-strip-types --test tests/p4-webui/job-drawer/*.test.mts"
+      ],
+      "closure_evidence": [
+        "gap recovery replaces the projection, closes the recovery handle and opens a live stream from the Snapshot cursor",
+        "recovery rejects inconsistent replay-floor/gap tuples before reading or applying a Snapshot",
+        "observed connect cursors are [1, 1, 3], the recovery handle closes once, and event 4 converges through the third live subscription"
+      ]
+    },
+    {
+      "id": "NW-P4-JD-SOL-F-002",
+      "remediation_status": "candidate_addressed",
+      "changed_paths": [
+        "frontend/src/core/jobs/controller.ts",
+        "frontend/src/core/jobs/store.ts",
+        "tests/p4-webui/job-drawer/controller.test.mts",
+        "tests/p4-webui/job-drawer/store.test.mts"
+      ],
+      "verification_commands": [
+        "node --experimental-strip-types --test tests/p4-webui/job-drawer/*.test.mts"
+      ],
+      "closure_evidence": [
+        "a failed final-event read reconnects from projection and duplicate replay still hydrates terminal state",
+        "event bursts serialize Snapshot reads until projection covers the latest observed cursor",
+        "keeps observed and projection cursors separate while burst Snapshots advance incrementally"
+      ]
+    },
+    {
+      "id": "NW-P4-JD-SOL-F-003",
+      "remediation_status": "candidate_addressed",
+      "changed_paths": [
+        "frontend/src/core/jobs/controller.ts",
+        "tests/p4-webui/job-drawer/controller.test.mts"
+      ],
+      "verification_commands": [
+        "node --experimental-strip-types --test tests/p4-webui/job-drawer/*.test.mts"
+      ],
+      "closure_evidence": [
+        "a deferred read failure from an old subscription cannot close or reschedule its healthy replacement",
+        "an action barrier fences a pre-action recovery read and its late failure side effects",
+        "generation, connection serial and read barrier are revalidated after awaited reads and before catch-side effects"
+      ]
+    },
+    {
+      "id": "NW-P4-JD-SOL-F-004",
+      "remediation_status": "candidate_addressed",
+      "changed_paths": [
+        "frontend/src/core/jobs/controller.ts",
+        "tests/p4-webui/job-drawer/controller.test.mts"
+      ],
+      "verification_commands": [
+        "node --experimental-strip-types --test tests/p4-webui/job-drawer/*.test.mts"
+      ],
+      "closure_evidence": [
+        "only the latest refresh ordinal may atomically replace jobs and reconcile connections",
+        "the test covers both stale removal of a newly discovered Job and stale revival of an absent Job"
+      ]
+    },
+    {
+      "id": "NW-P4-JD-SOL-F-005",
+      "remediation_status": "candidate_addressed",
+      "changed_paths": [
+        "frontend/src/core/jobs/store.ts",
+        "tests/p4-webui/job-drawer/store.test.mts"
+      ],
+      "verification_commands": [
+        "node --experimental-strip-types --test tests/p4-webui/job-drawer/*.test.mts"
+      ],
+      "closure_evidence": [
+        "workspace listing rejects same-position hash conflict atomically and preserves prior state",
+        "single Snapshot and workspace staging share the same position/hash classifier"
+      ]
+    },
+    {
+      "id": "NW-P4-JD-SOL-F-006",
+      "remediation_status": "candidate_addressed",
+      "changed_paths": [
+        "frontend/src/core/jobs/controller.ts",
+        "tests/p4-webui/job-drawer/controller.test.mts"
+      ],
+      "verification_commands": [
+        "node --experimental-strip-types --test tests/p4-webui/job-drawer/*.test.mts"
+      ],
+      "closure_evidence": [
+        "event reads and action responses reject cross-Job Snapshots before touching the store",
+        "expected Job identity is checked before every event, action and recovery Snapshot application"
+      ]
+    },
+    {
+      "id": "NW-P4-JD-SOL-F-007",
+      "remediation_status": "candidate_addressed",
+      "changed_paths": [
+        "frontend/src/core/jobs/controller.ts",
+        "tests/p4-webui/job-drawer/controller.test.mts"
+      ],
+      "verification_commands": [
+        "node --experimental-strip-types --test tests/p4-webui/job-drawer/*.test.mts"
+      ],
+      "closure_evidence": [
+        "action token preserves serialization across stop/start and clears only its own pending entry",
+        "an old generation action remains the serialization owner until it settles; token-matched finally cleanup cannot remove another entry"
+      ]
+    },
+    {
+      "id": "NW-P4-JD-SOL-F-008",
+      "remediation_status": "candidate_addressed",
+      "changed_paths": [
+        "frontend/src/core/jobs/controller.ts",
+        "tests/p4-webui/job-drawer/controller.test.mts"
+      ],
+      "verification_commands": [
+        "node --experimental-strip-types --test tests/p4-webui/job-drawer/*.test.mts"
+      ],
+      "closure_evidence": [
+        "void action fences a pre-action read and forces a causally newer authoritative Snapshot read",
+        "the recorded order is read-1-start, act-resolve, read-2-start; only the second Snapshot may settle the action"
+      ]
+    },
+    {
+      "id": "NW-P4-JD-SOL-F-009",
+      "remediation_status": "candidate_addressed",
+      "changed_paths": [
+        "frontend/src/core/jobPresentation.ts",
+        "tests/p4-webui/job-drawer/presentation.test.mts",
+        "frontend/tests/job-drawer/task-drawer.render.test.mts"
+      ],
+      "verification_commands": [
+        "node --experimental-strip-types --test tests/p4-webui/job-drawer/*.test.mts",
+        "node --experimental-strip-types --test frontend/tests/job-drawer/*.test.mts"
+      ],
+      "closure_evidence": [
+        "ten-state action truth table and checkpoint-gated resume test",
+        "real component render proves partial/failed expose retry only and needs_attention exposes checkpoint-gated resume only"
+      ]
+    },
+    {
+      "id": "NW-P4-JD-SOL-F-010",
+      "remediation_status": "candidate_addressed",
+      "changed_paths": [
+        "frontend/src/core/jobPresentation.ts",
+        "tests/p4-webui/job-drawer/presentation.test.mts",
+        "frontend/tests/job-drawer/task-drawer.render.test.mts"
+      ],
+      "verification_commands": [
+        "node --experimental-strip-types --test tests/p4-webui/job-drawer/*.test.mts",
+        "node --experimental-strip-types --test frontend/tests/job-drawer/*.test.mts"
+      ],
+      "closure_evidence": [
+        "table-driven exact presentation for all ten authoritative Step and ten authoritative Attempt states",
+        "real component render includes translated partial/interrupted/suspended/fenced states, revisions, lease epochs and progress"
+      ]
+    },
+    {
+      "id": "NW-P4-JD-SOL-F-011",
+      "remediation_status": "candidate_addressed",
+      "changed_paths": [
+        "frontend/src/core/jobs/controller.ts",
+        "tests/p4-webui/job-drawer/controller.test.mts"
+      ],
+      "verification_commands": [
+        "node --experimental-strip-types --test tests/p4-webui/job-drawer/*.test.mts"
+      ],
+      "closure_evidence": [
+        "immediate connection flaps use capped exponential backoff until a valid signal proves stability",
+        "the asserted delay sequence is [10, 20, 40, 40], followed by 10 after a valid event"
+      ]
+    },
+    {
+      "id": "NW-P4-JD-SOL-F-012",
+      "remediation_status": "candidate_addressed",
+      "changed_paths": [
+        "tests/p4-webui/job-drawer/controller.test.mts",
+        "tests/p4-webui/job-drawer/store.test.mts",
+        "tests/p4-webui/job-drawer/presentation.test.mts",
+        "frontend/tests/job-drawer/task-drawer.render.test.mts"
+      ],
+      "verification_commands": [
+        "node --experimental-strip-types --test tests/p4-webui/job-drawer/*.test.mts",
+        "node --experimental-strip-types --test frontend/tests/job-drawer/*.test.mts"
+      ],
+      "closure_evidence": [
+        "29 pure TypeScript Job drawer tests cover convergence, identity, ordering, serialization and negative cases",
+        "3 real Vue SFC client-render tests mount TaskDrawer with an in-memory renderer and verify visibility, disabled/loading behavior, emits, errors and status DOM"
+      ]
+    }
+  ],
+  "raw_validation_outputs": [
+    "evidence/raw/remediation-job-drawer-tests.txt",
+    "evidence/raw/remediation-p4-webui-tests.txt",
+    "evidence/raw/remediation-task-drawer-render.txt",
+    "evidence/raw/remediation-vue-tsc-required-command.txt",
+    "evidence/raw/remediation-vue-tsc-mirror.txt",
+    "evidence/raw/remediation-git-diff-check.txt"
+  ],
+  "limitations": [
+    "The required in-worktree vue-tsc executable is absent and is recorded as not runnable; the exact-current-source mirror has zero source hash differences and exits 0.",
+    "Runtime P3/P0 transport composition remains intentionally deferred.",
+    "No browser, GUI, desktop, Tauri, EXE, installer, merge, tag or push operation was run."
+  ]
+}

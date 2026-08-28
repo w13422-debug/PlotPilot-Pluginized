@@ -1,0 +1,4 @@
+command=frontend/node_modules/.bin/vue-tsc.cmd --noEmit -p frontend/tsconfig.app.json --incremental false
+runnable=false
+reason=frontend/node_modules/.bin/vue-tsc.cmd does not exist in the isolated worktree
+exit_code=127
