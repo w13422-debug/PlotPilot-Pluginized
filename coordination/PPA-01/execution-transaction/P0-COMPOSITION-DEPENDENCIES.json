@@ -32,6 +32,11 @@
       "id": "P0-EXEC-TX-06",
       "requirement": "Call ExecutionAuthority.freeze_plan with the complete deterministic Step DAG and output Step before acquiring any root worker Attempt.",
       "reason": "P1 now rejects terminal commit and replay unless the complete frozen membership remains authoritative; this task intentionally does not add P0 runtime wiring."
+    },
+    {
+      "id": "P0-EXEC-TX-07",
+      "requirement": "Inject ExecutionAuthority.skill_receipt_reader from the durable frozen Skill receipt authority produced by Prompt Skill runtime composition.",
+      "reason": "P1 now calls the existing canonical verify_skill_chain verifier before receipt materialization and fails closed when the authoritative receipt bodies required for receipt closure are unavailable."
     }
   ],
   "forbidden": [
@@ -40,5 +45,5 @@
     "No public contract change or runtime wiring in this source commit."
   ],
   "central_gate": "fresh gpt-5.6-sol/max source review required",
-  "updated_at": "2026-08-28T01:36:43.3167949+08:00"
+  "updated_at": "2026-08-28T11:05:00+08:00"
 }

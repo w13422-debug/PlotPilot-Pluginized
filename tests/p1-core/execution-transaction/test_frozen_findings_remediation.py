@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import json
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from threading import Event
 
 import pytest
@@ -11,7 +12,14 @@ from backend.plotpilot_core.candidates import CandidateError, CandidateService
 from backend.plotpilot_core.domain import Document, Workspace
 from backend.plotpilot_core.publication import PublicationService
 from backend.plotpilot_core.broker.service import CallerAttemptContext
-from backend.plotpilot_plugin_sdk import ContractError, ErrorCode, canonical_bytes
+from backend.plotpilot_core.repositories.execution import ExecutionAuthority
+from backend.plotpilot_plugin_sdk import (
+    ContractError,
+    ErrorCode,
+    canonical_bytes,
+    sha256_hex,
+    verify_skill_chain,
+)
 from backend.plotpilot_plugin_sdk.verifier import hash_without_field
 
 from support import PACKAGE, RELEASE, authority_rows, complete_kwargs, make_candidate_bundle
@@ -256,6 +264,83 @@ def test_f007_skill_chain_asset_and_identity_must_be_authoritative(execution_sta
     before = authority_rows(execution_stack["repository"])
     with pytest.raises(ContractError):
         execution_stack["authority"].complete_attempt(**complete_kwargs(bad_asset, bad_receipt))
+    assert authority_rows(execution_stack["repository"]) == before
+    assert execution_stack["repository"]._connection.execute(
+        "SELECT job_state FROM execution_job WHERE job_id='job-1'"
+    ).fetchone()[0] == "running"
+
+
+def test_f007_wrong_chain_hash_is_rejected_before_materialization(execution_stack):
+    bundle_asset, receipt, _ = make_candidate_bundle(execution_stack)
+    skill_receipt = json.loads(
+        Path("contracts/examples/fixtures/skill-run-receipt.json").read_text(encoding="utf-8")
+    )
+    skill_receipt.update(
+        chain_id="chain-semantic",
+        run_snapshot_hash=execution_stack["snapshot"]["snapshot_hash"],
+        result_bundle_id="bundle-1",
+        result_item_id="item-1",
+        output_asset_id=None,
+        output_hash=None,
+    )
+    skill_receipt["receipt_hash"] = hash_without_field(
+        skill_receipt, "receipt_hash", "skill-run-receipt/v1"
+    )
+    chain = {
+        "schema": "skill-chain-result/v1",
+        "chain_id": "chain-semantic",
+        "run_snapshot_hash": execution_stack["snapshot"]["snapshot_hash"],
+        "result_bundle_id": "bundle-1",
+        "result_item_id": "item-1",
+        "stream_id": None,
+        "acked_prefix_hash": None,
+        "receipt_ids": [skill_receipt["receipt_id"]],
+        "receipt_hashes": [skill_receipt["receipt_hash"]],
+        "chain_status": "succeeded",
+        "input_hash": skill_receipt["input_hash"],
+        "final_output_asset_id": None,
+        "final_output_hash": None,
+        "chain_hash": sha256_hex(
+            b"skill-chain/v1\n" + skill_receipt["receipt_hash"].encode("ascii") + b"\n-\n"
+        ),
+    }
+    verify_skill_chain(chain, [skill_receipt])
+    chain["chain_hash"] = "0" * 64
+    chain_asset = execution_stack["assets"].put(
+        canonical_bytes(chain),
+        mime="application/json",
+        logical_role="skill_chain_result",
+        provenance="skill:test",
+    )
+    ref = {
+        "schema": "skill-chain-ref/v1",
+        "chain_result_id": chain["chain_id"],
+        "asset_id": chain_asset.asset_id,
+        "asset_hash": chain_asset.sha256,
+        "result_bundle_id": chain["result_bundle_id"],
+        "result_item_id": chain["result_item_id"],
+        "stream_id": chain["stream_id"],
+        "acked_prefix_hash": chain["acked_prefix_hash"],
+    }
+    bad_asset, bad_receipt, _ = _replace_bundle(
+        execution_stack,
+        bundle_asset,
+        receipt,
+        lambda bundle: bundle.update(skill_chain_result_refs=[ref]),
+    )
+    execution_stack["authority"] = ExecutionAuthority(
+        execution_stack["repository"],
+        execution_stack["assets"],
+        skill_receipt_reader=lambda chain_id: [skill_receipt]
+        if chain_id == chain["chain_id"]
+        else (),
+    )
+    before = authority_rows(execution_stack["repository"])
+    with pytest.raises(ContractError) as caught:
+        execution_stack["authority"].complete_attempt(
+            **complete_kwargs(bad_asset, bad_receipt)
+        )
+    assert caught.value.code == int(ErrorCode.RESULT_CONTRACT_MISMATCH)
     assert authority_rows(execution_stack["repository"]) == before
     assert execution_stack["repository"]._connection.execute(
         "SELECT job_state FROM execution_job WHERE job_id='job-1'"

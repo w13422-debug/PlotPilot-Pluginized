@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 import hashlib
 import json
@@ -17,6 +17,7 @@ from backend.plotpilot_plugin_sdk import (
     parse_json_bytes,
     sha256_hex,
     verify_result_bundle,
+    verify_skill_chain,
     verify_snapshot,
 )
 from backend.plotpilot_plugin_sdk.rpc import encode_frame
@@ -25,6 +26,7 @@ from backend.plotpilot_plugin_sdk.verifier import hash_without_field, validate_r
 
 from ..assets import AssetStore
 from ..broker.service import (
+    BrokerInvocationEnvelope,
     BrokerChildRecord,
     BrokerInvokeResult,
     BrokerLedgerEntry,
@@ -33,6 +35,7 @@ from ..broker.service import (
     ChildCreationRequest,
     ChildCreationResult,
     TERMINAL_STATES,
+    verify_child_snapshot_binding,
 )
 from ..candidates import CandidateError, CandidateService
 from ..domain.entities import utc_now
@@ -318,9 +321,16 @@ class SQLiteBrokerChildRecordStore:
 class ExecutionAuthority:
     """P1 authority for Job creation, terminal commit and P3B production ports."""
 
-    def __init__(self, repository: CoreAuthorityRepository, assets: AssetStore) -> None:
+    def __init__(
+        self,
+        repository: CoreAuthorityRepository,
+        assets: AssetStore,
+        *,
+        skill_receipt_reader: Callable[[str], Sequence[Mapping[str, Any]]] | None = None,
+    ) -> None:
         self.repository = repository
         self.assets = assets
+        self.skill_receipt_reader = skill_receipt_reader
         self.operation_ledger = SQLiteBrokerOperationLedger(repository)
         self.child_records = SQLiteBrokerChildRecordStore(repository)
         self.candidates = CandidateService(repository, assets)
@@ -626,6 +636,122 @@ class ExecutionAuthority:
             receipt_ids.append(receipt_id)
         return tuple(receipt_ids)
 
+    def _verify_replay_snapshot_profile(
+        self,
+        connection: sqlite3.Connection,
+        attempt: sqlite3.Row,
+    ) -> Mapping[str, Any]:
+        snapshot = _load(attempt["run_snapshot_json"])
+        if snapshot.get("schema") == "run-snapshot/v1":
+            verify_snapshot(snapshot)
+            if snapshot["snapshot_hash"] != attempt["run_snapshot_hash"]:
+                raise ContractError(ErrorCode.ASSET_ERROR, "committed RunSnapshot authority drifted")
+            try:
+                verify_attempt_snapshot_binding(snapshot, attempt)
+            except Exception as exc:
+                raise ContractError(ErrorCode.ASSET_ERROR, "committed Attempt release binding drifted") from exc
+            if attempt["run_snapshot_asset_id"] is not None:
+                try:
+                    self.assets.require(attempt["run_snapshot_asset_id"], sha256=attempt["run_snapshot_hash"])
+                except Exception as exc:
+                    raise ContractError(ErrorCode.ASSET_ERROR, "committed RunSnapshot Asset is missing") from exc
+            return snapshot
+
+        if snapshot.get("schema") != "broker-child-snapshot-binding/v1":
+            raise ContractError(ErrorCode.ASSET_ERROR, "committed Snapshot profile is unsupported")
+        if attempt["run_snapshot_asset_id"] is None:
+            raise ContractError(ErrorCode.ASSET_ERROR, "Broker child Snapshot Asset is missing")
+        try:
+            self.assets.require(attempt["run_snapshot_asset_id"], sha256=attempt["run_snapshot_hash"])
+            snapshot_bytes = self.assets.read(attempt["run_snapshot_asset_id"])
+            snapshot_value = parse_json_bytes(snapshot_bytes)
+            if not isinstance(snapshot_value, Mapping) or dict(snapshot_value) != dict(snapshot):
+                raise ContractValidationError("Broker child Snapshot row/Asset drift")
+        except ContractError:
+            raise
+        except Exception as exc:
+            raise ContractError(ErrorCode.ASSET_ERROR, "Broker child Snapshot Asset is invalid") from exc
+
+        child = connection.execute(
+            "SELECT c.context_identity AS creation_context_identity,c.operation_key AS creation_operation_key,"
+            "c.result_json,r.context_identity AS record_context_identity,r.operation_key AS record_operation_key,"
+            "r.record_json,o.payload_hash AS invoke_payload_hash,o.envelope_asset_id,o.child_creation_json,o.response "
+            "FROM execution_child_creation c "
+            "JOIN p3_broker_child_record r ON r.child_job_id=c.child_job_id "
+            "JOIN p3_broker_operation o ON o.context_identity=c.context_identity "
+            "AND o.method=? AND o.operation_key=c.operation_key "
+            "WHERE c.child_job_id=?",
+            (_INVOKE, attempt["job_id"]),
+        ).fetchone()
+        if child is None:
+            raise ContractError(ErrorCode.ASSET_ERROR, "Broker child creation authority is missing")
+        try:
+            creation = ChildCreationResult.from_mapping(_load(child["result_json"]))
+            record = BrokerChildRecord.from_mapping(_load(child["record_json"]))
+        except ContractError:
+            raise
+        except Exception as exc:
+            raise ContractError(ErrorCode.ASSET_ERROR, "Broker child creation authority is invalid") from exc
+        if (
+            child["creation_context_identity"] != child["record_context_identity"]
+            or child["creation_operation_key"] != child["record_operation_key"]
+            or child["child_creation_json"] != child["result_json"]
+            or child["response"] is None
+            or child["envelope_asset_id"] != record.broker_invocation_asset_id
+            or child["invoke_payload_hash"] != record.broker_invocation_hash
+            or creation.child_job_id != attempt["job_id"]
+            or creation.child_step_id != attempt["step_id"]
+            or creation.child_attempt_id != attempt["attempt_id"]
+            or creation.child_lease_epoch != attempt["lease_epoch"]
+            or creation.child_plugin_release_id != attempt["release_id"]
+            or creation.child_run_snapshot_asset_id != attempt["run_snapshot_asset_id"]
+            or creation.child_run_snapshot_hash != attempt["run_snapshot_hash"]
+            or dict(creation.binding_attestation or {}) != dict(snapshot)
+            or record.child_job_id != attempt["job_id"]
+            or record.invoke_operation_key != child["creation_operation_key"]
+            or record.child_run_snapshot_asset_id != attempt["run_snapshot_asset_id"]
+            or record.child_run_snapshot_hash != attempt["run_snapshot_hash"]
+            or record.result_contract != attempt["expected_result_contract"]
+        ):
+            raise ContractError(ErrorCode.ASSET_ERROR, "Broker child frozen identity drifted")
+
+        try:
+            self.assets.require(record.broker_invocation_asset_id, sha256=record.broker_invocation_hash)
+            envelope_value = parse_json_bytes(self.assets.read(record.broker_invocation_asset_id))
+            if not isinstance(envelope_value, Mapping):
+                raise ContractValidationError("Broker invocation Asset is not an object")
+            envelope = BrokerInvocationEnvelope.from_mapping(envelope_value)
+            if (
+                envelope.parent_job_id != record.parent_job_id
+                or envelope.parent_step_id != record.parent_step_id
+                or envelope.parent_attempt_id != record.parent_attempt_id
+                or envelope.invoke_operation_key != record.invoke_operation_key
+                or envelope.binding_id != record.binding_id
+                or envelope.expected_result_contract != record.result_contract
+                or envelope.required != record.required
+                or envelope.propagate_cancel != record.propagate_cancel
+            ):
+                raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "Broker child envelope lineage drifted")
+            verify_child_snapshot_binding(
+                snapshot_bytes,
+                child_job_id=creation.child_job_id,
+                child_step_id=creation.child_step_id,
+                child_attempt_id=creation.child_attempt_id,
+                envelope_asset_id=record.broker_invocation_asset_id,
+                envelope_hash=record.broker_invocation_hash,
+                input_asset_id=envelope.input_asset_id,
+                input_hash=envelope.input_hash,
+                parameters_asset_id=envelope.parameters_asset_id,
+                parameters_hash=envelope.parameters_hash,
+                child_run_snapshot_asset_id=creation.child_run_snapshot_asset_id,
+                child_run_snapshot_hash=creation.child_run_snapshot_hash,
+            )
+        except ContractError:
+            raise
+        except Exception as exc:
+            raise ContractError(ErrorCode.ASSET_ERROR, "Broker child Snapshot binding is invalid") from exc
+        return snapshot
+
     def _validate_complete_replay_closure(self, connection: sqlite3.Connection, previous: sqlite3.Row) -> None:
         result = _load(previous["response_json"])
         frame = decode_frame(bytes(previous["response_frame"]))
@@ -641,7 +767,7 @@ class ExecutionAuthority:
         except Exception as exc:
             raise ContractError(ErrorCode.ASSET_ERROR, "completion response result drifted") from exc
         attempt = connection.execute(
-            "SELECT a.*,s.state AS step_state,s.active_attempt_id,s.is_output,j.job_state,j.run_snapshot_hash,j.run_snapshot_asset_id,j.run_snapshot_json,j.result_bundle_asset_id AS job_bundle,j.provenance_receipt_id AS job_receipt,j.job_event_high_water,j.core_event_high_water,j.plan_frozen,j.output_step_id FROM execution_attempt a JOIN execution_step s ON s.step_id=a.step_id JOIN execution_job j ON j.job_id=a.job_id WHERE a.attempt_id=?",
+            "SELECT a.*,s.state AS step_state,s.active_attempt_id,s.is_output,j.workspace_id,j.job_state,j.run_snapshot_hash,j.run_snapshot_asset_id,j.run_snapshot_json,j.result_bundle_asset_id AS job_bundle,j.provenance_receipt_id AS job_receipt,j.job_event_high_water,j.core_event_high_water,j.plan_frozen,j.output_step_id FROM execution_attempt a JOIN execution_step s ON s.step_id=a.step_id JOIN execution_job j ON j.job_id=a.job_id WHERE a.attempt_id=?",
             (previous["attempt_id"],),
         ).fetchone()
         if (
@@ -682,19 +808,7 @@ class ExecutionAuthority:
             )
         except ContractError as exc:
             raise ContractError(ErrorCode.ASSET_ERROR, "committed frozen Job plan drifted") from exc
-        snapshot = _load(attempt["run_snapshot_json"])
-        verify_snapshot(snapshot)
-        if snapshot["snapshot_hash"] != attempt["run_snapshot_hash"]:
-            raise ContractError(ErrorCode.ASSET_ERROR, "committed RunSnapshot authority drifted")
-        try:
-            verify_attempt_snapshot_binding(snapshot, attempt)
-        except Exception as exc:
-            raise ContractError(ErrorCode.ASSET_ERROR, "committed Attempt release binding drifted") from exc
-        if attempt["run_snapshot_asset_id"] is not None:
-            try:
-                self.assets.require(attempt["run_snapshot_asset_id"], sha256=attempt["run_snapshot_hash"])
-            except Exception as exc:
-                raise ContractError(ErrorCode.ASSET_ERROR, "committed RunSnapshot Asset is missing") from exc
+        snapshot = self._verify_replay_snapshot_profile(connection, attempt)
         receipt_row = connection.execute(
             "SELECT * FROM execution_receipt WHERE receipt_id=? AND job_id=? AND step_id=? AND attempt_id=?",
             (previous["provenance_receipt_id"], previous["job_id"], previous["step_id"], previous["attempt_id"]),
@@ -742,7 +856,7 @@ class ExecutionAuthority:
                 verify_result_bundle(
                     bundle,
                     snapshot_hash_value=attempt["run_snapshot_hash"],
-                    snapshot_workspace_id=snapshot["workspace_id"],
+                    snapshot_workspace_id=attempt["workspace_id"],
                     known_parent_ids=known_parent_ids,
                 )
             except Exception as exc:
@@ -804,7 +918,7 @@ class ExecutionAuthority:
                 core_value["payload_hash"],
             )
             expected_core_identity = (
-                snapshot["workspace_id"], previous["job_id"], previous["operation_key"],
+                attempt["workspace_id"], previous["job_id"], previous["operation_key"],
                 previous["attempt_id"],
                 {"producer_type": "core", "producer_id": "execution-authority", "release_id": None},
                 event_value["payload_asset_id"], event_value["payload_hash"],
@@ -1256,6 +1370,20 @@ class ExecutionAuthority:
                     raise ContractError(
                         ErrorCode.RESULT_CONTRACT_MISMATCH, "Skill-chain result identity drift"
                     )
+                if self.skill_receipt_reader is None:
+                    raise ContractError(
+                        ErrorCode.ASSET_ERROR,
+                        "Skill-chain semantic verification requires its authoritative receipt reader",
+                    )
+                try:
+                    skill_receipts = self.skill_receipt_reader(ref["chain_result_id"])
+                    verify_skill_chain(chain_value, skill_receipts)
+                except ContractError:
+                    raise
+                except Exception as exc:
+                    raise ContractError(
+                        ErrorCode.ASSET_ERROR, "Skill-chain receipt authority is missing or invalid"
+                    ) from exc
                 if chain_value["final_output_asset_id"] is not None:
                     try:
                         self.assets.require(

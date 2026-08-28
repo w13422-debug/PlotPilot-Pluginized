@@ -50,3 +50,18 @@ The original fresh reviewer remains the authority for per-Finding disposition an
 | F-015 | Complete replay cross-checks ledger/outcome payload, closed response frame/result, canonical context identity, frozen plan, RunSnapshot, full receipt identity, verified Bundle/producer, Job Event payload, Core Event producer/correlation/causation/revision/payload, Candidate bindings, and Job anchors. | `test_f015_complete_replay_rejects_post_terminal_package_hash_drift`; the two-Step historic replay test prevents incorrectly comparing a frozen earlier `running` response with the later terminal Job projection. |
 
 Final raw validation for this round is in `evidence/replacement-structural-raw-validation.txt`. The same replacement reviewer remains the only authority for per-ID disposition.
+
+## Final two-ID structural closure source evidence
+
+- Parent: `5319b7938e942b12d91b2cfc0b7f2ba3af7e4987`
+- Parent tree: `84f8c77e1d5167c4345a5815c842dcf5e590ddb3`
+- Four-ID rereview SHA-256: `a994e8faebb5bd0b8bdf7f14e3097cd13a428988e6fd8356c77e1f028f5926b4`
+- Scope is strictly limited to `NW-P1-ETX-F-007` and `NW-P1-ETX-F-015`; reviewer-closed F-006/F-009 were not reworked.
+- No Finding is marked closed or accepted by this source task.
+
+| Finding | Final bounded source evidence | Decisive counterexample/control |
+|---|---|---|
+| F-007 | After the content-addressed Skill-chain Asset and all Snapshot/Bundle/item anchors pass, `ExecutionAuthority` reads the authoritative frozen Skill receipts through an injected internal reader and calls the already-exported SDK `verify_skill_chain` before Candidate staging or provenance receipt materialization. A missing reader fails closed; no verifier logic or public schema is copied. | `test_f007_wrong_chain_hash_is_rejected_before_materialization` first proves the same receipt closure with the canonical hash passes the existing verifier, then persists a chain Asset whose only semantic drift is `chain_hash`; completion rejects it with zero authority mutation and the Job remains running. |
+| F-015 | Committed completion replay dispatches on the persisted Snapshot schema. Full `run-snapshot/v1` keeps `verify_snapshot`; `broker-child-snapshot-binding/v1` closes the exact Snapshot Asset, child creation row, Broker record, invocation envelope, release/lease/Snapshot/result-contract identities and calls the existing `verify_child_snapshot_binding`. Workspace closure comes from the owning Job authority rather than a field absent from the child profile. | `test_f015_broker_child_exact_completion_replay_is_byte_equivalent_and_read_only` proves first acceptance followed by an identical-key/payload replay returns the same result and response bytes with no database or Asset change. Existing missing-Snapshot/child-identity and post-terminal package-hash drift tests remain fail-closed. |
+
+Raw validation for this round is recorded in `evidence/final-two-raw-validation.txt` and its split command transcripts. The same reviewer `01a045e4-e438-73c2-98e0-a11d81d20ea1` remains the only authority for the F-007/F-015 disposition.

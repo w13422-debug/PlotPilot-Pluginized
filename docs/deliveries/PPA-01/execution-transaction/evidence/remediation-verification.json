@@ -68,4 +68,49 @@
     "disposition": "pending replacement reviewer"
   },
   "disposition": "pending original reviewer"
+  ,
+  "final_two_structural_round": {
+    "parent": "5319b7938e942b12d91b2cfc0b7f2ba3af7e4987",
+    "parent_tree": "84f8c77e1d5167c4345a5815c842dcf5e590ddb3",
+    "four_id_rereview_sha256": "a994e8faebb5bd0b8bdf7f14e3097cd13a428988e6fd8356c77e1f028f5926b4",
+    "reviewer_thread": "01a045e4-e438-73c2-98e0-a11d81d20ea1",
+    "source_commit": "containing commit",
+    "scope": ["NW-P1-ETX-F-007", "NW-P1-ETX-F-015"],
+    "self_acceptance_performed": false,
+    "results": [
+      {
+        "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/execution-transaction/test_frozen_findings_remediation.py::test_f007_wrong_chain_hash_is_rejected_before_materialization tests/p1-core/execution-transaction/test_broker_persistence.py::test_f015_broker_child_exact_completion_replay_is_byte_equivalent_and_read_only -q",
+        "exit_code": 0,
+        "summary": "2 passed in 0.60s"
+      },
+      {
+        "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/execution-transaction -q",
+        "exit_code": 0,
+        "summary": "78 passed in 3.95s"
+      },
+      {
+        "command": "python -B -m pytest -p no:cacheprovider tests/p1-core -q",
+        "exit_code": 0,
+        "summary": "85 passed in 4.52s"
+      },
+      {
+        "command": "python -B -m pytest -p no:cacheprovider tests/p3-execution -q",
+        "exit_code": 0,
+        "summary": "39 passed in 0.70s"
+      },
+      {
+        "command": "python -B -m compileall -q backend/plotpilot_core/repositories backend/plotpilot_core/assets backend/plotpilot_core/candidates backend/plotpilot_core/publication backend/plotpilot_core/broker",
+        "exit_code": 0,
+        "summary": "no output"
+      },
+      {
+        "command": "git diff --check",
+        "exit_code": 0,
+        "summary": "no errors; only Git line-ending notices"
+      }
+    ],
+    "ruff_configured": false,
+    "raw_output": "final-two-raw-validation.txt",
+    "disposition": "pending same reviewer"
+  }
 }

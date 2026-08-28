@@ -57,5 +57,33 @@
         ]
       }
     ]
+  },
+  "final_two_structural_round": {
+    "parent": "5319b7938e942b12d91b2cfc0b7f2ba3af7e4987",
+    "parent_tree": "84f8c77e1d5167c4345a5815c842dcf5e590ddb3",
+    "four_id_rereview_sha256": "a994e8faebb5bd0b8bdf7f14e3097cd13a428988e6fd8356c77e1f028f5926b4",
+    "reviewer_thread": "01a045e4-e438-73c2-98e0-a11d81d20ea1",
+    "scope": [
+      "NW-P1-ETX-F-007",
+      "NW-P1-ETX-F-015"
+    ],
+    "review_disposition": "pending_same_reviewer",
+    "self_acceptance_performed": false,
+    "mappings": [
+      {
+        "id": "NW-P1-ETX-F-007",
+        "test": "test_f007_wrong_chain_hash_is_rejected_before_materialization",
+        "evidence": "Exact Asset ID/hash and Snapshot/Bundle/item anchors are accepted as preconditions, while the existing verify_skill_chain semantic verifier rejects the sole canonical chain_hash drift before any authority write."
+      },
+      {
+        "id": "NW-P1-ETX-F-015",
+        "tests": [
+          "test_f015_broker_child_exact_completion_replay_is_byte_equivalent_and_read_only",
+          "test_f015_invoke_replay_requires_snapshot_bytes_and_child_identity",
+          "test_f015_complete_replay_rejects_post_terminal_package_hash_drift"
+        ],
+        "evidence": "Replay dispatches by persisted Snapshot profile, reuses the existing Broker child binding verifier, and proves exact replay returns the frozen result/frame without database or Asset writes while drift remains fail-closed."
+      }
+    ]
   }
 }

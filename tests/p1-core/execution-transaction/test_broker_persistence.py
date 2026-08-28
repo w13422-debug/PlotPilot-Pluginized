@@ -14,6 +14,7 @@ from backend.plotpilot_core.broker.service import (
 )
 from backend.plotpilot_core.repositories.execution import ExecutionAuthority
 from backend.plotpilot_plugin_sdk import ContractError, ErrorCode
+from backend.plotpilot_plugin_sdk.verifier import hash_without_field
 
 
 def _request(stack, operation_key="invoke-1"):
@@ -387,3 +388,107 @@ def test_f015_invoke_replay_requires_snapshot_bytes_and_child_identity(execution
     with pytest.raises(ContractError) as caught:
         broker.invoke(context, operation_key="invoke-1", binding_id="binding-1", input_asset_id=request.input_asset_id)
     assert caught.value.code == int(ErrorCode.ASSET_ERROR)
+
+
+def test_f015_broker_child_exact_completion_replay_is_byte_equivalent_and_read_only(execution_stack):
+    context, _binding, request = _request(execution_stack)
+    identity = context.identity()
+    authority = execution_stack["authority"]
+    ledger = authority.operation_ledger
+    ledger.reserve(
+        context_identity=identity,
+        method="host.capability.invoke/v1",
+        operation_key="invoke-1",
+        payload_hash=request.envelope.asset_hash,
+    )
+    ledger.attach_envelope(
+        context_identity=identity,
+        method="host.capability.invoke/v1",
+        operation_key="invoke-1",
+        payload_hash=request.envelope.asset_hash,
+        envelope_asset_id=request.envelope_asset_id,
+    )
+    child = authority.create_or_recover_child(request)
+    attempt = execution_stack["repository"]._connection.execute(
+        "SELECT * FROM execution_attempt WHERE attempt_id=?",
+        (child.child_attempt_id,),
+    ).fetchone()
+    authority.start_attempt(
+        job_id=child.child_job_id,
+        step_id=child.child_step_id,
+        attempt_id=child.child_attempt_id,
+        worker_run_id="child-worker-1",
+        plugin_id=request.binding.plugin_id,
+        release_id=request.plugin_release_id,
+        package_hash="b" * 64,
+        capability_id=request.binding.capability_id,
+        generation_id=request.generation_id,
+        lease_epoch=child.child_lease_epoch,
+        preallocated_receipt_id=attempt["preallocated_receipt_id"],
+    )
+    receipt = {
+        "schema": "provenance-receipt/v1",
+        "receipt_id": attempt["preallocated_receipt_id"],
+        "plugin_id": request.binding.plugin_id,
+        "release_id": request.plugin_release_id,
+        "package_hash": "b" * 64,
+        "capability_id": request.binding.capability_id,
+        "job_id": child.child_job_id,
+        "step_id": child.child_step_id,
+        "attempt_id": child.child_attempt_id,
+        "lease_epoch": child.child_lease_epoch,
+        "run_snapshot_hash": child.child_run_snapshot_hash,
+        "bundle_id": None,
+        "bundle_hash": None,
+        "parent_receipt_ids": [],
+        "model_receipt_ids": [],
+        "skill_chain_result_refs": [],
+        "staged_items": [],
+        "created_at": "2026-08-28T00:00:00Z",
+    }
+    receipt["receipt_hash"] = hash_without_field(
+        receipt, "receipt_hash", "provenance-receipt/v1"
+    )
+    kwargs = {
+        "job_id": child.child_job_id,
+        "step_id": child.child_step_id,
+        "attempt_id": child.child_attempt_id,
+        "lease_epoch": child.child_lease_epoch,
+        "operation_key": "complete-child-1",
+        "worker_run_id": "child-worker-1",
+        "outcome": "failed",
+        "result_bundle_asset_id": None,
+        "candidate_stage_operation_key": None,
+        "terminal_detail_asset_id": None,
+        "local_seq": 1,
+        "provenance_receipt": receipt,
+        "operation_meta": {
+            "protocol_version": "1",
+            "generation_id": request.generation_id,
+            "plugin_release_id": request.plugin_release_id,
+            "deadline_at": "2026-08-28T01:00:00Z",
+            "context": "attempt",
+            "operation_id": "rpc-complete-child-1",
+            "job_id": child.child_job_id,
+            "step_id": child.child_step_id,
+            "attempt_id": child.child_attempt_id,
+            "lease_epoch": child.child_lease_epoch,
+        },
+    }
+    first = authority.complete_attempt(**kwargs)
+    database_before_replay = execution_stack["repository"]._connection.serialize()
+    assets_before_replay = sorted(
+        str(path.relative_to(execution_stack["assets"].objects))
+        for path in execution_stack["assets"].objects.rglob("*")
+        if path.is_file()
+    )
+    second = authority.complete_attempt(**kwargs)
+    assert not first.replayed and second.replayed
+    assert first.to_dict() == second.to_dict()
+    assert first.response_frame == second.response_frame
+    assert execution_stack["repository"]._connection.serialize() == database_before_replay
+    assert sorted(
+        str(path.relative_to(execution_stack["assets"].objects))
+        for path in execution_stack["assets"].objects.rglob("*")
+        if path.is_file()
+    ) == assets_before_replay
