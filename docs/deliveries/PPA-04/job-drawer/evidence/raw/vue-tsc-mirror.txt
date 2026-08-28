@@ -1,0 +1,2 @@
+COMMAND: installed vue-tsc --noEmit -p C:\Users\Administrator\.codex\visualizations\2026\08\28\01a0477f-855e-7d33-8dde-f6705cc4f7b9\job-drawer-vue-tsc-20260828-1700\frontend\tsconfig.mirror.json --incremental false
+EXIT_CODE=0

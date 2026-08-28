@@ -1,0 +1,66 @@
+{
+  "schema": "plotpilot-job-drawer-validation/v1",
+  "node_id": "NW-P4-JOB-DRAWER-02",
+  "status": "source_candidate_review_pending",
+  "self_acceptance_claimed": false,
+  "base_commit": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+  "base_tree": "eab64b7d5b1e3ad652aeaf48bd0085d930beca5d",
+  "candidate_locator": "enclosing direct-child source commit",
+  "changed_path_count": 20,
+  "write_set_outside_count": 0,
+  "source_readiness": "source_ready_integration_deferred",
+  "tests": [
+    {
+      "command": "node --experimental-strip-types --test tests/p4-webui/job-drawer/*.test.mts",
+      "result": "16 passed, 0 failed",
+      "exit_code": 0,
+      "raw": "evidence/raw/job-drawer-tests.txt"
+    },
+    {
+      "command": "node --experimental-strip-types --test tests/p4-webui/*.test.mts",
+      "result": "13 passed, 0 failed",
+      "exit_code": 0,
+      "raw": "evidence/raw/p4-webui-tests.txt"
+    },
+    {
+      "command": "frontend/node_modules/.bin/vue-tsc.cmd --noEmit -p frontend/tsconfig.app.json --incremental false",
+      "result": "not runnable because frontend/node_modules is absent",
+      "exit_code": 127,
+      "raw": "evidence/raw/vue-tsc-required-command.txt"
+    },
+    {
+      "command": "installed vue-tsc --noEmit against isolated exact-current-source mirror",
+      "result": "typecheck passed",
+      "exit_code": 0,
+      "raw": "evidence/raw/vue-tsc-mirror.txt"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed",
+      "exit_code": 0,
+      "raw": "evidence/raw/git-diff-check.txt"
+    }
+  ],
+  "coverage": [
+    "all frozen Job states and distinct partial/needs_attention presentation",
+    "Step/Attempt unknown-state fallback and progress boundaries",
+    "action availability and injected retry/resume/cancel intents",
+    "authoritative Snapshot replacement and monotonic cursor",
+    "workspace/identity/hash conflicts and atomic refresh listing",
+    "refresh reattachment including needs_attention",
+    "reconnect from durable cursor and late subscription fencing",
+    "gap recovery Snapshot identity/revision/hash/high-water convergence",
+    "closed private recovery ingress and terminal detach",
+    "source-only boundary without invented API or shared shell binding"
+  ],
+  "integration_dependencies": [
+    "NW-P3-JOB-RPC-02",
+    "NW-P3-EVENT-SSE-03",
+    "NW-P0-RUNTIME-COMPOSITION-02"
+  ],
+  "limitations": [
+    "No runtime route or transport is bound in this source-only slice.",
+    "The exact local vue-tsc path is unavailable; an isolated mirror using the repository's already-installed dependency set passed.",
+    "No browser, GUI, desktop, Tauri, EXE, installer or final-only gate was run."
+  ]
+}

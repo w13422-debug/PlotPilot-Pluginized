@@ -1,0 +1,3 @@
+COMMAND: frontend/node_modules/.bin/vue-tsc.cmd --noEmit -p frontend/tsconfig.app.json --incremental false
+NOT_RUNNABLE: frontend/node_modules/.bin/vue-tsc.cmd does not exist in this worktree; manifests and unowned dependency paths were not modified.
+EXIT_CODE=127
