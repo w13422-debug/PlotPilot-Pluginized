@@ -1,0 +1,30 @@
+{
+  "schema": "ppa-node-state/v1",
+  "node_id": "NW-P1-BACKUP-DATA-01",
+  "branch": "codex/nw-p1-backup-data-01",
+  "base": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
+  "status": "f011_minimal_remediation_pending_clean_sol_review",
+  "outcome": "Production SQLite CoreSnapshot adapter, exact durable high-water and Asset/package identity bindings, closed receipt, and isolated recoverable restore/backup staging",
+  "public_contract_changes": [],
+  "dependency_changes": [],
+  "composition_dependencies": [
+    "P0/P3 must provide a durable monotonic BackupBarrierPort implementation.",
+    "P0/P1 must compose the provided SqliteCoreSnapshotAdapter with the durable barrier high-water producer.",
+    "P0/P2 must compose durable current/LKG generation, release, package, and projection state through GenerationBackupPort.",
+    "P0/P3 must compose quiesced independent SQLite/files through PluginDataBackupPort."
+  ],
+  "fail_closed": [
+    "missing, mismatched, or incompatible barrier/CoreSnapshot/P2/P3 contributor",
+    "unknown Core contract version or workspace snapshot mismatch",
+    "workspace scope mismatch",
+    "SQLite integrity or foreign-key failure",
+    "missing/tampered Asset object, metadata, declared root, or plugin-DB reference",
+    "missing, wrong-hash, orphaned, or wrong-mode package",
+    "manifest, receipt, Core snapshot, compatibility evidence, or file-set mismatch",
+    "unowned/reparse interrupted staging generation",
+    "existing, overlapping, raced, or bundle-conflicting restore root"
+  ],
+  "source_review": "NW-P1-BDP-F-011 remediated_pending_clean_sol_reviewer; no closure or merge-eligibility claim",
+  "central_pass_claimed": false,
+  "donor_push": "DISABLED"
+}

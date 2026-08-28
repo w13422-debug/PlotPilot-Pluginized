@@ -1,0 +1,65 @@
+{
+  "schema": "ppa-01-backup-data-plane-validation/v2",
+  "node_id": "NW-P1-BACKUP-DATA-01",
+  "parent": "e05892c0285b23d3c17e8d077ea30d00a685f8ba",
+  "parent_tree": "54958c9c8006eec3f1debc3438633b8fa4cb8787",
+  "recorded_at": "2026-08-28T08:30:00+08:00",
+  "scope": [
+    "production SQLite CoreSnapshot adapter and durable high-water binding",
+    "SDK semantic package identity separated from deterministic archive SHA-256",
+    "P3 role restriction, CoreSnapshot state Asset binding, DB/workspace/scope rebuild",
+    "closed Asset scanner and AssetMetadata validation",
+    "restore source identity, exact cleanup, lexical reparse boundary, final callback validation",
+    "deterministic closed receipt and symmetric backup staging recovery"
+  ],
+  "commands": [
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/backup-data-plane -q",
+      "status": "passed",
+      "result": "collected 59 items; 59 passed in 7.25s; exit 0"
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core -q",
+      "status": "passed",
+      "result": "collected 66 items; 66 passed in 7.58s; exit 0"
+    },
+    {
+      "command": "python -B -m compileall -q backend/plotpilot_core/backup",
+      "status": "passed",
+      "result": "exit 0; no stdout"
+    },
+    {
+      "command": "python -B -m ruff check backend/plotpilot_core/backup tests/p1-core/backup-data-plane",
+      "status": "passed",
+      "result": "All checks passed!; exit 0"
+    },
+    {
+      "command": "git diff --check",
+      "status": "passed",
+      "result": "exit 0; only Git line-ending notices, no diff errors"
+    }
+  ],
+  "prohibited_gates_run": [],
+  "finding_status": "NW-P1-BDP-F-001..015 remediated_pending_same_reviewer",
+  "self_closed_findings": [],
+  "central_pass_claimed": false,
+  "review": {
+    "reviewer_thread_id": "01a044cf-5005-7511-bb4e-e2262112a2e2",
+    "status": "pending_same_reviewer_recheck_platform_blocked",
+    "dispatch_attempts": [
+      {
+        "turn_id": "01a045ae-cfab-7f01-a382-64b2c2499487",
+        "result": "systemError before reviewer output"
+      },
+      {
+        "turn_id": "01a045af-482d-75b1-8dd1-ccbc129ee3b0",
+        "result": "systemError before reviewer output"
+      },
+      {
+        "turn_id": "01a045af-cb01-7c52-8036-2215ba665744",
+        "result": "systemError before reviewer output"
+      }
+    ],
+    "reviewer_conclusion_fabricated": false
+  }
+}
