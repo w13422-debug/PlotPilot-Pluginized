@@ -28,11 +28,35 @@ SQLite connection and provide required, non-no-op callbacks for:
    and provenance, and that later Publication needs no plugin execution.
    The callback returns a release-bound immutable decision with stable blocker
    IDs; a naked caller boolean is not authority.
+4. Settings revision/receipt lookup.  In the same authoritative transaction as
+   `migrated -> settings_validated`, P1 must load by expected plugin ID and
+   revision ID and return the immutable `settings-revision/v1` plus its
+   published `settings-validation-receipt/v1`.  P2 verifies plugin, release,
+   schema, payload, receipt ID/hash and `valid=true`; caller Maps are not facts.
+5. Retirement operation-key authority.  Before either retirement mutation it
+   must reserve/lookup `(method, release_id, operation_id, canonical request
+   hash)`, reject changed payloads and write the exact result in the same
+   transaction as the retirement row and Event.  Only an exact recorded result
+   may satisfy ACK-loss replay.  P2 deliberately does not create a second
+   general operation ledger.
+6. One shared SQLite transaction owner and migration history.  Composition must
+   inject P1's transaction factory/lock into `LifecycleRepository`; merely
+   observing `connection.in_transaction` is forbidden.  P1's sole
+   `MigrationRunner` must apply `LIFECYCLE_MIGRATIONS` (migration
+   `0100-plugin-lifecycle-v1`) and verify its SHA-256.  Repository, Shadow and
+   Retirement constructors now reject an unapplied schema and execute no DDL.
 
 ## Stopped slices
 
 - Production LKG promotion remains stopped without the qualification authority.
 - Production rollback/current mutation remains stopped without the Event writer.
+- Production Settings validation remains stopped without the authoritative
+  revision/receipt reader.
+- Production retirement start/completion remains stopped without the
+  operation-key authority.
+- All production lifecycle mutations remain stopped until P1 composes the
+  shared transaction owner and applies the lifecycle migration through the
+  unique migration ledger.
 - Physical package deletion and `retired` completion remain stopped without the
   Candidate/Publication barrier.  A failed barrier stays `retiring`, preserves
   package bytes and records internal `needs_attention`; P2 does not extend the

@@ -74,6 +74,37 @@ def _tokens(pointer: str) -> list[str]:
     return result
 
 
+def _array_index(
+    token: str,
+    *,
+    length: int,
+    allow_end: bool = False,
+) -> int:
+    if token == "-":
+        raise ContractError(
+            ErrorCode.MIGRATION_FAILED,
+            "settings migration v1 does not authorize array append tokens",
+        )
+    if not token or not token.isascii() or not token.isdecimal():
+        raise ContractError(
+            ErrorCode.MIGRATION_FAILED,
+            "settings migration array index must be canonical non-negative decimal",
+        )
+    if len(token) > 1 and token.startswith("0"):
+        raise ContractError(
+            ErrorCode.MIGRATION_FAILED,
+            "settings migration array index cannot contain leading zeroes",
+        )
+    position = int(token)
+    limit = length if allow_end else length - 1
+    if position > limit:
+        raise ContractError(
+            ErrorCode.MIGRATION_FAILED,
+            "settings migration array index is out of range",
+        )
+    return position
+
+
 def _parent(root: Any, pointer: str) -> tuple[Any, str]:
     tokens = _tokens(pointer)
     if not tokens:
@@ -85,11 +116,8 @@ def _parent(root: Any, pointer: str) -> tuple[Any, str]:
                 raise ContractError(ErrorCode.MIGRATION_FAILED, "settings migration source path is absent")
             current = current[token]
         elif isinstance(current, MutableSequence):
-            try:
-                position = int(token)
-                current = current[position]
-            except (ValueError, IndexError) as exc:
-                raise ContractError(ErrorCode.MIGRATION_FAILED, "settings migration array path is invalid") from exc
+            position = _array_index(token, length=len(current))
+            current = current[position]
         else:
             raise ContractError(ErrorCode.MIGRATION_FAILED, "settings migration traverses a scalar")
     return current, tokens[-1]
@@ -102,10 +130,8 @@ def _read(root: Any, pointer: str) -> Any:
             raise ContractError(ErrorCode.MIGRATION_FAILED, "settings migration source path is absent")
         return copy.deepcopy(parent[token])
     if isinstance(parent, MutableSequence):
-        try:
-            return copy.deepcopy(parent[int(token)])
-        except (ValueError, IndexError) as exc:
-            raise ContractError(ErrorCode.MIGRATION_FAILED, "settings migration array source is invalid") from exc
+        position = _array_index(token, length=len(parent))
+        return copy.deepcopy(parent[position])
     raise ContractError(ErrorCode.MIGRATION_FAILED, "settings migration source parent is scalar")
 
 
@@ -124,10 +150,8 @@ def _remove(root: Any, pointer: str) -> Any:
             raise ContractError(ErrorCode.MIGRATION_FAILED, "settings migration remove source is absent")
         return parent.pop(token)
     if isinstance(parent, MutableSequence):
-        try:
-            return parent.pop(int(token))
-        except (ValueError, IndexError) as exc:
-            raise ContractError(ErrorCode.MIGRATION_FAILED, "settings migration array remove is invalid") from exc
+        position = _array_index(token, length=len(parent))
+        return parent.pop(position)
     raise ContractError(ErrorCode.MIGRATION_FAILED, "settings migration remove parent is scalar")
 
 
@@ -139,15 +163,11 @@ def _write_nonreplace(root: Any, pointer: str, value: Any) -> None:
         parent[token] = copy.deepcopy(value)
         return
     if isinstance(parent, MutableSequence):
-        if token == "-":
-            parent.append(copy.deepcopy(value))
-            return
-        try:
-            position = int(token)
-        except ValueError as exc:
-            raise ContractError(ErrorCode.MIGRATION_FAILED, "settings migration array destination is invalid") from exc
-        if position < 0 or position > len(parent):
-            raise ContractError(ErrorCode.MIGRATION_FAILED, "settings migration array destination is out of range")
+        position = _array_index(
+            token,
+            length=len(parent),
+            allow_end=True,
+        )
         parent.insert(position, copy.deepcopy(value))
         return
     raise ContractError(ErrorCode.MIGRATION_FAILED, "settings migration destination parent is scalar")

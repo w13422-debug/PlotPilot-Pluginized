@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Mapping
+import sqlite3
+from collections.abc import Callable, Mapping
 from typing import Any
 
-from plotpilot_plugin_sdk.errors import ErrorCode
+from plotpilot_plugin_sdk.errors import ContractError, ErrorCode
+from plotpilot_plugin_sdk.verifier import verify_settings_validation_receipt
 
 from ..generation import validate_generation
-from ..install import InstallStager
+from ..install import InstallStager, InstallState
 from ..package import CompatibilityProfile, verify_package
 from ..settings import require_activatable
 from .repository import (
@@ -22,6 +24,10 @@ from .repository import (
 from .retirement import RetirementManager
 from .shadow import ShadowGenerationManager
 
+SettingsAuthorityReader = Callable[
+    [sqlite3.Connection, str, str], tuple[Mapping[str, Any], Mapping[str, Any]]
+]
+
 
 class InstallLifecycleService:
     """Drive one public transition; every method is replay-safe."""
@@ -33,6 +39,7 @@ class InstallLifecycleService:
         *,
         shadow: ShadowGenerationManager | None = None,
         retirement: RetirementManager | None = None,
+        settings_authority_reader: SettingsAuthorityReader | None = None,
     ) -> None:
         self.repository = repository
         self.stager = stager
@@ -44,6 +51,7 @@ class InstallLifecycleService:
             if shadow is not None
             else ShadowGenerationManager(repository, self.retirement.require_install_pin)
         )
+        self.settings_authority_reader = settings_authority_reader
 
     @staticmethod
     def _install_pin_id(install_operation_id: str) -> str:
@@ -61,6 +69,14 @@ class InstallLifecycleService:
         package = verify_package(
             source, compatibility=compatibility, limits=self.stager.limits
         )
+        settings_manifest = package.manifest.get("settings")
+        if settings_manifest is not None and settings_manifest.get("namespace") != (
+            f"plugin.{package.plugin_id}"
+        ):
+            raise LifecycleError(
+                "manifest Settings namespace is not bound to its plugin_id",
+                code=ErrorCode.SETTINGS_INVALID,
+            )
         try:
             frozen = self.repository.get_attempt(install_operation_id)
         except KeyError:
@@ -77,19 +93,51 @@ class InstallLifecycleService:
             "version": package.version,
             "package_hash": package.package_hash,
             "release_id": package.release_id,
+            "settings_schema_hash": (
+                None
+                if settings_manifest is None
+                else hashlib.sha256(
+                    package.read_bytes(settings_manifest["schema"])
+                ).hexdigest()
+            ),
             "base_generation_id": base_id,
             "base_lkg_generation_id": lkg_id,
             "target_generation_id": target_generation_id,
         }
-        attempt = self.repository.create_or_recover_attempt(
-            initial_transition(
-                install_operation_id,
-                base_generation_id=base_id,
-                base_lkg_generation_id=lkg_id,
-                target_generation_id=target_generation_id,
-            ),
-            request=request,
-        )
+        with self.repository.transaction():
+            attempt = self.repository.create_or_recover_attempt(
+                initial_transition(
+                    install_operation_id,
+                    base_generation_id=base_id,
+                    base_lkg_generation_id=lkg_id,
+                    target_generation_id=target_generation_id,
+                ),
+                request=request,
+            )
+            try:
+                retirement = self.retirement.get(package.release_id)
+            except KeyError:
+                retirement = None
+            if retirement is not None:
+                if retirement["state"] != "installed" or not retirement["package_present"]:
+                    raise LifecycleError(
+                        "retired/retiring release cannot be staged or adopted",
+                        code=ErrorCode.RELEASE_RETIRING,
+                    )
+                self.retirement.acquire_pin(
+                    package.release_id,
+                    pin_kind="install",
+                    owner_id=install_operation_id,
+                    pin_id=self._install_pin_id(install_operation_id),
+                )
+        if attempt["state"] in {
+            "lkg_promoted",
+            "failed",
+            "superseded",
+            "rolled_back",
+            "safe_mode",
+        }:
+            return attempt
         if attempt["state"] == "selected":
             self.stager.stage(
                 source,
@@ -107,6 +155,13 @@ class InstallLifecycleService:
             )
         if attempt["state"] == "staged":
             published = self.stager.reconcile(install_operation_id)
+            if published.state != InstallState.PACKAGE_PUBLISHED:
+                return self.repository.fail_attempt(
+                    install_operation_id,
+                    expected_state="staged",
+                    failure_code=f"staging_{published.state.value}",
+                    pin_releaser=self._pin_releaser,
+                )
             if published.package.release_id != package.release_id:
                 raise LifecycleError(
                     "staged package identity changed", code=ErrorCode.ASSET_ERROR
@@ -119,6 +174,11 @@ class InstallLifecycleService:
                     owner_id=install_operation_id,
                     pin_id=self._install_pin_id(install_operation_id),
                 )
+                self.stager.store.require_release(
+                    release_id=package.release_id,
+                    plugin_id=package.plugin_id,
+                    package_hash=package.package_hash,
+                )
             attempt = self.repository.advance_attempt(
                 install_operation_id,
                 expected_state="staged",
@@ -126,10 +186,7 @@ class InstallLifecycleService:
                 updates={"package_store_status": "published"},
             )
         elif attempt["state"] not in {
-            "failed",
-            "superseded",
-            "rolled_back",
-            "safe_mode",
+            "lkg_promoted", "failed", "superseded", "rolled_back", "safe_mode"
         }:
             # Verify/adopt exact bytes after any later-stage restart as well.
             self.stager.reconcile(install_operation_id)
@@ -160,45 +217,91 @@ class InstallLifecycleService:
         install_operation_id: str,
         *,
         generation: Mapping[str, Any],
-        revisions: Mapping[str, Mapping[str, Any]],
     ) -> dict[str, Any]:
         candidate = validate_generation(generation)
-        attempt = self.repository.get_attempt(install_operation_id)
-        if attempt["target_generation_id"] != candidate["generation_id"]:
-            raise LifecycleError(
-                "settings validation target differs from install Generation",
-                code=ErrorCode.INCOMPATIBLE_GENERATION,
+        with self.repository.transaction() as connection:
+            attempt = self.repository._attempt_for_update(
+                connection, install_operation_id
             )
-        bindings: list[dict[str, str]] = []
-        for member in candidate["members"]:
-            revision_id = member["global_settings_revision_id"]
-            schema_hash = member["settings_schema_hash"]
-            if (revision_id is None) != (schema_hash is None):
+            if attempt["target_generation_id"] != candidate["generation_id"]:
                 raise LifecycleError(
-                    "Generation settings ID/schema must be both null or both present",
-                    code=ErrorCode.SETTINGS_INVALID,
+                    "settings validation target differs from install Generation",
+                    code=ErrorCode.INCOMPATIBLE_GENERATION,
                 )
-            if revision_id is None:
-                continue
-            revision = revisions.get(member["plugin_id"])
-            if revision is None or revision.get("settings_revision_id") != revision_id:
-                raise LifecycleError(
-                    "target settings revision is missing",
-                    code=ErrorCode.SETTINGS_INVALID,
+            bindings: list[dict[str, str]] = []
+            for member in candidate["members"]:
+                revision_id = member["global_settings_revision_id"]
+                schema_hash = member["settings_schema_hash"]
+                if (revision_id is None) != (schema_hash is None):
+                    raise LifecycleError(
+                        "Generation settings ID/schema must be both null or both present",
+                        code=ErrorCode.SETTINGS_INVALID,
+                    )
+                if revision_id is None:
+                    continue
+                if self.settings_authority_reader is None:
+                    raise LifecycleError(
+                        "P1 Settings revision/receipt authority is not composed",
+                        code=ErrorCode.SETTINGS_INVALID,
+                    )
+                revision, receipt = self.settings_authority_reader(
+                    connection, member["plugin_id"], revision_id
                 )
-            require_activatable(
-                revision, release_id=member["release_id"], schema_hash=schema_hash
+                if (
+                    revision.get("settings_revision_id") != revision_id
+                    or revision.get("plugin_id") != member["plugin_id"]
+                ):
+                    raise LifecycleError(
+                        "authoritative Settings revision identity is mismatched",
+                        code=ErrorCode.SETTINGS_INVALID,
+                    )
+                try:
+                    verify_settings_validation_receipt(receipt)
+                    require_activatable(
+                        revision,
+                        release_id=member["release_id"],
+                        schema_hash=schema_hash,
+                    )
+                except ContractError as exc:
+                    raise LifecycleError(
+                        "Settings authority returned an invalid revision/receipt",
+                        code=ErrorCode.SETTINGS_INVALID,
+                    ) from exc
+                bindings_to_check = (
+                    ("settings_revision_id", "settings_revision_id"),
+                    ("plugin_id", "plugin_id"),
+                    ("plugin_release_id", "plugin_release_id"),
+                    ("schema_hash", "schema_hash"),
+                    ("payload_hash", "payload_hash"),
+                    ("validation_receipt_id", "receipt_id"),
+                    ("validation_receipt_hash", "receipt_hash"),
+                )
+                if any(
+                    revision[left] != receipt[right]
+                    for left, right in bindings_to_check
+                ):
+                    raise LifecycleError(
+                        "Settings validation receipt is not bound to the authoritative revision",
+                        code=ErrorCode.RESULT_CONTRACT_MISMATCH,
+                    )
+                if receipt["valid"] is not True:
+                    raise LifecycleError(
+                        "Settings validation receipt did not pass",
+                        code=ErrorCode.SETTINGS_INVALID,
+                    )
+                bindings.append(
+                    {
+                        "plugin_id": member["plugin_id"],
+                        "settings_revision_id": revision_id,
+                    }
+                )
+            bindings.sort(key=lambda item: item["plugin_id"].encode("utf-8"))
+            return self.repository.advance_attempt(
+                install_operation_id,
+                expected_state="migrated",
+                target_state="settings_validated",
+                updates={"target_settings_revision_ids": bindings},
             )
-            bindings.append(
-                {"plugin_id": member["plugin_id"], "settings_revision_id": revision_id}
-            )
-        bindings.sort(key=lambda item: item["plugin_id"].encode("utf-8"))
-        return self.repository.advance_attempt(
-            install_operation_id,
-            expected_state="migrated",
-            target_state="settings_validated",
-            updates={"target_settings_revision_ids": bindings},
-        )
 
     def qualify(
         self,

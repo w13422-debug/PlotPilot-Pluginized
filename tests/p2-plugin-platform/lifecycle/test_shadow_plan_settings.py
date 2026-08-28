@@ -4,7 +4,9 @@ import copy
 import sqlite3
 
 import pytest
+from plotpilot_core.plugins.install import InstallStager
 from plotpilot_core.plugins.lifecycle import (
+    InstallLifecycleService,
     LifecycleError,
     LifecycleRepository,
     RetirementManager,
@@ -13,8 +15,14 @@ from plotpilot_core.plugins.lifecycle import (
     prepare_plan_switch,
 )
 from plotpilot_core.plugins.settings import migrate_settings_payload
+from plotpilot_core.plugins.store import PackageStore
 from plotpilot_plugin_sdk.canonical import hash_jcs
 from plotpilot_plugin_sdk.errors import ContractError, ErrorCode
+
+
+def _repository(connection: sqlite3.Connection) -> LifecycleRepository:
+    LifecycleRepository.initialize_standalone_schema_for_tests(connection)
+    return LifecycleRepository(connection)
 
 
 def _attempt_at_env(repository: LifecycleRepository) -> RetirementManager:
@@ -52,7 +60,7 @@ def _attempt_at_env(repository: LifecycleRepository) -> RetirementManager:
 
 
 def test_shadow_migration_uses_fresh_epoch_and_only_qualified_can_commit() -> None:
-    repository = LifecycleRepository(sqlite3.connect(":memory:", isolation_level=None))
+    repository = _repository(sqlite3.connect(":memory:", isolation_level=None))
     retirement = _attempt_at_env(repository)
     shadow = ShadowGenerationManager(repository, retirement.require_install_pin)
     first = shadow.prepare(
@@ -293,7 +301,7 @@ def test_plan_switch_is_explicit_preserves_multiple_plugins_and_user_order() -> 
 
 
 def test_shadow_prepare_rejects_wrong_state_or_frozen_release() -> None:
-    repository = LifecycleRepository(sqlite3.connect(":memory:", isolation_level=None))
+    repository = _repository(sqlite3.connect(":memory:", isolation_level=None))
     repository.create_or_recover_attempt(
         initial_transition(
             "install-invalid-shadow",
@@ -595,3 +603,146 @@ def test_closed_settings_migration_is_nonreplacing_and_deterministic() -> None:
             target_schema_hash="b" * 64,
             read_value_asset=lambda _: "strict",
         )
+
+
+def test_f002_qualified_shadow_is_terminal_and_releases_lease() -> None:
+    repository = _repository(sqlite3.connect(":memory:", isolation_level=None))
+    retirement = _attempt_at_env(repository)
+    shadow = ShadowGenerationManager(repository, retirement.require_install_pin)
+    lease = shadow.prepare(
+        install_operation_id="install-shadow",
+        shadow_data_generation_id="data-shadow-terminal",
+        release_id="a" * 64,
+        owner_instance_id="worker-terminal",
+        now="2026-08-28T03:00:00Z",
+    )
+    current = lease
+    for expected, target in (
+        ("prepared", "applying"),
+        ("applying", "applied"),
+        ("applied", "verified"),
+        ("verified", "qualified"),
+    ):
+        current = shadow.advance(
+            current.shadow_data_generation_id,
+            expected_state=expected,
+            target_state=target,
+            db_lease_id=current.db_lease_id,
+            db_lease_epoch=current.db_lease_epoch,
+            owner_instance_id=current.owner_instance_id,
+            now="2026-08-28T03:00:01Z",
+        )
+    assert current.state == "qualified" and current.lease_state == "released"
+    with pytest.raises(LifecycleError):
+        shadow.acquire(
+            current.shadow_data_generation_id,
+            owner_instance_id="worker-new",
+            now="2026-08-28T03:00:02Z",
+        )
+    with pytest.raises(LifecycleError):
+        shadow.fail(
+            current.shadow_data_generation_id,
+            db_lease_id=current.db_lease_id,
+            db_lease_epoch=current.db_lease_epoch,
+            owner_instance_id=current.owner_instance_id,
+            now="2026-08-28T03:00:02Z",
+        )
+    assert shadow.require_qualified(current.shadow_data_generation_id) == current
+
+
+def test_f006_settings_validation_requires_p1_authority(tmp_path) -> None:
+    repository = _repository(sqlite3.connect(":memory:", isolation_level=None))
+    _attempt_at_env(repository)
+    repository.advance_attempt(
+        "install-shadow",
+        expected_state="env_prepared",
+        target_state="shadow_prepared",
+    )
+    repository.advance_attempt(
+        "install-shadow",
+        expected_state="shadow_prepared",
+        target_state="migrated",
+    )
+    generation = {
+        "schema": "plugin-generation/v1",
+        "generation_id": "generation-shadow",
+        "core_api_version": "1.2.0",
+        "members": [
+            {
+                "plugin_id": "com.plotpilot.settings.a",
+                "release_id": "a" * 64,
+                "package_hash": "b" * 64,
+                "data_generation_id": None,
+                "ui_bundle_hash": None,
+                "global_settings_revision_id": "settings-a",
+                "settings_schema_hash": "c" * 64,
+                "data_bundle_asset_id": None,
+            }
+        ],
+        "created_reason": "settings authority test",
+        "created_at": "2026-08-28T03:00:00Z",
+        "health_result_asset_id": "asset-health-settings",
+        "parent_generation_id": None,
+        "base_generation_id": None,
+    }
+    service = InstallLifecycleService(
+        repository,
+        InstallStager(PackageStore(tmp_path / "packages")),
+        retirement=RetirementManager(repository),
+    )
+    with pytest.raises(LifecycleError) as error:
+        service.mark_settings_validated("install-shadow", generation=generation)
+    assert error.value.code == ErrorCode.SETTINGS_INVALID
+    assert repository.get_attempt("install-shadow")["state"] == "migrated"
+    observed: list[bool] = []
+
+    def cross_plugin_reader(connection, _expected_plugin_id, revision_id):
+        observed.append(connection.in_transaction)
+        return (
+            {
+                "settings_revision_id": revision_id,
+                "plugin_id": "com.plotpilot.settings.b",
+            },
+            {},
+        )
+
+    cross_plugin = InstallLifecycleService(
+        repository,
+        InstallStager(PackageStore(tmp_path / "packages-cross")),
+        retirement=RetirementManager(repository),
+        settings_authority_reader=cross_plugin_reader,
+    )
+    with pytest.raises(LifecycleError):
+        cross_plugin.mark_settings_validated(
+            "install-shadow", generation=generation
+        )
+    assert observed == [True]
+    assert repository.get_attempt("install-shadow")["state"] == "migrated"
+
+
+@pytest.mark.parametrize("token", ["-1", "+1", "01", "-", "１"])
+def test_f014_array_indices_are_canonical_and_append_is_not_authorized(token) -> None:
+    manifest = {
+        "schema": "settings-migration-manifest/v1",
+        "from_schema_hash": "a" * 64,
+        "to_schema_hash": "b" * 64,
+        "steps": [
+            {
+                "operation": "remove",
+                "from_pointer": f"/items/{token}",
+                "to_pointer": None,
+                "value_asset_id": None,
+            }
+        ],
+    }
+    source = {"items": ["zero", "one"]}
+    with pytest.raises(ContractError) as error:
+        migrate_settings_payload(
+            source,
+            manifest,
+            current_schema_hash="a" * 64,
+            target_schema_hash="b" * 64,
+            read_value_asset=lambda _: None,
+        )
+    assert error.value.code == ErrorCode.MIGRATION_FAILED
+    assert source == {"items": ["zero", "one"]}

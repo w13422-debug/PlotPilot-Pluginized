@@ -7,8 +7,10 @@ snapshots bytes before handing them to the immutable :class:`PackageStore`.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import re
 import shutil
 import uuid
 from collections.abc import Mapping
@@ -76,9 +78,26 @@ _MARKER_SCHEMA = "plotpilot-install-staging/v1"
 def _safe_operation_id(value: str | None) -> str:
     if value is None:
         return uuid.uuid4().hex
-    if not isinstance(value, str) or not value or len(value) > 128 or any(ch not in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-" for ch in value):
-        raise InstallError("install_operation_id must be a safe path component")
+    if (
+        not isinstance(value, str)
+        or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}", value) is None
+    ):
+        raise InstallError("install_operation_id is outside the public v1 ID profile")
     return value
+
+
+def _operation_path_key(operation_id: str) -> str:
+    """Map the full public operation identity to one collision-resistant component."""
+    return "op-" + hashlib.sha256(operation_id.encode("utf-8")).hexdigest()
+
+
+def _require_settings_namespace(package: VerifiedPackage) -> None:
+    settings = package.manifest.get("settings")
+    if settings is not None and settings.get("namespace") != f"plugin.{package.plugin_id}":
+        raise InstallError(
+            "manifest Settings namespace is not bound to its plugin_id",
+            code=ErrorCode.SETTINGS_INVALID,
+        )
 
 
 def _write_marker(path: Path, value: Mapping[str, Any]) -> None:
@@ -113,7 +132,8 @@ class InstallStager:
         self.staging_root.mkdir(parents=True, exist_ok=True)
 
     def _stage_dir(self, operation_id: str) -> Path:
-        path = self.staging_root / _safe_operation_id(operation_id)
+        identity = _safe_operation_id(operation_id)
+        path = self.staging_root / _operation_path_key(identity)
         try:
             path.relative_to(self.staging_root)
         except ValueError as exc:
@@ -146,6 +166,8 @@ class InstallStager:
             raise InstallError(f"invalid staging marker: {exc}") from exc
         if not isinstance(marker, Mapping) or marker.get("schema") != _MARKER_SCHEMA:
             raise InstallError("invalid staging marker shape")
+        if marker.get("install_operation_id") != operation_id:
+            raise InstallError("staging path is bound to a different operation identity")
         try:
             package = verify_package(
                 package_dir,
@@ -155,6 +177,7 @@ class InstallStager:
             )
         except ContractError as exc:
             raise InstallError(f"staged package no longer verifies: {exc}", code=exc.code) from exc
+        _require_settings_namespace(package)
         if package.plugin_id != marker.get("plugin_id") or package.version != marker.get("version"):
             raise InstallError("staging marker identity does not match package")
         try:
@@ -194,6 +217,7 @@ class InstallStager:
             limits=self.limits,
             compatibility=compatibility,
         )
+        _require_settings_namespace(package)
         if stage_dir.exists():
             existing = self._read_existing(operation_id)
             if existing.identity != package.identity or existing.package.release_id != package.release_id:
@@ -204,7 +228,9 @@ class InstallStager:
 
         # Verify the untrusted source before creating any durable staging
         # marker.  No published store path is touched on failure.
-        temp_dir = self.staging_root / f".{operation_id}.{uuid.uuid4().hex}.tmp"
+        # Keep the undiscoverable copy path short on Windows; the final path is
+        # the complete deterministic SHA-256 key and the marker retains the ID.
+        temp_dir = self.staging_root / f".tmp-{uuid.uuid4().hex[:8]}"
         package_dir = temp_dir / "package"
         try:
             temp_dir.mkdir(parents=True, exist_ok=False)
@@ -222,8 +248,8 @@ class InstallStager:
             staged = StagedPackage(
                 install_operation_id=operation_id,
                 package=package,
-                stage_dir=self.staging_root / operation_id,
-                package_dir=self.staging_root / operation_id / "package",
+                stage_dir=stage_dir,
+                package_dir=stage_dir / "package",
                 state=InstallState.STAGED,
                 base_generation_id=base_generation_id,
             )

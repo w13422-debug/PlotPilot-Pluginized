@@ -16,7 +16,7 @@ import sqlite3
 import threading
 import uuid
 from collections.abc import Callable, Iterator, Mapping
-from contextlib import contextmanager
+from contextlib import AbstractContextManager, contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
@@ -30,6 +30,7 @@ from ..generation import GenerationState, validate_generation
 EventWriter = Callable[[sqlite3.Connection, str | None, str, str], None]
 GenerationGuard = Callable[[sqlite3.Connection, Mapping[str, Any], str], None]
 PinReleaser = Callable[[sqlite3.Connection, str], None]
+TransactionFactory = Callable[[], AbstractContextManager[sqlite3.Connection]]
 
 
 class LifecycleError(ContractError):
@@ -112,6 +113,70 @@ _SCHEMA_STATEMENTS = (
         revision INTEGER NOT NULL DEFAULT 0
     )
     """,
+    """
+    CREATE TABLE IF NOT EXISTS p2_plugin_release_retirement(
+        release_id TEXT PRIMARY KEY,
+        retirement_json TEXT NOT NULL,
+        revision INTEGER NOT NULL DEFAULT 0
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS p2_plugin_retirement_attention(
+        release_id TEXT PRIMARY KEY,
+        reason TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS p2_plugin_release_pin(
+        pin_id TEXT PRIMARY KEY,
+        release_id TEXT NOT NULL,
+        retire_epoch INTEGER NOT NULL,
+        pin_json TEXT NOT NULL,
+        revision INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY(release_id) REFERENCES p2_plugin_release_retirement(release_id)
+    )
+    """,
+    """
+    CREATE UNIQUE INDEX IF NOT EXISTS p2_plugin_release_active_pin_owner
+        ON p2_plugin_release_pin(release_id,retire_epoch,
+             json_extract(pin_json,'$.pin_kind'),json_extract(pin_json,'$.owner_id'))
+     WHERE json_extract(pin_json,'$.released_at') IS NULL
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS p2_plugin_shadow_generation(
+        shadow_data_generation_id TEXT PRIMARY KEY,
+        install_operation_id TEXT NOT NULL UNIQUE,
+        release_id TEXT NOT NULL,
+        state TEXT NOT NULL,
+        db_lease_id TEXT NOT NULL,
+        db_lease_epoch INTEGER NOT NULL,
+        owner_instance_id TEXT NOT NULL,
+        issued_at TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        renewed_at TEXT NOT NULL,
+        lease_state TEXT NOT NULL,
+        revision INTEGER NOT NULL DEFAULT 0
+    )
+    """,
+)
+
+
+@dataclass(frozen=True, slots=True)
+class LifecycleMigration:
+    migration_id: str
+    sql: str
+
+    @property
+    def sha256(self) -> str:
+        return hashlib.sha256(self.sql.encode()).hexdigest()
+
+
+LIFECYCLE_MIGRATIONS = (
+    LifecycleMigration(
+        "0100-plugin-lifecycle-v1",
+        ";\n".join(statement.strip() for statement in _SCHEMA_STATEMENTS) + ";",
+    ),
 )
 
 
@@ -201,55 +266,155 @@ def validate_transition(value: Mapping[str, Any]) -> dict[str, Any]:
         attempt != 1 or token is None
     ):
         raise LifecycleError("rollback recovery state requires its one durable token")
+    state = result["state"]
+    if result["target_generation_id"] is None:
+        raise LifecycleError("every install attempt requires a target Generation")
+    required_store_status = {
+        "selected": "absent",
+        "staged": "staged",
+        "package_published": "published",
+        "env_prepared": "published",
+        "shadow_prepared": "published",
+        "migrated": "published",
+        "settings_validated": "published",
+        "qualified": "published",
+        "pending_apply": "published",
+        "current_committed": "published",
+        "lkg_pending": "published",
+        "lkg_promoted": "published",
+        "rollback_armed": "published",
+        "rolled_back": "published",
+        "safe_mode": "published",
+        "superseded": "published",
+    }.get(state)
+    if (
+        required_store_status is not None
+        and result["package_store_status"] != required_store_status
+    ):
+        raise LifecycleError(
+            f"{state} requires package_store_status={required_store_status}"
+        )
+    if state in {"selected", "staged", "package_published", "env_prepared"} and (
+        result["shadow_data_generation_id"] is not None
+    ):
+        raise LifecycleError(f"{state} cannot reference a shadow Generation")
+    if state in {
+        "selected",
+        "staged",
+        "package_published",
+        "env_prepared",
+        "shadow_prepared",
+        "migrated",
+    } and result["target_settings_revision_ids"]:
+        raise LifecycleError(f"{state} cannot reference validated Settings")
+    if state == "lkg_promoted":
+        if result["qualification_id"] is None:
+            raise LifecycleError("lkg_promoted requires its qualification identity")
+    elif result["qualification_id"] is not None:
+        raise LifecycleError(f"{state} cannot carry an LKG qualification identity")
+    failure_states = {"failed", "superseded", "safe_mode"}
+    if state in failure_states and result["failure_code"] is None:
+        raise LifecycleError(f"{state} requires a failure code")
+    if state not in failure_states and result["failure_code"] is not None:
+        raise LifecycleError(f"{state} cannot carry a failure code")
     return result
 
 
 class LifecycleRepository:
     """Durable lifecycle store with CAS and replay-safe operations."""
 
+    _REQUIRED_TABLES = frozenset(
+        {
+            "p2_plugin_generation",
+            "p2_plugin_generation_pointer",
+            "p2_plugin_install_attempt",
+            "p2_plugin_release_retirement",
+            "p2_plugin_retirement_attention",
+            "p2_plugin_release_pin",
+            "p2_plugin_shadow_generation",
+        }
+    )
+
     def __init__(
-        self, connection: sqlite3.Connection, *, initialize: bool = True
+        self,
+        connection: sqlite3.Connection,
+        *,
+        transaction_factory: TransactionFactory | None = None,
     ) -> None:
         self.connection = connection
+        self._transaction_factory = transaction_factory
         self._lock = threading.RLock()
-        if initialize:
-            self.initialize_schema()
+        self._transaction_owner: int | None = None
+        self._transaction_depth = 0
+        tables = {
+            str(row[0])
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        }
+        missing = self._REQUIRED_TABLES.difference(tables)
+        if missing:
+            raise LifecycleError(
+                "lifecycle schema migration has not been applied by the authoritative owner",
+                details={"missing_tables": sorted(missing)},
+            )
 
-    @contextmanager
-    def transaction(self) -> Iterator[sqlite3.Connection]:
-        with self._lock:
-            outer = self.connection.in_transaction
-            if not outer:
-                self.connection.execute("BEGIN IMMEDIATE")
-            try:
-                yield self.connection
-                if not outer:
-                    self.connection.commit()
-            except BaseException:
-                if not outer:
-                    self.connection.rollback()
-                raise
-
-    def initialize_schema(self) -> None:
-        with self.transaction() as connection:
+    @classmethod
+    def initialize_standalone_schema_for_tests(
+        cls, connection: sqlite3.Connection
+    ) -> None:
+        """Explicit test-only bootstrap; production schema belongs to P1 migrations."""
+        if connection.in_transaction:
+            raise LifecycleError("test schema bootstrap requires an idle connection")
+        connection.execute("BEGIN IMMEDIATE")
+        try:
             for statement in _SCHEMA_STATEMENTS:
                 connection.execute(statement)
-            attempt_columns = {
-                str(row[1])
-                for row in connection.execute(
-                    "PRAGMA table_info(p2_plugin_install_attempt)"
-                ).fetchall()
-            }
-            if "request_json" not in attempt_columns:
-                # An older local development database cannot reconstruct the
-                # canonical request from its digest.  Preserve the row but
-                # force explicit reconciliation rather than guessing input.
-                connection.execute(
-                    "ALTER TABLE p2_plugin_install_attempt ADD COLUMN request_json TEXT NULL"
-                )
             connection.execute(
                 "INSERT OR IGNORE INTO p2_plugin_generation_pointer(singleton) VALUES(1)"
             )
+            connection.commit()
+        except BaseException:
+            connection.rollback()
+            raise
+
+    @contextmanager
+    def transaction(self) -> Iterator[sqlite3.Connection]:
+        if self._transaction_factory is not None:
+            with self._transaction_factory() as connection:
+                if connection is not self.connection:
+                    raise LifecycleError(
+                        "shared transaction owner returned a different connection"
+                    )
+                yield connection
+            return
+        with self._lock:
+            thread_id = threading.get_ident()
+            nested = self._transaction_depth > 0
+            if nested:
+                if self._transaction_owner != thread_id:
+                    raise LifecycleError("lifecycle transaction is owned by another thread")
+                self._transaction_depth += 1
+            else:
+                if self.connection.in_transaction:
+                    raise LifecycleError(
+                        "external SQLite transaction owner is not composed; refusing unsafe join"
+                    )
+                self.connection.execute("BEGIN IMMEDIATE")
+                self._transaction_owner = thread_id
+                self._transaction_depth = 1
+            try:
+                yield self.connection
+                if not nested:
+                    self.connection.commit()
+            except BaseException:
+                if not nested:
+                    self.connection.rollback()
+                raise
+            finally:
+                self._transaction_depth -= 1
+                if not nested:
+                    self._transaction_owner = None
 
     def create_or_recover_attempt(
         self,
@@ -459,6 +624,23 @@ class LifecycleRepository:
                 qualification_verifier(connection, evidence, value),
                 value,
             )
+            self._require_frozen_generation_binding(connection, attempt, value)
+            self._require_qualified_shadow(connection, attempt)
+            digest = _digest(value)
+            frozen = connection.execute(
+                "SELECT payload_json,payload_hash FROM p2_plugin_generation WHERE generation_id=?",
+                (value["generation_id"],),
+            ).fetchone()
+            if frozen is None:
+                connection.execute(
+                    "INSERT INTO p2_plugin_generation(generation_id,payload_json,payload_hash) VALUES(?,?,?)",
+                    (value["generation_id"], _dump(value), digest),
+                )
+            elif frozen[1] != digest or _load(frozen[0]) != value:
+                raise LifecycleError(
+                    "qualified Generation identity is immutable",
+                    code=ErrorCode.DUPLICATE_REQUEST,
+                )
             execution_guard(connection, value, install_operation_id)
             if attempt["state"] == "qualified":
                 return attempt
@@ -519,6 +701,142 @@ class LifecycleRepository:
             raise KeyError(install_operation_id)
         return validate_transition(_load(row[0]))
 
+    def _request_for_update(
+        self, connection: sqlite3.Connection, install_operation_id: str
+    ) -> dict[str, Any]:
+        row = connection.execute(
+            "SELECT request_json FROM p2_plugin_install_attempt WHERE install_operation_id=?",
+            (install_operation_id,),
+        ).fetchone()
+        if row is None:
+            raise KeyError(install_operation_id)
+        if row[0] is None:
+            raise LifecycleError("install attempt lacks its frozen canonical request")
+        return _load(row[0])
+
+    def _require_frozen_generation_binding(
+        self,
+        connection: sqlite3.Connection,
+        attempt: Mapping[str, Any],
+        generation: Mapping[str, Any],
+    ) -> None:
+        request = self._request_for_update(
+            connection, str(attempt["install_operation_id"])
+        )
+        plugin_id = request.get("plugin_id")
+        release_id = request.get("release_id")
+        package_hash = request.get("package_hash")
+        if not all(isinstance(item, str) and item for item in (plugin_id, release_id, package_hash)):
+            raise LifecycleError("frozen install request lacks exact package identity")
+        members = {member["plugin_id"]: member for member in generation["members"]}
+        target_member = members.get(plugin_id)
+        if (
+            target_member is None
+            or target_member["release_id"] != release_id
+            or target_member["package_hash"] != package_hash
+        ):
+            raise LifecycleError(
+                "target Generation does not contain the frozen install package member",
+                code=ErrorCode.INCOMPATIBLE_GENERATION,
+            )
+        expected_schema_hash = request.get("settings_schema_hash")
+        if target_member["settings_schema_hash"] != expected_schema_hash:
+            raise LifecycleError(
+                "target member Settings schema differs from the frozen package",
+                code=ErrorCode.SETTINGS_INVALID,
+            )
+        shadow_id = attempt["shadow_data_generation_id"]
+        if target_member["data_generation_id"] != shadow_id:
+            raise LifecycleError(
+                "target member is not bound to the exact qualified shadow Generation",
+                code=ErrorCode.INCOMPATIBLE_GENERATION,
+            )
+        base_members: dict[str, Any] = {}
+        if attempt["base_generation_id"] is not None:
+            row = connection.execute(
+                "SELECT payload_json FROM p2_plugin_generation WHERE generation_id=?",
+                (attempt["base_generation_id"],),
+            ).fetchone()
+            if row is None:
+                raise LifecycleError("frozen base Generation is absent")
+            base = validate_generation(_load(row[0]))
+            base_members = {member["plugin_id"]: member for member in base["members"]}
+        unchanged_actual = {key: value for key, value in members.items() if key != plugin_id}
+        unchanged_base = {
+            key: value for key, value in base_members.items() if key != plugin_id
+        }
+        if unchanged_actual != unchanged_base:
+            raise LifecycleError(
+                "install candidate changed members outside its frozen plugin identity",
+                code=ErrorCode.INCOMPATIBLE_GENERATION,
+            )
+        expected_settings = sorted(
+            (
+                {
+                    "plugin_id": member["plugin_id"],
+                    "settings_revision_id": member["global_settings_revision_id"],
+                }
+                for member in generation["members"]
+                if member["global_settings_revision_id"] is not None
+            ),
+            key=lambda item: item["plugin_id"].encode("utf-8"),
+        )
+        if attempt["target_settings_revision_ids"] != expected_settings:
+            raise LifecycleError(
+                "target Settings bindings differ from the frozen validated set",
+                code=ErrorCode.SETTINGS_INVALID,
+            )
+
+    @staticmethod
+    def _require_no_post_activation_competitor(
+        connection: sqlite3.Connection, install_operation_id: str
+    ) -> None:
+        row = connection.execute(
+            """
+            SELECT install_operation_id FROM p2_plugin_install_attempt
+             WHERE install_operation_id<>?
+               AND json_extract(transition_json,'$.state') IN
+                   ('current_committed','lkg_pending','rollback_armed')
+             ORDER BY install_operation_id LIMIT 1
+            """,
+            (install_operation_id,),
+        ).fetchone()
+        if row is not None:
+            raise LifecycleError(
+                "another post-activation attempt must converge before current can advance",
+                code=ErrorCode.INVALID_TRANSITION,
+                details={"blocking_install_operation_id": str(row[0])},
+            )
+
+    def _require_qualified_shadow(
+        self, connection: sqlite3.Connection, attempt: Mapping[str, Any]
+    ) -> None:
+        shadow_id = attempt["shadow_data_generation_id"]
+        if shadow_id is None:
+            return
+        request = self._request_for_update(
+            connection, str(attempt["install_operation_id"])
+        )
+        row = connection.execute(
+            """
+            SELECT install_operation_id,release_id,state,lease_state
+              FROM p2_plugin_shadow_generation
+             WHERE shadow_data_generation_id=?
+            """,
+            (shadow_id,),
+        ).fetchone()
+        if (
+            row is None
+            or row[0] != attempt["install_operation_id"]
+            or row[1] != request.get("release_id")
+            or row[2] != "qualified"
+            or row[3] != "released"
+        ):
+            raise LifecycleError(
+                "activation requires its exact immutable qualified shadow",
+                code=ErrorCode.MIGRATION_FAILED,
+            )
+
     def commit_current(
         self,
         install_operation_id: str,
@@ -549,9 +867,9 @@ class LifecycleRepository:
                     "replayed Generation commit does not match durable result",
                     code=ErrorCode.DUPLICATE_REQUEST,
                 )
-            if attempt["state"] not in {"qualified", "pending_apply"}:
+            if attempt["state"] != "pending_apply":
                 raise LifecycleError(
-                    "Generation commit requires a qualified/pending_apply attempt"
+                    "Generation commit requires a pending_apply attempt"
                 )
             if attempt["target_generation_id"] != value["generation_id"]:
                 raise LifecycleError(
@@ -566,17 +884,19 @@ class LifecycleRepository:
                     "candidate Generation is not bound to the install base",
                     code=ErrorCode.INCOMPATIBLE_GENERATION,
                 )
+            self._require_frozen_generation_binding(connection, attempt, value)
+            self._require_qualified_shadow(connection, attempt)
             existing = connection.execute(
                 "SELECT payload_json,payload_hash FROM p2_plugin_generation WHERE generation_id=?",
                 (value["generation_id"],),
             ).fetchone()
             digest = _digest(value)
             if existing is None:
-                connection.execute(
-                    "INSERT INTO p2_plugin_generation(generation_id,payload_json,payload_hash) VALUES(?,?,?)",
-                    (value["generation_id"], _dump(value), digest),
+                raise LifecycleError(
+                    "pending apply lacks its frozen qualified Generation",
+                    code=ErrorCode.INCOMPATIBLE_GENERATION,
                 )
-            elif existing[1] != digest or _load(existing[0]) != value:
+            if existing[1] != digest or _load(existing[0]) != value:
                 raise LifecycleError(
                     "Generation identity is immutable", code=ErrorCode.DUPLICATE_REQUEST
                 )
@@ -599,6 +919,9 @@ class LifecycleRepository:
                 self._put_transition(connection, attempt, superseded)
                 pin_releaser(connection, install_operation_id)
                 return superseded
+            self._require_no_post_activation_competitor(
+                connection, install_operation_id
+            )
             changed = connection.execute(
                 """
                 UPDATE p2_plugin_generation_pointer
@@ -750,6 +1073,11 @@ class LifecycleRepository:
                 return attempt
             if attempt["state"] == "safe_mode":
                 return attempt
+            if (
+                attempt["state"] == "superseded"
+                and attempt["failure_code"] == "rollback_target_superseded"
+            ):
+                return attempt
             if attempt["state"] != "rollback_armed":
                 raise LifecycleError("rollback is not armed")
             pointer = connection.execute(
@@ -757,10 +1085,15 @@ class LifecycleRepository:
             ).fetchone()
             target_id = attempt["target_generation_id"]
             if pointer is None or pointer[0] != target_id:
-                raise LifecycleError(
-                    "rollback target is no longer current",
-                    code=ErrorCode.INCOMPATIBLE_GENERATION,
+                superseded = copy.deepcopy(attempt)
+                superseded.update(
+                    state="superseded",
+                    failure_code="rollback_target_superseded",
+                    updated_at=now,
                 )
+                superseded = self._put_transition(connection, attempt, superseded)
+                pin_releaser(connection, install_operation_id)
+                return superseded
             restore_id = attempt["base_generation_id"] or pointer[1]
             restore_row = (
                 None
@@ -924,6 +1257,21 @@ class LifecycleRepository:
                     "qualify_or_rollback",
                     "target Generation is current",
                 )
+            successor = self.connection.execute(
+                """
+                SELECT 1 FROM p2_plugin_generation
+                 WHERE generation_id=?
+                   AND json_extract(payload_json,'$.parent_generation_id')=?
+                """,
+                (current_id, attempt["target_generation_id"]),
+            ).fetchone()
+            if successor is not None:
+                return ReconciliationDecision(
+                    install_operation_id,
+                    state,
+                    "supersede",
+                    "a durable successor Generation is current",
+                )
             return ReconciliationDecision(
                 install_operation_id,
                 state,
@@ -999,13 +1347,16 @@ def initial_transition(
 
 
 __all__ = [
+    "LIFECYCLE_MIGRATIONS",
     "EventWriter",
     "GenerationGuard",
     "LifecycleError",
+    "LifecycleMigration",
     "LifecycleRepository",
     "PinReleaser",
     "QualificationVerifier",
     "ReconciliationDecision",
+    "TransactionFactory",
     "VerifiedQualification",
     "initial_transition",
     "require_verified_qualification",

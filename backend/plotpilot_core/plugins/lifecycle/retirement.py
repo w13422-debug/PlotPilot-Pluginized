@@ -9,7 +9,7 @@ import sqlite3
 import uuid
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Protocol
 
 from plotpilot_plugin_sdk.canonical import canonical_bytes
 from plotpilot_plugin_sdk.errors import ErrorCode
@@ -31,6 +31,31 @@ class PublicationBarrierDecision:
 PublicationBarrier = Callable[[sqlite3.Connection, str], PublicationBarrierDecision]
 
 
+class RetirementOperationAuthority(Protocol):
+    """P1-owned operation-key ledger composed into the caller transaction."""
+
+    def begin(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        method: str,
+        release_id: str,
+        operation_id: str,
+        request_hash: str,
+    ) -> Mapping[str, Any] | None: ...
+
+    def finish(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        method: str,
+        release_id: str,
+        operation_id: str,
+        request_hash: str,
+        result: Mapping[str, Any],
+    ) -> None: ...
+
+
 def _dump(value: Mapping[str, Any]) -> str:
     return canonical_bytes(dict(value)).decode("utf-8")
 
@@ -45,47 +70,84 @@ def _load(value: str) -> dict[str, Any]:
 class RetirementManager:
     """Linearize new pins against ``installed -> retiring`` CAS."""
 
-    def __init__(self, repository: LifecycleRepository) -> None:
+    def __init__(
+        self,
+        repository: LifecycleRepository,
+        operation_authority: RetirementOperationAuthority | None = None,
+    ) -> None:
         self.repository = repository
-        with repository.transaction() as connection:
-            connection.execute(
-                """
-                CREATE TABLE IF NOT EXISTS p2_plugin_release_retirement(
-                    release_id TEXT PRIMARY KEY,
-                    retirement_json TEXT NOT NULL,
-                    revision INTEGER NOT NULL DEFAULT 0
-                )
-                """
+        self.operation_authority = operation_authority
+
+    def _begin_operation(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        method: str,
+        release_id: str,
+        operation_id: str,
+        request: Mapping[str, Any],
+    ) -> tuple[str, Mapping[str, Any] | None]:
+        if self.operation_authority is None:
+            raise LifecycleError(
+                "P1 retirement operation-key authority is not composed",
+                code=ErrorCode.INVALID_TRANSITION,
             )
-            connection.execute(
-                """
-                CREATE TABLE IF NOT EXISTS p2_plugin_retirement_attention(
-                    release_id TEXT PRIMARY KEY,
-                    reason TEXT NOT NULL,
-                    updated_at TEXT NOT NULL
-                )
-                """
+        request_hash = hashlib.sha256(canonical_bytes(dict(request))).hexdigest()
+        replay = self.operation_authority.begin(
+            connection,
+            method=method,
+            release_id=release_id,
+            operation_id=operation_id,
+            request_hash=request_hash,
+        )
+        return request_hash, replay
+
+    def _finish_operation(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        method: str,
+        release_id: str,
+        operation_id: str,
+        request_hash: str,
+        result: Mapping[str, Any],
+    ) -> None:
+        assert self.operation_authority is not None
+        self.operation_authority.finish(
+            connection,
+            method=method,
+            release_id=release_id,
+            operation_id=operation_id,
+            request_hash=request_hash,
+            result=result,
+        )
+
+    @staticmethod
+    def _publication_decision(
+        decision: object, release_id: str
+    ) -> PublicationBarrierDecision:
+        if (
+            not isinstance(decision, PublicationBarrierDecision)
+            or decision.release_id != release_id
+            or type(decision.allowed) is not bool
+            or not isinstance(decision.blocker_ids, tuple)
+        ):
+            raise LifecycleError(
+                "Candidate/Publication barrier returned an invalid decision",
+                code=ErrorCode.RESULT_CONTRACT_MISMATCH,
             )
-            connection.execute(
-                """
-                CREATE TABLE IF NOT EXISTS p2_plugin_release_pin(
-                    pin_id TEXT PRIMARY KEY,
-                    release_id TEXT NOT NULL,
-                    retire_epoch INTEGER NOT NULL,
-                    pin_json TEXT NOT NULL,
-                    revision INTEGER NOT NULL DEFAULT 0,
-                    FOREIGN KEY(release_id) REFERENCES p2_plugin_release_retirement(release_id)
-                )
-                """
+        blockers = decision.blocker_ids
+        if (
+            any(not isinstance(item, str) or not item for item in blockers)
+            or len(blockers) != len(set(blockers))
+            or blockers != tuple(sorted(blockers, key=lambda item: item.encode("utf-8")))
+            or decision.allowed != (len(blockers) == 0)
+        ):
+            raise LifecycleError(
+                "Candidate/Publication barrier decision is contradictory/noncanonical",
+                code=ErrorCode.RESULT_CONTRACT_MISMATCH,
             )
-            connection.execute(
-                """
-                CREATE UNIQUE INDEX IF NOT EXISTS p2_plugin_release_active_pin_owner
-                    ON p2_plugin_release_pin(release_id,retire_epoch,
-                         json_extract(pin_json,'$.pin_kind'),json_extract(pin_json,'$.owner_id'))
-                 WHERE json_extract(pin_json,'$.released_at') IS NULL
-                """
-            )
+        return decision
 
     def register_installed(
         self, release_id: str, *, at: str | None = None
@@ -389,23 +451,52 @@ class RetirementManager:
         now = at or utc_now()
         with self.repository.transaction() as connection:
             current = self.get(release_id)
-            if current["state"] == "retiring":
-                return current
-            if current["state"] == "retired":
-                return current
+            request = {"expected_epoch": expected_epoch}
+            request_hash, replay = self._begin_operation(
+                connection,
+                method="start_retirement",
+                release_id=release_id,
+                operation_id=operation_id,
+                request=request,
+            )
+            if replay is not None:
+                result = dict(replay)
+                assert_valid("release-retirement/v1", result)
+                if result["release_id"] != release_id:
+                    raise LifecycleError(
+                        "operation replay result is bound to another release",
+                        code=ErrorCode.RESULT_CONTRACT_MISMATCH,
+                    )
+                return result
             if expected_epoch is not None and current["retire_epoch"] != expected_epoch:
                 raise LifecycleError(
                     "release retirement epoch is stale", code=ErrorCode.RELEASE_RETIRING
                 )
+            if current["state"] != "installed":
+                raise LifecycleError(
+                    "release retirement requires installed state",
+                    code=ErrorCode.RELEASE_RETIRING,
+                )
             pins = self.active_pins(release_id)
             generation_barriers = self._generation_barriers(release_id)
-            if pins or generation_barriers:
+            attempts = connection.execute(
+                """
+                SELECT install_operation_id FROM p2_plugin_install_attempt
+                 WHERE json_extract(request_json,'$.release_id')=?
+                   AND json_extract(transition_json,'$.state') NOT IN
+                       ('lkg_promoted','failed','superseded','rolled_back','safe_mode')
+                 ORDER BY install_operation_id
+                """,
+                (release_id,),
+            ).fetchall()
+            if pins or generation_barriers or attempts:
                 raise LifecycleError(
                     "active executable references block retirement",
                     code=ErrorCode.RELEASE_RETIRING,
                     details={
                         "pin_ids": [pin["pin_id"] for pin in pins],
                         "generation_owners": list(generation_barriers),
+                        "attempt_ids": [str(row[0]) for row in attempts],
                     },
                 )
             result = copy.deepcopy(current)
@@ -426,12 +517,21 @@ class RetirementManager:
                     code=ErrorCode.RELEASE_RETIRING,
                 )
             event_writer(connection, release_id, result["retire_epoch"], operation_id)
+            self._finish_operation(
+                connection,
+                method="start_retirement",
+                release_id=release_id,
+                operation_id=operation_id,
+                request_hash=request_hash,
+                result=result,
+            )
             return result
 
     def complete_retirement(
         self,
         release_id: str,
         *,
+        operation_id: str,
         package_remover: PackageRemover,
         publication_barrier: PublicationBarrier,
         expected_epoch: int | None = None,
@@ -440,8 +540,23 @@ class RetirementManager:
         now = at or utc_now()
         with self.repository.transaction() as connection:
             current = self.get(release_id)
-            if current["state"] == "retired":
-                return current
+            request = {"expected_epoch": expected_epoch}
+            request_hash, replay = self._begin_operation(
+                connection,
+                method="complete_retirement",
+                release_id=release_id,
+                operation_id=operation_id,
+                request=request,
+            )
+            if replay is not None:
+                result = dict(replay)
+                assert_valid("release-retirement/v1", result)
+                if result["release_id"] != release_id:
+                    raise LifecycleError(
+                        "operation replay result is bound to another release",
+                        code=ErrorCode.RESULT_CONTRACT_MISMATCH,
+                    )
+                return result
             if current["state"] != "retiring":
                 raise LifecycleError(
                     "release must be retiring before completion",
@@ -458,15 +573,9 @@ class RetirementManager:
                     "active references still block retirement",
                     code=ErrorCode.RELEASE_RETIRING,
                 )
-            decision = publication_barrier(connection, release_id)
-            if (
-                not isinstance(decision, PublicationBarrierDecision)
-                or decision.release_id != release_id
-            ):
-                raise LifecycleError(
-                    "Candidate/Publication barrier returned an invalid release-bound decision",
-                    code=ErrorCode.RESULT_CONTRACT_MISMATCH,
-                )
+            decision = self._publication_decision(
+                publication_barrier(connection, release_id), release_id
+            )
             if not decision.allowed:
                 connection.execute(
                     """
@@ -480,6 +589,14 @@ class RetirementManager:
                         + ",".join(decision.blocker_ids),
                         now,
                     ),
+                )
+                self._finish_operation(
+                    connection,
+                    method="complete_retirement",
+                    release_id=release_id,
+                    operation_id=operation_id,
+                    request_hash=request_hash,
+                    result=current,
                 )
                 return current
             connection.execute(
@@ -501,6 +618,14 @@ class RetirementManager:
                     "release retirement completion CAS failed",
                     code=ErrorCode.RELEASE_RETIRING,
                 )
+            self._finish_operation(
+                connection,
+                method="complete_retirement",
+                release_id=release_id,
+                operation_id=operation_id,
+                request_hash=request_hash,
+                result=result,
+            )
             return result
 
     def attention(self, release_id: str) -> str | None:
@@ -532,12 +657,10 @@ class RetirementManager:
             value = self.get(release_id)
             if value["package_present"]:
                 return
-            decision = publication_verifier(connection, release_id)
-            if (
-                not isinstance(decision, PublicationBarrierDecision)
-                or decision.release_id != release_id
-                or not decision.allowed
-            ):
+            decision = self._publication_decision(
+                publication_verifier(connection, release_id), release_id
+            )
+            if not decision.allowed:
                 raise LifecycleError(
                     "post-delete Publication lacks retained Core-owned evidence",
                     code=ErrorCode.RESULT_CONTRACT_MISMATCH,
@@ -550,4 +673,5 @@ __all__ = [
     "PublicationBarrierDecision",
     "RetirementEventWriter",
     "RetirementManager",
+    "RetirementOperationAuthority",
 ]

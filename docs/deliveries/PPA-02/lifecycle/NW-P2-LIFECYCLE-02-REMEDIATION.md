@@ -5,6 +5,29 @@ Fresh `gpt-5.6-sol/max` pre-commit review froze Findings
 same reviewer must decide closure and this document does not grant central
 acceptance.
 
+## Frozen 2026-08-28 Finding mapping (review status unchanged)
+
+This maps the bounded source response to frozen Manifest SHA-256
+`d73e2755674987b4e14043684560e0e33772e40732d52dd825d452a0212b5288`.
+It does not mark a Finding closed or grant merge eligibility.
+
+| Frozen Finding | Source response | Decisive test |
+|---|---|---|
+| `NW-P2-LC-F-001` | Qualification binds frozen request/member/package/base delta/settings/exact shadow and freezes canonical Generation payload; commit accepts only that payload. | `test_f001_frozen_generation_binding_and_payload_are_immutable` |
+| `NW-P2-LC-F-002` | Qualification releases the Shadow lease atomically; terminal mutations recheck Attempt/release/pin and activation rechecks exact qualified/released row. | `test_f002_qualified_shadow_is_terminal_and_releases_lease` |
+| `NW-P2-LC-F-003` | One post-activation owner fences successor commit; pointer-advanced rollback consumes its token into replay-stable `superseded`. | `test_f003_post_activation_owner_and_rollback_replay_converge` |
+| `NW-P2-LC-F-004` | Only exact `PACKAGE_PUBLISHED` plus `require_release` advances; FAILED/SUPERSEDED terminates without registration. | `test_f004_failed_staging_marker_never_becomes_published` |
+| `NW-P2-LC-F-005` | Tombstones are checked before stage/adopt and all terminal Attempts, including `lkg_promoted`, bypass staging. | `test_f005_retired_release_cannot_be_rematerialized` |
+| `NW-P2-LC-F-006` | Caller Maps were removed; a transaction-local P1 reader supplies plugin-bound revision and receipt; absence stops the slice. | `test_f006_settings_validation_requires_p1_authority` |
+| `NW-P2-LC-F-007` | Stage/begin enforce exact Settings namespace binding; public verifier work is recorded as P0 Delta. | `test_f007_manifest_settings_namespace_is_bound_before_staging` |
+| `NW-P2-LC-F-008` | Installed release pin acquisition is atomic with Attempt creation; retirement also scans every nonterminal frozen request. | `test_f008_selected_attempt_blocks_retirement_without_a_pin` |
+| `NW-P2-LC-F-009` | One semantic validator enforces cross-field postconditions and current commit requires `pending_apply`. | `test_f009_semantic_postconditions_reject_empty_stage_and_direct_commit` |
+| `NW-P2-LC-F-010` | P1 operation authority binds method/release/operation/request hash/result; P2 adds no second ledger. | `test_f010_retirement_replay_is_operation_and_payload_bound` |
+| `NW-P2-LC-F-011` | Full public operation ID remains durable while a SHA-256-derived Windows-safe component addresses staging. | `test_f011_public_operation_id_uses_stable_hashed_path` |
+| `NW-P2-LC-F-012` | Constructors execute no DDL; a hashed migration bundle and injectable shared transaction factory replace unsafe composition. | `test_f012_foreign_transaction_is_rejected_and_constructors_do_not_ddl` |
+| `NW-P2-LC-F-013` | Decision invariants are validated before any package remover call. | `test_f013_contradictory_publication_barrier_never_calls_remover` |
+| `NW-P2-LC-F-014` | One canonical ASCII decimal parser rejects Python-only indices and unauthorized `-` append. | `test_f014_array_indices_are_canonical_and_append_is_not_authorized` |
+
 | Finding | Remediation evidence |
 |---|---|
 | LC-001 | Closed transition edge/field allowlists; specialized fail/recovery paths; activation cannot jump to failure. |

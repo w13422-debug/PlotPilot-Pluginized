@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import copy
+import hashlib
 import sqlite3
 import threading
 
@@ -11,6 +13,11 @@ from plotpilot_core.plugins.lifecycle import (
     initial_transition,
 )
 from plotpilot_plugin_sdk.errors import ErrorCode
+
+
+def _repository(connection: sqlite3.Connection) -> LifecycleRepository:
+    LifecycleRepository.initialize_standalone_schema_for_tests(connection)
+    return LifecycleRepository(connection)
 
 
 def _write_event(*_args) -> None:
@@ -35,16 +42,40 @@ def _release_pins(*_args) -> None:
 
 
 def _generation(generation_id: str, base: str | None) -> dict:
+    release_id = hashlib.sha256(f"release:{generation_id}".encode()).hexdigest()
+    package_hash = hashlib.sha256(f"package:{generation_id}".encode()).hexdigest()
     return {
         "schema": "plugin-generation/v1",
         "generation_id": generation_id,
         "core_api_version": "1.2.0",
-        "members": [],
+        "members": [
+            {
+                "plugin_id": "com.plotpilot.test.lifecycle",
+                "release_id": release_id,
+                "package_hash": package_hash,
+                "data_generation_id": None,
+                "ui_bundle_hash": None,
+                "global_settings_revision_id": None,
+                "settings_schema_hash": None,
+                "data_bundle_asset_id": None,
+            }
+        ],
         "created_reason": "test",
         "created_at": "2026-08-28T01:00:00Z",
         "health_result_asset_id": f"asset-health-{generation_id}",
         "parent_generation_id": base,
         "base_generation_id": base,
+    }
+
+
+def _bound_request(target: dict, **extra) -> dict:
+    member = target["members"][0]
+    return {
+        **extra,
+        "plugin_id": member["plugin_id"],
+        "release_id": member["release_id"],
+        "package_hash": member["package_hash"],
+        "settings_schema_hash": member["settings_schema_hash"],
     }
 
 
@@ -62,11 +93,12 @@ def _qualified(
             target_generation_id=target["generation_id"],
             created_at="2026-08-28T01:00:00Z",
         ),
-        request={
-            "operation_id": operation_id,
-            "base": base,
-            "target": target["generation_id"],
-        },
+        request=_bound_request(
+            target,
+            operation_id=operation_id,
+            base=base,
+            target_generation_id=target["generation_id"],
+        ),
     )
     for expected, next_state, updates in (
         ("selected", "staged", {"package_store_status": "staged"}),
@@ -132,7 +164,7 @@ def _install_lkg(
 def test_restart_reconciliation_fences_execution_and_preserves_intent(tmp_path) -> None:
     path = tmp_path / "lifecycle.sqlite"
     first_connection = sqlite3.connect(path, isolation_level=None)
-    first = LifecycleRepository(first_connection)
+    first = _repository(first_connection)
     value = initial_transition(
         "install-crash",
         base_generation_id=None,
@@ -152,7 +184,7 @@ def test_restart_reconciliation_fences_execution_and_preserves_intent(tmp_path) 
     first_connection.close()
 
     second_connection = sqlite3.connect(path, isolation_level=None)
-    recovered = LifecycleRepository(second_connection)
+    recovered = _repository(second_connection)
     assert (
         recovered.create_or_recover_attempt(value, request=request)["state"] == "staged"
     )
@@ -170,7 +202,7 @@ def test_restart_reconciliation_fences_execution_and_preserves_intent(tmp_path) 
 def test_multiple_reconciliation_fences_resolve_independently_without_safe_mode() -> (
     None
 ):
-    repository = LifecycleRepository(sqlite3.connect(":memory:", isolation_level=None))
+    repository = _repository(sqlite3.connect(":memory:", isolation_level=None))
     for operation_id in ("install-a", "install-b"):
         repository.create_or_recover_attempt(
             initial_transition(
@@ -215,7 +247,7 @@ def test_multiple_reconciliation_fences_resolve_independently_without_safe_mode(
 
 def test_concurrent_base_cas_supersedes_loser_and_event_is_atomic() -> None:
     connection = sqlite3.connect(":memory:", isolation_level=None)
-    repository = LifecycleRepository(connection)
+    repository = _repository(connection)
     base = _generation("generation-base", None)
     _install_lkg(repository, "install-base", base)
     left = _generation("generation-left", "generation-base")
@@ -242,6 +274,18 @@ def test_concurrent_base_cas_supersedes_loser_and_event_is_atomic() -> None:
     assert repository.generation_state().current["generation_id"] == "generation-left"
     assert events == [("generation-base", "generation-left", "install-left")]
 
+    repository.mark_lkg_pending("install-left")
+    repository.promote_lkg(
+        "install-left",
+        evidence={
+            "qualification_id": "qualification-left",
+            "generation_id": "generation-left",
+            "health_result_asset_id": left["health_result_asset_id"],
+        },
+        qualification_verifier=_verify_qualification,
+        pin_releaser=_release_pins,
+    )
+
     # A failing P1 event writer rolls back both pointer and transition.
     third = _generation("generation-third", "generation-left")
     _qualified(repository, "install-third", third)
@@ -261,7 +305,7 @@ def test_concurrent_base_cas_supersedes_loser_and_event_is_atomic() -> None:
 
 def test_rollback_token_is_durable_and_consumed_once() -> None:
     connection = sqlite3.connect(":memory:", isolation_level=None)
-    repository = LifecycleRepository(connection)
+    repository = _repository(connection)
     base = _generation("generation-base", None)
     _install_lkg(repository, "install-base", base)
     failed = _generation("generation-failed", "generation-base")
@@ -306,7 +350,7 @@ def test_rollback_token_is_durable_and_consumed_once() -> None:
 
 def test_no_rollback_target_enters_persistent_safe_mode() -> None:
     connection = sqlite3.connect(":memory:", isolation_level=None)
-    repository = LifecycleRepository(connection)
+    repository = _repository(connection)
     first = _generation("generation-first", None)
     _qualified(repository, "install-first", first)
     repository.commit_current(
@@ -331,7 +375,7 @@ def test_no_rollback_target_enters_persistent_safe_mode() -> None:
 
 
 def test_rollback_refuses_unexecutable_base_and_emits_no_event() -> None:
-    repository = LifecycleRepository(sqlite3.connect(":memory:", isolation_level=None))
+    repository = _repository(sqlite3.connect(":memory:", isolation_level=None))
     base = _generation("generation-base", None)
     _install_lkg(repository, "install-base", base)
     failed = _generation("generation-failed", "generation-base")
@@ -383,7 +427,7 @@ def test_rollback_refuses_unexecutable_base_and_emits_no_event() -> None:
 def test_each_nonterminal_crash_window_requires_reconciliation(
     crash_state: str,
 ) -> None:
-    repository = LifecycleRepository(sqlite3.connect(":memory:", isolation_level=None))
+    repository = _repository(sqlite3.connect(":memory:", isolation_level=None))
     target = _generation("generation-crash", None)
     repository.create_or_recover_attempt(
         initial_transition(
@@ -393,7 +437,7 @@ def test_each_nonterminal_crash_window_requires_reconciliation(
             target_generation_id=target["generation_id"],
             created_at="2026-08-28T01:00:00Z",
         ),
-        request={"window": crash_state},
+        request=_bound_request(target, window=crash_state),
     )
     steps = [
         ("selected", "staged", {"package_store_status": "staged"}),
@@ -451,7 +495,7 @@ def test_each_nonterminal_crash_window_requires_reconciliation(
 def test_two_connections_linearize_generation_commit(tmp_path) -> None:
     database = tmp_path / "concurrent.sqlite"
     setup_connection = sqlite3.connect(database, isolation_level=None)
-    setup = LifecycleRepository(setup_connection)
+    setup = _repository(setup_connection)
     base = _generation("generation-base", None)
     _install_lkg(setup, "install-base", base)
     left = _generation("generation-left", "generation-base")
@@ -468,7 +512,7 @@ def test_two_connections_linearize_generation_commit(tmp_path) -> None:
     def commit(operation_id: str, generation: dict) -> None:
         connection = sqlite3.connect(database, isolation_level=None, timeout=5)
         try:
-            repository = LifecycleRepository(connection)
+            repository = _repository(connection)
             barrier.wait(timeout=5)
             result = repository.commit_current(
                 operation_id,
@@ -497,7 +541,7 @@ def test_two_connections_linearize_generation_commit(tmp_path) -> None:
     assert sorted(results) == ["current_committed", "superseded"]
     final_connection = sqlite3.connect(database, isolation_level=None)
     final = (
-        LifecycleRepository(final_connection)
+        _repository(final_connection)
         .generation_state()
         .current["generation_id"]
     )
@@ -506,7 +550,7 @@ def test_two_connections_linearize_generation_commit(tmp_path) -> None:
 
 
 def test_transition_allowlist_freezes_install_identity_and_recovery_fields() -> None:
-    repository = LifecycleRepository(sqlite3.connect(":memory:", isolation_level=None))
+    repository = _repository(sqlite3.connect(":memory:", isolation_level=None))
     value = initial_transition(
         "install-frozen",
         base_generation_id="generation-base",
@@ -533,7 +577,7 @@ def test_transition_allowlist_freezes_install_identity_and_recovery_fields() -> 
 
 
 def test_activated_attempt_cannot_jump_to_failure_terminal() -> None:
-    repository = LifecycleRepository(sqlite3.connect(":memory:", isolation_level=None))
+    repository = _repository(sqlite3.connect(":memory:", isolation_level=None))
     target = _generation("generation-activated", None)
     _qualified(repository, "install-activated", target)
     repository.commit_current(
@@ -554,7 +598,7 @@ def test_activated_attempt_cannot_jump_to_failure_terminal() -> None:
 
 
 def test_generic_transition_api_cannot_cross_authority_edges() -> None:
-    repository = LifecycleRepository(sqlite3.connect(":memory:", isolation_level=None))
+    repository = _repository(sqlite3.connect(":memory:", isolation_level=None))
     target = _generation("generation-authority", None)
     repository.create_or_recover_attempt(
         initial_transition(
@@ -563,7 +607,7 @@ def test_generic_transition_api_cannot_cross_authority_edges() -> None:
             base_lkg_generation_id=None,
             target_generation_id=target["generation_id"],
         ),
-        request={"operation": "authority"},
+        request=_bound_request(target, operation="authority"),
     )
     for expected, next_state, updates in (
         ("selected", "staged", {"package_store_status": "staged"}),
@@ -626,3 +670,163 @@ def test_generic_transition_api_cannot_cross_authority_edges() -> None:
         )
     assert repository.generation_state().lkg is None
     assert repository.get_attempt("install-authority")["qualification_id"] is None
+
+
+def test_f001_frozen_generation_binding_and_payload_are_immutable() -> None:
+    repository = _repository(sqlite3.connect(":memory:", isolation_level=None))
+    target = _generation("generation-f001", None)
+    repository.create_or_recover_attempt(
+        initial_transition(
+            "install-f001",
+            base_generation_id=None,
+            base_lkg_generation_id=None,
+            target_generation_id=target["generation_id"],
+        ),
+        request=_bound_request(target),
+    )
+    for expected, next_state, updates in (
+        ("selected", "staged", {"package_store_status": "staged"}),
+        ("staged", "package_published", {"package_store_status": "published"}),
+        ("package_published", "env_prepared", {}),
+        ("env_prepared", "shadow_prepared", {}),
+        ("shadow_prepared", "migrated", {}),
+        ("migrated", "settings_validated", {}),
+    ):
+        repository.advance_attempt(
+            "install-f001",
+            expected_state=expected,
+            target_state=next_state,
+            updates=updates,
+        )
+    unrelated = copy.deepcopy(target)
+    unrelated["members"][0]["package_hash"] = "f" * 64
+    with pytest.raises(LifecycleError):
+        repository.qualify_attempt(
+            "install-f001",
+            generation=unrelated,
+            evidence={
+                "qualification_id": "qualification-f001-bad",
+                "generation_id": target["generation_id"],
+                "health_result_asset_id": target["health_result_asset_id"],
+            },
+            qualification_verifier=_verify_qualification,
+            execution_guard=_allow_generation,
+        )
+    assert repository.get_attempt("install-f001")["state"] == "settings_validated"
+    repository.qualify_attempt(
+        "install-f001",
+        generation=target,
+        evidence={
+            "qualification_id": "qualification-f001",
+            "generation_id": target["generation_id"],
+            "health_result_asset_id": target["health_result_asset_id"],
+        },
+        qualification_verifier=_verify_qualification,
+        execution_guard=_allow_generation,
+    )
+    repository.advance_attempt(
+        "install-f001", expected_state="qualified", target_state="pending_apply"
+    )
+    swapped = copy.deepcopy(target)
+    swapped["created_reason"] = "payload swap"
+    with pytest.raises(LifecycleError):
+        repository.commit_current(
+            "install-f001",
+            swapped,
+            event_writer=_write_event,
+            execution_guard=_allow_generation,
+            pin_releaser=_release_pins,
+        )
+    assert repository.get_generation(target["generation_id"]) == target
+    assert repository.generation_state().current is None
+
+
+def test_f003_post_activation_owner_and_rollback_replay_converge() -> None:
+    repository = _repository(sqlite3.connect(":memory:", isolation_level=None))
+    base = _generation("generation-f003-base", None)
+    _install_lkg(repository, "install-f003-base", base)
+    first = _generation("generation-f003-first", base["generation_id"])
+    _qualified(repository, "install-f003-first", first)
+    repository.commit_current(
+        "install-f003-first",
+        first,
+        event_writer=_write_event,
+        execution_guard=_allow_generation,
+        pin_releaser=_release_pins,
+    )
+    successor = _generation("generation-f003-successor", first["generation_id"])
+    _qualified(repository, "install-f003-successor", successor)
+    with pytest.raises(LifecycleError):
+        repository.commit_current(
+            "install-f003-successor",
+            successor,
+            event_writer=_write_event,
+            execution_guard=_allow_generation,
+            pin_releaser=_release_pins,
+        )
+    token = repository.arm_rollback("install-f003-first", token="rollback-f003")
+    repository.put_generation(successor)
+    repository.connection.execute(
+        "UPDATE p2_plugin_generation_pointer SET current_generation_id=? WHERE singleton=1",
+        (successor["generation_id"],),
+    )
+    first_result = repository.complete_rollback(
+        "install-f003-first",
+        token=token,
+        event_writer=_write_event,
+        execution_guard=_allow_generation,
+        pin_releaser=_release_pins,
+    )
+    second_result = repository.complete_rollback(
+        "install-f003-first",
+        token=token,
+        event_writer=_write_event,
+        execution_guard=_allow_generation,
+        pin_releaser=_release_pins,
+    )
+    assert first_result == second_result
+    assert first_result["state"] == "superseded"
+    assert repository.reconcile_attempt(
+        "install-f003-first", package_present=True
+    ).action == "none"
+
+
+def test_f009_semantic_postconditions_reject_empty_stage_and_direct_commit() -> None:
+    repository = _repository(sqlite3.connect(":memory:", isolation_level=None))
+    target = _generation("generation-f009", None)
+    value = initial_transition(
+        "install-f009",
+        base_generation_id=None,
+        base_lkg_generation_id=None,
+        target_generation_id=target["generation_id"],
+    )
+    repository.create_or_recover_attempt(value, request=_bound_request(target))
+    with pytest.raises(LifecycleError):
+        repository.advance_attempt(
+            "install-f009", expected_state="selected", target_state="staged"
+        )
+    assert repository.get_attempt("install-f009") == value
+
+
+def test_f012_foreign_transaction_is_rejected_and_constructors_do_not_ddl() -> None:
+    empty = sqlite3.connect(":memory:", isolation_level=None)
+    with pytest.raises(LifecycleError):
+        LifecycleRepository(empty)
+    connection = sqlite3.connect(":memory:", isolation_level=None)
+    LifecycleRepository.initialize_standalone_schema_for_tests(connection)
+    repository = LifecycleRepository(connection)
+    connection.execute("BEGIN IMMEDIATE")
+    try:
+        with pytest.raises(LifecycleError):
+            repository.create_or_recover_attempt(
+                initial_transition(
+                    "install-f012",
+                    base_generation_id=None,
+                    base_lkg_generation_id=None,
+                    target_generation_id="generation-f012",
+                ),
+                request={"operation": "foreign"},
+            )
+    finally:
+        connection.rollback()
+    assert repository.list_attempts() == ()

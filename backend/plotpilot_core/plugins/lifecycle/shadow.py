@@ -70,25 +70,6 @@ class ShadowGenerationManager:
     ) -> None:
         self.repository = repository
         self.install_pin_guard = install_pin_guard
-        with repository.transaction() as connection:
-            connection.execute(
-                """
-                CREATE TABLE IF NOT EXISTS p2_plugin_shadow_generation(
-                    shadow_data_generation_id TEXT PRIMARY KEY,
-                    install_operation_id TEXT NOT NULL UNIQUE,
-                    release_id TEXT NOT NULL,
-                    state TEXT NOT NULL,
-                    db_lease_id TEXT NOT NULL,
-                    db_lease_epoch INTEGER NOT NULL,
-                    owner_instance_id TEXT NOT NULL,
-                    issued_at TEXT NOT NULL,
-                    expires_at TEXT NOT NULL,
-                    renewed_at TEXT NOT NULL,
-                    lease_state TEXT NOT NULL,
-                    revision INTEGER NOT NULL DEFAULT 0
-                )
-                """
-            )
 
     @staticmethod
     def _row(row: sqlite3.Row | tuple[object, ...]) -> ShadowLease:
@@ -138,6 +119,29 @@ class ShadowGenerationManager:
         instant: str,
     ) -> ShadowLease:
         current = self._get(connection, shadow_data_generation_id)
+        if current.state in {"qualified", "failed", "retired"}:
+            raise LifecycleError(
+                "terminal shadow Generation is immutable",
+                code=ErrorCode.INVALID_TRANSITION,
+            )
+        attempt = self.repository._attempt_for_update(
+            connection, current.install_operation_id
+        )
+        request = self.repository._request_for_update(
+            connection, current.install_operation_id
+        )
+        if (
+            attempt["shadow_data_generation_id"] != shadow_data_generation_id
+            or attempt["state"] not in {"shadow_prepared", "migrated"}
+            or request.get("release_id") != current.release_id
+        ):
+            raise LifecycleError(
+                "shadow mutation is not bound to its active install Attempt",
+                code=ErrorCode.INVALID_TRANSITION,
+            )
+        self.install_pin_guard(
+            connection, current.release_id, current.install_operation_id
+        )
         if (
             current.lease_state != "active"
             or current.db_lease_id != db_lease_id
@@ -255,6 +259,28 @@ class ShadowGenerationManager:
         now_dt = _parse_time(instant)
         with self.repository.transaction() as connection:
             current = self._get(connection, shadow_data_generation_id)
+            if current.state in {"qualified", "failed", "retired"}:
+                raise LifecycleError(
+                    "terminal shadow Generation cannot acquire a lease",
+                    code=ErrorCode.INVALID_TRANSITION,
+                )
+            attempt = self.repository._attempt_for_update(
+                connection, current.install_operation_id
+            )
+            request = self.repository._request_for_update(
+                connection, current.install_operation_id
+            )
+            if (
+                attempt["shadow_data_generation_id"] != shadow_data_generation_id
+                or attempt["state"] not in {"shadow_prepared", "migrated"}
+                or request.get("release_id") != current.release_id
+            ):
+                raise LifecycleError(
+                    "shadow lease is not bound to its active install Attempt"
+                )
+            self.install_pin_guard(
+                connection, current.release_id, current.install_operation_id
+            )
             if (
                 current.lease_state == "active"
                 and _parse_time(current.expires_at) > now_dt
@@ -397,15 +423,17 @@ class ShadowGenerationManager:
                     f"invalid shadow migration transition {current.state} -> {target_state}",
                     code=ErrorCode.MIGRATION_FAILED,
                 )
+            terminal_lease = "released" if target_state == "qualified" else "active"
             changed = connection.execute(
                 """
-                UPDATE p2_plugin_shadow_generation SET state=?,revision=revision+1
+                UPDATE p2_plugin_shadow_generation SET state=?,lease_state=?,revision=revision+1
                  WHERE shadow_data_generation_id=? AND state=? AND db_lease_id=?
                    AND db_lease_epoch=? AND owner_instance_id=? AND lease_state='active'
                    AND expires_at=? AND julianday(expires_at)>julianday(?)
                 """,
                 (
                     target_state,
+                    terminal_lease,
                     shadow_data_generation_id,
                     expected_state,
                     db_lease_id,
@@ -484,6 +512,11 @@ class ShadowGenerationManager:
         instant = now or utc_now()
         with self.repository.transaction() as connection:
             current = self._get(connection, shadow_data_generation_id)
+            if current.state in {"qualified", "failed", "retired"}:
+                raise LifecycleError(
+                    "terminal shadow Generation cannot release a lease",
+                    code=ErrorCode.INVALID_TRANSITION,
+                )
             if current.lease_state == "released":
                 if (
                     current.db_lease_id == db_lease_id
@@ -526,9 +559,9 @@ class ShadowGenerationManager:
 
     def require_qualified(self, shadow_data_generation_id: str) -> ShadowLease:
         value = self.get(shadow_data_generation_id)
-        if value.state != "qualified":
+        if value.state != "qualified" or value.lease_state != "released":
             raise LifecycleError(
-                "shadow data generation has not passed apply/verify/health",
+                "shadow data generation is not qualified and immutable",
                 code=ErrorCode.MIGRATION_FAILED,
             )
         return value

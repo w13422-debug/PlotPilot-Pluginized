@@ -1,0 +1,15 @@
+command: git diff --check
+warning: in the working copy of 'backend/plotpilot_core/plugins/install.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/plotpilot_core/plugins/lifecycle/__init__.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/plotpilot_core/plugins/lifecycle/coordinator.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/plotpilot_core/plugins/lifecycle/repository.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/plotpilot_core/plugins/lifecycle/retirement.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/plotpilot_core/plugins/lifecycle/shadow.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/plotpilot_core/plugins/settings.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'coordination/PPA-02/lifecycle/P1-LIFECYCLE-AUTHORITY-PORTS-DELTA.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/deliveries/PPA-02/lifecycle/NW-P2-LIFECYCLE-02-REMEDIATION.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/deliveries/PPA-02/lifecycle/NW-P2-LIFECYCLE-02.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p2-plugin-platform/lifecycle/test_install_and_retirement.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p2-plugin-platform/lifecycle/test_repository_reconciliation.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p2-plugin-platform/lifecycle/test_shadow_plan_settings.py', LF will be replaced by CRLF the next time Git touches it
+exit_code: 0

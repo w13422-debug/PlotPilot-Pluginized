@@ -1,0 +1,16 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-NW-P2-Lifecycle
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 48 items
+
+tests\p2-plugin-platform\lifecycle\test_install_and_retirement.py ...... [ 12%]
+.....                                                                    [ 22%]
+tests\p2-plugin-platform\lifecycle\test_repository_reconciliation.py ... [ 29%]
+......................                                                   [ 75%]
+tests\p2-plugin-platform\lifecycle\test_shadow_plan_settings.py ........ [ 91%]
+....                                                                     [100%]
+
+============================= 48 passed in 1.17s ==============================

@@ -118,8 +118,15 @@ create a second pointer.  See:
 
 `coordination/PPA-02/lifecycle/P0-PLAN-SWITCH-CAS-DELTA.md`
 
-P1 must also supply the existing-contract, host-internal Event,
-qualification-authority and Candidate/Publication barrier composition ports.
+The published manifest verifier also lacks the Settings namespace/plugin
+cross-field equality.  The P2 install path is locally fail-closed, while the
+public verifier/golden slice remains stopped under:
+
+`coordination/PPA-02/lifecycle/P0-MANIFEST-SETTINGS-NAMESPACE-DELTA.md`
+
+P1 must also supply host-internal Event, qualification, Settings
+revision/receipt, retirement operation-key, shared transaction/migration and
+Candidate/Publication barrier composition ports.
 Physical retirement completion and the affected production authority calls
 remain stopped until that integration exists:
 
@@ -145,6 +152,13 @@ Owned tests cover:
 - full target/base member pins and epoch recheck;
 - recoverable Attempt pin barrier, authoritative retirement attention gate,
   deletion-crash replay and post-delete Publication evidence.
+- frozen request/member/package/shadow/settings binding and qualified payload
+  immutability;
+- terminal Shadow immutability, post-activation owner serialization and
+  replay-stable pointer-advanced rollback;
+- failed marker, retired replay and recoverable Attempt retirement barriers;
+- P1 Settings/operation/transaction fail-closed seams, canonical publication
+  decisions, public operation-ID path mapping and canonical array indices.
 
 Raw final validation outputs are stored under `evidence/raw/` beside this
 file.  This source node does not grant central PASS or merge eligibility.
