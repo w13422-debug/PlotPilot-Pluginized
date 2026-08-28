@@ -1,0 +1,15 @@
+backend/plotpilot_core/supervisor/supervisor.py
+coordination/PPA-02/supervisor/f003-closure-evidence-v1.json
+docs/deliveries/PPA-02/supervisor/evidence/f003-raw/changed-paths.txt
+docs/deliveries/PPA-02/supervisor/evidence/f003-raw/compileall.txt
+docs/deliveries/PPA-02/supervisor/evidence/f003-raw/contract-manifest-check.txt
+docs/deliveries/PPA-02/supervisor/evidence/f003-raw/focused-pytest.txt
+docs/deliveries/PPA-02/supervisor/evidence/f003-raw/full-p2-pytest.txt
+docs/deliveries/PPA-02/supervisor/evidence/f003-raw/git-diff-cached-check.txt
+docs/deliveries/PPA-02/supervisor/evidence/f003-raw/git-diff-check.txt
+docs/deliveries/PPA-02/supervisor/evidence/f003-raw/ruff.txt
+docs/deliveries/PPA-02/supervisor/evidence/f003-raw/targeted-pytest.txt
+docs/deliveries/PPA-02/supervisor/evidence/f003-raw/validation-exit-codes.json
+docs/deliveries/PPA-02/supervisor/evidence/f003-raw/write-set-audit.json
+docs/deliveries/PPA-02/supervisor/f003-minimal-structural-fix-v1.md
+tests/p2-plugin-platform/supervisor/test_lifecycle.py

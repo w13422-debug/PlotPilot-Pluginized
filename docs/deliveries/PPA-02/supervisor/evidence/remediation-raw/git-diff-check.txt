@@ -1,0 +1,14 @@
+warning: in the working copy of 'backend/plotpilot_core/supervisor/lookup.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/plotpilot_core/supervisor/models.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/plotpilot_core/supervisor/process.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/plotpilot_core/supervisor/rpc.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/plotpilot_core/supervisor/supervisor.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/plotpilot_core/supervisor/venv.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'coordination/PPA-02/supervisor/p0-composition-delta-v1.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p2-plugin-platform/supervisor/conftest.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p2-plugin-platform/supervisor/test_lifecycle.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p2-plugin-platform/supervisor/test_lookup.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p2-plugin-platform/supervisor/test_process.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p2-plugin-platform/supervisor/test_rpc.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p2-plugin-platform/supervisor/test_venv.py', LF will be replaced by CRLF the next time Git touches it
+EXIT_CODE=0

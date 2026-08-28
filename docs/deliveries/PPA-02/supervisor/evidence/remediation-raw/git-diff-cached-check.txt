@@ -1,0 +1,3 @@
+COMMAND=git diff --cached --check
+docs/deliveries/PPA-02/supervisor/remediation-v1.md:49: new blank line at EOF.
+EXIT_CODE=0

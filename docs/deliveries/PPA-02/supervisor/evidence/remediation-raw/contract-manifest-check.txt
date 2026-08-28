@@ -1,0 +1,2 @@
+contract manifest is deterministic (137 files)
+EXIT_CODE=0
