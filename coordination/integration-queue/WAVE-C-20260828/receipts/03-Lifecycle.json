@@ -1,0 +1,42 @@
+{
+  "all_staged_blobs_equal_source": true,
+  "batch_id": "Lifecycle",
+  "donor_push": "DISABLED",
+  "first_parent": "8e8ac56dadbdfd1f73c94fc34ad447a36f8cf9d0",
+  "fresh_h_c_acceptance": "pending",
+  "merge_commit": "41b1935fd4ecdc88d08b53ff04c0007fc982541f",
+  "merge_method": "git merge --no-ff --no-commit <exact-source>, then tested and committed",
+  "merge_tree": "f5c322dd0f097b7de4cda1f0b60fce3c9f10128e",
+  "schema": "wave-c-merge-receipt/v1",
+  "second_parent": "13e6b29a451f535d69bd7621d65f7e9c41511231",
+  "source_branch": "codex/nw-p2-lifecycle-02",
+  "source_delta_path_count": 39,
+  "source_head": "13e6b29a451f535d69bd7621d65f7e9c41511231",
+  "source_review": {
+    "candidate_locator": {
+      "bytes": 1664,
+      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/closures/Lifecycle-sol-closure.json",
+      "sha256": "90fb06a08b3edc89779489b8921324b0d86fc0eef93157bd7320598ea7d87908"
+    },
+    "merge_eligible": true,
+    "sha256": "90fb06a08b3edc89779489b8921324b0d86fc0eef93157bd7320598ea7d87908",
+    "source_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\nw-p2-lifecycle-f012-sol-closure-v1.json",
+    "verdict": "PASS"
+  },
+  "source_tree": "db73221517113e3d4b506224f7c7db72b89cfdb2",
+  "staged_path_count": 39,
+  "status": "source_integrated_pending_fresh_sol",
+  "validation_raw": {
+    "bytes": 1706,
+    "path": "coordination/integration-queue/WAVE-C-20260828/evidence/raw/03-Lifecycle-validation.json",
+    "sha256": "ab9363c975bf9abec77c5ef163314a1c7e36312e7f397926380d40618714913e"
+  },
+  "validation_summary": [
+    "49 passed in 1.27s",
+    "manifest deterministic 141 files",
+    "compileall exit 0",
+    "staged/unstaged diff checks exit 0"
+  ],
+  "wave": "C",
+  "worktree_clean_after_commit": true
+}

@@ -1,0 +1,44 @@
+{
+  "all_staged_blobs_equal_source": true,
+  "batch_id": "ETX",
+  "donor_push": "DISABLED",
+  "first_parent": "53c54b237bccfacdd6ec09a304676e83e3aa5a45",
+  "fresh_h_c_acceptance": "pending",
+  "harness_event": "ETX-LOGGER-CP936-001; authoritative merge was amended after the complete UTF-8-safe gate with identical parents/tree/content",
+  "merge_commit": "064cc8657c32a92b1af042a727897a03231ab800",
+  "merge_method": "git merge --no-ff --no-commit <exact-source>, then tested and committed",
+  "merge_tree": "d53d3286eebbb3c7baea52bc44b715e9703c7706",
+  "schema": "wave-c-merge-receipt/v1",
+  "second_parent": "7dd091145c4545f5f81b6c132a389e3f398fc429",
+  "source_branch": "codex/nw-p1-execution-tx-01",
+  "source_delta_path_count": 32,
+  "source_head": "7dd091145c4545f5f81b6c132a389e3f398fc429",
+  "source_review": {
+    "candidate_locator": {
+      "bytes": 2130,
+      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/closures/ETX-sol-closure.json",
+      "sha256": "513336f5240d0e2a1abfa40177b39f039640ff60a496b2ac0d83738e5f2f4414"
+    },
+    "merge_eligible": true,
+    "sha256": "513336f5240d0e2a1abfa40177b39f039640ff60a496b2ac0d83738e5f2f4414",
+    "source_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\nw-p1-execution-tx-f007-f015-sol-closure-v1.json",
+    "verdict": "PASS"
+  },
+  "source_tree": "30c9e175ddf4de344ffcff20e8a4892c35d83d9a",
+  "staged_path_count": 32,
+  "status": "source_integrated_pending_fresh_sol",
+  "validation_raw": {
+    "bytes": 4310,
+    "path": "coordination/integration-queue/WAVE-C-20260828/evidence/raw/01-ETX-validation.json",
+    "sha256": "451bfd3e70bac2fc25fce465311920271de159ed090bc905e76098f480153b0b"
+  },
+  "validation_summary": [
+    "78 passed in 3.27s",
+    "85 passed in 3.88s",
+    "39 passed in 0.69s",
+    "compileall exit 0",
+    "diff check exit 0"
+  ],
+  "wave": "C",
+  "worktree_clean_after_commit": true
+}

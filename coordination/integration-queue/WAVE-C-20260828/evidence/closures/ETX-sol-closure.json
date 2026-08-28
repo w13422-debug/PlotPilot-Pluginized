@@ -1,0 +1,46 @@
+{
+  "schema": "plotpilot-sol-targeted-closure/v1",
+  "node_id": "NW-P1-EXECUTION-TX-01",
+  "reviewer": {
+    "agent_id": "01a045e4-e438-73c2-98e0-a11d81d20ea1",
+    "model": "gpt-5.6-sol",
+    "reasoning_effort": "max",
+    "read_only": true
+  },
+  "candidate": {
+    "parent": "5319b7938e942b12d91b2cfc0b7f2ba3af7e4987",
+    "head": "7dd091145c4545f5f81b6c132a389e3f398fc429",
+    "tree": "30c9e175ddf4de344ffcff20e8a4892c35d83d9a",
+    "commit_count": 1,
+    "changed_path_count": 12,
+    "write_set_pass": true,
+    "worktree_clean": true,
+    "diff_check": "PASS",
+    "donor_push": "DISABLED"
+  },
+  "scope": ["NW-P1-ETX-F-007", "NW-P1-ETX-F-015"],
+  "findings": [
+    {
+      "id": "NW-P1-ETX-F-007",
+      "status": "CLOSED",
+      "evidence": "Before terminal materialization the transaction validates Skill-chain Asset identity/hash and all anchors, requires an authoritative receipt reader, and calls the existing verify_skill_chain semantic verifier for receipt closure and canonical chain_hash. A sole wrong-chain-hash drift returns RESULT_CONTRACT_MISMATCH with unchanged authority state."
+    },
+    {
+      "id": "NW-P1-ETX-F-015",
+      "status": "CLOSED",
+      "evidence": "Complete replay dispatches by persisted snapshot profile. Full RunSnapshot uses verify_snapshot; broker-child binding validates exact Snapshot bytes, creation/record/invoke authority and reuses verify_child_snapshot_binding. Exact child replay returns equal result and byte-equivalent frame with unchanged SQLite serialization and Asset set, while identity/receipt/package drift remains fail-closed."
+    }
+  ],
+  "validation": [
+    {"command": "committed focused / ETX / P1 / P3-P3B", "result": "2 / 78 / 85 / 39 passed", "exit_code": 0},
+    {"command": "reviewer focused closure run", "result": "5 passed in 0.51s", "exit_code": 0},
+    {"command": "compileall / git diff --check", "result": "PASS", "exit_code": 0}
+  ],
+  "all_frozen_findings_closed": true,
+  "verdict": "PASS",
+  "merge_eligible": true,
+  "open_finding_count": 0,
+  "new_findings": [],
+  "serialization_owner": "controller",
+  "review_completed_at": "2026-08-28"
+}

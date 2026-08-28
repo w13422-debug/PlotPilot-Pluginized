@@ -1,0 +1,44 @@
+{
+  "all_staged_blobs_equal_source": true,
+  "batch_id": "Supervisor",
+  "donor_push": "DISABLED",
+  "first_parent": "41b1935fd4ecdc88d08b53ff04c0007fc982541f",
+  "fresh_h_c_acceptance": "pending",
+  "merge_commit": "a83af804a092a8274e8b7a71273aeb5cee3c4cd1",
+  "merge_method": "git merge --no-ff --no-commit <exact-source>, then tested and committed",
+  "merge_tree": "a3e5ca9e903a3a2c939d6de1a6b7cf4e8cd675d8",
+  "schema": "wave-c-merge-receipt/v1",
+  "second_parent": "4f633714cc604f5159cf1e52eebcd0bc4bf3c63c",
+  "source_branch": "codex/nw-p2-supervisor-01",
+  "source_delta_path_count": 52,
+  "source_head": "4f633714cc604f5159cf1e52eebcd0bc4bf3c63c",
+  "source_review": {
+    "candidate_locator": {
+      "bytes": 1936,
+      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/closures/Supervisor-sol-closure.json",
+      "sha256": "3a5ce10df8892d7934da391db6e9876c72882136f9b0b11282f5e744d65e0c82"
+    },
+    "merge_eligible": true,
+    "sha256": "3a5ce10df8892d7934da391db6e9876c72882136f9b0b11282f5e744d65e0c82",
+    "source_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\nw-p2-supervisor-f003-sol-closure-v1.json",
+    "verdict": "PASS"
+  },
+  "source_tree": "e0cb0a79c48bb4a815a8917cd24f8f620d9fc118",
+  "staged_path_count": 52,
+  "status": "source_integrated_pending_fresh_sol",
+  "validation_raw": {
+    "bytes": 3978,
+    "path": "coordination/integration-queue/WAVE-C-20260828/evidence/raw/04-Supervisor-validation.json",
+    "sha256": "a1827265b3c338c7ffa06aafd19796cb3232ba5b4ead44260ced2eefed7841c3"
+  },
+  "validation_summary": [
+    "122 passed in 3.67s",
+    "203 passed in 5.11s",
+    "manifest deterministic 141 files",
+    "compileall exit 0",
+    "ruff All checks passed",
+    "staged/unstaged diff checks exit 0"
+  ],
+  "wave": "C",
+  "worktree_clean_after_commit": true
+}

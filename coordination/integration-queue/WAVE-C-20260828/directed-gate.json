@@ -1,0 +1,81 @@
+{
+  "actual_integrated_path_count": 138,
+  "donor_push": "DISABLED",
+  "h_b_is_ancestor": true,
+  "integrated_source_head": "a83af804a092a8274e8b7a71273aeb5cee3c4cd1",
+  "integrated_source_tree": "a3e5ca9e903a3a2c939d6de1a6b7cf4e8cd675d8",
+  "integration_only_paths_before_receipts": [],
+  "merge_rows": [
+    {
+      "expected_parents": [
+        "53c54b237bccfacdd6ec09a304676e83e3aa5a45",
+        "7dd091145c4545f5f81b6c132a389e3f398fc429"
+      ],
+      "id": "ETX",
+      "merge_commit": "064cc8657c32a92b1af042a727897a03231ab800",
+      "parents": [
+        "53c54b237bccfacdd6ec09a304676e83e3aa5a45",
+        "7dd091145c4545f5f81b6c132a389e3f398fc429"
+      ],
+      "source_head": "7dd091145c4545f5f81b6c132a389e3f398fc429",
+      "source_is_final_ancestor": true,
+      "source_path_count": 32,
+      "tree": "d53d3286eebbb3c7baea52bc44b715e9703c7706"
+    },
+    {
+      "expected_parents": [
+        "064cc8657c32a92b1af042a727897a03231ab800",
+        "b9bff590449e93f6781395ec0e52535db930cbae"
+      ],
+      "id": "Backup",
+      "merge_commit": "8e8ac56dadbdfd1f73c94fc34ad447a36f8cf9d0",
+      "parents": [
+        "064cc8657c32a92b1af042a727897a03231ab800",
+        "b9bff590449e93f6781395ec0e52535db930cbae"
+      ],
+      "source_head": "b9bff590449e93f6781395ec0e52535db930cbae",
+      "source_is_final_ancestor": true,
+      "source_path_count": 15,
+      "tree": "f07bd79377b3d095d22b548f92b943052edbb9c1"
+    },
+    {
+      "expected_parents": [
+        "8e8ac56dadbdfd1f73c94fc34ad447a36f8cf9d0",
+        "13e6b29a451f535d69bd7621d65f7e9c41511231"
+      ],
+      "id": "Lifecycle",
+      "merge_commit": "41b1935fd4ecdc88d08b53ff04c0007fc982541f",
+      "parents": [
+        "8e8ac56dadbdfd1f73c94fc34ad447a36f8cf9d0",
+        "13e6b29a451f535d69bd7621d65f7e9c41511231"
+      ],
+      "source_head": "13e6b29a451f535d69bd7621d65f7e9c41511231",
+      "source_is_final_ancestor": true,
+      "source_path_count": 39,
+      "tree": "f5c322dd0f097b7de4cda1f0b60fce3c9f10128e"
+    },
+    {
+      "expected_parents": [
+        "41b1935fd4ecdc88d08b53ff04c0007fc982541f",
+        "4f633714cc604f5159cf1e52eebcd0bc4bf3c63c"
+      ],
+      "id": "Supervisor",
+      "merge_commit": "a83af804a092a8274e8b7a71273aeb5cee3c4cd1",
+      "parents": [
+        "41b1935fd4ecdc88d08b53ff04c0007fc982541f",
+        "4f633714cc604f5159cf1e52eebcd0bc4bf3c63c"
+      ],
+      "source_head": "4f633714cc604f5159cf1e52eebcd0bc4bf3c63c",
+      "source_is_final_ancestor": true,
+      "source_path_count": 52,
+      "tree": "a3e5ca9e903a3a2c939d6de1a6b7cf4e8cd675d8"
+    }
+  ],
+  "missing_from_integration": [],
+  "out_of_union": [],
+  "schema": "wave-c-directed-integration-gate/v1",
+  "source_union_path_count": 138,
+  "start_head": "53c54b237bccfacdd6ec09a304676e83e3aa5a45",
+  "status": "passed",
+  "worktree_clean": true
+}

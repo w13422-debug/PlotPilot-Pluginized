@@ -1,0 +1,158 @@
+{
+  "directed_gate": {
+    "bytes": 2824,
+    "path": "coordination/integration-queue/WAVE-C-20260828/directed-gate.json",
+    "sha256": "aadda4c2926b2d5ed881f4343f520294b20bab039dd69f45abd3f7eda6da5480"
+  },
+  "evidence_commit_binding": {
+    "rule": "candidate evidence commit must be the sole direct child of integrated_source_head and change only this Wave C directory"
+  },
+  "file_count": 20,
+  "files": [
+    {
+      "bytes": 162,
+      "path": "coordination/integration-queue/WAVE-C-20260828/.gitattributes",
+      "sha256": "0ae5e7249893f5eb05b78805bedbc5220f924232a8847c89fe4059b3afc153f9"
+    },
+    {
+      "bytes": 2824,
+      "path": "coordination/integration-queue/WAVE-C-20260828/directed-gate.json",
+      "sha256": "aadda4c2926b2d5ed881f4343f520294b20bab039dd69f45abd3f7eda6da5480"
+    },
+    {
+      "bytes": 1584,
+      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/closures/Backup-sol-closure.json",
+      "sha256": "c48c1f5f09a788c6bd90ca6bf0bd2268f4abcf25e07da2c4ef41aede886205be"
+    },
+    {
+      "bytes": 2130,
+      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/closures/ETX-sol-closure.json",
+      "sha256": "513336f5240d0e2a1abfa40177b39f039640ff60a496b2ac0d83738e5f2f4414"
+    },
+    {
+      "bytes": 1664,
+      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/closures/Lifecycle-sol-closure.json",
+      "sha256": "90fb06a08b3edc89779489b8921324b0d86fc0eef93157bd7320598ea7d87908"
+    },
+    {
+      "bytes": 2202,
+      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/closures/P0-request-failure-sol-closure.json",
+      "sha256": "c548b3f3a10548502733366ef116290358ead198bdcae54e172b55b58fde851f"
+    },
+    {
+      "bytes": 1936,
+      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/closures/Supervisor-sol-closure.json",
+      "sha256": "3a5ce10df8892d7934da391db6e9876c72882136f9b0b11282f5e744d65e0c82"
+    },
+    {
+      "bytes": 4009,
+      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/intake/controller-frozen-intake.json",
+      "sha256": "9b94eaf6ab077e096dc3914464a08e2ea7b52a2776f25210aeb5e1c4a0a7bcf6"
+    },
+    {
+      "bytes": 1127,
+      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/raw/00-harness-events.json",
+      "sha256": "0e5a1cc4f5141f877b29491b531b3eb67ca8afe134e538d7a3413a28cccba221"
+    },
+    {
+      "bytes": 4310,
+      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/raw/01-ETX-validation.json",
+      "sha256": "451bfd3e70bac2fc25fce465311920271de159ed090bc905e76098f480153b0b"
+    },
+    {
+      "bytes": 1176,
+      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/raw/02-Backup-validation.json",
+      "sha256": "5f94bd258b4d55950c320d316d18fd55acbbe49161da01ac2211699aa2af7ffb"
+    },
+    {
+      "bytes": 1706,
+      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/raw/03-Lifecycle-validation.json",
+      "sha256": "ab9363c975bf9abec77c5ef163314a1c7e36312e7f397926380d40618714913e"
+    },
+    {
+      "bytes": 3978,
+      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/raw/04-Supervisor-validation.json",
+      "sha256": "a1827265b3c338c7ffa06aafd19796cb3232ba5b4ead44260ced2eefed7841c3"
+    },
+    {
+      "bytes": 73969,
+      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/raw/05-H_C-validation.json",
+      "sha256": "f25b3f31c8a0ac67926253eb3cc5c1d13605e9ec30da01574589511ca97b0ac2"
+    },
+    {
+      "bytes": 10890,
+      "path": "coordination/integration-queue/WAVE-C-20260828/preflight.json",
+      "sha256": "6a738e3af026ba65df118a471c273408a9209cc60e39d78f1a080036c0ffb857"
+    },
+    {
+      "bytes": 1996,
+      "path": "coordination/integration-queue/WAVE-C-20260828/receipts/01-ETX.json",
+      "sha256": "faa462446bafac71652d44f83ddffb04bdb1234fa207fc2d2a321c4e4dcd84c0"
+    },
+    {
+      "bytes": 1816,
+      "path": "coordination/integration-queue/WAVE-C-20260828/receipts/02-Backup.json",
+      "sha256": "87b15cb836c53bc650045ac953d651c643f29cf24ab97f7b1bccf4f2756e0dc4"
+    },
+    {
+      "bytes": 1861,
+      "path": "coordination/integration-queue/WAVE-C-20260828/receipts/03-Lifecycle.json",
+      "sha256": "fdfce4e9eab0850e4407aa440f4a948173580f77912d9760508ad1b511b04525"
+    },
+    {
+      "bytes": 1924,
+      "path": "coordination/integration-queue/WAVE-C-20260828/receipts/04-Supervisor.json",
+      "sha256": "c44265c4b2cdd82c7352494ec0e8782e588a5998b55bc2a50d85294dcae60d39"
+    },
+    {
+      "bytes": 732,
+      "path": "coordination/integration-queue/WAVE-C-20260828/summary.md",
+      "sha256": "78d26f1fe67996ab3242075dc5b9ba5c1964888569b787b0cfabd9b0b2f26e0e"
+    }
+  ],
+  "fresh_sol_acceptance": "pending",
+  "frozen_controller_intake": {
+    "bytes": 4009,
+    "path": "coordination/integration-queue/WAVE-C-20260828/evidence/intake/controller-frozen-intake.json",
+    "sha256": "9b94eaf6ab077e096dc3914464a08e2ea7b52a2776f25210aeb5e1c4a0a7bcf6"
+  },
+  "frozen_sol_closure_count": 5,
+  "h_c_validation_raw": {
+    "bytes": 73969,
+    "path": "coordination/integration-queue/WAVE-C-20260828/evidence/raw/05-H_C-validation.json",
+    "sha256": "f25b3f31c8a0ac67926253eb3cc5c1d13605e9ec30da01574589511ca97b0ac2"
+  },
+  "integrated_source_head": "a83af804a092a8274e8b7a71273aeb5cee3c4cd1",
+  "integrated_source_tree": "a3e5ca9e903a3a2c939d6de1a6b7cf4e8cd675d8",
+  "merge_receipts": [
+    {
+      "bytes": 1996,
+      "path": "coordination/integration-queue/WAVE-C-20260828/receipts/01-ETX.json",
+      "sha256": "faa462446bafac71652d44f83ddffb04bdb1234fa207fc2d2a321c4e4dcd84c0"
+    },
+    {
+      "bytes": 1816,
+      "path": "coordination/integration-queue/WAVE-C-20260828/receipts/02-Backup.json",
+      "sha256": "87b15cb836c53bc650045ac953d651c643f29cf24ab97f7b1bccf4f2756e0dc4"
+    },
+    {
+      "bytes": 1861,
+      "path": "coordination/integration-queue/WAVE-C-20260828/receipts/03-Lifecycle.json",
+      "sha256": "fdfce4e9eab0850e4407aa440f4a948173580f77912d9760508ad1b511b04525"
+    },
+    {
+      "bytes": 1924,
+      "path": "coordination/integration-queue/WAVE-C-20260828/receipts/04-Supervisor.json",
+      "sha256": "c44265c4b2cdd82c7352494ec0e8782e588a5998b55bc2a50d85294dcae60d39"
+    }
+  ],
+  "preflight": {
+    "bytes": 10890,
+    "path": "coordination/integration-queue/WAVE-C-20260828/preflight.json",
+    "sha256": "6a738e3af026ba65df118a471c273408a9209cc60e39d78f1a080036c0ffb857"
+  },
+  "release_tag_created": false,
+  "schema": "wave-c-integration-candidate-manifest/v1",
+  "start_head": "53c54b237bccfacdd6ec09a304676e83e3aa5a45",
+  "status": "H_C_SOURCE_INTEGRATED_PENDING_FRESH_SOL"
+}

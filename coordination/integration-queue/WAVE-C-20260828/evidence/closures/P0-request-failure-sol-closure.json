@@ -1,0 +1,53 @@
+{
+  "schema": "plotpilot-sol-targeted-closure/v1",
+  "node_id": "P0-CORE-HTTP-REQUEST-FAILURE-CONTRACT-01",
+  "reviewer": {
+    "agent_id": "01a045de-046e-79b1-b78e-bac81b29e77e",
+    "model": "gpt-5.6-sol",
+    "reasoning_effort": "max",
+    "read_only": true
+  },
+  "candidate": {
+    "parent": "faafa2171afb8cfc2df4078d8930a51ac83a8584",
+    "head": "53c54b237bccfacdd6ec09a304676e83e3aa5a45",
+    "tree": "530bfa99bf41b69d475638ce42c4301cbd9535af",
+    "commit_count": 1,
+    "remediation_changed_path_count": 9,
+    "baseline_to_candidate_path_count": 22,
+    "original_write_set_path_count": 14,
+    "extension_path_count": 8,
+    "out_of_set_count": 0,
+    "worktree_clean": true,
+    "diff_check": "PASS"
+  },
+  "evidence": {
+    "source_evidence_sha256": "4efa7800088b2312b6712d22da9b0322851cea9c3d7be28990ac7eb481e01417",
+    "write_set_extension_sha256": "ad6aaf5107d6ec86ca70b078266484a311ea8b2106a09723797702085a8e0aee"
+  },
+  "findings": [
+    {
+      "id": "P0-RF-F-001",
+      "status": "CLOSED",
+      "evidence": "The generated policy schema uses an exact ordered deep const; Draft 2020-12, generic Python, specialized Python and real TypeScript reject all 13 binding-drift negatives."
+    },
+    {
+      "id": "P0-RF-F-002",
+      "status": "CLOSED",
+      "evidence": "The controller exact-path extension is hash-bound; all 22 baseline-to-candidate paths are covered and no router, app.py or product mount path changed."
+    }
+  ],
+  "validation": [
+    {"command": "targeted contract pytest", "result": "4 passed", "exit_code": 0},
+    {"command": "schema generator", "result": "58 deterministic artifacts", "exit_code": 0},
+    {"command": "manifest generator", "result": "141 deterministic files", "exit_code": 0},
+    {"command": "full contract pytest", "result": "32 passed", "exit_code": 0},
+    {"command": "Node verifier", "result": "PASS; 55 schemas, 14 negative groups", "exit_code": 0},
+    {"command": "TS typecheck / cross-language goldens / compileall", "result": "PASS", "exit_code": 0}
+  ],
+  "verdict": "PASS",
+  "merge_eligible": true,
+  "open_finding_count": 0,
+  "new_findings": [],
+  "serialization_owner": "controller",
+  "review_completed_at": "2026-08-28"
+}

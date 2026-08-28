@@ -1,0 +1,90 @@
+{
+  "schema": "plotpilot-wave-c-final-intake/v1",
+  "wave": "C",
+  "baseline": {
+    "head": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
+    "tree": "ecf773e49f93b20806ebda5dec2fa14db422a1f4"
+  },
+  "p0_integration_head": {
+    "head": "53c54b237bccfacdd6ec09a304676e83e3aa5a45",
+    "tree": "530bfa99bf41b69d475638ce42c4301cbd9535af",
+    "branch": "codex/ppa-00-integration-candidate-r2",
+    "worktree_clean": true,
+    "changed_path_count_from_baseline": 22,
+    "review_path": "cases/plotpilot-pluginized-seven-project-construction-20260826/evidence/reviews/p0-request-failure-f001-f002-sol-closure-v1.json",
+    "review_sha256": "c548b3f3a10548502733366ef116290358ead198bdcae54e172b55b58fde851f",
+    "verdict": "PASS"
+  },
+  "source_candidates": [
+    {
+      "node_id": "NW-P1-EXECUTION-TX-01",
+      "head": "7dd091145c4545f5f81b6c132a389e3f398fc429",
+      "tree": "30c9e175ddf4de344ffcff20e8a4892c35d83d9a",
+      "branch": "codex/nw-p1-execution-tx-01",
+      "worktree_clean": true,
+      "donor_push": "DISABLED",
+      "changed_path_count_from_baseline": 32,
+      "review_path": "cases/plotpilot-pluginized-seven-project-construction-20260826/evidence/reviews/nw-p1-execution-tx-f007-f015-sol-closure-v1.json",
+      "review_sha256": "513336f5240d0e2a1abfa40177b39f039640ff60a496b2ac0d83738e5f2f4414",
+      "verdict": "PASS",
+      "merge_eligible": true
+    },
+    {
+      "node_id": "NW-P1-BACKUP-DATA-01",
+      "head": "b9bff590449e93f6781395ec0e52535db930cbae",
+      "tree": "8aee45341a499aa099fbffbe91dc58dd3526daa5",
+      "branch": "codex/nw-p1-backup-data-01",
+      "worktree_clean": true,
+      "donor_push": "DISABLED",
+      "changed_path_count_from_baseline": 15,
+      "review_path": "cases/plotpilot-pluginized-seven-project-construction-20260826/evidence/reviews/nw-p1-backup-data-f011-sol-closure-v1.json",
+      "review_sha256": "c48c1f5f09a788c6bd90ca6bf0bd2268f4abcf25e07da2c4ef41aede886205be",
+      "verdict": "PASS",
+      "merge_eligible": true
+    },
+    {
+      "node_id": "NW-P2-LIFECYCLE-02",
+      "head": "13e6b29a451f535d69bd7621d65f7e9c41511231",
+      "tree": "db73221517113e3d4b506224f7c7db72b89cfdb2",
+      "branch": "codex/nw-p2-lifecycle-02",
+      "worktree_clean": true,
+      "donor_push": "DISABLED",
+      "changed_path_count_from_baseline": 39,
+      "review_path": "cases/plotpilot-pluginized-seven-project-construction-20260826/evidence/reviews/nw-p2-lifecycle-f012-sol-closure-v1.json",
+      "review_sha256": "90fb06a08b3edc89779489b8921324b0d86fc0eef93157bd7320598ea7d87908",
+      "verdict": "PASS",
+      "merge_eligible": true
+    },
+    {
+      "node_id": "NW-P2-SUPERVISOR-01",
+      "head": "4f633714cc604f5159cf1e52eebcd0bc4bf3c63c",
+      "tree": "e0cb0a79c48bb4a815a8917cd24f8f620d9fc118",
+      "branch": "codex/nw-p2-supervisor-01",
+      "worktree_clean": true,
+      "donor_push": "DISABLED",
+      "changed_path_count_from_baseline": 52,
+      "review_path": "cases/plotpilot-pluginized-seven-project-construction-20260826/evidence/reviews/nw-p2-supervisor-f003-sol-closure-v1.json",
+      "review_sha256": "3a5ce10df8892d7934da391db6e9876c72882136f9b0b11282f5e744d65e0c82",
+      "verdict": "PASS",
+      "merge_eligible": true
+    }
+  ],
+  "path_preflight": {
+    "candidate_count": 5,
+    "pair_count": 10,
+    "all_baseline_descendants": true,
+    "all_pairwise_path_overlaps_zero": true
+  },
+  "required_merge_order": [
+    "7dd091145c4545f5f81b6c132a389e3f398fc429",
+    "b9bff590449e93f6781395ec0e52535db930cbae",
+    "13e6b29a451f535d69bd7621d65f7e9c41511231",
+    "4f633714cc604f5159cf1e52eebcd0bc4bf3c63c"
+  ],
+  "merge_method": "P0-owned git merge --no-ff with one merge commit per source candidate",
+  "status": "PATH_ANCESTRY_AND_SOL_GATES_PASS_PENDING_P0_MERGE_TREE",
+  "merge_authorized": false,
+  "reason": "P0 must independently verify the frozen manifest and sequential merge-tree result before mutating the integration branch.",
+  "result_serialization_owner": "controller",
+  "generated_at": "2026-08-28"
+}

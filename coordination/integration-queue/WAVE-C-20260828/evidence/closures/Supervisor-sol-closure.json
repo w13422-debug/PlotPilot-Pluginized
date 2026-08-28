@@ -1,0 +1,42 @@
+{
+  "schema": "plotpilot-sol-targeted-closure/v1",
+  "node_id": "NW-P2-SUPERVISOR-01",
+  "reviewer": {
+    "agent_id": "01a0460d-1572-74b0-877d-d7268d127221",
+    "model": "gpt-5.6-sol",
+    "reasoning_effort": "max",
+    "read_only": true
+  },
+  "candidate": {
+    "parent": "c31640d5826d3f24b4e606442062fd6736d55cf6",
+    "head": "4f633714cc604f5159cf1e52eebcd0bc4bf3c63c",
+    "tree": "e0cb0a79c48bb4a815a8917cd24f8f620d9fc118",
+    "commit_count": 1,
+    "changed_path_count": 15,
+    "write_set_pass": true,
+    "worktree_clean": true,
+    "diff_check": "PASS",
+    "donor_push": "DISABLED"
+  },
+  "scope": ["NW-P2-SUP-F-003"],
+  "findings": [
+    {
+      "id": "NW-P2-SUP-F-003",
+      "status": "CLOSED",
+      "evidence": "acquire now computes route, session, handshake, initial clock, retain identity, lifecycle key and callback/queue/dispatch metadata before processes.start inside the same exact-claim cleanup guard. Every pre-spawn or process-start exception calls _release_or_enqueue with the original fence/lifecycle and rethrows the original exception. The release-false and release-exception matrix proves zero process starts, no record, exact pending release and successful tick retry."
+    }
+  ],
+  "validation": [
+    {"command": "focused F-003 pytest", "result": "2 passed in 0.60s", "exit_code": 0},
+    {"command": "pytest supervisor", "result": "122 passed in 4.69s", "exit_code": 0},
+    {"command": "pytest P2", "result": "154 passed in 4.76s", "exit_code": 0},
+    {"command": "ruff / compileall / contract manifest", "result": "PASS; deterministic 137 files", "exit_code": 0},
+    {"command": "independent two-branch focused probe", "result": "zero spawn, original error preserved, exact queued/retried release", "exit_code": 0}
+  ],
+  "verdict": "PASS",
+  "merge_eligible": true,
+  "open_finding_count": 0,
+  "new_findings": [],
+  "serialization_owner": "controller",
+  "review_completed_at": "2026-08-28"
+}

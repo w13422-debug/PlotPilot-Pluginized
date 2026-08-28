@@ -1,0 +1,44 @@
+{
+  "schema": "plotpilot-sol-targeted-closure/v1",
+  "node_id": "NW-P2-LIFECYCLE-02",
+  "reviewer": {
+    "agent_id": "01a045e2-5dc7-7ae0-b804-afebcb32039f",
+    "model": "gpt-5.6-sol",
+    "reasoning_effort": "max",
+    "read_only": true
+  },
+  "candidate": {
+    "parent": "09f1120062b15e0d55fad58bdf9cfbbeee44abb0",
+    "head": "13e6b29a451f535d69bd7621d65f7e9c41511231",
+    "tree": "db73221517113e3d4b506224f7c7db72b89cfdb2",
+    "commit_count": 1,
+    "changed_path_count": 9,
+    "write_set_pass": true,
+    "worktree_clean": true,
+    "diff_check": "PASS",
+    "donor_push": "DISABLED"
+  },
+  "scope": [
+    "NW-P2-LC-F-012"
+  ],
+  "findings": [
+    {
+      "id": "NW-P2-LC-F-012",
+      "status": "CLOSED",
+      "evidence": "The formal exported migration inserts singleton=1 immediately after creating the pointer table. A production MigrationRunner test on an empty database proves generation_state works and repeated apply preserves exactly one stable pointer and one migration-ledger row."
+    }
+  ],
+  "validation": [
+    {"command": "pytest lifecycle", "result": "49 passed in 1.36s", "exit_code": 0},
+    {"command": "pytest P2", "result": "81 passed in 1.72s", "exit_code": 0},
+    {"command": "ruff / compileall", "result": "PASS", "exit_code": 0},
+    {"command": "contract manifest", "result": "deterministic 137 files", "exit_code": 0},
+    {"command": "independent SQLite migration replay", "result": "one stable pointer row and one ledger row", "exit_code": 0}
+  ],
+  "verdict": "PASS",
+  "merge_eligible": true,
+  "open_finding_count": 0,
+  "new_findings": [],
+  "serialization_owner": "controller",
+  "review_completed_at": "2026-08-28"
+}

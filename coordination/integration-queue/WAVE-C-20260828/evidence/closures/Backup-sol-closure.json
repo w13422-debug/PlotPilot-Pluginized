@@ -1,0 +1,44 @@
+{
+  "schema": "plotpilot-sol-targeted-closure/v1",
+  "node_id": "NW-P1-BACKUP-DATA-01",
+  "reviewer": {
+    "thread_id": "01a045c8-1ab3-7260-a6e7-d5d06d684b00",
+    "model": "gpt-5.6-sol",
+    "reasoning_effort": "max",
+    "read_only": true
+  },
+  "candidate": {
+    "parent": "210e09b79aa3cf0c90d2c5245bf9af22be828beb",
+    "head": "b9bff590449e93f6781395ec0e52535db930cbae",
+    "tree": "8aee45341a499aa099fbffbe91dc58dd3526daa5",
+    "commit_count": 1,
+    "changed_path_count": 5,
+    "write_set_pass": true,
+    "worktree_clean": true,
+    "diff_check": "PASS",
+    "donor_push": "DISABLED"
+  },
+  "scope": [
+    "NW-P1-BDP-F-011"
+  ],
+  "findings": [
+    {
+      "id": "NW-P1-BDP-F-011",
+      "status": "CLOSED",
+      "evidence": "service.py validates the canonical manifest through _read_canonical_json before deriving manifest_raw; the negative test marks the control file as a reparse point and proves Path.read_bytes is never invoked before rejection."
+    }
+  ],
+  "validation": [
+    {"command": "pytest tests/p1-core/backup-data-plane", "result": "59 passed", "exit_code": 0},
+    {"command": "pytest tests/p1-core", "result": "66 passed", "exit_code": 0},
+    {"command": "targeted F011 negative and deterministic positive", "result": "2 passed", "exit_code": 0},
+    {"command": "ruff", "result": "PASS", "exit_code": 0},
+    {"command": "compileall", "result": "PASS", "exit_code": 0}
+  ],
+  "verdict": "PASS",
+  "merge_eligible": true,
+  "open_finding_count": 0,
+  "new_findings": [],
+  "serialization_owner": "controller",
+  "review_completed_at": "2026-08-28"
+}

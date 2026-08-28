@@ -1,0 +1,44 @@
+[
+  {
+    "command": "python -B -m pytest -p no:cacheprovider tests/p2-plugin-platform/supervisor -q",
+    "exit_code": 0,
+    "stderr": "",
+    "stdout": "============================= test session starts =============================\nplatform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0\nrootdir: C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\nconfigfile: pytest.ini\nplugins: asyncio-0.26.0, anyio-4.14.2\nasyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollected 122 items\n\ntests\\p2-plugin-platform\\supervisor\\test_lifecycle.py .................. [ 14%]\n....................................                                     [ 44%]\ntests\\p2-plugin-platform\\supervisor\\test_lookup.py ...............       [ 56%]\ntests\\p2-plugin-platform\\supervisor\\test_process.py .........            [ 63%]\ntests\\p2-plugin-platform\\supervisor\\test_rpc.py .......................  [ 82%]\ntests\\p2-plugin-platform\\supervisor\\test_venv.py .....................   [100%]\n\n============================= 122 passed in 3.67s =============================\n"
+  },
+  {
+    "command": "python -B -m pytest -p no:cacheprovider tests/p2-plugin-platform -q",
+    "exit_code": 0,
+    "stderr": "",
+    "stdout": "============================= test session starts =============================\nplatform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0\nrootdir: C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\nconfigfile: pytest.ini\nplugins: asyncio-0.26.0, anyio-4.14.2\nasyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollected 203 items\n\ntests\\p2-plugin-platform\\lifecycle\\test_install_and_retirement.py ...... [  2%]\n.....                                                                    [  5%]\ntests\\p2-plugin-platform\\lifecycle\\test_repository_reconciliation.py ... [  6%]\n.......................                                                  [ 18%]\ntests\\p2-plugin-platform\\lifecycle\\test_shadow_plan_settings.py ........ [ 22%]\n....                                                                     [ 24%]\ntests\\p2-plugin-platform\\supervisor\\test_lifecycle.py .................. [ 33%]\n....................................                                     [ 50%]\ntests\\p2-plugin-platform\\supervisor\\test_lookup.py ...............       [ 58%]\ntests\\p2-plugin-platform\\supervisor\\test_process.py .........            [ 62%]\ntests\\p2-plugin-platform\\supervisor\\test_rpc.py .......................  [ 73%]\ntests\\p2-plugin-platform\\supervisor\\test_venv.py .....................   [ 84%]\ntests\\p2-plugin-platform\\test_generation_settings.py .....               [ 86%]\ntests\\p2-plugin-platform\\test_install_package.py ...                     [ 88%]\ntests\\p2-plugin-platform\\test_package_backend_remediation.py ........... [ 93%]\n.........                                                                [ 98%]\ntests\\p2-plugin-platform\\test_prompt_skill_runtime.py ....               [100%]\n\n============================= 203 passed in 5.11s =============================\n"
+  },
+  {
+    "command": "python -B tools/integration/generate_contract_manifest.py --check",
+    "exit_code": 0,
+    "stderr": "",
+    "stdout": "contract manifest is deterministic (141 files)\n"
+  },
+  {
+    "command": "python -B -m compileall -q backend/plotpilot_core/supervisor",
+    "exit_code": 0,
+    "stderr": "",
+    "stdout": ""
+  },
+  {
+    "command": "python -B -m ruff check backend/plotpilot_core/supervisor tests/p2-plugin-platform/supervisor",
+    "exit_code": 0,
+    "stderr": "",
+    "stdout": "All checks passed!\n"
+  },
+  {
+    "command": "git diff --cached --check",
+    "exit_code": 0,
+    "stderr": "",
+    "stdout": ""
+  },
+  {
+    "command": "git diff --check",
+    "exit_code": 0,
+    "stderr": "",
+    "stdout": ""
+  }
+]

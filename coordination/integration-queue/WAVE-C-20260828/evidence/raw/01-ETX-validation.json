@@ -1,0 +1,32 @@
+[
+  {
+    "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/execution-transaction -q",
+    "exit_code": 0,
+    "stderr": "",
+    "stdout": "============================= test session starts =============================\nplatform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0\nrootdir: C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\nconfigfile: pytest.ini\nplugins: asyncio-0.26.0, anyio-4.14.2\nasyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollected 78 items\n\ntests\\p1-core\\execution-transaction\\test_broker_persistence.py ......... [ 11%]\n...........                                                              [ 25%]\ntests\\p1-core\\execution-transaction\\test_frozen_findings_remediation.py . [ 26%]\n..........................                                               [ 60%]\ntests\\p1-core\\execution-transaction\\test_terminal_failure_windows.py ... [ 64%]\n...........                                                              [ 78%]\ntests\\p1-core\\execution-transaction\\test_terminal_transaction.py ....... [ 87%]\n..........                                                               [100%]\n\n============================= 78 passed in 3.27s ==============================\n"
+  },
+  {
+    "command": "python -B -m pytest -p no:cacheprovider tests/p1-core -q",
+    "exit_code": 0,
+    "stderr": "",
+    "stdout": "============================= test session starts =============================\nplatform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0\nrootdir: C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\nconfigfile: pytest.ini\nplugins: asyncio-0.26.0, anyio-4.14.2\nasyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollected 85 items\n\ntests\\p1-core\\execution-transaction\\test_broker_persistence.py ......... [ 10%]\n...........                                                              [ 23%]\ntests\\p1-core\\execution-transaction\\test_frozen_findings_remediation.py . [ 24%]\n..........................                                               [ 55%]\ntests\\p1-core\\execution-transaction\\test_terminal_failure_windows.py ... [ 58%]\n...........                                                              [ 71%]\ntests\\p1-core\\execution-transaction\\test_terminal_transaction.py ....... [ 80%]\n..........                                                               [ 91%]\ntests\\p1-core\\test_asset_store.py ..                                     [ 94%]\ntests\\p1-core\\test_candidate_publication.py ..                           [ 96%]\ntests\\p1-core\\test_core_authority.py ...                                 [100%]\n\n============================= 85 passed in 3.88s ==============================\n"
+  },
+  {
+    "command": "python -B -m pytest -p no:cacheprovider tests/p3-execution/test_job_execution.py tests/p3-execution/provider-broker -q",
+    "exit_code": 0,
+    "stderr": "",
+    "stdout": "============================= test session starts =============================\nplatform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0\nrootdir: C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\nconfigfile: pytest.ini\nplugins: asyncio-0.26.0, anyio-4.14.2\nasyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollected 39 items\n\ntests\\p3-execution\\test_job_execution.py ....                            [ 10%]\ntests\\p3-execution\\provider-broker\\test_broker.py ................       [ 51%]\ntests\\p3-execution\\provider-broker\\test_model_profile.py ......          [ 66%]\ntests\\p3-execution\\provider-broker\\test_provider.py .............        [100%]\n\n============================= 39 passed in 0.69s ==============================\n"
+  },
+  {
+    "command": "python -B -m compileall -q backend/plotpilot_core/repositories backend/plotpilot_core/assets backend/plotpilot_core/candidates backend/plotpilot_core/publication backend/plotpilot_core/broker",
+    "exit_code": 0,
+    "stderr": "",
+    "stdout": ""
+  },
+  {
+    "command": "git diff --check HEAD^1 HEAD",
+    "exit_code": 0,
+    "stderr": "",
+    "stdout": ""
+  }
+]

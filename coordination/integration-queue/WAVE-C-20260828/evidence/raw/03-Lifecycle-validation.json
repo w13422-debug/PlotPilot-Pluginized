@@ -1,0 +1,32 @@
+[
+  {
+    "command": "python -B -m pytest -p no:cacheprovider tests/p2-plugin-platform/lifecycle -q",
+    "exit_code": 0,
+    "stderr": "",
+    "stdout": "============================= test session starts =============================\nplatform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0\nrootdir: C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\nconfigfile: pytest.ini\nplugins: asyncio-0.26.0, anyio-4.14.2\nasyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollected 49 items\n\ntests\\p2-plugin-platform\\lifecycle\\test_install_and_retirement.py ...... [ 12%]\n.....                                                                    [ 22%]\ntests\\p2-plugin-platform\\lifecycle\\test_repository_reconciliation.py ... [ 28%]\n.......................                                                  [ 75%]\ntests\\p2-plugin-platform\\lifecycle\\test_shadow_plan_settings.py ........ [ 91%]\n....                                                                     [100%]\n\n============================= 49 passed in 1.27s ==============================\n"
+  },
+  {
+    "command": "python -B tools/integration/generate_contract_manifest.py --check",
+    "exit_code": 0,
+    "stderr": "",
+    "stdout": "contract manifest is deterministic (141 files)\n"
+  },
+  {
+    "command": "python -B -m compileall -q backend/plotpilot_core/plugins",
+    "exit_code": 0,
+    "stderr": "",
+    "stdout": ""
+  },
+  {
+    "command": "git diff --cached --check",
+    "exit_code": 0,
+    "stderr": "",
+    "stdout": ""
+  },
+  {
+    "command": "git diff --check",
+    "exit_code": 0,
+    "stderr": "",
+    "stdout": ""
+  }
+]

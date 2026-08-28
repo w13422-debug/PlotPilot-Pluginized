@@ -1,0 +1,20 @@
+{
+  "events": [
+    {
+      "effect": "The first logger executed the first pytest, then raised UnicodeEncodeError while echoing replacement text to CP936. PowerShell did not propagate the pipeline exit and created premature merge object 91d6b48faf623dfa20c40d67abff3e5bdcb05776.",
+      "event_id": "ETX-LOGGER-CP936-001",
+      "forbidden_reset_or_clean_used": false,
+      "recovery": "Reran the complete ETX gate with UTF-8 safe logging, all commands passed, then amended without content/parent/tree changes. The authoritative merge is 064cc8657c32a92b1af042a727897a03231ab800.",
+      "source_test_failure": false,
+      "stage": "ETX batch validation logging"
+    },
+    {
+      "effect": "Direct subprocess invocation of a relative Windows .cmd exited 1 before tsc ran.",
+      "event_id": "HC-TSC-CMD-001",
+      "recovery": "Used cmd.exe /d /c for the identical tsc arguments; exit 0 with no diagnostics. Earlier passed expensive gates were reused at unchanged source state.",
+      "source_test_failure": false,
+      "stage": "H_C TypeScript typecheck"
+    }
+  ],
+  "schema": "wave-c-integration-harness-events/v1"
+}

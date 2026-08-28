@@ -1,0 +1,41 @@
+{
+  "all_staged_blobs_equal_source": true,
+  "batch_id": "Backup",
+  "donor_push": "DISABLED",
+  "first_parent": "064cc8657c32a92b1af042a727897a03231ab800",
+  "fresh_h_c_acceptance": "pending",
+  "merge_commit": "8e8ac56dadbdfd1f73c94fc34ad447a36f8cf9d0",
+  "merge_method": "git merge --no-ff --no-commit <exact-source>, then tested and committed",
+  "merge_tree": "f07bd79377b3d095d22b548f92b943052edbb9c1",
+  "schema": "wave-c-merge-receipt/v1",
+  "second_parent": "b9bff590449e93f6781395ec0e52535db930cbae",
+  "source_branch": "codex/nw-p1-backup-data-01",
+  "source_delta_path_count": 15,
+  "source_head": "b9bff590449e93f6781395ec0e52535db930cbae",
+  "source_review": {
+    "candidate_locator": {
+      "bytes": 1584,
+      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/closures/Backup-sol-closure.json",
+      "sha256": "c48c1f5f09a788c6bd90ca6bf0bd2268f4abcf25e07da2c4ef41aede886205be"
+    },
+    "merge_eligible": true,
+    "sha256": "c48c1f5f09a788c6bd90ca6bf0bd2268f4abcf25e07da2c4ef41aede886205be",
+    "source_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\nw-p1-backup-data-f011-sol-closure-v1.json",
+    "verdict": "PASS"
+  },
+  "source_tree": "8aee45341a499aa099fbffbe91dc58dd3526daa5",
+  "staged_path_count": 15,
+  "status": "source_integrated_pending_fresh_sol",
+  "validation_raw": {
+    "bytes": 1176,
+    "path": "coordination/integration-queue/WAVE-C-20260828/evidence/raw/02-Backup-validation.json",
+    "sha256": "5f94bd258b4d55950c320d316d18fd55acbbe49161da01ac2211699aa2af7ffb"
+  },
+  "validation_summary": [
+    "59 passed in 6.67s",
+    "compileall exit 0",
+    "staged/unstaged diff checks exit 0"
+  ],
+  "wave": "C",
+  "worktree_clean_after_commit": true
+}
