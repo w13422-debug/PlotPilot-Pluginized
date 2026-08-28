@@ -680,6 +680,7 @@ class SqliteWorkspaceDatabaseProjector:
 
         receipt_owner: dict[str, str] = {}
         receipt_rows: dict[str, dict[str, object]] = {}
+        receipt_values: dict[str, dict[str, object]] = {}
         for row in _rows(connection, "execution_receipt"):
             owner_set = {
                 require(job_owner, row.get("job_id"), "execution receipt job"),
@@ -710,6 +711,19 @@ class SqliteWorkspaceDatabaseProjector:
             receipt_id = str(row["receipt_id"])
             receipt_owner[receipt_id] = next(iter(owner_set))
             receipt_rows[receipt_id] = row
+            receipt_values[receipt_id] = receipt
+
+        for receipt_id, receipt in receipt_values.items():
+            owner = receipt_owner[receipt_id]
+            for parent_receipt_id in receipt["parent_receipt_ids"]:  # type: ignore[index]
+                if require(
+                    receipt_owner,
+                    parent_receipt_id,
+                    "execution parent receipt",
+                ) != owner:
+                    raise WorkspaceProjectionError(
+                        "execution parent receipt crosses Workspace"
+                    )
 
         for job_id, row in job_rows.items():
             owner = job_owner[job_id]

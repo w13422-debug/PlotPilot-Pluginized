@@ -17,6 +17,14 @@
     "p0_schema_diagnostic": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\.codex\\wave-c-followup\\schema-diagnostic.json",
     "p0_schema_diagnostic_sha256": "649550ba202e769c41faa2d6e3652a797c02bcb0d4ee0a3e064adfe97d97698c"
   },
+  "receipt_lineage_followup": {
+    "parent": "77be6c1d7463559dcdfda5359fae3e25724afc74",
+    "parent_tree": "9d290e7ff2deedd71c7286641ba4c8abc7cf7576",
+    "reviewer_evidence": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\wave-c-h-c-f001-g2-sol-block-v1.json",
+    "reviewer_evidence_sha256": "f5cdd2c8cd1fe836378a05f1d93c9614cd22bec54e84224028d85253f57d95b0",
+    "implementation": "two-pass execution receipt validation: collect parsed receipts and Workspace owners before resolving every parent_receipt_id to an existing same-Workspace authority row",
+    "scope": "WAVE-C-HC-F-001 execution receipt lineage only"
+  },
   "implementation": {
     "strategy": "same-barrier-online-freeze-then-integrated-single-workspace-projection",
     "canonical_schema_authority": "CoreAuthorityRepository",
@@ -41,21 +49,28 @@
     "ws-2 sentinel, Assets, plugin DB and package are excluded",
     "orphan broker operation and orphan host ledger fail closed",
     "cross-Workspace broker child closure fails closed",
+    "orphan execution parent receipt fails closed without destination publication or source mutation",
+    "cross-Workspace execution parent receipt fails closed without importing the foreign receipt or mutating source",
+    "same-Workspace parent receipt closure survives projection, isolated restore, and repository reopen",
     "unknown table/view/trigger/column/migration fail closed",
     "full/data dual-Workspace and existing contributor/nonreplace/hash/Asset behavior remain covered"
   ],
   "validation": [
     {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/backup-data-plane/test_backup_data_plane.py::test_workspace_backup_preserves_same_workspace_parent_receipt_closure tests/p1-core/backup-data-plane/test_backup_data_plane.py::test_workspace_backup_rejects_orphan_parent_receipt_without_source_mutation tests/p1-core/backup-data-plane/test_backup_data_plane.py::test_workspace_backup_rejects_cross_workspace_parent_receipt_without_source_mutation -q",
+      "result": "3 passed in 1.66s"
+    },
+    {
       "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/backup-data-plane -q",
-      "result": "71 passed in 13.03s"
+      "result": "74 passed in 15.28s"
     },
     {
       "command": "python -B -m pytest -p no:cacheprovider tests/p1-core -q",
-      "result": "156 passed in 16.74s"
+      "result": "159 passed in 19.30s"
     },
     {
       "command": "python -B -m pytest -p no:cacheprovider tests/p3-execution -q",
-      "result": "39 passed in 0.80s"
+      "result": "39 passed in 0.90s"
     },
     {
       "command": "python -B -m ruff check backend/plotpilot_core/backup tests/p1-core/backup-data-plane",

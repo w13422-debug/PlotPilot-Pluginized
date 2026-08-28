@@ -27,6 +27,14 @@
 - orphan broker operation、orphan host ledger、cross-Workspace broker child、未知 table/view/trigger/column/migration 均 fail closed 且不发布 destination/stage。
 - 同一双 Workspace 源库的 data/full 模式仍保留完整 authority；既有 plugin contributor、nonreplace、内容哈希、Asset closure 测试继续通过。
 
+## Execution receipt lineage follow-up
+
+- follow-up exact parent：`77be6c1d7463559dcdfda5359fae3e25724afc74`（tree `9d290e7ff2deedd71c7286641ba4c8abc7cf7576`）。
+- Receipt 第一遍继续验证 provenance receipt 自身、job/step/attempt identity，并收集完整 parsed receipt 与 `receipt_owner`。
+- 清晰的第二遍逐一解析 `receipt_json.parent_receipt_ids`：每个 parent 必须对应现有 `execution_receipt` authority row，且 parent owner 必须与 referring receipt owner 完全相同；缺失或跨 Workspace lineage 在 destination 发布前 fail closed，不会把外 Workspace parent 偷偷带入投影。
+- 决定性负例证明 orphan parent 与 `ws-1 -> ws-2` parent 均不发布 destination、清理 staging 且不改变源 authority；正例证明同 Workspace parent receipt 在 projection、独立新-root restore 与 `CoreAuthorityRepository` reopen 后完整保留，migration ledger 与 FK 不漂移。
+- reviewer 输入证据：`C:\Users\Administrator\Desktop\Novel-Agent- (2)\novel-agent\cases\plotpilot-pluginized-seven-project-construction-20260826\evidence\reviews\wave-c-h-c-f001-g2-sol-block-v1.json`，SHA-256 `f5cdd2c8cd1fe836378a05f1d93c9614cd22bec54e84224028d85253f57d95b0`。
+
 ## 复用决策与 composition
 
 选择“当前生产 authority + Python stdlib 薄适配”。现有 `CoreAuthorityRepository`、`ExecutionAuthority`、`CandidateService`、broker value objects/verifier、`SqliteCoreSnapshotAdapter`、`AssetStore` 与 backup verifier 已提供精确能力；外部代码没有额外复用收益且会引入未授权依赖。

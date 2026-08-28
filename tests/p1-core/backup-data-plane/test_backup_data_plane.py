@@ -616,6 +616,7 @@ def _add_integrated_execution_closure(
         "step_id": step_id,
         "attempt_id": attempt_id,
         "receipt_id": receipt_id,
+        "child_receipt_id": child_receipt_id,
         "candidate_id": candidate_id,
         "publication_id": publication.publication_id,
         "child_job_id": child.child_job_id,
@@ -624,11 +625,47 @@ def _add_integrated_execution_closure(
     }
 
 
+def _rewrite_receipt_parents(
+    database: Path, receipt_id: str, parent_receipt_ids: list[str]
+) -> tuple[str, str]:
+    connection = sqlite3.connect(database)
+    try:
+        row = connection.execute(
+            "SELECT receipt_json FROM execution_receipt WHERE receipt_id=?",
+            (receipt_id,),
+        ).fetchone()
+        assert row is not None
+        receipt = json.loads(row[0])
+        receipt["parent_receipt_ids"] = parent_receipt_ids
+        receipt["receipt_hash"] = hash_without_field(
+            receipt, "receipt_hash", "provenance-receipt/v1"
+        )
+        raw = json.dumps(
+            receipt, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        )
+        connection.execute(
+            "UPDATE execution_receipt SET receipt_hash=?,receipt_json=? WHERE receipt_id=?",
+            (receipt["receipt_hash"], raw, receipt_id),
+        )
+        connection.commit()
+        return raw, receipt["receipt_hash"]
+    finally:
+        connection.close()
+
+
 def _tree_hashes(root: Path) -> dict[str, str]:
     return {
         path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
         for path in root.rglob("*")
         if path.is_file()
+    }
+
+
+def _durable_tree_hashes(root: Path) -> dict[str, str]:
+    return {
+        relative: digest
+        for relative, digest in _tree_hashes(root).items()
+        if not relative.endswith(("-shm", "-wal"))
     }
 
 
@@ -1863,6 +1900,175 @@ def test_workspace_backup_projects_integrated_execution_and_broker_closure(
             "SELECT workspace_id FROM workspace ORDER BY workspace_id"
         ).fetchall() == [("ws-1",), ("ws-2",)]
         unscoped_db.close()
+
+
+def test_workspace_backup_preserves_same_workspace_parent_receipt_closure(
+    tmp_path: Path,
+) -> None:
+    source, database, assets, _ = _source(tmp_path)
+    repository = CoreAuthorityRepository(database)
+    repository.create_document(
+        Document("doc-receipt", "ws-1", "Selected", created_at=NOW, updated_at=NOW)
+    )
+    closure = _add_integrated_execution_closure(
+        repository,
+        AssetStore(assets),
+        workspace_id="ws-1",
+        document_id="doc-receipt",
+        marker="receipt-positive",
+        content=b"selected",
+    )
+    repository.close()
+
+    backup = _plane(source, database, assets).create_backup(
+        tmp_path / "receipt-positive-backup",
+        _request("receipt-positive-backup"),
+    )
+    projected = sqlite3.connect(backup.bundle_root / "core/core.db")
+    try:
+        stored = json.loads(
+            projected.execute(
+                "SELECT receipt_json FROM execution_receipt WHERE receipt_id=?",
+                (closure["receipt_id"],),
+            ).fetchone()[0]
+        )
+        assert stored["parent_receipt_ids"] == [closure["child_receipt_id"]]
+        assert projected.execute(
+            "SELECT job_id FROM execution_receipt WHERE receipt_id=?",
+            (closure["child_receipt_id"],),
+        ).fetchone() is not None
+    finally:
+        projected.close()
+
+    restored = _plane(source, database, assets).stage_restore(
+        backup.bundle_root,
+        tmp_path / "receipt-positive-restored",
+        _restore_request("restore-receipt-positive"),
+    )
+    restored_database = restored.target_root / "core/core.db"
+    before = sqlite3.connect(restored_database)
+    migration_rows = before.execute(
+        "SELECT migration_id,sha256,applied_at FROM schema_migration ORDER BY rowid"
+    ).fetchall()
+    before.close()
+    reopened = CoreAuthorityRepository(restored_database)
+    try:
+        restored_receipt = json.loads(
+            reopened._connection.execute(
+                "SELECT receipt_json FROM execution_receipt WHERE receipt_id=?",
+                (closure["receipt_id"],),
+            ).fetchone()[0]
+        )
+        assert restored_receipt["parent_receipt_ids"] == [
+            closure["child_receipt_id"]
+        ]
+        assert reopened._connection.execute(
+            "SELECT job_id FROM execution_receipt WHERE receipt_id=?",
+            (closure["child_receipt_id"],),
+        ).fetchone() is not None
+        assert [
+            tuple(row)
+            for row in reopened._connection.execute(
+                "SELECT migration_id,sha256,applied_at FROM schema_migration ORDER BY rowid"
+            ).fetchall()
+        ] == migration_rows
+        assert reopened._connection.execute("PRAGMA foreign_key_check").fetchall() == []
+    finally:
+        reopened.close()
+
+
+def test_workspace_backup_rejects_orphan_parent_receipt_without_source_mutation(
+    tmp_path: Path,
+) -> None:
+    source, database, assets, _ = _source(tmp_path)
+    repository = CoreAuthorityRepository(database)
+    repository.create_document(
+        Document("doc-orphan", "ws-1", "Selected", created_at=NOW, updated_at=NOW)
+    )
+    closure = _add_integrated_execution_closure(
+        repository,
+        AssetStore(assets),
+        workspace_id="ws-1",
+        document_id="doc-orphan",
+        marker="receipt-orphan",
+        content=b"selected",
+    )
+    repository.close()
+    expected_json, expected_hash = _rewrite_receipt_parents(
+        database, str(closure["receipt_id"]), ["receipt-missing"]
+    )
+    source_before = _durable_tree_hashes(source)
+    destination = tmp_path / "receipt-orphan-backup"
+
+    with pytest.raises(BackupValidationError, match="safely scoped"):
+        _plane(source, database, assets).create_backup(destination, _request())
+
+    assert not destination.exists()
+    assert not list(tmp_path.glob(".b-*.stage"))
+    assert _durable_tree_hashes(source) == source_before
+    saved = sqlite3.connect(database)
+    assert saved.execute(
+        "SELECT receipt_json,receipt_hash FROM execution_receipt WHERE receipt_id=?",
+        (closure["receipt_id"],),
+    ).fetchone() == (expected_json, expected_hash)
+    saved.close()
+
+
+def test_workspace_backup_rejects_cross_workspace_parent_receipt_without_source_mutation(
+    tmp_path: Path,
+) -> None:
+    source, database, assets, _ = _source(tmp_path)
+    repository = CoreAuthorityRepository(database)
+    repository.create_document(
+        Document("doc-parent-1", "ws-1", "Selected", created_at=NOW, updated_at=NOW)
+    )
+    repository.create_workspace(
+        Workspace("ws-2", "Other", created_at=NOW, updated_at=NOW)
+    )
+    repository.create_document(
+        Document("doc-parent-2", "ws-2", "Other", created_at=NOW, updated_at=NOW)
+    )
+    selected = _add_integrated_execution_closure(
+        repository,
+        AssetStore(assets),
+        workspace_id="ws-1",
+        document_id="doc-parent-1",
+        marker="receipt-cross-1",
+        content=b"selected",
+    )
+    excluded = _add_integrated_execution_closure(
+        repository,
+        AssetStore(assets),
+        workspace_id="ws-2",
+        document_id="doc-parent-2",
+        marker="receipt-cross-2",
+        content=b"other",
+    )
+    repository.close()
+    expected_json, expected_hash = _rewrite_receipt_parents(
+        database,
+        str(selected["receipt_id"]),
+        [str(excluded["receipt_id"])],
+    )
+    source_before = _durable_tree_hashes(source)
+    destination = tmp_path / "receipt-cross-backup"
+
+    with pytest.raises(BackupValidationError, match="safely scoped"):
+        _plane(source, database, assets).create_backup(destination, _request())
+
+    assert not destination.exists()
+    assert not list(tmp_path.glob(".b-*.stage"))
+    assert _durable_tree_hashes(source) == source_before
+    saved = sqlite3.connect(database)
+    assert saved.execute(
+        "SELECT receipt_json,receipt_hash FROM execution_receipt WHERE receipt_id=?",
+        (selected["receipt_id"],),
+    ).fetchone() == (expected_json, expected_hash)
+    assert saved.execute(
+        "SELECT job_id FROM execution_receipt WHERE receipt_id=?",
+        (excluded["receipt_id"],),
+    ).fetchone() is not None
+    saved.close()
 
 
 @pytest.mark.parametrize("authority_row", ["broker_operation", "host_ledger"])

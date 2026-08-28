@@ -6,8 +6,8 @@
   "generation_parent": "f5e7feaee17ed7c331eeb63a5fe185df7e2e8b2f",
   "generation_parent_tree": "86d74c2e84c590306751da8a8db19e2c7d12f1f8",
   "superseded_source": "7948da473f3e5066b13d3fe6239561572bce86b9",
-  "status": "wave_c_hc_f_001_g2_source_ready_pending_review",
-  "outcome": "Same-barrier online Core freeze with canonical integrated CORE/P3_JOB/EXECUTION single-Workspace SQLite projection, bound CoreSnapshot/Asset closure, and isolated new-root restore",
+  "status": "wave_c_hc_f_001_g2_receipt_lineage_source_ready_pending_review",
+  "outcome": "Same-barrier online Core freeze with canonical integrated CORE/P3_JOB/EXECUTION single-Workspace SQLite projection, including fail-closed existing same-Workspace execution receipt parent lineage, bound CoreSnapshot/Asset closure, and isolated new-root restore",
   "public_contract_changes": [],
   "dependency_changes": [],
   "composition_dependencies": [
@@ -29,9 +29,10 @@
     "integrated Core schema or five-step migration-ledger mismatch",
     "unclassified Core table/view/trigger/index/column/migration",
     "cross-Workspace, orphaned, or ambiguous Core/P3/ETX authority reference",
+    "missing or cross-Workspace execution receipt parent lineage",
     "workspace-mode P2/P3 file or declared Asset-root contribution"
   ],
-  "source_review": "WAVE-C-HC-F-001 Generation 2 source_ready_pending_review; review_pending=true; no closure or merge-eligibility claim",
+  "source_review": "WAVE-C-HC-F-001 Generation 2 receipt-lineage follow-up source_ready_pending_review on parent 77be6c1d; review_pending=true; no closure or merge-eligibility claim",
   "central_pass_claimed": false,
   "donor_push": "DISABLED",
   "review_pending": true,
