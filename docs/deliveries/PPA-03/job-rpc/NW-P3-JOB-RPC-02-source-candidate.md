@@ -23,13 +23,35 @@ access a supervisor private session.
 
 ## Authority boundary
 
-- Creation, plan freezing, and Attempt start delegate to P1 authority.
+- Creation and plan freezing delegate to P1 authority. Attempt start now stops
+  unless P1 supplies an atomic typed `AttemptStartBinding` port.
 - Snapshot and Job event pages read only under the accepted committed read gate,
   then validate the frozen contracts.
 - Host RPC dispatch validates ingress and result before the P2 response write.
 - Pending duplicates are not re-executed; durable replay remains owned by P2.
 - Missing P0/P1/P2/checkpoint-stream seams are recorded in the scoped Delta at
   `coordination/PPA-03/job-rpc/NW-P3-JOB-RPC-02-composition-delta-v1.json`.
+
+## Limited remediation
+
+The sole remediation over candidate `27f3339a` is bounded to
+`NW-P3-RPC-SOL-F-001..006`:
+
+- batch dispatch no longer consumes P2's destructive `drain_events`; it requires
+  non-destructive peek/dispose and removes only a persisted success;
+- every local command identity is validated before an authority write;
+- concurrent creation reports `replayed=true` only when proven and otherwise
+  reports `null`, pending an atomic P1 disposition;
+- checkpoint/stream extensions are typed and bound to Workspace, Job, Step and
+  source Attempt, with contract, uniqueness and ordering checks;
+- Host handlers return a side-effect-free prepared result; it is validated with
+  the exact request before the transaction callback and any P2 ACK;
+- Attempt start requires an atomic P1 `AttemptStartBinding`; one-shot secrets and
+  method/Attempt/epoch/payload-hash reconciliation remain explicit integration
+  dependencies rather than inferred state.
+
+The Finding-ID remediation evidence is recorded at
+`coordination/PPA-03/job-rpc/NW-P3-JOB-RPC-02-remediation-closure-v1.json`.
 
 ## Knowledge evidence
 

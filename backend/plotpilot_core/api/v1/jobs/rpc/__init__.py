@@ -6,15 +6,23 @@ boundary.  These adapters only delegate commands to the accepted
 """
 
 from .command_query import (
+    AttemptStartBinding,
+    AttemptStartPort,
+    JobCheckpointBinding,
     JobCommandQueryAdapter,
     JobCommandResult,
     JobSnapshotExtensionReader,
     JobSnapshotExtensions,
+    JobStreamHighWaterBinding,
 )
 
 __all__ = [
+    "AttemptStartBinding",
+    "AttemptStartPort",
+    "JobCheckpointBinding",
     "JobCommandQueryAdapter",
     "JobCommandResult",
     "JobSnapshotExtensionReader",
     "JobSnapshotExtensions",
+    "JobStreamHighWaterBinding",
 ]

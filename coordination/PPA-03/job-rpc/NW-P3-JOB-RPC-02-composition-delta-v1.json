@@ -4,12 +4,15 @@
   "node_id": "NW-P3-JOB-RPC-02",
   "baseline": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
   "status": "scoped_slices_stopped",
+  "remediation_parent": "27f3339afca0da0fa9b18b49eef893a6f80a3225",
+  "finding_manifest_sha256": "ef81b0ad0508a033edf792b76dc80ec53e8f7746502b5e1cf6f4a35b366c382c",
   "rule": "No unowned contract or authority change is implemented by this source node.",
   "implemented_boundary": {
     "job_commands": [
       "ExecutionAuthority.create_from_verified_snapshot",
       "ExecutionAuthority.freeze_plan",
-      "ExecutionAuthority.start_attempt"
+      "pre-write closed identity validation",
+      "Attempt start integration-stops until P1 returns AttemptStartBinding"
     ],
     "job_queries": [
       "workspace-scoped job-snapshot/v1 projection",
@@ -17,9 +20,11 @@
     ],
     "host_rpc": [
       "validated host_request dispatch to injected durable handlers",
+      "request-bound result validation before the P2 success write",
       "validated success response through PluginProcessSupervisor.respond_host_request",
       "host_request_duplicate suppression",
-      "host_replay passthrough because P2 already sends the durable frame"
+      "host_replay passthrough because P2 already sends the durable frame",
+      "batch dispatch integration-stops without a non-destructive P2 disposition port"
     ]
   },
   "gaps": [
@@ -36,10 +41,34 @@
       "required_resolution": "Publish transaction-owning P1 methods; raw adapter SQL and a second ledger remain forbidden."
     },
     {
+      "owner": "P1 Job authority",
+      "slice": "atomic Job create disposition",
+      "evidence": "ExecutionAuthority.create_from_verified_snapshot returns only the winning row and cannot distinguish same-job-id concurrent create from replay.",
+      "required_resolution": "Return an atomic created/replayed disposition from the P1 transaction. Until then JobCommandResult.replayed is true only when provable and otherwise null; it never claims false."
+    },
+    {
+      "owner": "P1 Job authority",
+      "slice": "AttemptStartBinding",
+      "evidence": "ExecutionAuthority.start_attempt returns None and may replace the requested epoch 1 with the Step-allocated epoch.",
+      "required_resolution": "The P1 start transaction must return an immutable AttemptStartBinding containing exact Job/Step/Attempt/worker/release/generation, allocated lease_epoch, receipt ID and result contract. The adapter stops before writing when this port is absent."
+    },
+    {
       "owner": "P2 supervisor",
       "slice": "outbound job.start/job.resume/job.pause/job.cancel and Host error replies",
       "evidence": "PluginProcessSupervisor exposes neither request_worker nor respond_host_error; only private session machinery exists.",
       "required_resolution": "Publish lifecycle-locked request_worker and validated Host error response ports."
+    },
+    {
+      "owner": "P2 supervisor",
+      "slice": "non-destructive Host event disposition",
+      "evidence": "PluginProcessSupervisor.drain_events clears the entire in-memory batch before a handler outcome is known.",
+      "required_resolution": "Publish lifecycle-fenced peek_host_events and durable dispose_host_event semantics. Failed and trailing events must remain pending; disposal occurs only after the canonical success frame is retained/written."
+    },
+    {
+      "owner": "P1/P2 application composition",
+      "slice": "request-bound transaction, one-shot secrets and response reconciliation",
+      "evidence": "The accepted handlers have no transaction callback for pre-commit request/result binding, and outbound start has no secret scrub or response-deduplication seam.",
+      "required_resolution": "Compose each durable handler as a side-effect-free PreparedHostRpcResult plus a transaction commit callback; the adapter validates mirrored request/result fields before invoking commit. Supply secrets only after AttemptStartBinding, scrub after one send, and reconcile responses by method, attempt_id, allocated lease_epoch and canonical payload hash."
     },
     {
       "owner": "P0 HTTP integration",
@@ -51,7 +80,7 @@
       "owner": "checkpoint/stream source nodes",
       "slice": "job-snapshot/v1 extension projection",
       "evidence": "The accepted baseline has no checkpoint/stream authority mounted in the Job repository.",
-      "required_resolution": "Compose a JobSnapshotExtensionReader explicitly; this node provides no silent empty production fallback."
+      "required_resolution": "Compose a JobSnapshotExtensionReader returning typed JobCheckpointBinding and JobStreamHighWaterBinding values. The adapter verifies checkpoint contract/Attempt ownership plus Workspace/Job/Step scope, stream uniqueness and canonical order."
     }
   ],
   "forbidden_workarounds": [

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 
 from backend.plotpilot_core.supervisor.rpc import RpcEvent
 from backend.plotpilot_core.supervisor.models import WorkerTicket
@@ -19,20 +19,34 @@ from backend.plotpilot_plugin_sdk.verifier import validate_rpc_request, validate
 
 
 class HostRpcHandler(Protocol):
-    """A durable application handler; retries must replay its first result."""
+    """Prepare a request-bound result without committing a durable mutation."""
 
-    def __call__(self, request: Mapping[str, Any]) -> Mapping[str, Any]: ...
+    def __call__(self, request: Mapping[str, Any]) -> PreparedHostRpcResult: ...
+
+
+@dataclass(frozen=True, slots=True)
+class PreparedHostRpcResult:
+    """Side-effect-free result plus its post-validation transaction callback."""
+
+    result: Mapping[str, Any]
+    commit: Callable[[], None]
 
 
 class HostRpcSupervisorPort(Protocol):
-    def drain_events(self, ticket: WorkerTicket) -> tuple[RpcEvent, ...]: ...
-
     def respond_host_request(
         self,
         ticket: WorkerTicket,
         request_id: str,
         result: dict[str, object],
     ) -> None: ...
+
+
+class HostRpcEventDispositionPort(Protocol):
+    """P2-owned non-destructive event view and durable success disposition."""
+
+    def peek_host_events(self, ticket: WorkerTicket) -> tuple[RpcEvent, ...]: ...
+
+    def dispose_host_event(self, ticket: WorkerTicket, request_id: str) -> None: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,12 +62,15 @@ class HostRpcApplicationDispatcher:
         self,
         supervisor: HostRpcSupervisorPort,
         handlers: Mapping[str, HostRpcHandler],
+        *,
+        event_disposition: HostRpcEventDispositionPort | None = None,
     ) -> None:
         unknown = sorted(set(handlers) - set(HOST_METHODS))
         if unknown:
             raise ValueError(f"unknown Host RPC handlers: {', '.join(unknown)}")
         self._supervisor = supervisor
         self._handlers = dict(handlers)
+        self._event_disposition = event_disposition
 
     def dispatch_event(self, ticket: WorkerTicket, event: RpcEvent) -> bool:
         """Dispatch one request; return ``False`` for unrelated P2 events.
@@ -71,17 +88,43 @@ class HostRpcApplicationDispatcher:
         handler = self._handlers.get(method)
         if handler is None:
             raise ContractError(ErrorCode.INVALID_TRANSITION, f"Host RPC method is not composed: {method}")
-        result = dict(handler(request))
-        validate_rpc_result(method, result)
+        prepared = handler(request)
+        if not isinstance(prepared, PreparedHostRpcResult):
+            raise ContractError(
+                ErrorCode.RESULT_CONTRACT_MISMATCH,
+                "Host RPC handler must return PreparedHostRpcResult",
+            )
+        result = dict(prepared.result)
+        validate_rpc_result(method, result, request=request)
+        prepared.commit()
         self._supervisor.respond_host_request(ticket, str(request["id"]), result)
         return True
 
-    def drain_and_dispatch(self, ticket: WorkerTicket) -> RpcDispatchBatch:
+    def dispatch_pending(self, ticket: WorkerTicket) -> RpcDispatchBatch:
+        """Handle a non-destructive P2 view and dispose only persisted success.
+
+        The accepted P2 ``drain_events`` API clears the whole batch up front and
+        is intentionally not used here.  Until P2 publishes this disposition
+        port, batch integration stops before reading or losing an event.
+        """
+
+        if self._event_disposition is None:
+            raise ContractError(
+                ErrorCode.INVALID_TRANSITION,
+                "P2 non-destructive Host event disposition port is not composed",
+            )
         handled: list[str] = []
         passthrough: list[RpcEvent] = []
-        for event in self._supervisor.drain_events(ticket):
+        seen_request_ids: set[str] = set()
+        for event in self._event_disposition.peek_host_events(ticket):
+            request_id = str(event.message.get("id", ""))
+            if event.kind == "host_request" and request_id in seen_request_ids:
+                passthrough.append(event)
+                continue
             if self.dispatch_event(ticket, event):
-                handled.append(str(event.message["id"]))
+                seen_request_ids.add(request_id)
+                self._event_disposition.dispose_host_event(ticket, request_id)
+                handled.append(request_id)
             else:
                 passthrough.append(event)
         return RpcDispatchBatch(tuple(handled), tuple(passthrough))

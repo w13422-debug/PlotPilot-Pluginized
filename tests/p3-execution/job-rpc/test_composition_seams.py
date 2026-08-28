@@ -22,6 +22,12 @@ def test_missing_authority_and_supervisor_surfaces_remain_explicit_delta_gates()
         assert not hasattr(ExecutionAuthority, name)
     assert not hasattr(PluginProcessSupervisor, "request_worker")
     assert not hasattr(PluginProcessSupervisor, "respond_host_error")
+    assert not hasattr(PluginProcessSupervisor, "peek_host_events")
+    assert not hasattr(PluginProcessSupervisor, "dispose_host_event")
+    assert inspect.signature(ExecutionAuthority.start_attempt).return_annotation in {
+        None,
+        "None",
+    }
 
 
 def test_owned_adapters_do_not_create_a_second_job_authority():
@@ -42,3 +48,20 @@ def test_owned_adapters_do_not_create_a_second_job_authority():
     for path in production:
         source = path.read_text(encoding="utf-8")
         assert not any(value in source for value in forbidden), path
+    dispatcher = production[1].read_text(encoding="utf-8")
+    assert ".drain_events(" not in dispatcher
+
+
+def test_delta_records_attempt_binding_secrets_disposition_and_reconciliation():
+    delta = Path(
+        "coordination/PPA-03/job-rpc/NW-P3-JOB-RPC-02-composition-delta-v1.json"
+    ).read_text(encoding="utf-8")
+    for required in (
+        "AttemptStartBinding",
+        "one-shot secrets",
+        "peek_host_events",
+        "dispose_host_event",
+        "canonical payload hash",
+        "atomic created/replayed disposition",
+    ):
+        assert required in delta

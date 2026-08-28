@@ -5,7 +5,10 @@ from pathlib import Path
 
 import pytest
 
-from backend.plotpilot_core.api.v1.jobs.rpc import JobSnapshotExtensions
+from backend.plotpilot_core.api.v1.jobs.rpc import (
+    AttemptStartBinding,
+    JobSnapshotExtensions,
+)
 from backend.plotpilot_core.assets import AssetStore
 from backend.plotpilot_core.domain import Workspace
 from backend.plotpilot_core.repositories.authority import CoreAuthorityRepository
@@ -20,9 +23,44 @@ class NoMountedSnapshotExtensions:
         return JobSnapshotExtensions(None, ())
 
 
+class AuthorityAttemptStartFixture:
+    """Test-only bridge that observes the row written by the accepted P1 code."""
+
+    def __init__(self, authority, repository):
+        self.authority = authority
+        self.repository = repository
+
+    def start_attempt(self, **command):
+        self.authority.start_attempt(**command)
+        with self.repository.read_connection() as connection:
+            row = connection.execute(
+                "SELECT * FROM execution_attempt WHERE attempt_id=?",
+                (command["attempt_id"],),
+            ).fetchone()
+        return AttemptStartBinding(
+            job_id=row["job_id"],
+            step_id=row["step_id"],
+            attempt_id=row["attempt_id"],
+            worker_run_id=row["worker_run_id"],
+            plugin_id=row["plugin_id"],
+            release_id=row["release_id"],
+            package_hash=row["package_hash"],
+            capability_id=row["capability_id"],
+            generation_id=row["generation_id"],
+            lease_epoch=row["lease_epoch"],
+            preallocated_receipt_id=row["preallocated_receipt_id"],
+            expected_result_contract=row["expected_result_contract"],
+        )
+
+
 @pytest.fixture
 def snapshot_extensions():
     return NoMountedSnapshotExtensions()
+
+
+@pytest.fixture
+def attempt_starter(job_stack):
+    return AuthorityAttemptStartFixture(job_stack["authority"], job_stack["repository"])
 
 
 @pytest.fixture
