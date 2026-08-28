@@ -1,0 +1,93 @@
+{
+  "schema": "plotpilot-wave-c-finding-source-closure/v2",
+  "wave": "C",
+  "finding_id": "WAVE-C-HC-F-001",
+  "reviewer": {
+    "agent_id": "01a04666-412a-7cb0-8030-311f08d06f7d",
+    "nickname": "Hubble",
+    "model": "gpt-5.6-sol",
+    "reasoning_effort": "max",
+    "service_tier": "priority",
+    "ui_speed_mode": "fast",
+    "read_only": true,
+    "same_reviewer": true,
+    "delegated": false
+  },
+  "candidate": {
+    "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized-worktrees\\PPA-NW-P1-Backup-Data",
+    "branch": "codex/nw-p1-backup-data-wave-c-g2",
+    "parent": "77be6c1d7463559dcdfda5359fae3e25724afc74",
+    "head": "108fa8378ff418d2b4f5f4d5ed3ec71218354f85",
+    "tree": "20ce37796a615c8cad064d39f389c6141bc67830",
+    "new_commit_count": 1,
+    "total_from_h_c": 2,
+    "changed_path_count": 5,
+    "worktree_clean": true
+  },
+  "central_intake": {
+    "path": "cases/plotpilot-pluginized-seven-project-construction-20260826/evidence/wave-c-h-c-f001-parent-receipt-central-intake-v1.json",
+    "sha256": "adaf51f9b72e57490f73b94d185e194a20a47ddb322e9319d937a2e8b8a5185d",
+    "result": "PASS"
+  },
+  "prior_block": {
+    "path": "cases/plotpilot-pluginized-seven-project-construction-20260826/evidence/reviews/wave-c-h-c-f001-g2-sol-block-v1.json",
+    "sha256": "f5cdd2c8cd1fe836378a05f1d93c9614cd22bec54e84224028d85253f57d95b0",
+    "disposition": "CLOSED by exact parent lineage correction"
+  },
+  "closure_evidence": [
+    {
+      "clause": "orphan parent receipt",
+      "result": "PASS",
+      "evidence": "REJECTED:BackupValidationError; destination absent; source unchanged"
+    },
+    {
+      "clause": "cross-Workspace parent receipt",
+      "result": "PASS",
+      "evidence": "REJECTED:BackupValidationError; destination absent; source unchanged"
+    },
+    {
+      "clause": "same-Workspace positive closure",
+      "result": "PASS",
+      "evidence": "referring and referenced receipts are ws-1 and both authority rows survive projection/restore/reopen"
+    },
+    {
+      "clause": "schema and reopen",
+      "result": "PASS",
+      "evidence": "30 objects; five migrations; no drift; FK empty; integrity ok; sqlite_sequence 5/5/5/5"
+    },
+    {
+      "clause": "direct regression",
+      "result": "PASS",
+      "evidence": "backup-data-plane 73 passed, 1 environment symlink skip; p3-execution 39 passed"
+    }
+  ],
+  "independent_validation": [
+    {
+      "command": "original orphan receipt probe",
+      "result": "REJECTED:BackupValidationError; DEST_EXISTS=False; SOURCE_UNCHANGED=True"
+    },
+    {
+      "command": "original cross-Workspace receipt probe",
+      "result": "REJECTED:BackupValidationError; DEST_EXISTS=False; SOURCE_UNCHANGED=True"
+    },
+    {
+      "command": "three lineage pytest",
+      "result": "3 passed in 1.63s"
+    },
+    {
+      "command": "backup-data-plane",
+      "result": "73 passed, 1 skipped in 14.26s"
+    },
+    {
+      "command": "p3-execution",
+      "result": "39 passed in 0.80s"
+    }
+  ],
+  "finding_status": "CLOSED",
+  "source_verdict": "PASS",
+  "source_merge_eligible": true,
+  "p0_integration_authorized": true,
+  "integrated_h_c_pass_claimed": false,
+  "serialization_owner": "controller",
+  "review_completed_at": "2026-08-28"
+}

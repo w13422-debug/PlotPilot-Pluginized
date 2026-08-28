@@ -1,11 +1,43 @@
 {
-  "actual_integrated_path_count": 138,
-  "donor_push": "DISABLED",
-  "h_b_is_ancestor": true,
-  "integrated_source_head": "a83af804a092a8274e8b7a71273aeb5cee3c4cd1",
-  "integrated_source_tree": "a3e5ca9e903a3a2c939d6de1a6b7cf4e8cd675d8",
-  "integration_only_paths_before_receipts": [],
-  "merge_rows": [
+  "checks": {
+    "contract_sdk_public_route_drift_zero": true,
+    "donor_push_disabled": true,
+    "first_parent_delta_paths_exact": true,
+    "first_parent_delta_tree_matches_source": true,
+    "h_b_is_ancestor": true,
+    "head_untagged": true,
+    "merge_commit_exact": true,
+    "merge_tree_exact": true,
+    "ordered_parents_exact": true,
+    "out_of_source_union_zero": true,
+    "prior_sources_are_ancestors": true,
+    "rejected_7948_not_ancestor": true,
+    "source_is_ancestor": true,
+    "source_union_matches_final_non_evidence_delta": true,
+    "tracked_tree_clean_before_evidence_refresh": true
+  },
+  "followup_merge": {
+    "finding_id": "WAVE-C-HC-F-001",
+    "merge_commit": "8748957f97b65534b295e70dca7cd4a4d9378479",
+    "ordered_parents": [
+      "f5e7feaee17ed7c331eeb63a5fe185df7e2e8b2f",
+      "108fa8378ff418d2b4f5f4d5ed3ec71218354f85"
+    ],
+    "source_head": "108fa8378ff418d2b4f5f4d5ed3ec71218354f85",
+    "source_path_count": 7,
+    "source_paths": [
+      "backend/plotpilot_core/backup/__init__.py",
+      "backend/plotpilot_core/backup/adapters.py",
+      "backend/plotpilot_core/backup/service.py",
+      "coordination/PPA-01/backup-data-plane/state.json",
+      "coordination/PPA-01/backup-data-plane/wave-c-hc-f-001-remediation.json",
+      "docs/deliveries/PPA-01/backup-data-plane/wave-c-hc-f-001.md",
+      "tests/p1-core/backup-data-plane/test_backup_data_plane.py"
+    ],
+    "tree": "20ce37796a615c8cad064d39f389c6141bc67830"
+  },
+  "fresh_sol_acceptance": "pending",
+  "initial_wave_c_merge_rows": [
     {
       "expected_parents": [
         "53c54b237bccfacdd6ec09a304676e83e3aa5a45",
@@ -71,11 +103,26 @@
       "tree": "a3e5ca9e903a3a2c939d6de1a6b7cf4e8cd675d8"
     }
   ],
-  "missing_from_integration": [],
-  "out_of_union": [],
-  "schema": "wave-c-directed-integration-gate/v1",
-  "source_union_path_count": 138,
-  "start_head": "53c54b237bccfacdd6ec09a304676e83e3aa5a45",
-  "status": "passed",
-  "worktree_clean": true
+  "rejected_source": {
+    "head": "7948da473f3e5066b13d3fe6239561572bce86b9",
+    "is_ancestor": false,
+    "is_second_parent": false
+  },
+  "schema": "wave-c-directed-integration-gate/v2",
+  "source_path_accounting": {
+    "actual_non_evidence_delta": 140,
+    "final_source_union": 140,
+    "followup_source_delta": 7,
+    "initial_source_union": 138,
+    "missing_from_integration": [],
+    "out_of_union": [],
+    "overlap": 5,
+    "prior_evidence_path_count": 21
+  },
+  "status": "H_C_F001_SOURCE_INTEGRATED_PENDING_FRESH_SOL",
+  "superseded_candidate": {
+    "disposition": "superseded_by_parent-receipt-corrected follow-up; preserved in history",
+    "evidence_candidate_head": "f5e7feaee17ed7c331eeb63a5fe185df7e2e8b2f",
+    "integrated_source_head": "a83af804a092a8274e8b7a71273aeb5cee3c4cd1"
+  }
 }

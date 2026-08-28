@@ -1,0 +1,54 @@
+{
+  "schema": "plotpilot-wave-c-p0-integration-dispatch/v2",
+  "wave": "C",
+  "task_id": "WAVE-C-HC-F001-P0-FINAL-INTEGRATION",
+  "p0_thread_id": "01a03c8c-eee8-7830-8fa6-05528019f69f",
+  "p0_worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized",
+  "p0_branch": "codex/ppa-00-integration-candidate-r2",
+  "starting_head": "f5e7feaee17ed7c331eeb63a5fe185df7e2e8b2f",
+  "starting_tree": "86d74c2e84c590306751da8a8db19e2c7d12f1f8",
+  "starting_worktree_clean": true,
+  "source": {
+    "branch": "codex/nw-p1-backup-data-wave-c-g2",
+    "head": "108fa8378ff418d2b4f5f4d5ed3ec71218354f85",
+    "tree": "20ce37796a615c8cad064d39f389c6141bc67830",
+    "merge_base": "f5e7feaee17ed7c331eeb63a5fe185df7e2e8b2f",
+    "commit_count": 2
+  },
+  "source_closure": {
+    "path": "cases/plotpilot-pluginized-seven-project-construction-20260826/evidence/reviews/wave-c-h-c-f001-parent-receipt-sol-closure-v1.json",
+    "sha256": "13ce187fee8ae59540b30b7f1237b2ec7d50971bfd6cd1f485cb14e8a8402eaa",
+    "finding_status": "CLOSED",
+    "source_merge_eligible": true,
+    "p0_integration_authorized": true
+  },
+  "integration_sequence": [
+    "verify exact clean start",
+    "git merge --no-ff --no-commit exact source",
+    "verify staged seven-path aggregate and MERGE_HEAD",
+    "run integrated backup-data-plane, p1-core, p3-execution, ruff, compileall and Wave C directed gate",
+    "abort without commit on any failure",
+    "create exactly one no-ff merge commit on pass",
+    "refresh WAVE-C-20260828 evidence/manifest in at most one follow-up evidence commit"
+  ],
+  "candidate_constraints": {
+    "source_ancestor_required": true,
+    "source_tree_content_required": true,
+    "rejected_sources_forbidden": true,
+    "worktree_clean_required": true,
+    "donor_push_disabled_required": true,
+    "tag_forbidden_until_final_sol": true
+  },
+  "forbidden": [
+    "source edits in P0",
+    "amend/rebase/reset/clean/push",
+    "tag before final Sol integrated acceptance",
+    "GUI/browser/desktop/Tauri/EXE/installer/final build"
+  ],
+  "model": "gpt-5.6-sol",
+  "reasoning_effort": "high",
+  "service_tier": "priority",
+  "ui_speed_mode": "fast",
+  "status": "READY",
+  "created_at": "2026-08-28T14:28:23.8609658+08:00"
+}

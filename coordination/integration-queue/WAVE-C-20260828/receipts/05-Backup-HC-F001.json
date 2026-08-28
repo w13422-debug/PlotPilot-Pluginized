@@ -1,0 +1,110 @@
+{
+  "all_staged_blobs_equal_source": true,
+  "contract_sdk_public_route_drift": [],
+  "dispatch": {
+    "candidate_locator": {
+      "bytes": 2244,
+      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/intake/Backup-HC-F001-final-integration-dispatch.json",
+      "sha256": "39872bbd8e7f8e29d9006c6cc34ca4d71dfcceadf724944ead8e9564893ad68b"
+    },
+    "source_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\wave-c-h-c-f001-p0-final-integration-dispatch-v1.json",
+    "status": "READY"
+  },
+  "donor_push": "DISABLED",
+  "finding_id": "WAVE-C-HC-F-001",
+  "first_parent": "f5e7feaee17ed7c331eeb63a5fe185df7e2e8b2f",
+  "fresh_h_c_acceptance": "pending",
+  "merge_commit": "8748957f97b65534b295e70dca7cd4a4d9378479",
+  "merge_method": "git merge --no-ff --no-commit <exact-source>, integrated validation, then commit",
+  "merge_tree": "20ce37796a615c8cad064d39f389c6141bc67830",
+  "rejected_source": {
+    "head": "7948da473f3e5066b13d3fe6239561572bce86b9",
+    "is_ancestor": false,
+    "is_second_parent": false
+  },
+  "release_tag_created": false,
+  "schema": "wave-c-followup-merge-receipt/v1",
+  "second_parent": "108fa8378ff418d2b4f5f4d5ed3ec71218354f85",
+  "source_branch": "codex/nw-p1-backup-data-wave-c-g2",
+  "source_delta_path_count": 7,
+  "source_delta_paths": [
+    "backend/plotpilot_core/backup/__init__.py",
+    "backend/plotpilot_core/backup/adapters.py",
+    "backend/plotpilot_core/backup/service.py",
+    "coordination/PPA-01/backup-data-plane/state.json",
+    "coordination/PPA-01/backup-data-plane/wave-c-hc-f-001-remediation.json",
+    "docs/deliveries/PPA-01/backup-data-plane/wave-c-hc-f-001.md",
+    "tests/p1-core/backup-data-plane/test_backup_data_plane.py"
+  ],
+  "source_head": "108fa8378ff418d2b4f5f4d5ed3ec71218354f85",
+  "source_merge_base": "f5e7feaee17ed7c331eeb63a5fe185df7e2e8b2f",
+  "source_review": {
+    "candidate_locator": {
+      "bytes": 3263,
+      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/closures/Backup-HC-F001-parent-receipt-sol-closure.json",
+      "sha256": "13ce187fee8ae59540b30b7f1237b2ec7d50971bfd6cd1f485cb14e8a8402eaa"
+    },
+    "merge_eligible": true,
+    "reviewer": "01a04666-412a-7cb0-8030-311f08d06f7d",
+    "source_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\wave-c-h-c-f001-parent-receipt-sol-closure-v1.json",
+    "verdict": "PASS"
+  },
+  "source_tree": "20ce37796a615c8cad064d39f389c6141bc67830",
+  "status": "source_integrated_pending_fresh_sol",
+  "validation_raw": {
+    "bytes": 5894,
+    "path": "coordination/integration-queue/WAVE-C-20260828/evidence/raw/06-Backup-HC-F001-integrated-validation.json",
+    "sha256": "76418041f7864f77c946ae81492de340470785a6032740de6ffeb443c1507cb4"
+  },
+  "validation_summary": [
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/backup-data-plane -q",
+      "exit_code": 0,
+      "id": "backup-data-plane",
+      "result": "============================= 74 passed in 15.36s ============================="
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core -q",
+      "exit_code": 0,
+      "id": "p1-core-full",
+      "result": "============================ 159 passed in 18.27s ============================="
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p3-execution -q",
+      "exit_code": 0,
+      "id": "p3-execution-full",
+      "result": "============================= 39 passed in 0.74s =============================="
+    },
+    {
+      "command": "python -B -m ruff check backend/plotpilot_core/backup tests/p1-core/backup-data-plane",
+      "exit_code": 0,
+      "id": "backup-ruff",
+      "result": "All checks passed!"
+    },
+    {
+      "command": "python -B -m compileall -q backend/plotpilot_core/backup",
+      "exit_code": 0,
+      "id": "backup-compileall",
+      "result": "no diagnostics"
+    },
+    {
+      "command": "python -B tools/integration/generate_contract_schemas.py --check",
+      "exit_code": 0,
+      "id": "contract-schema-determinism",
+      "result": "generated artifacts are deterministic (58 files)"
+    },
+    {
+      "command": "python -B tools/integration/generate_contract_manifest.py --check",
+      "exit_code": 0,
+      "id": "contract-manifest-determinism",
+      "result": "contract manifest is deterministic (141 files)"
+    },
+    {
+      "command": "git diff --cached --check",
+      "exit_code": 0,
+      "id": "staged-diff-check",
+      "result": "no diagnostics"
+    }
+  ],
+  "wave": "C"
+}

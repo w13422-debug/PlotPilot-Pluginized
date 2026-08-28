@@ -1,0 +1,81 @@
+{
+  "commands": [
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/backup-data-plane -q",
+      "elapsed_seconds": 17.079,
+      "exit_code": 0,
+      "id": "backup-data-plane",
+      "stderr": "",
+      "stdout": "============================= test session starts =============================\r\nplatform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0\r\nrootdir: C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\r\nconfigfile: pytest.ini\r\nplugins: asyncio-0.26.0, anyio-4.14.2\r\nasyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\r\ncollected 74 items\r\n\r\ntests\\p1-core\\backup-data-plane\\test_backup_data_plane.py .............. [ 18%]\r\n............................................................             [100%]\r\n\r\n============================= 74 passed in 15.36s =============================\r\n"
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core -q",
+      "elapsed_seconds": 19.227,
+      "exit_code": 0,
+      "id": "p1-core-full",
+      "stderr": "",
+      "stdout": "============================= test session starts =============================\r\nplatform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0\r\nrootdir: C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\r\nconfigfile: pytest.ini\r\nplugins: asyncio-0.26.0, anyio-4.14.2\r\nasyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\r\ncollected 159 items\r\n\r\ntests\\p1-core\\backup-data-plane\\test_backup_data_plane.py .............. [  8%]\r\n............................................................             [ 46%]\r\ntests\\p1-core\\execution-transaction\\test_broker_persistence.py ......... [ 52%]\r\n...........                                                              [ 59%]\r\ntests\\p1-core\\execution-transaction\\test_frozen_findings_remediation.py . [ 59%]\r\n..........................                                               [ 76%]\r\ntests\\p1-core\\execution-transaction\\test_terminal_failure_windows.py ... [ 77%]\r\n...........                                                              [ 84%]\r\ntests\\p1-core\\execution-transaction\\test_terminal_transaction.py ....... [ 89%]\r\n..........                                                               [ 95%]\r\ntests\\p1-core\\test_asset_store.py ..                                     [ 96%]\r\ntests\\p1-core\\test_candidate_publication.py ..                           [ 98%]\r\ntests\\p1-core\\test_core_authority.py ...                                 [100%]\r\n\r\n============================ 159 passed in 18.27s =============================\r\n"
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p3-execution -q",
+      "elapsed_seconds": 1.983,
+      "exit_code": 0,
+      "id": "p3-execution-full",
+      "stderr": "",
+      "stdout": "============================= test session starts =============================\r\nplatform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0\r\nrootdir: C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\r\nconfigfile: pytest.ini\r\nplugins: asyncio-0.26.0, anyio-4.14.2\r\nasyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\r\ncollected 39 items\r\n\r\ntests\\p3-execution\\provider-broker\\test_broker.py ................       [ 41%]\r\ntests\\p3-execution\\provider-broker\\test_model_profile.py ......          [ 56%]\r\ntests\\p3-execution\\provider-broker\\test_provider.py .............        [ 89%]\r\ntests\\p3-execution\\test_job_execution.py ....                            [100%]\r\n\r\n============================= 39 passed in 0.74s ==============================\r\n"
+    },
+    {
+      "command": "python -B -m ruff check backend/plotpilot_core/backup tests/p1-core/backup-data-plane",
+      "elapsed_seconds": 0.126,
+      "exit_code": 0,
+      "id": "backup-ruff",
+      "stderr": "",
+      "stdout": "All checks passed!\n"
+    },
+    {
+      "command": "python -B -m compileall -q backend/plotpilot_core/backup",
+      "elapsed_seconds": 0.117,
+      "exit_code": 0,
+      "id": "backup-compileall",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "command": "python -B tools/integration/generate_contract_schemas.py --check",
+      "elapsed_seconds": 0.138,
+      "exit_code": 0,
+      "id": "contract-schema-determinism",
+      "stderr": "",
+      "stdout": "generated artifacts are deterministic (58 files)\r\n"
+    },
+    {
+      "command": "python -B tools/integration/generate_contract_manifest.py --check",
+      "elapsed_seconds": 0.162,
+      "exit_code": 0,
+      "id": "contract-manifest-determinism",
+      "stderr": "",
+      "stdout": "contract manifest is deterministic (141 files)\r\n"
+    },
+    {
+      "command": "git diff --cached --check",
+      "elapsed_seconds": 0.061,
+      "exit_code": 0,
+      "id": "staged-diff-check",
+      "stderr": "",
+      "stdout": ""
+    }
+  ],
+  "harness_note": "Prior attempt ran backup-data-plane with exit 0 in 15.19s but CP936 console echo failed; corrected harness reruns because no raw record was persisted.",
+  "integration_head_before_commit": "f5e7feaee17ed7c331eeb63a5fe185df7e2e8b2f",
+  "merge_result": {
+    "merge_commit": "8748957f97b65534b295e70dca7cd4a4d9378479",
+    "ordered_parents": [
+      "f5e7feaee17ed7c331eeb63a5fe185df7e2e8b2f",
+      "108fa8378ff418d2b4f5f4d5ed3ec71218354f85"
+    ],
+    "tree": "20ce37796a615c8cad064d39f389c6141bc67830"
+  },
+  "schema": "wave-c-hc-f001-integrated-validation/v1",
+  "source": "108fa8378ff418d2b4f5f4d5ed3ec71218354f85",
+  "status": "all_required_commands_passed_pending_fresh_sol"
+}

@@ -1,260 +1,299 @@
 {
-  "controller_intake": {
-    "bytes": 4009,
-    "candidate_locator": {
+  "followup": {
+    "closure": {
+      "bytes": 3263,
+      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/closures/Backup-HC-F001-parent-receipt-sol-closure.json",
+      "sha256": "13ce187fee8ae59540b30b7f1237b2ec7d50971bfd6cd1f485cb14e8a8402eaa"
+    },
+    "contract_sdk_public_route_drift_paths": [],
+    "dispatch": {
+      "bytes": 2244,
+      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/intake/Backup-HC-F001-final-integration-dispatch.json",
+      "sha256": "39872bbd8e7f8e29d9006c6cc34ca4d71dfcceadf724944ead8e9564893ad68b"
+    },
+    "merge_base": "f5e7feaee17ed7c331eeb63a5fe185df7e2e8b2f",
+    "merge_tree_exit_code": 0,
+    "merge_tree_result": "20ce37796a615c8cad064d39f389c6141bc67830",
+    "p0_donor_push": "DISABLED",
+    "source_aggregate_path_count": 7,
+    "source_aggregate_paths": [
+      "backend/plotpilot_core/backup/__init__.py",
+      "backend/plotpilot_core/backup/adapters.py",
+      "backend/plotpilot_core/backup/service.py",
+      "coordination/PPA-01/backup-data-plane/state.json",
+      "coordination/PPA-01/backup-data-plane/wave-c-hc-f-001-remediation.json",
+      "docs/deliveries/PPA-01/backup-data-plane/wave-c-hc-f-001.md",
+      "tests/p1-core/backup-data-plane/test_backup_data_plane.py"
+    ],
+    "source_branch": "codex/nw-p1-backup-data-wave-c-g2",
+    "source_donor_push": "DISABLED",
+    "source_head": "108fa8378ff418d2b4f5f4d5ed3ec71218354f85",
+    "source_tree": "20ce37796a615c8cad064d39f389c6141bc67830",
+    "source_worktree_clean": true,
+    "starting_head": "f5e7feaee17ed7c331eeb63a5fe185df7e2e8b2f",
+    "starting_tree": "86d74c2e84c590306751da8a8db19e2c7d12f1f8",
+    "status": "passed_before_followup_merge",
+    "task_id": "WAVE-C-HC-F001-P0-FINAL-INTEGRATION"
+  },
+  "initial_wave_c_preflight": {
+    "controller_intake": {
       "bytes": 4009,
-      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/intake/controller-frozen-intake.json",
-      "sha256": "9b94eaf6ab077e096dc3914464a08e2ea7b52a2776f25210aeb5e1c4a0a7bcf6"
+      "candidate_locator": {
+        "bytes": 4009,
+        "path": "coordination/integration-queue/WAVE-C-20260828/evidence/intake/controller-frozen-intake.json",
+        "sha256": "9b94eaf6ab077e096dc3914464a08e2ea7b52a2776f25210aeb5e1c4a0a7bcf6"
+      },
+      "sha256": "9b94eaf6ab077e096dc3914464a08e2ea7b52a2776f25210aeb5e1c4a0a7bcf6",
+      "source_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\wave-c-five-candidate-final-intake-v1.json"
     },
-    "sha256": "9b94eaf6ab077e096dc3914464a08e2ea7b52a2776f25210aeb5e1c4a0a7bcf6",
-    "source_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\wave-c-five-candidate-final-intake-v1.json"
-  },
-  "frozen_sol_closures": [
-    {
-      "bytes": 2202,
-      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/closures/P0-request-failure-sol-closure.json",
-      "sha256": "c548b3f3a10548502733366ef116290358ead198bdcae54e172b55b58fde851f",
-      "source_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\p0-request-failure-f001-f002-sol-closure-v1.json"
-    },
-    {
-      "bytes": 2130,
-      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/closures/ETX-sol-closure.json",
-      "sha256": "513336f5240d0e2a1abfa40177b39f039640ff60a496b2ac0d83738e5f2f4414",
-      "source_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\nw-p1-execution-tx-f007-f015-sol-closure-v1.json"
-    },
-    {
-      "bytes": 1584,
-      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/closures/Backup-sol-closure.json",
-      "sha256": "c48c1f5f09a788c6bd90ca6bf0bd2268f4abcf25e07da2c4ef41aede886205be",
-      "source_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\nw-p1-backup-data-f011-sol-closure-v1.json"
-    },
-    {
-      "bytes": 1664,
-      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/closures/Lifecycle-sol-closure.json",
-      "sha256": "90fb06a08b3edc89779489b8921324b0d86fc0eef93157bd7320598ea7d87908",
-      "source_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\nw-p2-lifecycle-f012-sol-closure-v1.json"
-    },
-    {
-      "bytes": 1936,
-      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/closures/Supervisor-sol-closure.json",
-      "sha256": "3a5ce10df8892d7934da391db6e9876c72882136f9b0b11282f5e744d65e0c82",
-      "source_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\nw-p2-supervisor-f003-sol-closure-v1.json"
-    }
-  ],
-  "merge_authorization_consumed_only_after_preflight": true,
-  "recomputed_intake": {
-    "all_pairwise_overlap_zero": true,
-    "baseline": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
-    "items": [
+    "frozen_sol_closures": [
       {
-        "baseline_ancestor": true,
-        "branch": "codex/ppa-00-integration-candidate-r2",
-        "branch_head": "53c54b237bccfacdd6ec09a304676e83e3aa5a45",
-        "clean": true,
-        "donor_push": "DISABLED",
-        "head": "53c54b237bccfacdd6ec09a304676e83e3aa5a45",
-        "id": "P0",
-        "path_count": 22,
-        "review_bytes": 2202,
-        "review_merge_eligible": true,
-        "review_sha256": "c548b3f3a10548502733366ef116290358ead198bdcae54e172b55b58fde851f",
-        "review_verdict": "PASS",
-        "tree": "530bfa99bf41b69d475638ce42c4301cbd9535af",
-        "worktree_head": "53c54b237bccfacdd6ec09a304676e83e3aa5a45"
+        "bytes": 2202,
+        "path": "coordination/integration-queue/WAVE-C-20260828/evidence/closures/P0-request-failure-sol-closure.json",
+        "sha256": "c548b3f3a10548502733366ef116290358ead198bdcae54e172b55b58fde851f",
+        "source_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\p0-request-failure-f001-f002-sol-closure-v1.json"
       },
       {
-        "baseline_ancestor": true,
-        "branch": "codex/nw-p1-execution-tx-01",
-        "branch_head": "7dd091145c4545f5f81b6c132a389e3f398fc429",
-        "clean": true,
-        "donor_push": "DISABLED",
-        "head": "7dd091145c4545f5f81b6c132a389e3f398fc429",
-        "id": "ETX",
-        "path_count": 32,
-        "review_bytes": 2130,
-        "review_merge_eligible": true,
-        "review_sha256": "513336f5240d0e2a1abfa40177b39f039640ff60a496b2ac0d83738e5f2f4414",
-        "review_verdict": "PASS",
-        "tree": "30c9e175ddf4de344ffcff20e8a4892c35d83d9a",
-        "worktree_head": "7dd091145c4545f5f81b6c132a389e3f398fc429"
+        "bytes": 2130,
+        "path": "coordination/integration-queue/WAVE-C-20260828/evidence/closures/ETX-sol-closure.json",
+        "sha256": "513336f5240d0e2a1abfa40177b39f039640ff60a496b2ac0d83738e5f2f4414",
+        "source_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\nw-p1-execution-tx-f007-f015-sol-closure-v1.json"
       },
       {
-        "baseline_ancestor": true,
-        "branch": "codex/nw-p1-backup-data-01",
-        "branch_head": "b9bff590449e93f6781395ec0e52535db930cbae",
-        "clean": true,
-        "donor_push": "DISABLED",
-        "head": "b9bff590449e93f6781395ec0e52535db930cbae",
-        "id": "Backup",
-        "path_count": 15,
-        "review_bytes": 1584,
-        "review_merge_eligible": true,
-        "review_sha256": "c48c1f5f09a788c6bd90ca6bf0bd2268f4abcf25e07da2c4ef41aede886205be",
-        "review_verdict": "PASS",
-        "tree": "8aee45341a499aa099fbffbe91dc58dd3526daa5",
-        "worktree_head": "b9bff590449e93f6781395ec0e52535db930cbae"
+        "bytes": 1584,
+        "path": "coordination/integration-queue/WAVE-C-20260828/evidence/closures/Backup-sol-closure.json",
+        "sha256": "c48c1f5f09a788c6bd90ca6bf0bd2268f4abcf25e07da2c4ef41aede886205be",
+        "source_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\nw-p1-backup-data-f011-sol-closure-v1.json"
       },
       {
-        "baseline_ancestor": true,
-        "branch": "codex/nw-p2-lifecycle-02",
-        "branch_head": "13e6b29a451f535d69bd7621d65f7e9c41511231",
-        "clean": true,
-        "donor_push": "DISABLED",
-        "head": "13e6b29a451f535d69bd7621d65f7e9c41511231",
-        "id": "Lifecycle",
-        "path_count": 39,
-        "review_bytes": 1664,
-        "review_merge_eligible": true,
-        "review_sha256": "90fb06a08b3edc89779489b8921324b0d86fc0eef93157bd7320598ea7d87908",
-        "review_verdict": "PASS",
-        "tree": "db73221517113e3d4b506224f7c7db72b89cfdb2",
-        "worktree_head": "13e6b29a451f535d69bd7621d65f7e9c41511231"
+        "bytes": 1664,
+        "path": "coordination/integration-queue/WAVE-C-20260828/evidence/closures/Lifecycle-sol-closure.json",
+        "sha256": "90fb06a08b3edc89779489b8921324b0d86fc0eef93157bd7320598ea7d87908",
+        "source_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\nw-p2-lifecycle-f012-sol-closure-v1.json"
       },
       {
-        "baseline_ancestor": true,
-        "branch": "codex/nw-p2-supervisor-01",
-        "branch_head": "4f633714cc604f5159cf1e52eebcd0bc4bf3c63c",
-        "clean": true,
-        "donor_push": "DISABLED",
-        "head": "4f633714cc604f5159cf1e52eebcd0bc4bf3c63c",
-        "id": "Supervisor",
-        "path_count": 52,
-        "review_bytes": 1936,
-        "review_merge_eligible": true,
-        "review_sha256": "3a5ce10df8892d7934da391db6e9876c72882136f9b0b11282f5e744d65e0c82",
-        "review_verdict": "PASS",
-        "tree": "e0cb0a79c48bb4a815a8917cd24f8f620d9fc118",
-        "worktree_head": "4f633714cc604f5159cf1e52eebcd0bc4bf3c63c"
+        "bytes": 1936,
+        "path": "coordination/integration-queue/WAVE-C-20260828/evidence/closures/Supervisor-sol-closure.json",
+        "sha256": "3a5ce10df8892d7934da391db6e9876c72882136f9b0b11282f5e744d65e0c82",
+        "source_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\nw-p2-supervisor-f003-sol-closure-v1.json"
       }
     ],
-    "pair_count": 10,
-    "pairs": [
-      {
-        "left": "P0",
-        "overlap": [],
-        "overlap_count": 0,
-        "right": "ETX"
-      },
-      {
-        "left": "P0",
-        "overlap": [],
-        "overlap_count": 0,
-        "right": "Backup"
-      },
-      {
-        "left": "P0",
-        "overlap": [],
-        "overlap_count": 0,
-        "right": "Lifecycle"
-      },
-      {
-        "left": "P0",
-        "overlap": [],
-        "overlap_count": 0,
-        "right": "Supervisor"
-      },
-      {
-        "left": "ETX",
-        "overlap": [],
-        "overlap_count": 0,
-        "right": "Backup"
-      },
-      {
-        "left": "ETX",
-        "overlap": [],
-        "overlap_count": 0,
-        "right": "Lifecycle"
-      },
-      {
-        "left": "ETX",
-        "overlap": [],
-        "overlap_count": 0,
-        "right": "Supervisor"
-      },
-      {
-        "left": "Backup",
-        "overlap": [],
-        "overlap_count": 0,
-        "right": "Lifecycle"
-      },
-      {
-        "left": "Backup",
-        "overlap": [],
-        "overlap_count": 0,
-        "right": "Supervisor"
-      },
-      {
-        "left": "Lifecycle",
-        "overlap": [],
-        "overlap_count": 0,
-        "right": "Supervisor"
-      }
-    ],
-    "schema": "wave-c-readonly-intake-recompute/v1",
-    "total_unique_paths": 160
+    "merge_authorization_consumed_only_after_preflight": true,
+    "recomputed_intake": {
+      "all_pairwise_overlap_zero": true,
+      "baseline": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
+      "items": [
+        {
+          "baseline_ancestor": true,
+          "branch": "codex/ppa-00-integration-candidate-r2",
+          "branch_head": "53c54b237bccfacdd6ec09a304676e83e3aa5a45",
+          "clean": true,
+          "donor_push": "DISABLED",
+          "head": "53c54b237bccfacdd6ec09a304676e83e3aa5a45",
+          "id": "P0",
+          "path_count": 22,
+          "review_bytes": 2202,
+          "review_merge_eligible": true,
+          "review_sha256": "c548b3f3a10548502733366ef116290358ead198bdcae54e172b55b58fde851f",
+          "review_verdict": "PASS",
+          "tree": "530bfa99bf41b69d475638ce42c4301cbd9535af",
+          "worktree_head": "53c54b237bccfacdd6ec09a304676e83e3aa5a45"
+        },
+        {
+          "baseline_ancestor": true,
+          "branch": "codex/nw-p1-execution-tx-01",
+          "branch_head": "7dd091145c4545f5f81b6c132a389e3f398fc429",
+          "clean": true,
+          "donor_push": "DISABLED",
+          "head": "7dd091145c4545f5f81b6c132a389e3f398fc429",
+          "id": "ETX",
+          "path_count": 32,
+          "review_bytes": 2130,
+          "review_merge_eligible": true,
+          "review_sha256": "513336f5240d0e2a1abfa40177b39f039640ff60a496b2ac0d83738e5f2f4414",
+          "review_verdict": "PASS",
+          "tree": "30c9e175ddf4de344ffcff20e8a4892c35d83d9a",
+          "worktree_head": "7dd091145c4545f5f81b6c132a389e3f398fc429"
+        },
+        {
+          "baseline_ancestor": true,
+          "branch": "codex/nw-p1-backup-data-01",
+          "branch_head": "b9bff590449e93f6781395ec0e52535db930cbae",
+          "clean": true,
+          "donor_push": "DISABLED",
+          "head": "b9bff590449e93f6781395ec0e52535db930cbae",
+          "id": "Backup",
+          "path_count": 15,
+          "review_bytes": 1584,
+          "review_merge_eligible": true,
+          "review_sha256": "c48c1f5f09a788c6bd90ca6bf0bd2268f4abcf25e07da2c4ef41aede886205be",
+          "review_verdict": "PASS",
+          "tree": "8aee45341a499aa099fbffbe91dc58dd3526daa5",
+          "worktree_head": "b9bff590449e93f6781395ec0e52535db930cbae"
+        },
+        {
+          "baseline_ancestor": true,
+          "branch": "codex/nw-p2-lifecycle-02",
+          "branch_head": "13e6b29a451f535d69bd7621d65f7e9c41511231",
+          "clean": true,
+          "donor_push": "DISABLED",
+          "head": "13e6b29a451f535d69bd7621d65f7e9c41511231",
+          "id": "Lifecycle",
+          "path_count": 39,
+          "review_bytes": 1664,
+          "review_merge_eligible": true,
+          "review_sha256": "90fb06a08b3edc89779489b8921324b0d86fc0eef93157bd7320598ea7d87908",
+          "review_verdict": "PASS",
+          "tree": "db73221517113e3d4b506224f7c7db72b89cfdb2",
+          "worktree_head": "13e6b29a451f535d69bd7621d65f7e9c41511231"
+        },
+        {
+          "baseline_ancestor": true,
+          "branch": "codex/nw-p2-supervisor-01",
+          "branch_head": "4f633714cc604f5159cf1e52eebcd0bc4bf3c63c",
+          "clean": true,
+          "donor_push": "DISABLED",
+          "head": "4f633714cc604f5159cf1e52eebcd0bc4bf3c63c",
+          "id": "Supervisor",
+          "path_count": 52,
+          "review_bytes": 1936,
+          "review_merge_eligible": true,
+          "review_sha256": "3a5ce10df8892d7934da391db6e9876c72882136f9b0b11282f5e744d65e0c82",
+          "review_verdict": "PASS",
+          "tree": "e0cb0a79c48bb4a815a8917cd24f8f620d9fc118",
+          "worktree_head": "4f633714cc604f5159cf1e52eebcd0bc4bf3c63c"
+        }
+      ],
+      "pair_count": 10,
+      "pairs": [
+        {
+          "left": "P0",
+          "overlap": [],
+          "overlap_count": 0,
+          "right": "ETX"
+        },
+        {
+          "left": "P0",
+          "overlap": [],
+          "overlap_count": 0,
+          "right": "Backup"
+        },
+        {
+          "left": "P0",
+          "overlap": [],
+          "overlap_count": 0,
+          "right": "Lifecycle"
+        },
+        {
+          "left": "P0",
+          "overlap": [],
+          "overlap_count": 0,
+          "right": "Supervisor"
+        },
+        {
+          "left": "ETX",
+          "overlap": [],
+          "overlap_count": 0,
+          "right": "Backup"
+        },
+        {
+          "left": "ETX",
+          "overlap": [],
+          "overlap_count": 0,
+          "right": "Lifecycle"
+        },
+        {
+          "left": "ETX",
+          "overlap": [],
+          "overlap_count": 0,
+          "right": "Supervisor"
+        },
+        {
+          "left": "Backup",
+          "overlap": [],
+          "overlap_count": 0,
+          "right": "Lifecycle"
+        },
+        {
+          "left": "Backup",
+          "overlap": [],
+          "overlap_count": 0,
+          "right": "Supervisor"
+        },
+        {
+          "left": "Lifecycle",
+          "overlap": [],
+          "overlap_count": 0,
+          "right": "Supervisor"
+        }
+      ],
+      "schema": "wave-c-readonly-intake-recompute/v1",
+      "total_unique_paths": 160
+    },
+    "schema": "wave-c-p0-preflight/v1",
+    "sequential_merge_tree": {
+      "baseline": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
+      "final_predicted_tree": "a3e5ca9e903a3a2c939d6de1a6b7cf4e8cd675d8",
+      "harness_note": "Initial parser treated the separator blank line as a message; corrected parser ignores blank separators. Git exit was 0 and the tree was valid in both invocations.",
+      "schema": "wave-c-sequential-merge-tree-preflight/v1",
+      "start_head": "53c54b237bccfacdd6ec09a304676e83e3aa5a45",
+      "status": "passed",
+      "steps": [
+        {
+          "candidate": "ETX",
+          "command": "git merge-tree --write-tree --messages 53c54b237bccfacdd6ec09a304676e83e3aa5a45 7dd091145c4545f5f81b6c132a389e3f398fc429",
+          "exit_code": 0,
+          "input_left": "53c54b237bccfacdd6ec09a304676e83e3aa5a45",
+          "input_right": "7dd091145c4545f5f81b6c132a389e3f398fc429",
+          "merge_base": "auto",
+          "messages": [],
+          "order": 1,
+          "raw_stderr": "",
+          "raw_stdout": "d53d3286eebbb3c7baea52bc44b715e9703c7706\n\n",
+          "result_tree": "d53d3286eebbb3c7baea52bc44b715e9703c7706"
+        },
+        {
+          "candidate": "Backup",
+          "command": "git merge-tree --write-tree --messages --merge-base=7805be2c2566aa1e63d3cdc6784a84f1aea8f463 d53d3286eebbb3c7baea52bc44b715e9703c7706 b9bff590449e93f6781395ec0e52535db930cbae",
+          "exit_code": 0,
+          "input_left": "d53d3286eebbb3c7baea52bc44b715e9703c7706",
+          "input_right": "b9bff590449e93f6781395ec0e52535db930cbae",
+          "merge_base": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
+          "messages": [],
+          "order": 2,
+          "raw_stderr": "",
+          "raw_stdout": "f07bd79377b3d095d22b548f92b943052edbb9c1\n\n",
+          "result_tree": "f07bd79377b3d095d22b548f92b943052edbb9c1"
+        },
+        {
+          "candidate": "Lifecycle",
+          "command": "git merge-tree --write-tree --messages --merge-base=7805be2c2566aa1e63d3cdc6784a84f1aea8f463 f07bd79377b3d095d22b548f92b943052edbb9c1 13e6b29a451f535d69bd7621d65f7e9c41511231",
+          "exit_code": 0,
+          "input_left": "f07bd79377b3d095d22b548f92b943052edbb9c1",
+          "input_right": "13e6b29a451f535d69bd7621d65f7e9c41511231",
+          "merge_base": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
+          "messages": [],
+          "order": 3,
+          "raw_stderr": "",
+          "raw_stdout": "f5c322dd0f097b7de4cda1f0b60fce3c9f10128e\n\n",
+          "result_tree": "f5c322dd0f097b7de4cda1f0b60fce3c9f10128e"
+        },
+        {
+          "candidate": "Supervisor",
+          "command": "git merge-tree --write-tree --messages --merge-base=7805be2c2566aa1e63d3cdc6784a84f1aea8f463 f5c322dd0f097b7de4cda1f0b60fce3c9f10128e 4f633714cc604f5159cf1e52eebcd0bc4bf3c63c",
+          "exit_code": 0,
+          "input_left": "f5c322dd0f097b7de4cda1f0b60fce3c9f10128e",
+          "input_right": "4f633714cc604f5159cf1e52eebcd0bc4bf3c63c",
+          "merge_base": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
+          "messages": [],
+          "order": 4,
+          "raw_stderr": "",
+          "raw_stdout": "a3e5ca9e903a3a2c939d6de1a6b7cf4e8cd675d8\n\n",
+          "result_tree": "a3e5ca9e903a3a2c939d6de1a6b7cf4e8cd675d8"
+        }
+      ]
+    },
+    "status": "passed_before_branch_mutation"
   },
-  "schema": "wave-c-p0-preflight/v1",
-  "sequential_merge_tree": {
-    "baseline": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
-    "final_predicted_tree": "a3e5ca9e903a3a2c939d6de1a6b7cf4e8cd675d8",
-    "harness_note": "Initial parser treated the separator blank line as a message; corrected parser ignores blank separators. Git exit was 0 and the tree was valid in both invocations.",
-    "schema": "wave-c-sequential-merge-tree-preflight/v1",
-    "start_head": "53c54b237bccfacdd6ec09a304676e83e3aa5a45",
-    "status": "passed",
-    "steps": [
-      {
-        "candidate": "ETX",
-        "command": "git merge-tree --write-tree --messages 53c54b237bccfacdd6ec09a304676e83e3aa5a45 7dd091145c4545f5f81b6c132a389e3f398fc429",
-        "exit_code": 0,
-        "input_left": "53c54b237bccfacdd6ec09a304676e83e3aa5a45",
-        "input_right": "7dd091145c4545f5f81b6c132a389e3f398fc429",
-        "merge_base": "auto",
-        "messages": [],
-        "order": 1,
-        "raw_stderr": "",
-        "raw_stdout": "d53d3286eebbb3c7baea52bc44b715e9703c7706\n\n",
-        "result_tree": "d53d3286eebbb3c7baea52bc44b715e9703c7706"
-      },
-      {
-        "candidate": "Backup",
-        "command": "git merge-tree --write-tree --messages --merge-base=7805be2c2566aa1e63d3cdc6784a84f1aea8f463 d53d3286eebbb3c7baea52bc44b715e9703c7706 b9bff590449e93f6781395ec0e52535db930cbae",
-        "exit_code": 0,
-        "input_left": "d53d3286eebbb3c7baea52bc44b715e9703c7706",
-        "input_right": "b9bff590449e93f6781395ec0e52535db930cbae",
-        "merge_base": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
-        "messages": [],
-        "order": 2,
-        "raw_stderr": "",
-        "raw_stdout": "f07bd79377b3d095d22b548f92b943052edbb9c1\n\n",
-        "result_tree": "f07bd79377b3d095d22b548f92b943052edbb9c1"
-      },
-      {
-        "candidate": "Lifecycle",
-        "command": "git merge-tree --write-tree --messages --merge-base=7805be2c2566aa1e63d3cdc6784a84f1aea8f463 f07bd79377b3d095d22b548f92b943052edbb9c1 13e6b29a451f535d69bd7621d65f7e9c41511231",
-        "exit_code": 0,
-        "input_left": "f07bd79377b3d095d22b548f92b943052edbb9c1",
-        "input_right": "13e6b29a451f535d69bd7621d65f7e9c41511231",
-        "merge_base": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
-        "messages": [],
-        "order": 3,
-        "raw_stderr": "",
-        "raw_stdout": "f5c322dd0f097b7de4cda1f0b60fce3c9f10128e\n\n",
-        "result_tree": "f5c322dd0f097b7de4cda1f0b60fce3c9f10128e"
-      },
-      {
-        "candidate": "Supervisor",
-        "command": "git merge-tree --write-tree --messages --merge-base=7805be2c2566aa1e63d3cdc6784a84f1aea8f463 f5c322dd0f097b7de4cda1f0b60fce3c9f10128e 4f633714cc604f5159cf1e52eebcd0bc4bf3c63c",
-        "exit_code": 0,
-        "input_left": "f5c322dd0f097b7de4cda1f0b60fce3c9f10128e",
-        "input_right": "4f633714cc604f5159cf1e52eebcd0bc4bf3c63c",
-        "merge_base": "7805be2c2566aa1e63d3cdc6784a84f1aea8f463",
-        "messages": [],
-        "order": 4,
-        "raw_stderr": "",
-        "raw_stdout": "a3e5ca9e903a3a2c939d6de1a6b7cf4e8cd675d8\n\n",
-        "result_tree": "a3e5ca9e903a3a2c939d6de1a6b7cf4e8cd675d8"
-      }
-    ]
-  },
-  "status": "passed_before_branch_mutation"
+  "schema": "wave-c-p0-preflight/v2"
 }

@@ -1,13 +1,14 @@
 {
   "directed_gate": {
-    "bytes": 2824,
+    "bytes": 4624,
     "path": "coordination/integration-queue/WAVE-C-20260828/directed-gate.json",
-    "sha256": "aadda4c2926b2d5ed881f4343f520294b20bab039dd69f45abd3f7eda6da5480"
+    "sha256": "60270fc40b3de62478a1c1b2371d4b4c1e1ec87052843fdf66da27b31f4f231d"
   },
   "evidence_commit_binding": {
-    "rule": "candidate evidence commit must be the sole direct child of integrated_source_head and change only this Wave C directory"
+    "required_parent": "8748957f97b65534b295e70dca7cd4a4d9378479",
+    "rule": "at most one evidence commit; every changed path must remain under coordination/integration-queue/WAVE-C-20260828/"
   },
-  "file_count": 20,
+  "file_count": 24,
   "files": [
     {
       "bytes": 162,
@@ -15,9 +16,14 @@
       "sha256": "0ae5e7249893f5eb05b78805bedbc5220f924232a8847c89fe4059b3afc153f9"
     },
     {
-      "bytes": 2824,
+      "bytes": 4624,
       "path": "coordination/integration-queue/WAVE-C-20260828/directed-gate.json",
-      "sha256": "aadda4c2926b2d5ed881f4343f520294b20bab039dd69f45abd3f7eda6da5480"
+      "sha256": "60270fc40b3de62478a1c1b2371d4b4c1e1ec87052843fdf66da27b31f4f231d"
+    },
+    {
+      "bytes": 3263,
+      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/closures/Backup-HC-F001-parent-receipt-sol-closure.json",
+      "sha256": "13ce187fee8ae59540b30b7f1237b2ec7d50971bfd6cd1f485cb14e8a8402eaa"
     },
     {
       "bytes": 1584,
@@ -43,6 +49,11 @@
       "bytes": 1936,
       "path": "coordination/integration-queue/WAVE-C-20260828/evidence/closures/Supervisor-sol-closure.json",
       "sha256": "3a5ce10df8892d7934da391db6e9876c72882136f9b0b11282f5e744d65e0c82"
+    },
+    {
+      "bytes": 2244,
+      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/intake/Backup-HC-F001-final-integration-dispatch.json",
+      "sha256": "39872bbd8e7f8e29d9006c6cc34ca4d71dfcceadf724944ead8e9564893ad68b"
     },
     {
       "bytes": 4009,
@@ -80,9 +91,14 @@
       "sha256": "f25b3f31c8a0ac67926253eb3cc5c1d13605e9ec30da01574589511ca97b0ac2"
     },
     {
-      "bytes": 10890,
+      "bytes": 5894,
+      "path": "coordination/integration-queue/WAVE-C-20260828/evidence/raw/06-Backup-HC-F001-integrated-validation.json",
+      "sha256": "76418041f7864f77c946ae81492de340470785a6032740de6ffeb443c1507cb4"
+    },
+    {
+      "bytes": 13245,
       "path": "coordination/integration-queue/WAVE-C-20260828/preflight.json",
-      "sha256": "6a738e3af026ba65df118a471c273408a9209cc60e39d78f1a080036c0ffb857"
+      "sha256": "edb40682774f15d4e91301bfa704d9c11178d6593245bf0efaeeb6d9c6dab993"
     },
     {
       "bytes": 1996,
@@ -105,25 +121,40 @@
       "sha256": "c44265c4b2cdd82c7352494ec0e8782e588a5998b55bc2a50d85294dcae60d39"
     },
     {
-      "bytes": 732,
+      "bytes": 4701,
+      "path": "coordination/integration-queue/WAVE-C-20260828/receipts/05-Backup-HC-F001.json",
+      "sha256": "276d0cf8268bdfd76e6383d343300f04d179229d31d7ae1390d2e6ebd24fc17a"
+    },
+    {
+      "bytes": 1478,
       "path": "coordination/integration-queue/WAVE-C-20260828/summary.md",
-      "sha256": "78d26f1fe67996ab3242075dc5b9ba5c1964888569b787b0cfabd9b0b2f26e0e"
+      "sha256": "08b0600be0977d0eefb378318f1bd24a0ec04f6c55fe356d8587b8438bd6dca1"
     }
   ],
+  "followup_receipt": {
+    "bytes": 4701,
+    "path": "coordination/integration-queue/WAVE-C-20260828/receipts/05-Backup-HC-F001.json",
+    "sha256": "276d0cf8268bdfd76e6383d343300f04d179229d31d7ae1390d2e6ebd24fc17a"
+  },
+  "followup_source_head": "108fa8378ff418d2b4f5f4d5ed3ec71218354f85",
+  "followup_validation_raw": {
+    "bytes": 5894,
+    "path": "coordination/integration-queue/WAVE-C-20260828/evidence/raw/06-Backup-HC-F001-integrated-validation.json",
+    "sha256": "76418041f7864f77c946ae81492de340470785a6032740de6ffeb443c1507cb4"
+  },
   "fresh_sol_acceptance": "pending",
-  "frozen_controller_intake": {
-    "bytes": 4009,
-    "path": "coordination/integration-queue/WAVE-C-20260828/evidence/intake/controller-frozen-intake.json",
-    "sha256": "9b94eaf6ab077e096dc3914464a08e2ea7b52a2776f25210aeb5e1c4a0a7bcf6"
+  "frozen_followup_closure": {
+    "bytes": 3263,
+    "path": "coordination/integration-queue/WAVE-C-20260828/evidence/closures/Backup-HC-F001-parent-receipt-sol-closure.json",
+    "sha256": "13ce187fee8ae59540b30b7f1237b2ec7d50971bfd6cd1f485cb14e8a8402eaa"
   },
-  "frozen_sol_closure_count": 5,
-  "h_c_validation_raw": {
-    "bytes": 73969,
-    "path": "coordination/integration-queue/WAVE-C-20260828/evidence/raw/05-H_C-validation.json",
-    "sha256": "f25b3f31c8a0ac67926253eb3cc5c1d13605e9ec30da01574589511ca97b0ac2"
+  "frozen_followup_dispatch": {
+    "bytes": 2244,
+    "path": "coordination/integration-queue/WAVE-C-20260828/evidence/intake/Backup-HC-F001-final-integration-dispatch.json",
+    "sha256": "39872bbd8e7f8e29d9006c6cc34ca4d71dfcceadf724944ead8e9564893ad68b"
   },
-  "integrated_source_head": "a83af804a092a8274e8b7a71273aeb5cee3c4cd1",
-  "integrated_source_tree": "a3e5ca9e903a3a2c939d6de1a6b7cf4e8cd675d8",
+  "integrated_source_head": "8748957f97b65534b295e70dca7cd4a4d9378479",
+  "integrated_source_tree": "20ce37796a615c8cad064d39f389c6141bc67830",
   "merge_receipts": [
     {
       "bytes": 1996,
@@ -144,15 +175,28 @@
       "bytes": 1924,
       "path": "coordination/integration-queue/WAVE-C-20260828/receipts/04-Supervisor.json",
       "sha256": "c44265c4b2cdd82c7352494ec0e8782e588a5998b55bc2a50d85294dcae60d39"
+    },
+    {
+      "bytes": 4701,
+      "path": "coordination/integration-queue/WAVE-C-20260828/receipts/05-Backup-HC-F001.json",
+      "sha256": "276d0cf8268bdfd76e6383d343300f04d179229d31d7ae1390d2e6ebd24fc17a"
     }
   ],
+  "ordered_parents": [
+    "f5e7feaee17ed7c331eeb63a5fe185df7e2e8b2f",
+    "108fa8378ff418d2b4f5f4d5ed3ec71218354f85"
+  ],
   "preflight": {
-    "bytes": 10890,
+    "bytes": 13245,
     "path": "coordination/integration-queue/WAVE-C-20260828/preflight.json",
-    "sha256": "6a738e3af026ba65df118a471c273408a9209cc60e39d78f1a080036c0ffb857"
+    "sha256": "edb40682774f15d4e91301bfa704d9c11178d6593245bf0efaeeb6d9c6dab993"
   },
+  "rejected_source_head": "7948da473f3e5066b13d3fe6239561572bce86b9",
+  "rejected_source_is_ancestor": false,
   "release_tag_created": false,
-  "schema": "wave-c-integration-candidate-manifest/v1",
+  "schema": "wave-c-integration-candidate-manifest/v2",
   "start_head": "53c54b237bccfacdd6ec09a304676e83e3aa5a45",
-  "status": "H_C_SOURCE_INTEGRATED_PENDING_FRESH_SOL"
+  "status": "H_C_F001_SOURCE_INTEGRATED_PENDING_FRESH_SOL",
+  "superseded_evidence_candidate_head": "f5e7feaee17ed7c331eeb63a5fe185df7e2e8b2f",
+  "superseded_integrated_source_head": "a83af804a092a8274e8b7a71273aeb5cee3c4cd1"
 }
