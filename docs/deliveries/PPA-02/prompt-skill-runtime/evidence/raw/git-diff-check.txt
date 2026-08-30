@@ -1,0 +1,4 @@
+warning: in the working copy of 'first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/__init__.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/chain.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/package.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/ports.py', LF will be replaced by CRLF the next time Git touches it

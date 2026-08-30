@@ -1,12 +1,13 @@
-"""Deterministic, Core-only Prompt/Skill Runtime domain.
+"""Deterministic Prompt/Skill Runtime with explicit Core/Broker authority."""
 
-The package intentionally stops at immutable package identity, ordered chain
-materialization and local history rules.  It does not import a Core database,
-Provider, Job implementation, Candidate repository or a P1/P3 adapter.  Those
-effects are represented by the explicit port gates in :mod:`ports` and are
-owned by the integration layer.
-"""
-
+from .attribution import (
+    AttributionProof,
+    FrozenModelInvocation,
+    ValidatedModelReceipt,
+    decode_model_receipt,
+    validate_model_receipt_binding,
+    verify_model_receipt_asset,
+)
 from .chain import (
     AssetRef,
     ChainAnchor,
@@ -16,10 +17,8 @@ from .chain import (
     SkillStep,
     build_chain_result,
     build_receipt,
-    execute_skill_chain,
     make_patch_evidence,
     replay_patches,
-    run_skill_chain,
     verify_chain,
     verify_receipt,
 )
@@ -32,7 +31,15 @@ from .package import (
     verify_golden_skill,
     verify_skill_golden,
 )
-from .ports import PortGate, required_port_gates, verify_port_gates
+from .persistence import RepositoryTransaction, SQLiteSkillRepository
+from .ports import (
+    GenerationPort,
+    PortGate,
+    SkillBrokerPort,
+    required_port_gates,
+    verify_port_gates,
+)
+from .runtime import BrokerSkillResult, PreparedSkillRun, PromptSkillRuntime
 from .versions import (
     ActiveVersion,
     LegacyReadOnlyRecord,
@@ -45,31 +52,42 @@ from .versions import (
 __all__ = [
     "ActiveVersion",
     "AssetRef",
+    "AttributionProof",
+    "BrokerSkillResult",
     "ChainAnchor",
     "ChainExecution",
+    "FrozenModelInvocation",
+    "GenerationPort",
     "LegacyReadOnlyRecord",
     "PatchEvidence",
     "PortGate",
+    "PreparedSkillRun",
     "PromptPackage",
+    "PromptSkillRuntime",
+    "RepositoryTransaction",
+    "SQLiteSkillRepository",
+    "SkillBrokerPort",
     "SkillExecution",
     "SkillIdentity",
     "SkillPackage",
     "SkillReleaseHistory",
     "SkillStep",
+    "ValidatedModelReceipt",
     "VersionDecision",
     "build_chain_result",
     "build_receipt",
     "calculate_skill_identity",
-    "execute_skill_chain",
+    "decode_model_receipt",
     "load_skill_package",
     "make_patch_evidence",
     "protect_active_version",
     "replay_patches",
     "required_port_gates",
-    "run_skill_chain",
     "sync_active_version",
+    "validate_model_receipt_binding",
     "verify_chain",
     "verify_golden_skill",
+    "verify_model_receipt_asset",
     "verify_port_gates",
     "verify_receipt",
     "verify_skill_golden",
@@ -77,8 +95,4 @@ __all__ = [
 
 
 def main() -> None:
-    """Reserved worker entrypoint; execution is wired by the real Host port."""
-
-    raise RuntimeError(
-        "Prompt/Skill Runtime has no standalone entrypoint; use Core Host ports"
-    )
+    raise RuntimeError("Prompt/Skill Runtime has no standalone entrypoint; use Core Host ports")

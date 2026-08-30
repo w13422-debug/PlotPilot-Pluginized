@@ -8,21 +8,25 @@ below.
 
 from __future__ import annotations
 
-import hashlib
 import re
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
+from itertools import pairwise
 from typing import Any
 
 from plotpilot_plugin_sdk import (
     ContractError,
-    ContractValidationError,
     hash_jcs,
     sha256_hex,
+)
+from plotpilot_plugin_sdk import (
     verify_skill_chain as _sdk_verify_skill_chain,
+)
+from plotpilot_plugin_sdk import (
     verify_skill_receipt as _sdk_verify_skill_receipt,
 )
 
+from .attribution import AttributionProof
 
 _HASH = re.compile(r"^[0-9a-f]{64}$")
 _ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$")
@@ -68,7 +72,7 @@ class AssetRef:
         object.__setattr__(self, "sha256", digest)
 
     @classmethod
-    def from_value(cls, value: "AssetRef | bytes | bytearray | memoryview | str", *, asset_id: str | None = None) -> "AssetRef":
+    def from_value(cls, value: AssetRef | bytes | bytearray | memoryview | str, *, asset_id: str | None = None) -> AssetRef:
         if isinstance(value, cls):
             return value
         content = _as_bytes(value, field="asset")
@@ -101,15 +105,15 @@ class ChainAnchor:
             raise _invalid("Skill chain anchor has more than one profile")
 
     @classmethod
-    def bundle(cls, bundle_id: str, item_id: str) -> "ChainAnchor":
+    def bundle(cls, bundle_id: str, item_id: str) -> ChainAnchor:
         return cls(result_bundle_id=bundle_id, result_item_id=item_id)
 
     @classmethod
-    def stream(cls, stream_id: str, acked_prefix_hash: str) -> "ChainAnchor":
+    def stream(cls, stream_id: str, acked_prefix_hash: str) -> ChainAnchor:
         return cls(stream_id=stream_id, acked_prefix_hash=acked_prefix_hash)
 
     @classmethod
-    def bundleless(cls) -> "ChainAnchor":
+    def bundleless(cls) -> ChainAnchor:
         return cls()
 
     @property
@@ -145,6 +149,7 @@ class SkillStep:
     package_hash: str
     order: int
     parameters_asset_id: str | None = None
+    parameters_hash: str | None = None
 
     def __post_init__(self) -> None:
         _check_id(self.skill_id, "skill_id")
@@ -153,6 +158,10 @@ class SkillStep:
         if not isinstance(self.order, int) or isinstance(self.order, bool) or self.order < 1:
             raise _invalid("Skill order must be a positive integer", path="order")
         _check_id(self.parameters_asset_id, "parameters_asset_id", nullable=True)
+        if self.parameters_hash is not None:
+            _check_hash(self.parameters_hash, "parameters_hash")
+        if (self.parameters_asset_id is None) != (self.parameters_hash is None):
+            raise _invalid("Skill parameters Asset ID/hash must be all-null or all-present")
 
     def as_snapshot_binding(self) -> dict[str, Any]:
         return {
@@ -310,13 +319,14 @@ class SkillExecution:
 
     output: AssetRef | bytes | str | None = None
     step_state: str = "executed"
-    participated: bool = True
+    participated: bool = False
     model_claimed: bool = False
     verified_patch: bool = False
     claim_evidence_asset_id: str | None = None
     patches: tuple[PatchEvidence | Mapping[str, Any], ...] = ()
     warnings: tuple[Mapping[str, Any], ...] = ()
     replacement_assets: Mapping[str, bytes | str] | None = None
+    attribution_proof: AttributionProof | None = None
 
 
 def build_receipt(
@@ -349,6 +359,7 @@ def build_receipt(
     acked_prefix_hash: str | None = None,
     input_content: bytes | str | None = None,
     replacement_assets: Mapping[str, bytes | str] | None = None,
+    attribution_proof: AttributionProof | None = None,
 ) -> dict[str, Any]:
     """Materialize one frozen receipt and verify its self-hash."""
 
@@ -374,16 +385,29 @@ def build_receipt(
         raise _invalid("Skill attribution fields must be boolean")
     if step_state == "skipped" and (participated or verified_patch):
         raise _invalid("skipped Skill step cannot be participated or verified")
-    if model_claimed and claim_evidence_asset_id is None:
-        raise _invalid("model_claimed requires claim evidence")
+    attributed = participated or model_claimed
+    if attribution_proof is not None and not isinstance(attribution_proof, AttributionProof):
+        raise _invalid("attribution_proof must be produced by authoritative ModelReceipt validation")
+    if attributed and attribution_proof is None:
+        raise _invalid("Skill attribution requires a validated ModelReceipt")
+    if not attributed and attribution_proof is not None:
+        raise _invalid("unattributed Skill step must not carry a ModelReceipt proof")
+    if attributed:
+        if claim_evidence_asset_id != attribution_proof.asset_id:
+            raise _invalid("claim evidence must identify the validated ModelReceipt Asset")
+        if attribution_proof.receipt["state"] != "receipted" or attribution_proof.receipt["uncertain"]:
+            raise _invalid("Skill attribution requires a certain receipted ModelReceipt")
     if claim_evidence_asset_id is not None:
         _check_id(claim_evidence_asset_id, "claim_evidence_asset_id")
     if previous_receipt_hash is not None:
         _check_hash(previous_receipt_hash, "previous_receipt_hash")
     selected_anchor = anchor or ChainAnchor(result_bundle_id, result_item_id, stream_id, acked_prefix_hash)
-    if anchor is not None and any(x is not None for x in (result_bundle_id, result_item_id, stream_id, acked_prefix_hash)):
-        if selected_anchor != ChainAnchor(result_bundle_id, result_item_id, stream_id, acked_prefix_hash):
-            raise _invalid("explicit anchor disagrees with anchor fields")
+    if (
+        anchor is not None
+        and any(x is not None for x in (result_bundle_id, result_item_id, stream_id, acked_prefix_hash))
+        and selected_anchor != ChainAnchor(result_bundle_id, result_item_id, stream_id, acked_prefix_hash)
+    ):
+        raise _invalid("explicit anchor disagrees with anchor fields")
     patch_dicts = [patch.as_dict() if isinstance(patch, PatchEvidence) else dict(patch) for patch in patches]
     for patch in patch_dicts:
         if patch.get("end_codepoint", -1) < patch.get("start_codepoint", 0):
@@ -465,9 +489,12 @@ def build_chain_result(
     if not receipts:
         raise _invalid("Skill chain must contain at least one frozen receipt")
     selected = anchor or ChainAnchor(result_bundle_id, result_item_id, stream_id, acked_prefix_hash)
-    if anchor is not None and any(x is not None for x in (result_bundle_id, result_item_id, stream_id, acked_prefix_hash)):
-        if selected != ChainAnchor(result_bundle_id, result_item_id, stream_id, acked_prefix_hash):
-            raise _invalid("explicit chain anchor disagrees with anchor fields")
+    if (
+        anchor is not None
+        and any(x is not None for x in (result_bundle_id, result_item_id, stream_id, acked_prefix_hash))
+        and selected != ChainAnchor(result_bundle_id, result_item_id, stream_id, acked_prefix_hash)
+    ):
+        raise _invalid("explicit chain anchor disagrees with anchor fields")
     receipt_list = [dict(receipt) for receipt in receipts]
     if chain_status is None:
         if any(r["step_state"] == "failed" for r in receipt_list):
@@ -586,29 +613,30 @@ def _coerce_execution(value: Any) -> SkillExecution:
         return SkillExecution(
             output=value.get("output", value.get("output_content")),
             step_state=value.get("step_state", "executed"),
-            participated=value.get("participated", True),
+            participated=value.get("participated", False),
             model_claimed=value.get("model_claimed", False),
             verified_patch=value.get("verified_patch", False),
             claim_evidence_asset_id=value.get("claim_evidence_asset_id"),
             patches=tuple(value.get("patches", ())),
             warnings=tuple(value.get("warnings", ())),
             replacement_assets=value.get("replacement_assets"),
+            attribution_proof=value.get("attribution_proof"),
         )
-    return SkillExecution(output=value)
+    raise _invalid("Skill executor must return SkillExecution or a closed result mapping")
 
 
-def run_skill_chain(
+def _materialize_skill_chain(
     *,
     chain_id: str,
     run_snapshot_hash: str,
     initial_input: AssetRef | bytes | str,
     steps: Sequence[SkillStep],
-    execute: Callable[[SkillStep, bytes], SkillExecution | Mapping[str, Any] | AssetRef | bytes | str | None] | None = None,
+    execute: Callable[[SkillStep, AssetRef], SkillExecution | Mapping[str, Any]],
     anchor: ChainAnchor,
     receipt_id_prefix: str | None = None,
     chain_status: str | None = None,
 ) -> ChainExecution:
-    """Execute deterministic local callbacks in the exact supplied order."""
+    """Private Broker-backed materializer; there is no local-success fallback."""
 
     if not steps:
         raise _invalid("Skill chain requires at least one step")
@@ -616,7 +644,7 @@ def run_skill_chain(
         raise _invalid("Skill order values must be unique")
     if len({step.skill_id for step in steps}) != len(steps):
         raise _invalid("one Skill may occur only once in a frozen chain")
-    for left, right in zip(steps, steps[1:]):
+    for left, right in pairwise(steps):
         if left.order >= right.order:
             raise _invalid("Skill steps must preserve the user's order")
     initial = AssetRef.from_value(initial_input)
@@ -625,7 +653,8 @@ def run_skill_chain(
     replay_context: dict[str, tuple[bytes | str, Mapping[str, bytes | str]]] = {}
     previous_receipt_hash: str | None = None
     halted: str | None = None
-    runner = execute or (lambda _step, content: content)
+    if not callable(execute):
+        raise _invalid("Skill materialization requires an explicit authoritative executor")
     prefix = receipt_id_prefix or f"{chain_id}:receipt"
     _check_id(prefix, "receipt_id_prefix")
     for index, step in enumerate(steps):
@@ -633,7 +662,7 @@ def run_skill_chain(
         if halted is not None:
             execution = SkillExecution(output=None, step_state="skipped", participated=False, model_claimed=False, verified_patch=False)
         else:
-            execution = _coerce_execution(runner(step, current.content))
+            execution = _coerce_execution(execute(step, current))
             if execution.step_state not in {"executed", "failed", "skipped"}:
                 raise _invalid("callback returned an invalid Skill step state")
         output_ref: AssetRef | None = None
@@ -664,6 +693,7 @@ def run_skill_chain(
             anchor=anchor,
             input_content=current.content if execution.verified_patch else None,
             replacement_assets=execution.replacement_assets,
+            attribution_proof=execution.attribution_proof,
         )
         if execution.verified_patch:
             replay_context[receipt_id] = (current.content, execution.replacement_assets or {})
@@ -690,7 +720,3 @@ def run_skill_chain(
         replay_context=replay_context,
     )
     return ChainExecution(chain, tuple(receipts))
-
-
-# Alias used by a few integration adapters and tests.
-execute_skill_chain = run_skill_chain
