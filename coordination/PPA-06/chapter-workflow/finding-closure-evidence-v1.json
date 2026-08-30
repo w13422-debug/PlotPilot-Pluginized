@@ -1,0 +1,172 @@
+{
+  "schema": "chapter-workflow-finding-closure-evidence/v1",
+  "node_id": "NW-P6-CHAPTER-WORKFLOW-02",
+  "manifest": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\findings\\wave-d-nw-p6-chapter-workflow-sol-block-v1.json",
+  "manifest_sha256": "7824e3d01d3cfcd03ee17078aa2a3cfb86b9f23229650c7fc9b24695c72152f3",
+  "reviewed_candidate_head": "7be5b7397d116ca46aaaf9a385cb3f8068ce82d9",
+  "reviewed_candidate_tree": "c6fb7328967737864c684f9f62395c0767299549",
+  "remediation_parent": "7be5b7397d116ca46aaaf9a385cb3f8068ce82d9",
+  "candidate_head_recording": "The direct child commit containing this file is reported after commit creation to avoid self-referential content.",
+  "review_disposition": "implementation_evidence_recorded_awaiting_same_reviewer_directed_recheck",
+  "findings": [
+    {
+      "id": "NW-P6-CW-SOL-F-001",
+      "implementation_status": "addressed_awaiting_reviewer",
+      "changed_paths": [
+        "first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow/planning.py",
+        "first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow/workflow.py",
+        "tests/p6-writing/chapter-workflow/test_frozen_findings_remediation.py"
+      ],
+      "verification": [
+        "test_frozen_plan_rejects_mutable_containers_wrong_members_and_forged_identity",
+        "test_freeze_snapshots_mutable_inputs_and_start_revalidates_corruption"
+      ],
+      "evidence": "Plan construction and workflow entry share recomputed tuple/member/order/uniqueness/fingerprint invariants; corruption fails before Asset or Broker calls."
+    },
+    {
+      "id": "NW-P6-CW-SOL-F-002",
+      "implementation_status": "addressed_awaiting_reviewer",
+      "changed_paths": [
+        "first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow/workflow.py",
+        "tests/p6-writing/chapter-workflow/test_frozen_findings_remediation.py"
+      ],
+      "verification": [
+        "test_blank_complete_output_converges_failed_without_candidate",
+        "test_complete_and_partial_truncated_utf8_never_stage_document_candidate",
+        "test_utf8_is_validated_after_full_ack_assembly",
+        "test_final_skill_blank_output_fails_instead_of_reusing_previous_phase"
+      ],
+      "evidence": "Aggregate output is strict-decoded once; complete output must be non-blank and invalid text converges FAILED with zero Candidate/Publication."
+    },
+    {
+      "id": "NW-P6-CW-SOL-F-003",
+      "implementation_status": "addressed_awaiting_reviewer",
+      "changed_paths": [
+        "first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow/workflow.py",
+        "tests/p6-writing/chapter-workflow/test_frozen_findings_remediation.py"
+      ],
+      "verification": [
+        "test_candidate_asset_failure_retries_without_repolling_broker",
+        "test_candidate_persist_and_stage_failures_resume_confirmed_steps",
+        "test_control_finalization_retry_preserves_prefix_and_calls_broker_once",
+        "test_skill_start_failure_retries_same_invocation_without_early_phase_advance"
+      ],
+      "evidence": "FINALIZING retains confirmed progress; Candidate terminal and next-Skill phase/index become visible only after all required port steps succeed."
+    },
+    {
+      "id": "NW-P6-CW-SOL-F-004",
+      "implementation_status": "addressed_awaiting_reviewer",
+      "changed_paths": [
+        "first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow/workflow.py",
+        "tests/p6-writing/chapter-workflow/test_frozen_findings_remediation.py"
+      ],
+      "verification": [
+        "test_late_poll_after_cancel_is_fenced_by_transition_token",
+        "test_concurrent_pause_cancel_commits_only_one_terminal_candidate",
+        "test_late_old_skill_response_cannot_advance_or_append_evidence_twice",
+        "test_synchronous_broker_reentry_fences_outer_poll_without_deadlock"
+      ],
+      "evidence": "Broker calls release the state lock and returned batches commit only if invocation, phase, epoch and last sequence still match."
+    },
+    {
+      "id": "NW-P6-CW-SOL-F-005",
+      "implementation_status": "addressed_awaiting_reviewer",
+      "changed_paths": [
+        "first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow/__init__.py",
+        "first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow/ports.py",
+        "first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow/workflow.py",
+        "tests/p6-writing/chapter-workflow/conftest.py",
+        "tests/p6-writing/chapter-workflow/test_frozen_findings_remediation.py"
+      ],
+      "verification": [
+        "test_rewrite_receipt_binds_unicode_range_base_and_context_before_writes",
+        "test_rewrite_receipt_mismatch_or_out_of_range_fails_before_asset_and_broker"
+      ],
+      "evidence": "Unicode codepoint length plus a closed read-only receipt binds exact range/text/hash to current/base Revision and total length before write-side calls."
+    },
+    {
+      "id": "NW-P6-CW-SOL-F-006",
+      "implementation_status": "addressed_awaiting_reviewer",
+      "changed_paths": [
+        "first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow/workflow.py",
+        "tests/p6-writing/chapter-workflow/test_frozen_findings_remediation.py"
+      ],
+      "verification": [
+        "test_publication_command_is_immutable_and_result_binds_original_candidate",
+        "test_malformed_publication_result_fails_closed"
+      ],
+      "evidence": "The adapter receives a MappingProxy command and result identity is compared directly with the original Candidate and target."
+    },
+    {
+      "id": "NW-P6-CW-SOL-F-007",
+      "implementation_status": "addressed_awaiting_reviewer",
+      "changed_paths": [
+        "first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow/__init__.py",
+        "first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow/ports.py",
+        "first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow/workflow.py",
+        "tests/p6-writing/chapter-workflow/conftest.py",
+        "tests/p6-writing/chapter-workflow/test_frozen_findings_remediation.py"
+      ],
+      "verification": [
+        "test_story_settlement_preflights_every_bundle_before_persist_or_batch",
+        "test_story_settlement_persist_failure_retries_without_partial_candidate_or_reproposal",
+        "test_atomic_settlement_batch_recovers_ambiguous_commit_by_durable_receipt"
+      ],
+      "evidence": "All bundles are snapshotted, verified and globally deduplicated before persistence; Candidate visibility has one atomic durable-receipt commit point."
+    },
+    {
+      "id": "NW-P6-CW-SOL-F-008",
+      "implementation_status": "addressed_awaiting_reviewer",
+      "changed_paths": [
+        "first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow/workflow.py",
+        "tests/p6-writing/chapter-workflow/test_frozen_findings_remediation.py"
+      ],
+      "verification": [
+        "test_story_bundle_persisted_identity_mismatch_never_reaches_atomic_stage"
+      ],
+      "evidence": "Every persisted ID must equal its already verified declared bundle_id; first- and second-position substitution both leave batch calls at zero."
+    },
+    {
+      "id": "NW-P6-CW-SOL-F-009",
+      "implementation_status": "addressed_awaiting_reviewer",
+      "changed_paths": [
+        "coordination/PPA-06/chapter-workflow/runtime-integration-delta-v1.json",
+        "docs/deliveries/PPA-06/chapter-workflow/delivery-record-v1.md",
+        "tests/p6-writing/chapter-workflow/test_frozen_findings_remediation.py"
+      ],
+      "verification": [
+        "test_runtime_delta_declares_exact_dependency_closure_and_contract_owners"
+      ],
+      "evidence": "The committed delta contains exactly the five taskbook dependency IDs and an explicit P0/P2/P3/P5 contract-owner map."
+    }
+  ],
+  "validation": [
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p6-writing/chapter-workflow -q",
+      "exit_code": 0,
+      "raw_result": "66 passed in 1.12s"
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p6-writing -q",
+      "exit_code": 0,
+      "raw_result": "113 passed, 4 warnings in 5.32s"
+    },
+    {
+      "command": "python -B -m compileall -q first-party-plugins/chapter-workflow",
+      "exit_code": 0,
+      "raw_result": "compileall exit=0"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "raw_result": "exit 0"
+    }
+  ],
+  "limitations": [
+    "Source readiness remains source_ready_integration_deferred.",
+    "Session pending finalization is in-memory; production recovery remains a P0/P3 composition responsibility.",
+    "Rewrite receipt and atomic settlement batch are local composition-only ports, not public SDK contracts.",
+    "No GUI, desktop, Tauri, EXE, installer or final product build was run.",
+    "This record is implementation evidence and does not declare review PASS, acceptance or merge eligibility."
+  ]
+}
