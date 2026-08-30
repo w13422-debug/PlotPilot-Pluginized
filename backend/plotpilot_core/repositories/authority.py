@@ -276,6 +276,21 @@ CREATE INDEX execution_candidate_job ON execution_candidate_binding(job_id,attem
 )
 
 
+AUTHORITY_APPLICATION_SCHEMA = """
+CREATE TABLE IF NOT EXISTS core_authority_operation(
+    route_id TEXT NOT NULL,
+    operation_key TEXT NOT NULL,
+    workspace_id TEXT NOT NULL,
+    payload_hash TEXT NOT NULL,
+    request_json TEXT NOT NULL,
+    success_status INTEGER NOT NULL,
+    response_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY(route_id,operation_key)
+)
+"""
+
+
 class ConflictError(RuntimeError): pass
 class NotFoundError(KeyError): pass
 
@@ -296,6 +311,17 @@ class CoreAuthorityRepository:
     def close(self) -> None:
         with self._lock:
             self._connection.close()
+
+    def ensure_authority_application_schema(self) -> None:
+        """Create the P1 application ledger in the sole Core database.
+
+        The table is initialized lazily by the application seam.  This keeps
+        the accepted H_C repository/migration surface unchanged for callers
+        that do not compose Core HTTP authority, while ensuring every composed
+        command uses the same connection and transaction root as the mutation.
+        """
+        with self.transaction() as connection:
+            connection.execute(AUTHORITY_APPLICATION_SCHEMA)
 
     @contextmanager
     def read_connection(self):

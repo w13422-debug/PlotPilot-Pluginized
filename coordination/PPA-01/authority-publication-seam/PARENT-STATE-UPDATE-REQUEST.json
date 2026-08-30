@@ -1,0 +1,16 @@
+{
+  "schema": "parent-state-update-request/v1",
+  "node_id": "NW-P1-AUTHORITY-PUBLICATION-SEAM-G2",
+  "task_id": "WAVE-D-G2-NW-P1-APS-SOURCE-01",
+  "requested_transition": "source_commit_ready_for_fresh_sol_max_review",
+  "base": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+  "evidence": "docs/deliveries/PPA-01/authority-publication-seam/evidence/verification-summary.json",
+  "next_steps": [
+    "Verify one direct-child source commit, exact owned path set and clean tree.",
+    "Dispatch a fresh gpt-5.6-sol/max read-only structural review for F-001/F-002/F-005.",
+    "Keep P0 integration, merge eligibility, tags and pushes disabled until the controller serializes review results."
+  ],
+  "note": "Parent case state.json and controller evidence are P0-owned and outside this node write set; apply this request centrally after source verification.",
+  "central_acceptance": "not performed",
+  "donor_push": "DISABLED"
+}

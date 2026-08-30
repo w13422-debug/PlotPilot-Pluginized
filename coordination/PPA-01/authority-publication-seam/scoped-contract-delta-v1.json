@@ -1,0 +1,44 @@
+{
+  "schema": "scoped-contract-delta/v1",
+  "delta_id": "NW-P1-APS-G2-CD-001",
+  "generation_id": "NW-P1-AUTHORITY-PUBLICATION-SEAM-G2",
+  "task_id": "WAVE-D-G2-NW-P1-APS-SOURCE-01",
+  "status": "remediated_pending_finding_review",
+  "base": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+  "affected_contract_ids": [
+    "core-authority-command-query/v1",
+    "publication-command-result/v1",
+    "asset-metadata/v1"
+  ],
+  "public_contract_changes": false,
+  "implemented_capabilities": [
+    "complete durable Candidate parent closure traversal with visited/active cycle detection",
+    "lifecycle, source closure, canonical row/hash, target/base/write-set and Asset metadata/bytes/hash preflight",
+    "typed incomplete_publication normalization for durable decode and Asset failures",
+    "single Core transaction with closure fingerprint CAS recheck and publication.accept ledger replay"
+  ],
+  "finding_disposition": {
+    "NW-P1-APS-SOL-F-001": "implemented_pending_fresh_sol_max_review",
+    "NW-P1-APS-SOL-F-002": "implemented_pending_fresh_sol_max_review",
+    "NW-P1-APS-SOL-F-003": "CLOSED",
+    "NW-P1-APS-SOL-F-004": "CLOSED",
+    "NW-P1-APS-SOL-F-005": "implemented_pending_fresh_sol_max_review"
+  },
+  "stopped_or_deferred": [
+    "publication.node_structure",
+    "publication.relation_set",
+    "publication.incomplete_stream",
+    "cascade-dependent Workspace/Node delete semantics",
+    "revision.content offset>total",
+    "HTTP/app mount and public-contract/SDK changes",
+    "automatic Publication and any second database/ledger"
+  ],
+  "evidence": [
+    "docs/deliveries/PPA-01/authority-publication-seam/evidence/raw-validation.txt",
+    "docs/deliveries/PPA-01/authority-publication-seam/evidence/verification-summary.json",
+    "tests/p1-core/authority-publication-seam/test_publication_seam_g2.py"
+  ],
+  "central_acceptance": "not performed; fresh gpt-5.6-sol/max review remains mandatory",
+  "merge_eligible": false,
+  "donor_push": "DISABLED"
+}

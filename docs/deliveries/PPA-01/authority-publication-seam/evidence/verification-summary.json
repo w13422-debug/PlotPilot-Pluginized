@@ -1,0 +1,79 @@
+{
+  "schema": "ppa-authority-publication-seam-verification/v1",
+  "node_id": "NW-P1-AUTHORITY-PUBLICATION-SEAM-G2",
+  "task_id": "WAVE-D-G2-NW-P1-APS-SOURCE-01",
+  "exact_base": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+  "required_parent": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+  "frozen_rejected_head": "bcfc8029411d383ac0d9331853ec0c69f3e94c74",
+  "source_state": "containing commit; final head/tree reported out of band because embedding them would be self-referential",
+  "exclusive_write_set": [
+    "backend/plotpilot_core/repositories/authority.py",
+    "backend/plotpilot_core/repositories/authority_application/**",
+    "backend/plotpilot_core/publication/service.py",
+    "backend/plotpilot_core/publication/application/**",
+    "tests/p1-core/authority-publication-seam/**",
+    "docs/deliveries/PPA-01/authority-publication-seam/**",
+    "coordination/PPA-01/authority-publication-seam/**"
+  ],
+  "results": [
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/authority-publication-seam -q",
+      "result": "22 passed in 1.11s",
+      "exit_code": 0,
+      "raw": "evidence/raw-validation.txt"
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/execution-transaction -q",
+      "result": "78 passed in 3.66s",
+      "exit_code": 0,
+      "raw": "evidence/raw-validation.txt"
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core -q",
+      "result": "180 passed, 1 skipped in 18.36s",
+      "exit_code": 0,
+      "raw": "evidence/raw-validation.txt"
+    },
+    {
+      "command": "python -B -m compileall -q backend/plotpilot_core/repositories backend/plotpilot_core/publication",
+      "result": "exit 0",
+      "exit_code": 0,
+      "raw": "evidence/raw-validation.txt"
+    },
+    {
+      "command": "python -B tools/integration/generate_contract_manifest.py --check",
+      "result": "contract manifest is deterministic (141 files)",
+      "exit_code": 0,
+      "raw": "evidence/raw-validation.txt"
+    },
+    {
+      "command": "git diff --check",
+      "result": "exit 0; line-ending notices only",
+      "exit_code": 0,
+      "raw": "evidence/raw-validation.txt"
+    }
+  ],
+  "raw_transcript_sha256": "5630e266832ef124f015af72a5bb6daba5aa260542d8e49efdd9f57348a953820",
+  "finding_coverage": {
+    "NW-P1-APS-SOL-F-001": "implemented_pending_fresh_sol_max_review",
+    "NW-P1-APS-SOL-F-002": "implemented_pending_fresh_sol_max_review",
+    "NW-P1-APS-SOL-F-003": "CLOSED",
+    "NW-P1-APS-SOL-F-004": "CLOSED",
+    "NW-P1-APS-SOL-F-005": "implemented_pending_fresh_sol_max_review"
+  },
+  "dependencies": [
+    "Accepted H_C Core Authority, Asset Store and Execution Transaction",
+    "Fresh Sol/max review precedes NW-P1-CORE-HTTP-G2"
+  ],
+  "stopped_capabilities": [
+    "publication.node_structure / publication.relation_set / publication.incomplete_stream",
+    "cascade-dependent Workspace/Node delete semantics",
+    "revision.content offset>total",
+    "HTTP/app mount and public-contract/SDK changes",
+    "automatic Publication and any second database/ledger"
+  ],
+  "central_acceptance": "not performed; fresh gpt-5.6-sol/max structural review remains mandatory",
+  "merge_eligible": false,
+  "donor_push": "DISABLED",
+  "generated_at": "2026-08-29T00:00:00+08:00"
+}
