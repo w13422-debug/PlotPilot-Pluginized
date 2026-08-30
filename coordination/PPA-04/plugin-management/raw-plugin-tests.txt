@@ -1,0 +1,32 @@
+✔ field materialization densifies legal sparse order without mutating authority input (4.778ms)
+✔ append adds to normalized tail and leaves all non-order authority fields unchanged (0.5683ms)
+✔ move and remove return dense new values and reject unsafe boundaries (2.215ms)
+✔ removing an interpreter in use fails closed and leaves the Plan unchanged (0.4691ms)
+✔ synthesizer is closed, exact, enabled, and cleared outside synthesize mode (0.3815ms)
+✔ dirty editor builds an immutable create-revision CAS intent and accepts exact response only (0.7973ms)
+✔ dirty refresh preserves same-base draft and new authority revision creates explicit conflict (0.6993ms)
+✔ same immutable revision content drift conflicts for clean and dirty editors (0.3463ms)
+✔ save acceptance is bound to the exact request and rejects same-base local or result drift (2.355ms)
+✔ prototype-backed Plan and nested binding ingress are rejected (0.5271ms)
+✔ same plan id can coexist at multiple revisions but exact duplicate identity is rejected in snapshots (0.7347ms)
+✔ preflight accepts zip and ppplugin with a canonical root manifest (4.6013ms)
+✔ preflight uses frozen NFC/full-casefold identities and rejects collisions (5.8322ms)
+✔ preflight rejects nested-only, ambiguous roots, and non-package extensions (0.4778ms)
+✔ preflight preserves normalizeWindowsPath negative corpus (1.0581ms)
+✔ five lifecycle terminal states and failure codes stop unknown-total processing (0.4662ms)
+✔ stream interruption stops processing without forging lifecycle authority (0.1308ms)
+✔ snapshot epoch rejects stale success and preserves all new release projections (1.789ms)
+✔ stale error/finalizer cannot clear or overwrite the current request state (0.6037ms)
+✔ real Vue ref load and save boundary materializes recursive plain values (211.7484ms)
+✔ real Vue append/remove/move uses shallow replacement and never retains Proxy values (2.2691ms)
+✔ real Vue dirty refresh preserves draft and stale authority conflicts without Proxy leakage (1.4419ms)
+✔ owned production sources contain no generic graph-clone call (4.69ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 552.0972
+exit=0

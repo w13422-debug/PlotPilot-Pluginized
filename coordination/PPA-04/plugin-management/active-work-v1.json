@@ -1,0 +1,31 @@
+{
+  "schema": "plugin-management-active-work/v1",
+  "task_id": "WAVE-D-G2-NW-P4-PLUGIN-MGMT-SOURCE-01",
+  "base": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+  "status": "staged_commit_ready",
+  "single_writer": "/root",
+  "read_only_tasks": [
+    "hc_contract_inventory",
+    "finding_surface_analysis"
+  ],
+  "write_set": [
+    "frontend/src/core/plugins/**",
+    "frontend/src/components/settings/plugin-management/**",
+    "frontend/tests/plugin-management/**",
+    "tests/p4-webui/plugin-management/**",
+    "docs/deliveries/PPA-04/plugin-management/**",
+    "coordination/PPA-04/plugin-management/**"
+  ],
+  "next_steps": [
+    "Implementation and decisive tests complete",
+    "Run final staged diff and identity checks",
+    "Create exactly one direct-child source commit",
+    "Verify clean tree and stop for controller intake"
+  ],
+  "blocker": null,
+  "prohibitions": [
+    "No frozen-candidate source reuse",
+    "No writes outside the exclusive write set",
+    "No browser, GUI, Tauri, desktop, EXE, installer, tag or push"
+  ]
+}
