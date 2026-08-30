@@ -1,0 +1,71 @@
+{
+  "schema": "plotpilot-runtime-integration-delta/v1",
+  "node_id": "NW-P5-STORY-STATE-RUNTIME-G3",
+  "source_status": "source_ready_review_required",
+  "production_executable": false,
+  "installable": false,
+  "public_contract_change": "none",
+  "story_state_boundary": {
+    "owns": [
+      "closed story-state-payload/v1 semantic validation",
+      "candidate-batch ResultBundle materialization",
+      "authoritative Publication/Revision/FactRef projection preflight",
+      "terminal DTO and committed receipt convergence",
+      "latest-terminal retry selection and disposable projection rebuild"
+    ],
+    "does_not_own": [
+      "Skill receipt or chain parsing, ordering, hashing, continuity, anchor, claim, or patch semantics",
+      "Core Asset, Candidate, Publication, Revision, receipt, Job, or database authority",
+      "HTTP or runtime composition"
+    ]
+  },
+  "skill_chain_authority": {
+    "adapter": "plotpilot_prompt_skill_runtime.verify_chain",
+    "story_state_duplicate_truth": false,
+    "required_authoritative_inputs": [
+      "skill-chain-result/v1 Asset bytes and hash",
+      "authoritative ordered SkillRunReceipt set"
+    ]
+  },
+  "terminal_seam": {
+    "method": "host.job.complete/v1",
+    "atomic_inputs": [
+      "operation_key",
+      "worker_run_id",
+      "outcome",
+      "result_bundle_asset_id",
+      "provenance_receipt",
+      "candidate_stage_operation_key",
+      "terminal_detail_asset_id",
+      "local_seq"
+    ],
+    "required_enrichment": [
+      "exact item_id to candidate_id mappings with stage_status and publication_eligibility",
+      "the committed provenance-receipt/v1 value after Core rewrites created_at and receipt_hash"
+    ],
+    "precondition": "All payload, reference, ResultBundle, Skill-chain and receipt preflight completes before the one terminal call.",
+    "stop_condition": "Do not compose Story State into a production runtime until the accepted terminal adapter returns both exact Candidate mappings and the committed receipt."
+  },
+  "publication_projection_seam": {
+    "required_authorities": [
+      "publication-result/v1",
+      "current Core Revision pointer",
+      "published Candidate and candidate-item/v1",
+      "complete Asset metadata plus bytes/hash",
+      "Publication receipt binding",
+      "committed provenance-receipt/v1 execution lineage"
+    ],
+    "stop_condition": "Do not project caller-asserted, unpublished, stale, cross-workspace or receipt-substituted records."
+  },
+  "upstream_dependencies": [
+    "NW-P2-PROMPT-SKILL-RUNTIME-G2",
+    "NW-P1-AUTHORITY-PUBLICATION-SEAM-G2",
+    "NW-P1-CORE-HTTP-G2",
+    "NW-P2-PLUGIN-API-G2",
+    "NW-P3-JOB-RPC-02",
+    "NW-P0-RUNTIME-COMPOSITION-02"
+  ],
+  "downstream_dependencies": [
+    "NW-P6-CHAPTER-WORKFLOW-02"
+  ]
+}

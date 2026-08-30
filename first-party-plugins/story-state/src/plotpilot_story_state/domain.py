@@ -1,11 +1,16 @@
-"""Story State proposal and rebuildable-projection rules."""
+"""Small immutable Story State domain values.
+
+This module deliberately contains no persistence adapter.  Runtime payload
+closure lives in :mod:`payloads`, while authoritative Publication projection
+lives in :mod:`projection`.
+"""
 from __future__ import annotations
 
-from dataclasses import dataclass
 import re
+from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Any, Iterable, Mapping
-
+from typing import Any
 
 ALLOWED_KINDS = frozenset({"bible", "character", "relationship", "world", "location", "organization", "rule", "item", "foreshadowing", "story_evolution"})
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -45,6 +50,7 @@ class Proposal:
     parent_candidate_ids: tuple[str, ...] = ()
     outcome: str = "success"
     error: str | None = None
+    terminal_seq: int = 1
 
     def __post_init__(self) -> None:
         for name in ("proposal_id", "operation_id", "item_id", "retry_id"):
@@ -56,6 +62,8 @@ class Proposal:
             raise ValueError("successful proposal cannot have error")
         if self.outcome == "failure" and (self.error is None or not self.error.strip()):
             raise ValueError("failed proposal requires non-blank error")
+        if isinstance(self.terminal_seq, bool) or self.terminal_seq < 1:
+            raise ValueError("terminal_seq must be a positive integer")
         object.__setattr__(self, "payload", _freeze(self.payload))
         object.__setattr__(self, "parent_candidate_ids", tuple(self.parent_candidate_ids))
 
@@ -95,11 +103,37 @@ def partition_proposals(proposals: Iterable[Proposal]) -> tuple[tuple[Proposal, 
 
 
 def failed_items_for_retry(proposals: Iterable[Proposal], *, retry_id: str) -> tuple[tuple[str, str, str], ...]:
-    """Return only failed operation/item identities under a new retry identity."""
+    """Return unique items whose latest validated terminal state is failure.
+
+    ``terminal_seq`` is scoped to the stable ``operation_id/item_id`` pair.
+    Duplicate or gapped histories are rejected instead of reviving an older
+    failure after a later success.
+    """
     if not retry_id.strip():
         raise ValueError("retry_id must not be blank")
-    _, failed = partition_proposals(proposals)
-    return tuple((proposal.operation_id, proposal.item_id, retry_id) for proposal in failed)
+    values = tuple(proposals)
+    partition_proposals(values)
+    histories: dict[tuple[str, str], dict[int, Proposal]] = {}
+    order: list[tuple[str, str]] = []
+    for proposal in values:
+        key = proposal.operation_id, proposal.item_id
+        if key not in histories:
+            histories[key] = {}
+            order.append(key)
+        if proposal.terminal_seq in histories[key]:
+            raise ValueError("terminal_seq must be unique per operation/item")
+        histories[key][proposal.terminal_seq] = proposal
+    result: list[tuple[str, str, str]] = []
+    for key in order:
+        history = histories[key]
+        if sorted(history) != list(range(1, len(history) + 1)):
+            raise ValueError("terminal_seq history must be continuous")
+        latest = history[max(history)]
+        if latest.outcome == "failure":
+            if latest.retry_id == retry_id:
+                raise ValueError("retry_id must advance beyond the latest terminal state")
+            result.append((latest.operation_id, latest.item_id, retry_id))
+    return tuple(result)
 
 
 def build_projection(facts: Iterable[FactRef], relations: Iterable[tuple[EntityKey, str, EntityKey]]) -> Projection:

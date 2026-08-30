@@ -1,0 +1,63 @@
+{
+  "schema": "plotpilot-finding-closure/v1",
+  "node_id": "NW-P5-STORY-STATE-RUNTIME-G3",
+  "exact_parent": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+  "structural_generation": true,
+  "findings": [
+    {
+      "finding_id": "NW-P5-SSR-SOL-F-001",
+      "status": "CLOSED",
+      "evidence": [
+        "StatePayload is a versioned closed discriminated union for all Story State kinds.",
+        "Runtime validates identity, enums, fields and reference closure before its terminal port is callable.",
+        "test_payload_and_retry.py and pre-mutation negatives in test_runtime.py"
+      ]
+    },
+    {
+      "finding_id": "NW-P5-SSR-SOL-F-002",
+      "status": "CLOSED",
+      "evidence": [
+        "PublishedStateRecord binds Publication, Candidate, current Revision pointer, Asset bytes/hash, Publication receipt and committed execution receipt.",
+        "Validly rehashed receipt_id/job_id/attempt_id substitutions are rejected before PublicationAnchor construction.",
+        "test_projection.py"
+      ]
+    },
+    {
+      "finding_id": "NW-P5-SSR-SOL-F-003",
+      "status": "CLOSED",
+      "evidence": [
+        "Retry folds each operation/item by continuous terminal_seq and selects only a unique latest failure.",
+        "Historical failure after later success, duplicate sequence, gap and retry identity reuse are rejected.",
+        "test_payload_and_retry.py"
+      ]
+    },
+    {
+      "finding_id": "NW-P5-SSR-SOL-F-004",
+      "status": "CLOSED",
+      "evidence": [
+        "Story State delegates all Skill-chain semantics to plotpilot_prompt_skill_runtime.verify_chain.",
+        "Distinct H0/H1/H2 passes SDK, Prompt Runtime and Story Runtime once; recomputed step-2 H0 passes SDK but Prompt/Story reject before terminal mutation.",
+        "Partial Bundle passes public verification; terminal DTO requires exact Candidate mapping and returns the Core committed receipt.",
+        "test_runtime.py"
+      ]
+    },
+    {
+      "finding_id": "NW-P5-SSR-SOL-F-005",
+      "status": "CLOSED",
+      "evidence": [
+        "runtime-integration-delta-v1.json records the exact terminal fields, enrichment, owners, dependencies and stop conditions.",
+        "production_executable and installable remain false."
+      ]
+    },
+    {
+      "finding_id": "NW-P5-SSR-SOL-F-006",
+      "status": "CLOSED",
+      "evidence": [
+        "write-set-check.txt is generated from the final parent-to-worktree path set.",
+        "source-candidate.json records concrete changed paths and outside count."
+      ]
+    }
+  ],
+  "merge_eligible": false,
+  "production_executable": false
+}

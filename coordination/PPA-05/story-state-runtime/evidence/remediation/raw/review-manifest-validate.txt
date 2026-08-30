@@ -1,0 +1,3 @@
+COMMAND=python review_manifest.py validate <finding-manifest>
+{"finding_count":3,"status":"valid"}
+EXIT_CODE=0

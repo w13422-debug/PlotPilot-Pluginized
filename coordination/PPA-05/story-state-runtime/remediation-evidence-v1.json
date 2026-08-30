@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "original_reviewed_baseline": "commit:555f9434b188621ee8c944feb184421f28a75515",
+  "remediated_baseline": "diff-sha256:68de2b984d5eb617822c6fe49ae95c557d29e40bd5a15d76cbdf6342cae23e73",
+  "finding_ids": [
+    "NW-P5-SSR-SOL-F-001",
+    "NW-P5-SSR-SOL-F-002",
+    "NW-P5-SSR-SOL-F-004"
+  ],
+  "changed_files": [
+    "first-party-plugins/story-state/src/plotpilot_story_state/__init__.py",
+    "first-party-plugins/story-state/src/plotpilot_story_state/ports.py",
+    "first-party-plugins/story-state/src/plotpilot_story_state/projection.py",
+    "first-party-plugins/story-state/src/plotpilot_story_state/runtime.py",
+    "tests/p5-planning/story-state-runtime/test_projection.py",
+    "tests/p5-planning/story-state-runtime/test_runtime.py"
+  ],
+  "tests": [
+    {
+      "name": "story-state-authoritative-reference-binding",
+      "status": "pass",
+      "evidence": "pytest-finding-labels.txt: authoritative Core document/current Revision binding accepted; known_entity_ids alone rejected"
+    },
+    {
+      "name": "story-state-forged-revision-negative",
+      "status": "pass",
+      "evidence": "pytest-finding-labels.txt: forged revision_id and content_hash parameter cases rejected with zero terminal calls"
+    },
+    {
+      "name": "story-state-cross-workspace-reference-negative",
+      "status": "pass",
+      "evidence": "pytest-finding-labels.txt: caller and authority cross-Workspace cases rejected with zero terminal calls"
+    },
+    {
+      "name": "story-state-publication-semantic-parser-parity",
+      "status": "pass",
+      "evidence": "pytest-finding-labels.txt: PublishedStateRecord observed calling public parse_publication with the Candidate workspace"
+    },
+    {
+      "name": "story-state-cross-workspace-publication-negative",
+      "status": "pass",
+      "evidence": "pytest-finding-labels.txt: nested Publication and current Revision cross-Workspace cases rejected"
+    },
+    {
+      "name": "story-state-asset-semantic-closure",
+      "status": "pass",
+      "evidence": "pytest-finding-labels.txt: size, role, rebuildable, MIME, bytes and hash drift cases rejected before anchor return"
+    },
+    {
+      "name": "story-state-receipt-substitution-regression",
+      "status": "pass",
+      "evidence": "pytest-finding-labels.txt and pytest-required-regressions.txt: receipt_id, job_id and attempt_id substitutions rejected"
+    },
+    {
+      "name": "story-state-chain-snapshot-binding",
+      "status": "pass",
+      "evidence": "pytest-finding-labels.txt: verified chain run_snapshot_hash bound to request input_snapshot_hash"
+    },
+    {
+      "name": "story-state-foreign-snapshot-negative",
+      "status": "pass",
+      "evidence": "pytest-finding-labels.txt: otherwise valid foreign-snapshot chain rejected with zero terminal calls"
+    },
+    {
+      "name": "story-state-skill-chain-parity-regression",
+      "status": "pass",
+      "evidence": "pytest-finding-labels.txt and pytest-required-regressions.txt: distinct H0/H1/H2 accepted by SDK, Prompt Runtime and Story Runtime"
+    },
+    {
+      "name": "story-state-mismatched-document-negative",
+      "status": "pass",
+      "evidence": "pytest-finding-labels.txt: current Revision document drift rejected before PublicationAnchor return"
+    },
+    {
+      "name": "story-state-recomputed-h0-negative-regression",
+      "status": "pass",
+      "evidence": "pytest-required-regressions.txt: recomputed legal public receipt/chain hash with step-two H0 rejected before terminal"
+    },
+    {
+      "name": "story-state-runtime-targeted",
+      "status": "pass",
+      "evidence": "pytest-story-state-runtime.txt: 41 passed"
+    },
+    {
+      "name": "p5-planning-full",
+      "status": "pass",
+      "evidence": "pytest-p5-planning.txt: 60 passed"
+    },
+    {
+      "name": "ruff-story-state",
+      "status": "pass",
+      "evidence": "ruff-story-state.txt: All checks passed"
+    },
+    {
+      "name": "compileall-story-state",
+      "status": "pass",
+      "evidence": "compileall-story-state.txt: EXIT_CODE=0 with short external PYTHONPYCACHEPREFIX"
+    }
+  ],
+  "skipped_checks": [],
+  "scope_deviations": [],
+  "approved_scope_changes": [],
+  "full_rereview_triggers": []
+}

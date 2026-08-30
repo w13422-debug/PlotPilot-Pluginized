@@ -1,0 +1,29 @@
+COMMAND=python -m pytest <7 required regression selectors> -vv
+SELECTOR=tests/p5-planning/story-state-runtime/test_runtime.py::test_distinct_h0_h1_h2_chain_is_accepted_by_all_three_and_committed_once
+SELECTOR=tests/p5-planning/story-state-runtime/test_runtime.py::test_recomputed_h0_step_two_receipt_is_rejected_before_any_write
+SELECTOR=tests/p5-planning/story-state-runtime/test_runtime.py::test_partial_bundle_is_public_valid_and_commits_only_complete_item
+SELECTOR=tests/p5-planning/story-state-runtime/test_runtime.py::test_terminal_candidate_mapping_and_committed_receipt_are_closed
+SELECTOR=tests/p5-planning/story-state-runtime/test_runtime.py::test_retry_replays_one_terminal_call_and_converges_on_committed_receipt
+SELECTOR=tests/p5-planning/story-state-runtime/test_projection.py::test_publication_revision_fact_asset_candidate_and_execution_lineage_project
+SELECTOR=tests/p5-planning/story-state-runtime/test_projection.py::test_unrelated_validly_rehashed_receipt_is_rejected_before_anchor
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\Administrator\AppData\Local\Programs\Python\Python312\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-NW-P5-Story-State-Runtime-G3
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 9 items
+
+tests/p5-planning/story-state-runtime/test_runtime.py::test_distinct_h0_h1_h2_chain_is_accepted_by_all_three_and_committed_once PASSED [ 11%]
+tests/p5-planning/story-state-runtime/test_runtime.py::test_recomputed_h0_step_two_receipt_is_rejected_before_any_write PASSED [ 22%]
+tests/p5-planning/story-state-runtime/test_runtime.py::test_partial_bundle_is_public_valid_and_commits_only_complete_item PASSED [ 33%]
+tests/p5-planning/story-state-runtime/test_runtime.py::test_terminal_candidate_mapping_and_committed_receipt_are_closed PASSED [ 44%]
+tests/p5-planning/story-state-runtime/test_runtime.py::test_retry_replays_one_terminal_call_and_converges_on_committed_receipt PASSED [ 55%]
+tests/p5-planning/story-state-runtime/test_projection.py::test_publication_revision_fact_asset_candidate_and_execution_lineage_project PASSED [ 66%]
+tests/p5-planning/story-state-runtime/test_projection.py::test_unrelated_validly_rehashed_receipt_is_rejected_before_anchor[receipt_id] PASSED [ 77%]
+tests/p5-planning/story-state-runtime/test_projection.py::test_unrelated_validly_rehashed_receipt_is_rejected_before_anchor[job_id] PASSED [ 88%]
+tests/p5-planning/story-state-runtime/test_projection.py::test_unrelated_validly_rehashed_receipt_is_rejected_before_anchor[attempt_id] PASSED [100%]
+
+============================== 9 passed in 0.53s ==============================
+EXIT_CODE=0
