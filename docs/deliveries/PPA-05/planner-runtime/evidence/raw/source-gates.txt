@@ -1,0 +1,29 @@
+parent=b1d747957ff21223e10fa61eb45de3d1780b5551
+command=git diff --check
+warning: in the working copy of 'coordination/PPA-05/planner-runtime/state.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/deliveries/PPA-05/planner-runtime/NW-P5-PLANNER-RUNTIME-02.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/deliveries/PPA-05/planner-runtime/validation-evidence.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'first-party-plugins/project-planner/src/plotpilot_project_planner/__init__.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'first-party-plugins/project-planner/src/plotpilot_project_planner/runtime.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p5-planning/planner-runtime/test_runtime.py', LF will be replaced by CRLF the next time Git touches it
+exit_code=0
+
+command=exclusive write-set proof over tracked diff plus untracked non-ignored paths
+changed_count=14
+outside_count=0
+cache_count=0
+changed_paths:
+coordination/PPA-05/planner-runtime/runtime-composition-contract-delta-v1.json
+coordination/PPA-05/planner-runtime/runtime-integration-delta-v1.json
+coordination/PPA-05/planner-runtime/state.json
+docs/deliveries/PPA-05/planner-runtime/evidence/raw/compileall.txt
+docs/deliveries/PPA-05/planner-runtime/evidence/raw/pytest-p5-planning.txt
+docs/deliveries/PPA-05/planner-runtime/evidence/raw/pytest-planner-runtime.txt
+docs/deliveries/PPA-05/planner-runtime/evidence/raw/ruff.txt
+docs/deliveries/PPA-05/planner-runtime/evidence/raw/source-gates.txt
+docs/deliveries/PPA-05/planner-runtime/finding-closure-v1.json
+docs/deliveries/PPA-05/planner-runtime/NW-P5-PLANNER-RUNTIME-02.md
+docs/deliveries/PPA-05/planner-runtime/validation-evidence.json
+first-party-plugins/project-planner/src/plotpilot_project_planner/__init__.py
+first-party-plugins/project-planner/src/plotpilot_project_planner/runtime.py
+tests/p5-planning/planner-runtime/test_runtime.py

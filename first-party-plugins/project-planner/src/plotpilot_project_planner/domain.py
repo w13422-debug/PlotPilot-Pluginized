@@ -6,11 +6,13 @@ public SDK; it never writes a Story State authority of its own.
 """
 from __future__ import annotations
 
+import json
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from hashlib import sha256
-import json
+from math import isfinite
 from types import MappingProxyType
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 
 def _required(value: str, field: str) -> str:
@@ -33,8 +35,8 @@ class PlanningInput:
         genres = tuple(dict.fromkeys(_required(item, "genre") for item in self.genres))
         if not genres:
             raise ValueError("genres must not be empty")
-        if self.target_words <= 0:
-            raise ValueError("target_words must be positive")
+        if isinstance(self.target_words, bool) or not isinstance(self.target_words, int) or self.target_words <= 0:
+            raise ValueError("target_words must be a positive integer")
         object.__setattr__(self, "genres", genres)
 
 
@@ -87,9 +89,13 @@ def _canonical_hash(value: Mapping[str, Any]) -> str:
 def _freeze(value: Any) -> Any:
     """Canonical deep-copy into recursively immutable, JSON-compatible values."""
     if isinstance(value, Mapping):
-        return MappingProxyType({str(key): _freeze(item) for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))})
+        if not all(isinstance(key, str) for key in value):
+            raise ValueError("payload mapping keys must be strings")
+        return MappingProxyType({key: _freeze(item) for key, item in sorted(value.items())})
     if isinstance(value, (list, tuple)):
         return tuple(_freeze(item) for item in value)
+    if isinstance(value, float) and not isfinite(value):
+        raise ValueError("payload numbers must be finite")
     if value is None or isinstance(value, (str, int, float, bool)):
         return value
     raise ValueError(f"unsupported payload value: {type(value).__name__}")

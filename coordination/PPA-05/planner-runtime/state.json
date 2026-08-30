@@ -1,0 +1,44 @@
+{
+  "schema": "planner-runtime-source-state/v1",
+  "node_id": "NW-P5-PLANNER-RUNTIME-02",
+  "status": "bounded_remediation_candidate_ready_for_finding_id_review",
+  "base": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+  "remediation_parent": "b1d747957ff21223e10fa61eb45de3d1780b5551",
+  "branch": "codex/nw-p5-planner-runtime-02",
+  "finding_manifest_sha256": "c1fdf581aade8d71f12301a0a0e08454475a80e001a756f092c8bc4e7e49caaa",
+  "review_result_sha256": "f3ee5a198872cc78d0d0e520413ebee950d11e3fba0c578d850972722579c7c2",
+  "completed": [
+    "exact remediation parent, branch, clean worktree and donor-disabled startup gate",
+    "frozen Finding Manifest and review-result hash verification",
+    "reviewed local knowledge and accepted repository reuse decision",
+    "two disjoint Sol/high read-only Finding scouts",
+    "opaque RunSnapshot revalidation and fixed Planner operation/settings/Prompt compatibility binding",
+    "deterministic operation-key/payload-hash retry binding",
+    "distinct target and snapshot-backed source validation",
+    "final Bundle/producer/Asset/receipt/Skill-chain/rerun-CAS materialization stopped behind the integration delta",
+    "auditable raw validation evidence regenerated"
+  ],
+  "finding_submissions": {
+    "NW-P5-PLAN-SOL-F-001": "remediation_submitted",
+    "NW-P5-PLAN-SOL-F-002": "remediation_submitted",
+    "NW-P5-PLAN-SOL-F-003": "remediation_submitted",
+    "NW-P5-PLAN-SOL-F-004": "remediation_submitted",
+    "NW-P5-PLAN-SOL-F-005": "remediation_submitted",
+    "NW-P5-PLAN-SOL-F-006": "remediation_submitted",
+    "NW-P5-PLAN-SOL-F-007": "remediation_submitted",
+    "NW-P5-PLAN-SOL-F-008": "remediation_submitted"
+  },
+  "next_steps": [
+    "create exactly one direct-child remediation candidate",
+    "return only to reviewer 01a04834-0a4e-7f90-8bf1-80774c803c0e for Finding-ID-only closure",
+    "P0 resolves NW-P5-PLANNER-RUNTIME-INTEGRATION-DELTA-001 before production composition"
+  ],
+  "contract_delta_ids": [
+    "NW-P5-PLANNER-RUNTIME-INTEGRATION-DELTA-001"
+  ],
+  "closure_artifact": "docs/deliveries/PPA-05/planner-runtime/finding-closure-v1.json",
+  "source_readiness": "source_ready_integration_deferred",
+  "production_integration_claimed": false,
+  "self_acceptance_claimed": false,
+  "reviewer_disposition": "pending"
+}

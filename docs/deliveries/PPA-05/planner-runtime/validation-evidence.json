@@ -1,0 +1,80 @@
+{
+  "schema": "planner-runtime-remediation-validation-evidence/v1",
+  "node_id": "NW-P5-PLANNER-RUNTIME-02",
+  "remediation_parent": "b1d747957ff21223e10fa61eb45de3d1780b5551",
+  "finding_manifest_sha256": "c1fdf581aade8d71f12301a0a0e08454475a80e001a756f092c8bc4e7e49caaa",
+  "review_result_sha256": "f3ee5a198872cc78d0d0e520413ebee950d11e3fba0c578d850972722579c7c2",
+  "environment": {
+    "python": "C:/Users/Administrator/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe",
+    "python_version": "3.12.13",
+    "temporary_test_dependencies": "pytest 8.4.2, pytest-asyncio 0.26.0, jsonschema 4.26.0, rfc8785 0.1.4, fastapi 0.141.1, ruff",
+    "python_pycache_prefix": "C:/Users/Administrator/AppData/Local/Temp/p5n-remediation",
+    "repository_dependencies_changed": false
+  },
+  "commands": [
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p5-planning/planner-runtime -q",
+      "result": "35 passed in 0.85s",
+      "stdout": "35 passed",
+      "stderr": "empty",
+      "exit_code": 0,
+      "raw_path": "docs/deliveries/PPA-05/planner-runtime/evidence/raw/pytest-planner-runtime.txt",
+      "raw_sha256": "74935433d537932c73563d3124e7f9059dfdfb8fdd646155ed156a2722e30f1a"
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p5-planning -q",
+      "result": "54 passed in 0.94s",
+      "stdout": "54 passed",
+      "stderr": "empty",
+      "exit_code": 0,
+      "raw_path": "docs/deliveries/PPA-05/planner-runtime/evidence/raw/pytest-p5-planning.txt",
+      "raw_sha256": "e8936f05c0b0e5c5c7ebc47a95875e2a08ebe6259de9d3010aaeb849412741fd"
+    },
+    {
+      "command": "ruff check first-party-plugins/project-planner/src/plotpilot_project_planner tests/p5-planning/planner-runtime",
+      "result": "All checks passed!",
+      "stdout": "All checks passed!",
+      "stderr": "empty",
+      "exit_code": 0,
+      "raw_path": "docs/deliveries/PPA-05/planner-runtime/evidence/raw/ruff.txt",
+      "raw_sha256": "136618ed4fe2bd3ee3d44aad58ad619fd1c2bc333d4245a385758969be07a8a6"
+    },
+    {
+      "command": "python -B -m compileall -q first-party-plugins/project-planner",
+      "result": "stdout empty; stderr empty",
+      "stdout": "empty",
+      "stderr": "empty",
+      "exit_code": 0,
+      "raw_path": "docs/deliveries/PPA-05/planner-runtime/evidence/raw/compileall.txt",
+      "raw_sha256": "7fd226cfdfa24b3897a0dd07d80057145f8d21d70a789b32e07c630f512531ed"
+    }
+  ],
+  "finding_negative_coverage": [
+    "fixed operation and settings Workspace scope",
+    "arbitrary Prompt designation",
+    "forged Workspace, snapshot hash, operation and binding fingerprint",
+    "free-form producer, Asset ID, receipt ID and Skill-chain finalization surface",
+    "cross-Workspace, unbacked and duplicate source refs",
+    "duplicate semantic role targets",
+    "operation-key payload drift and exact retry convergence",
+    "rerun/parent lineage without durable previous-version CAS",
+    "runtime integration Delta exact dependencies and cancel impact",
+    "auditable compileall raw format"
+  ],
+  "source_gates": {
+    "git_diff_check_exit_code": 0,
+    "changed_path_count": 14,
+    "outside_write_set_count": 0,
+    "workspace_cache_count": 0,
+    "raw_path": "docs/deliveries/PPA-05/planner-runtime/evidence/raw/source-gates.txt",
+    "raw_sha256": "4991df84dcf03797f3095a915ae5e98b8664d38e04f644c1dd202444cad0c5e7"
+  },
+  "pending_commit_checks": [
+    "staged diff/write-set proof",
+    "direct-child candidate identity",
+    "clean worktree and donor-local push disabled"
+  ],
+  "final_product_build_run": false,
+  "production_integration_claimed": false,
+  "self_acceptance_claimed": false
+}

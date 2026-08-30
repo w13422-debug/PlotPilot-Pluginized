@@ -1,0 +1,22 @@
+command=python -B -m pytest -p no:cacheprovider tests/p5-planning -q
+cwd=C:\Users\Administrator\Desktop\写作资料汇总\PlotPilot-Pluginized-worktrees\PPA-NW-P5-Planner-Runtime
+executable=C:\Users\Administrator\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe
+python_version=Python 3.12.13
+PYTHONPYCACHEPREFIX=C:\Users\Administrator\AppData\Local\Temp\p5n-remediation
+stdout_begin
+============================= test session starts =============================
+platform win32 -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-NW-P5-Planner-Runtime
+configfile: pytest.ini
+plugins: anyio-4.14.2, asyncio-0.26.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 54 items
+tests\p5-planning\planner-runtime\test_runtime.py ...................... [ 40%]
+.............                                                            [ 64%]
+tests\p5-planning\test_planning_slice.py ...................             [100%]
+============================= 54 passed in 0.94s ==============================
+stdout_end
+stderr_begin
+<empty>
+stderr_end
+exit_code=0

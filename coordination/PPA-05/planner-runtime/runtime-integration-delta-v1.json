@@ -1,0 +1,98 @@
+{
+  "schema": "project-planner-runtime-integration-delta/v1",
+  "delta_id": "NW-P5-PLANNER-RUNTIME-INTEGRATION-DELTA-001",
+  "node_id": "NW-P5-PLANNER-RUNTIME-02",
+  "base_commit": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+  "source_candidate_parent": "b1d747957ff21223e10fa61eb45de3d1780b5551",
+  "source_readiness": "source_ready_integration_deferred",
+  "public_contract_change_requested": false,
+  "production_integration_claimed": false,
+  "affected_slice_stopped": true,
+  "affected_contract_ids": [
+    "run-snapshot/v1",
+    "provenance-receipt/v1",
+    "skill-chain-result/v1",
+    "host.asset.read/v1",
+    "host.asset.create/v1",
+    "host.model.invoke/v1",
+    "host.capability.invoke/v1",
+    "host.capability.poll/v1",
+    "host.capability.cancel/v1",
+    "host.candidate.stage/v1",
+    "host.job.complete/v1"
+  ],
+  "integration_dependencies": [
+    "NW-P2-PROMPT-SKILL-RUNTIME-02",
+    "NW-P1-CORE-HTTP-G2",
+    "NW-P2-PLUGIN-API-01",
+    "NW-P3-JOB-RPC-02",
+    "NW-P0-RUNTIME-COMPOSITION-02"
+  ],
+  "host_contract_impacts": {
+    "host.asset.read/v1": {
+      "params": ["asset_id", "offset", "length"],
+      "result": ["base64_chunk", "next_offset", "content_hash"]
+    },
+    "host.asset.create/v1": {
+      "params": ["operation_key", "upload_id", "offset", "mime", "total_size", "expected_hash", "chunk_hash", "base64_chunk", "final"],
+      "result": ["upload_id", "accepted_bytes", "completed", "asset_id"]
+    },
+    "host.model.invoke/v1": {
+      "params": ["operation_key", "invocation_id", "invocation_key", "model_profile_revision_id", "request_asset_id", "replay_policy"]
+    },
+    "host.capability.invoke/v1": {
+      "params": ["operation_key", "binding_id", "input_asset_id", "parameters_asset_id", "expected_result_contract", "propagate_cancel"]
+    },
+    "host.capability.poll/v1": {
+      "params": ["child_job_id", "after_job_event_seq"]
+    },
+    "host.capability.cancel/v1": {
+      "params": ["operation_key", "child_job_id", "reason"],
+      "result": ["accepted", "terminal_known", "child_state", "child_job_event_seq"]
+    },
+    "host.candidate.stage/v1": {
+      "params": ["operation_key", "result_bundle_asset_id", "input_snapshot_hash"]
+    },
+    "host.job.complete/v1": {
+      "params": ["operation_key", "worker_run_id", "outcome", "result_bundle_asset_id", "candidate_stage_operation_key", "terminal_detail_asset_id", "local_seq"],
+      "result": ["accepted", "attempt_state", "step_state", "job_state", "provenance_receipt_id", "job_event_seq", "core_event_high_water"]
+    }
+  },
+  "required_closures": [
+    {
+      "scope": "Prompt and ordered Skill execution evidence",
+      "owners": ["P2", "P3", "P0"],
+      "reason": "RunSnapshot has no accepted explicit Prompt designation and no authoritative Skill receipt reader is composed."
+    },
+    {
+      "scope": "Asset, Candidate and provenance-receipt transaction",
+      "owners": ["P1", "P3", "P0"],
+      "reason": "Final Bundle materialization must read authoritative Asset bytes and bind the current Attempt, complete receipt and staging transaction."
+    },
+    {
+      "scope": "durable operation replay and previous-version CAS",
+      "owners": ["P1", "P3", "P0"],
+      "reason": "P5 cannot create a second operation ledger or Candidate-version authority."
+    },
+    {
+      "scope": "Plan role targets and cancellation reconciliation",
+      "owners": ["P0", "P1", "P2", "P3"],
+      "reason": "Role-to-target resolution and host.capability.cancel/v1 terminal reconciliation remain composition-owned."
+    }
+  ],
+  "stop_conditions": [
+    "Do not mount or claim production execution while any integration dependency is unresolved.",
+    "Do not expose final Result Bundle materialization without authoritative Attempt, Asset, provenance receipt and Skill-chain evidence.",
+    "Do not finalize rerun lineage without durable replay-or-conflict and previous-version CAS.",
+    "Do not implement a P5-local memory or file ledger, Core truth write, staging authority or Publication path."
+  ],
+  "source_only_surface": [
+    "verified opaque RunSnapshot projection",
+    "fixed Planner operation and compatibility Prompt designation",
+    "deterministic setting/bible/outline payload proposals",
+    "snapshot-backed source and distinct target validation",
+    "operation-key and payload-hash binding for exact proposal retries"
+  ],
+  "supersedes_for_runtime_gate": "NW-P5-PLANNER-RUNTIME-CD-001",
+  "p0_decision": "pending"
+}
