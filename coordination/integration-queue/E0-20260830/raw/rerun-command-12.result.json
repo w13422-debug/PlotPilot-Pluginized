@@ -1,0 +1,34 @@
+{
+  "schema": "plotpilot-e0-remediation-command-result/v1",
+  "id": "E0-R12",
+  "stem": "rerun-command-12",
+  "environment_profile": {
+    "name": "pytest_profile",
+    "PYTHONHOME": null,
+    "PYTHONNOUSERSITE": "1",
+    "PYTHONPATH": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\ppa-event-sse-pydeps;C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\backend",
+    "TEMP": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\t",
+    "TMP": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\t"
+  },
+  "command": "& 'C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe' -B -m pytest -p no:cacheprovider tests/p6-writing/test_dependency_free_domains.py -q",
+  "expected": "exit 0; 5 passed",
+  "exit_code": 0,
+  "passed": true,
+  "pass_count": 5,
+  "expected_pass_count": 5,
+  "expectation_met": true,
+  "started_at": "2026-08-30T16:51:50.3027939+08:00",
+  "finished_at": "2026-08-30T16:51:51.7622394+08:00",
+  "duration_ms": 1459,
+  "stdout_file": "rerun-command-12.stdout.txt",
+  "stdout_sha256": "1bbd83f8eff2164b35bb814d10dc45c287b787b4f5d8f8484a1508e814a4e89b",
+  "stdout_bytes": 579,
+  "stderr_file": "rerun-command-12.stderr.txt",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr_bytes": 0,
+  "normalization": {
+    "encoding": "UTF-8 without BOM",
+    "line_endings": "LF only",
+    "nonempty_final_newline": true
+  }
+}

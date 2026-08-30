@@ -1,0 +1,16 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized
+configfile: pytest.ini
+plugins: anyio-4.14.2, asyncio-0.26.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 66 items
+
+tests\p6-writing\chapter-workflow\test_accept_settlement.py ............ [ 18%]
+...                                                                      [ 22%]
+tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py .. [ 25%]
+...............................                                          [ 72%]
+tests\p6-writing\chapter-workflow\test_source_boundaries.py ..           [ 75%]
+tests\p6-writing\chapter-workflow\test_workflow.py ................      [100%]
+
+============================= 66 passed in 1.02s ==============================

@@ -1,0 +1,13 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized
+configfile: pytest.ini
+plugins: anyio-4.14.2, asyncio-0.26.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 32 items
+
+tests\p3-execution\job-rpc\test_command_query.py ...................     [ 59%]
+tests\p3-execution\job-rpc\test_composition_seams.py ....                [ 71%]
+tests\p3-execution\job-rpc\test_host_dispatcher.py .........             [100%]
+
+============================= 32 passed in 1.42s ==============================

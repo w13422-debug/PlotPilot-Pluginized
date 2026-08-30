@@ -1,0 +1,30 @@
+{
+  "schema": "plotpilot-e0-remediation-command-result/v1",
+  "id": "E0-R13E",
+  "stem": "replacement-command-13e",
+  "environment_profile": {
+    "name": "compileall_profile",
+    "PYTHONPYCACHEPREFIX": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\ppa-e0-evidence-rerun-pyc-v1"
+  },
+  "command": "& 'C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe' -B -m compileall -q first-party-plugins/chapter-workflow",
+  "expected": "exit 0",
+  "exit_code": 0,
+  "passed": true,
+  "pass_count": null,
+  "expected_pass_count": null,
+  "expectation_met": true,
+  "started_at": "2026-08-30T16:51:53.3572382+08:00",
+  "finished_at": "2026-08-30T16:51:53.7337116+08:00",
+  "duration_ms": 376,
+  "stdout_file": "replacement-command-13e.stdout.txt",
+  "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_bytes": 0,
+  "stderr_file": "replacement-command-13e.stderr.txt",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr_bytes": 0,
+  "normalization": {
+    "encoding": "UTF-8 without BOM",
+    "line_endings": "LF only",
+    "nonempty_final_newline": true
+  }
+}

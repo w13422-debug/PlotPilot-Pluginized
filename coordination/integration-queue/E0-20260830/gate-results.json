@@ -1,262 +1,1076 @@
 {
-  "schema": "plotpilot-e0-directed-gate-results/v1",
-  "command_count": 17,
-  "failure_count": 9,
-  "results": [
+  "schema": "plotpilot-e0-directed-gate-results/v2",
+  "json_object_closed": true,
+  "task_id": "POST-WAVE-D-E0-EVIDENCE-ONLY-REMEDIATION-01",
+  "adjudication": {
+    "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\post-wave-d-e0-failed-gate-same-sol-adjudication-v1.json",
+    "sha256": "fd7790966a99770b5e8eb9d93d046ac29665e82f723db85ff196520b3e394cc6",
+    "verdict": "BLOCK",
+    "findings": [
+      "E0-ADJ-001",
+      "E0-ADJ-002",
+      "E0-ADJ-003"
+    ]
+  },
+  "original_gate": {
+    "command_count": 17,
+    "historical_failure_count": 9,
+    "records": [
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/command-01.result.json",
+        "record_sha256": "e9082759c3f0a1de14640c6ae16d2270bebd5290bf9525e1e4ac13275ecc5f12",
+        "result": {
+          "index": 1,
+          "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B -m pytest -p no:cacheprovider tests/p3-execution/job-rpc -q",
+          "exit_code": 1,
+          "passed": false,
+          "started_at": "2026-08-30T16:17:55.6196193+08:00",
+          "finished_at": "2026-08-30T16:17:56.2895578+08:00",
+          "duration_ms": 668,
+          "stdout_file": "command-01.stdout.txt",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_bytes": 0,
+          "stderr_file": "command-01.stderr.txt",
+          "stderr_sha256": "1e1b0774437067a6f1aa32a2155f0173a41bf723298526684bed7563ef7f9b69",
+          "stderr_bytes": 712
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/command-02.result.json",
+        "record_sha256": "92cc09cfd617058b96089a924de133b971cb68fd3f5af813e3a974d1127dbabc",
+        "result": {
+          "index": 2,
+          "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B -m pytest -p no:cacheprovider tests/p3-execution/event-sse -q",
+          "exit_code": 1,
+          "passed": false,
+          "started_at": "2026-08-30T16:17:56.3325412+08:00",
+          "finished_at": "2026-08-30T16:17:56.5955402+08:00",
+          "duration_ms": 262,
+          "stdout_file": "command-02.stdout.txt",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_bytes": 0,
+          "stderr_file": "command-02.stderr.txt",
+          "stderr_sha256": "1e1b0774437067a6f1aa32a2155f0173a41bf723298526684bed7563ef7f9b69",
+          "stderr_bytes": 712
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/command-03.result.json",
+        "record_sha256": "d284f7015b301663b683521a4899be587347c8fa35c69749ebcc3635bb92b0e0",
+        "result": {
+          "index": 3,
+          "command": "node --experimental-strip-types --test tests/p4-webui/core-flows/*.test.mts",
+          "exit_code": 0,
+          "passed": true,
+          "started_at": "2026-08-30T16:17:56.6002914+08:00",
+          "finished_at": "2026-08-30T16:17:57.2620593+08:00",
+          "duration_ms": 661,
+          "stdout_file": "command-03.stdout.txt",
+          "stdout_sha256": "d709a8dbbbed59036ca4018ecaccaa4716fe7c4d8a973c8e3dfde70c286d87b7",
+          "stdout_bytes": 3153,
+          "stderr_file": "command-03.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_bytes": 0
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/command-04.result.json",
+        "record_sha256": "ca658c82a73ea060c775446b6f49aa563ec6f5bb44d24446e8fe60879dbc5245",
+        "result": {
+          "index": 4,
+          "command": "node --experimental-strip-types --test tests/p4-webui/job-drawer/*.test.mts",
+          "exit_code": 0,
+          "passed": true,
+          "started_at": "2026-08-30T16:17:57.2680864+08:00",
+          "finished_at": "2026-08-30T16:17:57.8464051+08:00",
+          "duration_ms": 578,
+          "stdout_file": "command-04.stdout.txt",
+          "stdout_sha256": "a1ab90d1cba5df2286a0a2b90546aac152b4ddf2afebb551e6b69fa2d860e1d4",
+          "stdout_bytes": 4824,
+          "stderr_file": "command-04.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_bytes": 0
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/command-05.result.json",
+        "record_sha256": "a6d85783adf42d32dd1c6efe7584fd83f333b273a3e46a2e59da463f6549913b",
+        "result": {
+          "index": 5,
+          "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B -m pytest -p no:cacheprovider tests/p5-planning/planner-runtime -q",
+          "exit_code": 1,
+          "passed": false,
+          "started_at": "2026-08-30T16:17:57.8499905+08:00",
+          "finished_at": "2026-08-30T16:17:58.1167851+08:00",
+          "duration_ms": 266,
+          "stdout_file": "command-05.stdout.txt",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_bytes": 0,
+          "stderr_file": "command-05.stderr.txt",
+          "stderr_sha256": "1e1b0774437067a6f1aa32a2155f0173a41bf723298526684bed7563ef7f9b69",
+          "stderr_bytes": 712
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/command-06.result.json",
+        "record_sha256": "afb0c9e46808e909037fe776f2463b1dde2994f9f490e35b401a792d34549668",
+        "result": {
+          "index": 6,
+          "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B -m pytest -p no:cacheprovider tests/p6-writing/chapter-workflow -q",
+          "exit_code": 1,
+          "passed": false,
+          "started_at": "2026-08-30T16:17:58.1207516+08:00",
+          "finished_at": "2026-08-30T16:17:58.3863809+08:00",
+          "duration_ms": 265,
+          "stdout_file": "command-06.stdout.txt",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_bytes": 0,
+          "stderr_file": "command-06.stderr.txt",
+          "stderr_sha256": "1e1b0774437067a6f1aa32a2155f0173a41bf723298526684bed7563ef7f9b69",
+          "stderr_bytes": 712
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/command-07.result.json",
+        "record_sha256": "d5cc8a8a93b2836f4d0889952b9e65bce9868f866d51e5faacff327f3de40a64",
+        "result": {
+          "index": 7,
+          "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B -m pytest -p no:cacheprovider tests/p3-execution/test_job_execution.py tests/p3-execution/provider-broker -q",
+          "exit_code": 1,
+          "passed": false,
+          "started_at": "2026-08-30T16:17:58.3914997+08:00",
+          "finished_at": "2026-08-30T16:17:58.6286939+08:00",
+          "duration_ms": 237,
+          "stdout_file": "command-07.stdout.txt",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_bytes": 0,
+          "stderr_file": "command-07.stderr.txt",
+          "stderr_sha256": "1e1b0774437067a6f1aa32a2155f0173a41bf723298526684bed7563ef7f9b69",
+          "stderr_bytes": 712
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/command-08.result.json",
+        "record_sha256": "a7cb2dc644aae029f711c3b20c73e05c49bdc420d606d21b85866a861f34f32c",
+        "result": {
+          "index": 8,
+          "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B -m pytest -p no:cacheprovider tests/p1-core/execution-transaction/test_terminal_transaction.py tests/p1-core/execution-transaction/test_terminal_failure_windows.py tests/p2-plugin-platform/supervisor/test_rpc.py -q",
+          "exit_code": 1,
+          "passed": false,
+          "started_at": "2026-08-30T16:17:58.6327057+08:00",
+          "finished_at": "2026-08-30T16:17:58.8839035+08:00",
+          "duration_ms": 251,
+          "stdout_file": "command-08.stdout.txt",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_bytes": 0,
+          "stderr_file": "command-08.stderr.txt",
+          "stderr_sha256": "1e1b0774437067a6f1aa32a2155f0173a41bf723298526684bed7563ef7f9b69",
+          "stderr_bytes": 712
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/command-09.result.json",
+        "record_sha256": "32855745a5f32c9c593db2539a3cc963daef42c9e6d59fe28d6c72db5db7c229",
+        "result": {
+          "index": 9,
+          "command": "node --experimental-strip-types --test tests/p4-webui/*.test.mts",
+          "exit_code": 0,
+          "passed": true,
+          "started_at": "2026-08-30T16:17:58.8865927+08:00",
+          "finished_at": "2026-08-30T16:17:59.5655601+08:00",
+          "duration_ms": 678,
+          "stdout_file": "command-09.stdout.txt",
+          "stdout_sha256": "33006277d329e9273ab535df413915e731d9d316269dd73e44cb9e2e3720f34b",
+          "stdout_bytes": 1157,
+          "stderr_file": "command-09.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_bytes": 0
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/command-10.result.json",
+        "record_sha256": "6e43f97bfa44384817ce5d54c630a2e7dad6ac9ffad86dbba25dc481d5f4611a",
+        "result": {
+          "index": 10,
+          "command": "node --experimental-strip-types --test frontend/tests/job-drawer/*.test.mts",
+          "exit_code": 0,
+          "passed": true,
+          "started_at": "2026-08-30T16:17:59.5687149+08:00",
+          "finished_at": "2026-08-30T16:18:00.7243868+08:00",
+          "duration_ms": 1155,
+          "stdout_file": "command-10.stdout.txt",
+          "stdout_sha256": "83caff3c1de455d371b9e870732981b63b4176841652e8f2a1671e74b0843d66",
+          "stdout_bytes": 435,
+          "stderr_file": "command-10.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_bytes": 0
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/command-11.result.json",
+        "record_sha256": "bfd4305bbaf2306aca2bf5f851be9892bdbdd08ca84381c79c4cb23cedc3b6fc",
+        "result": {
+          "index": 11,
+          "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B -m pytest -p no:cacheprovider tests/p5-planning/test_planning_slice.py -q",
+          "exit_code": 1,
+          "passed": false,
+          "started_at": "2026-08-30T16:18:00.7276598+08:00",
+          "finished_at": "2026-08-30T16:18:00.9768852+08:00",
+          "duration_ms": 249,
+          "stdout_file": "command-11.stdout.txt",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_bytes": 0,
+          "stderr_file": "command-11.stderr.txt",
+          "stderr_sha256": "1e1b0774437067a6f1aa32a2155f0173a41bf723298526684bed7563ef7f9b69",
+          "stderr_bytes": 712
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/command-12.result.json",
+        "record_sha256": "c84b34de60d6f42696e6f7cd174b3a39f36addb5c5712fe0e8cc5b571450208b",
+        "result": {
+          "index": 12,
+          "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B -m pytest -p no:cacheprovider tests/p6-writing/test_dependency_free_domains.py -q",
+          "exit_code": 1,
+          "passed": false,
+          "started_at": "2026-08-30T16:18:00.9803891+08:00",
+          "finished_at": "2026-08-30T16:18:01.2749847+08:00",
+          "duration_ms": 294,
+          "stdout_file": "command-12.stdout.txt",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_bytes": 0,
+          "stderr_file": "command-12.stderr.txt",
+          "stderr_sha256": "1e1b0774437067a6f1aa32a2155f0173a41bf723298526684bed7563ef7f9b69",
+          "stderr_bytes": 712
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/command-13.result.json",
+        "record_sha256": "daa3f903e49acfb3a8f3a43f349912bec5c5491d43aaa67fb6ad3e3f85f3de0f",
+        "result": {
+          "index": 13,
+          "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\ruff.exe check --no-cache backend/plotpilot_core/api/v1/jobs/rpc backend/plotpilot_core/jobs/http_rpc backend/plotpilot_core/api/v1/jobs/sse backend/plotpilot_core/events first-party-plugins/project-planner/src/plotpilot_project_planner first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow tests/p3-execution/job-rpc tests/p3-execution/event-sse tests/p5-planning/planner-runtime tests/p5-planning/test_planning_slice.py tests/p6-writing/chapter-workflow tests/p6-writing/test_dependency_free_domains.py",
+          "exit_code": 1,
+          "passed": false,
+          "started_at": "2026-08-30T16:18:01.2789998+08:00",
+          "finished_at": "2026-08-30T16:18:01.5603281+08:00",
+          "duration_ms": 281,
+          "stdout_file": "command-13.stdout.txt",
+          "stdout_sha256": "0bb06031bd9e664a7e340a4ee5612c1fdb99fa62f8ed9543280c16161332843e",
+          "stdout_bytes": 96375,
+          "stderr_file": "command-13.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_bytes": 0
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/command-14.result.json",
+        "record_sha256": "ec8f389c1a82f17aca782c4ac84fbf890165aaa0948a70f74a59fc0e1e23e070",
+        "result": {
+          "index": 14,
+          "command": "frontend/node_modules/.bin/vue-tsc.cmd --noEmit -p frontend/tsconfig.app.json --incremental false",
+          "exit_code": 0,
+          "passed": true,
+          "started_at": "2026-08-30T16:18:01.5644088+08:00",
+          "finished_at": "2026-08-30T16:18:17.1518496+08:00",
+          "duration_ms": 15587,
+          "stdout_file": "command-14.stdout.txt",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_bytes": 0,
+          "stderr_file": "command-14.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_bytes": 0
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/command-15.result.json",
+        "record_sha256": "787f61a898b50380f81b83f0c97150c591d87259ccecd10d3ec96194939dd24e",
+        "result": {
+          "index": 15,
+          "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B tools/integration/generate_contract_manifest.py --check",
+          "exit_code": 0,
+          "passed": true,
+          "started_at": "2026-08-30T16:18:17.1550062+08:00",
+          "finished_at": "2026-08-30T16:18:17.5863291+08:00",
+          "duration_ms": 431,
+          "stdout_file": "command-15.stdout.txt",
+          "stdout_sha256": "b2a8d8982af71ca5cc0d7c50567fba7683d54bb1a5a2ab731dab9a45a0019078",
+          "stdout_bytes": 47,
+          "stderr_file": "command-15.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_bytes": 0
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/command-16.result.json",
+        "record_sha256": "215e44b87be7e5e3180ab4ded32cb26239e0f047b087fe92516b1e8f835291a7",
+        "result": {
+          "index": 16,
+          "command": "git --no-optional-locks diff --check e5b29b23bc51209ef5bcffd40d0557a2bea2c489 HEAD --",
+          "exit_code": 0,
+          "passed": true,
+          "started_at": "2026-08-30T16:18:17.5893522+08:00",
+          "finished_at": "2026-08-30T16:18:17.8469781+08:00",
+          "duration_ms": 257,
+          "stdout_file": "command-16.stdout.txt",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_bytes": 0,
+          "stderr_file": "command-16.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_bytes": 0
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/command-17.result.json",
+        "record_sha256": "a5bb8833564ab92fe7692569d1b75f66e3b24f5300e62e1fbca3b067c8b9d9e6",
+        "result": {
+          "index": 17,
+          "command": "if (@(git --no-optional-locks status --porcelain=v1 --untracked-files=all).Count -ne 0) { throw 'post-gate worktree is not clean' }",
+          "exit_code": 0,
+          "passed": true,
+          "started_at": "2026-08-30T16:18:17.8493139+08:00",
+          "finished_at": "2026-08-30T16:18:18.1455877+08:00",
+          "duration_ms": 296,
+          "stdout_file": "command-17.stdout.txt",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_bytes": 0,
+          "stderr_file": "command-17.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_bytes": 0
+        }
+      }
+    ]
+  },
+  "remediation_gate": {
+    "command_count": 13,
+    "failure_count": 0,
+    "expectation_miss_count": 0,
+    "records": [
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/rerun-command-01.result.json",
+        "record_sha256": "ef43bb08b26a92cd65e17cc640c0abe1775cd770a0bff1873884f79e4f45de4b",
+        "result": {
+          "schema": "plotpilot-e0-remediation-command-result/v1",
+          "id": "E0-R01",
+          "stem": "rerun-command-01",
+          "environment_profile": {
+            "name": "pytest_profile",
+            "PYTHONHOME": null,
+            "PYTHONNOUSERSITE": "1",
+            "PYTHONPATH": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\ppa-event-sse-pydeps;C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\backend",
+            "TEMP": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\t",
+            "TMP": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\t"
+          },
+          "command": "& 'C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe' -B -m pytest -p no:cacheprovider tests/p3-execution/job-rpc -q",
+          "expected": "exit 0; 32 passed",
+          "exit_code": 0,
+          "passed": true,
+          "pass_count": 32,
+          "expected_pass_count": 32,
+          "expectation_met": true,
+          "started_at": "2026-08-30T16:51:30.6992927+08:00",
+          "finished_at": "2026-08-30T16:51:34.3330887+08:00",
+          "duration_ms": 3632,
+          "stdout_file": "rerun-command-01.stdout.txt",
+          "stdout_sha256": "0dd0724370d91e5e86bbdaf50187e42ded1535aca64313e3cc9303a4089338b5",
+          "stdout_bytes": 740,
+          "stderr_file": "rerun-command-01.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_bytes": 0,
+          "normalization": {
+            "encoding": "UTF-8 without BOM",
+            "line_endings": "LF only",
+            "nonempty_final_newline": true
+          }
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/rerun-command-02.result.json",
+        "record_sha256": "0ff20195dc272e55c893544f62750871aa67c505ecb0687347c1d4db937dfd97",
+        "result": {
+          "schema": "plotpilot-e0-remediation-command-result/v1",
+          "id": "E0-R02",
+          "stem": "rerun-command-02",
+          "environment_profile": {
+            "name": "pytest_profile",
+            "PYTHONHOME": null,
+            "PYTHONNOUSERSITE": "1",
+            "PYTHONPATH": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\ppa-event-sse-pydeps;C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\backend",
+            "TEMP": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\t",
+            "TMP": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\t"
+          },
+          "command": "& 'C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe' -B -m pytest -p no:cacheprovider tests/p3-execution/event-sse -q",
+          "expected": "exit 0; 20 passed",
+          "exit_code": 0,
+          "passed": true,
+          "pass_count": 20,
+          "expected_pass_count": 20,
+          "expectation_met": true,
+          "started_at": "2026-08-30T16:51:34.4348193+08:00",
+          "finished_at": "2026-08-30T16:51:38.9982622+08:00",
+          "duration_ms": 4563,
+          "stdout_file": "rerun-command-02.stdout.txt",
+          "stdout_sha256": "942716aa853eeca6ce8f238fe8bd1d1d0d8381993da5d104a9440a2ad01531d3",
+          "stdout_bytes": 660,
+          "stderr_file": "rerun-command-02.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_bytes": 0,
+          "normalization": {
+            "encoding": "UTF-8 without BOM",
+            "line_endings": "LF only",
+            "nonempty_final_newline": true
+          }
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/rerun-command-05.result.json",
+        "record_sha256": "db3c0b0b47f21cbbe1d839cd1557708b3deb5e7f29f1cb0ebf7b5ee565ea0c61",
+        "result": {
+          "schema": "plotpilot-e0-remediation-command-result/v1",
+          "id": "E0-R05",
+          "stem": "rerun-command-05",
+          "environment_profile": {
+            "name": "pytest_profile",
+            "PYTHONHOME": null,
+            "PYTHONNOUSERSITE": "1",
+            "PYTHONPATH": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\ppa-event-sse-pydeps;C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\backend",
+            "TEMP": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\t",
+            "TMP": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\t"
+          },
+          "command": "& 'C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe' -B -m pytest -p no:cacheprovider tests/p5-planning/planner-runtime -q",
+          "expected": "exit 0; 35 passed",
+          "exit_code": 0,
+          "passed": true,
+          "pass_count": 35,
+          "expected_pass_count": 35,
+          "expectation_met": true,
+          "started_at": "2026-08-30T16:51:39.0062652+08:00",
+          "finished_at": "2026-08-30T16:51:40.9646639+08:00",
+          "duration_ms": 1958,
+          "stdout_file": "rerun-command-05.stdout.txt",
+          "stdout_sha256": "04ba5e6dba2d91cf3dd5f81f3e42ff45ddad09fcc743ecf307dd29a864654f7b",
+          "stdout_bytes": 660,
+          "stderr_file": "rerun-command-05.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_bytes": 0,
+          "normalization": {
+            "encoding": "UTF-8 without BOM",
+            "line_endings": "LF only",
+            "nonempty_final_newline": true
+          }
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/rerun-command-06.result.json",
+        "record_sha256": "1522e93bf5e74a0babb75c7bb8fa65fc4f8a2a41b57b7a14545f6fa804831464",
+        "result": {
+          "schema": "plotpilot-e0-remediation-command-result/v1",
+          "id": "E0-R06",
+          "stem": "rerun-command-06",
+          "environment_profile": {
+            "name": "pytest_profile",
+            "PYTHONHOME": null,
+            "PYTHONNOUSERSITE": "1",
+            "PYTHONPATH": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\ppa-event-sse-pydeps;C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\backend",
+            "TEMP": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\t",
+            "TMP": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\t"
+          },
+          "command": "& 'C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe' -B -m pytest -p no:cacheprovider tests/p6-writing/chapter-workflow -q",
+          "expected": "exit 0; 66 passed",
+          "exit_code": 0,
+          "passed": true,
+          "pass_count": 66,
+          "expected_pass_count": 66,
+          "expectation_met": true,
+          "started_at": "2026-08-30T16:51:40.9705082+08:00",
+          "finished_at": "2026-08-30T16:51:43.4555797+08:00",
+          "duration_ms": 2485,
+          "stdout_file": "rerun-command-06.stdout.txt",
+          "stdout_sha256": "615058fa7ff4f55d20dc0965a07e48b67631c0b63f84be9584c28d489a62fe16",
+          "stdout_bytes": 980,
+          "stderr_file": "rerun-command-06.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_bytes": 0,
+          "normalization": {
+            "encoding": "UTF-8 without BOM",
+            "line_endings": "LF only",
+            "nonempty_final_newline": true
+          }
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/rerun-command-07.result.json",
+        "record_sha256": "b7bb2acb145ed31d1f20566ff0fe9db32fb4ac7b612eabf40f734c0b60e4440c",
+        "result": {
+          "schema": "plotpilot-e0-remediation-command-result/v1",
+          "id": "E0-R07",
+          "stem": "rerun-command-07",
+          "environment_profile": {
+            "name": "pytest_profile",
+            "PYTHONHOME": null,
+            "PYTHONNOUSERSITE": "1",
+            "PYTHONPATH": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\ppa-event-sse-pydeps;C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\backend",
+            "TEMP": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\t",
+            "TMP": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\t"
+          },
+          "command": "& 'C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe' -B -m pytest -p no:cacheprovider tests/p3-execution/test_job_execution.py tests/p3-execution/provider-broker -q",
+          "expected": "exit 0; 39 passed",
+          "exit_code": 0,
+          "passed": true,
+          "pass_count": 39,
+          "expected_pass_count": 39,
+          "expectation_met": true,
+          "started_at": "2026-08-30T16:51:43.4629094+08:00",
+          "finished_at": "2026-08-30T16:51:45.6485665+08:00",
+          "duration_ms": 2185,
+          "stdout_file": "rerun-command-07.stdout.txt",
+          "stdout_sha256": "dc8fe8495da4c941ac4853dd7e579c4e61bdafe7b96bdca9990d032f2cf82426",
+          "stdout_bytes": 820,
+          "stderr_file": "rerun-command-07.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_bytes": 0,
+          "normalization": {
+            "encoding": "UTF-8 without BOM",
+            "line_endings": "LF only",
+            "nonempty_final_newline": true
+          }
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/rerun-command-08.result.json",
+        "record_sha256": "0118aaa767b1cc2c19ae25472e011de53883870f4c8e58ec463d8a0309475449",
+        "result": {
+          "schema": "plotpilot-e0-remediation-command-result/v1",
+          "id": "E0-R08",
+          "stem": "rerun-command-08",
+          "environment_profile": {
+            "name": "pytest_profile",
+            "PYTHONHOME": null,
+            "PYTHONNOUSERSITE": "1",
+            "PYTHONPATH": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\ppa-event-sse-pydeps;C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\backend",
+            "TEMP": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\t",
+            "TMP": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\t"
+          },
+          "command": "& 'C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe' -B -m pytest -p no:cacheprovider tests/p1-core/execution-transaction/test_terminal_transaction.py tests/p1-core/execution-transaction/test_terminal_failure_windows.py tests/p2-plugin-platform/supervisor/test_rpc.py -q",
+          "expected": "exit 0; 54 passed",
+          "exit_code": 0,
+          "passed": true,
+          "pass_count": 54,
+          "expected_pass_count": 54,
+          "expectation_met": true,
+          "started_at": "2026-08-30T16:51:45.6551831+08:00",
+          "finished_at": "2026-08-30T16:51:48.7431524+08:00",
+          "duration_ms": 3087,
+          "stdout_file": "rerun-command-08.stdout.txt",
+          "stdout_sha256": "e383a689ee0d4d1c37cf4fd805ba9c40d1e4437b4b00402201ccb03df9c81fe8",
+          "stdout_bytes": 900,
+          "stderr_file": "rerun-command-08.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_bytes": 0,
+          "normalization": {
+            "encoding": "UTF-8 without BOM",
+            "line_endings": "LF only",
+            "nonempty_final_newline": true
+          }
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/rerun-command-11.result.json",
+        "record_sha256": "c3d28852c390434ed0cedd04dbeb037a6ea440ecb23fa14cbf062f63f0e1bdb9",
+        "result": {
+          "schema": "plotpilot-e0-remediation-command-result/v1",
+          "id": "E0-R11",
+          "stem": "rerun-command-11",
+          "environment_profile": {
+            "name": "pytest_profile",
+            "PYTHONHOME": null,
+            "PYTHONNOUSERSITE": "1",
+            "PYTHONPATH": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\ppa-event-sse-pydeps;C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\backend",
+            "TEMP": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\t",
+            "TMP": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\t"
+          },
+          "command": "& 'C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe' -B -m pytest -p no:cacheprovider tests/p5-planning/test_planning_slice.py -q",
+          "expected": "exit 0; 19 passed",
+          "exit_code": 0,
+          "passed": true,
+          "pass_count": 19,
+          "expected_pass_count": 19,
+          "expectation_met": true,
+          "started_at": "2026-08-30T16:51:48.7469701+08:00",
+          "finished_at": "2026-08-30T16:51:50.2986875+08:00",
+          "duration_ms": 1551,
+          "stdout_file": "rerun-command-11.stdout.txt",
+          "stdout_sha256": "a60f20c778eb1c21a2d51f3750d4956d8e3d5af3de197d47c334be5c08b3a198",
+          "stdout_bytes": 580,
+          "stderr_file": "rerun-command-11.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_bytes": 0,
+          "normalization": {
+            "encoding": "UTF-8 without BOM",
+            "line_endings": "LF only",
+            "nonempty_final_newline": true
+          }
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/rerun-command-12.result.json",
+        "record_sha256": "7cb46bf3f4ecd400456684d01c46969c4d399554f62aed992607dce4cbe9914c",
+        "result": {
+          "schema": "plotpilot-e0-remediation-command-result/v1",
+          "id": "E0-R12",
+          "stem": "rerun-command-12",
+          "environment_profile": {
+            "name": "pytest_profile",
+            "PYTHONHOME": null,
+            "PYTHONNOUSERSITE": "1",
+            "PYTHONPATH": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\ppa-event-sse-pydeps;C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\backend",
+            "TEMP": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\t",
+            "TMP": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\t"
+          },
+          "command": "& 'C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe' -B -m pytest -p no:cacheprovider tests/p6-writing/test_dependency_free_domains.py -q",
+          "expected": "exit 0; 5 passed",
+          "exit_code": 0,
+          "passed": true,
+          "pass_count": 5,
+          "expected_pass_count": 5,
+          "expectation_met": true,
+          "started_at": "2026-08-30T16:51:50.3027939+08:00",
+          "finished_at": "2026-08-30T16:51:51.7622394+08:00",
+          "duration_ms": 1459,
+          "stdout_file": "rerun-command-12.stdout.txt",
+          "stdout_sha256": "1bbd83f8eff2164b35bb814d10dc45c287b787b4f5d8f8484a1508e814a4e89b",
+          "stdout_bytes": 579,
+          "stderr_file": "rerun-command-12.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_bytes": 0,
+          "normalization": {
+            "encoding": "UTF-8 without BOM",
+            "line_endings": "LF only",
+            "nonempty_final_newline": true
+          }
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/replacement-command-13a.result.json",
+        "record_sha256": "1543ba45772aa3165930775956e8e2ce538cc1f1669d80b5b86d718e95545070",
+        "result": {
+          "schema": "plotpilot-e0-remediation-command-result/v1",
+          "id": "E0-R13A",
+          "stem": "replacement-command-13a",
+          "environment_profile": {
+            "name": "ruff"
+          },
+          "command": "& 'C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\ruff.exe' check --no-cache first-party-plugins/project-planner/src/plotpilot_project_planner tests/p5-planning/planner-runtime",
+          "expected": "exit 0; All checks passed!",
+          "exit_code": 0,
+          "passed": true,
+          "pass_count": null,
+          "expected_pass_count": null,
+          "expectation_met": true,
+          "started_at": "2026-08-30T16:51:51.7664286+08:00",
+          "finished_at": "2026-08-30T16:51:52.0489374+08:00",
+          "duration_ms": 282,
+          "stdout_file": "replacement-command-13a.stdout.txt",
+          "stdout_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+          "stdout_bytes": 19,
+          "stderr_file": "replacement-command-13a.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_bytes": 0,
+          "normalization": {
+            "encoding": "UTF-8 without BOM",
+            "line_endings": "LF only",
+            "nonempty_final_newline": true
+          }
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/replacement-command-13b.result.json",
+        "record_sha256": "2666ee97fd6a7b471d6bd15ca02f2f9610a89aee517d0eb5d07816e0ed20d956",
+        "result": {
+          "schema": "plotpilot-e0-remediation-command-result/v1",
+          "id": "E0-R13B",
+          "stem": "replacement-command-13b",
+          "environment_profile": {
+            "name": "compileall_profile",
+            "PYTHONPYCACHEPREFIX": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\ppa-e0-evidence-rerun-pyc-v1"
+          },
+          "command": "& 'C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe' -B -m compileall -q backend/plotpilot_core/api/v1/jobs/rpc backend/plotpilot_core/jobs/http_rpc",
+          "expected": "exit 0",
+          "exit_code": 0,
+          "passed": true,
+          "pass_count": null,
+          "expected_pass_count": null,
+          "expectation_met": true,
+          "started_at": "2026-08-30T16:51:52.0568200+08:00",
+          "finished_at": "2026-08-30T16:51:52.4963758+08:00",
+          "duration_ms": 439,
+          "stdout_file": "replacement-command-13b.stdout.txt",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_bytes": 0,
+          "stderr_file": "replacement-command-13b.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_bytes": 0,
+          "normalization": {
+            "encoding": "UTF-8 without BOM",
+            "line_endings": "LF only",
+            "nonempty_final_newline": true
+          }
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/replacement-command-13c.result.json",
+        "record_sha256": "02772b8fa136afc67de1c35d0f1249448eb6bb06d40fda03522ff42e90ba0f24",
+        "result": {
+          "schema": "plotpilot-e0-remediation-command-result/v1",
+          "id": "E0-R13C",
+          "stem": "replacement-command-13c",
+          "environment_profile": {
+            "name": "compileall_profile",
+            "PYTHONPYCACHEPREFIX": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\ppa-e0-evidence-rerun-pyc-v1"
+          },
+          "command": "& 'C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe' -B -m compileall -q backend/plotpilot_core/api/v1/jobs/sse backend/plotpilot_core/events",
+          "expected": "exit 0",
+          "exit_code": 0,
+          "passed": true,
+          "pass_count": null,
+          "expected_pass_count": null,
+          "expectation_met": true,
+          "started_at": "2026-08-30T16:51:52.5003648+08:00",
+          "finished_at": "2026-08-30T16:51:52.9335165+08:00",
+          "duration_ms": 433,
+          "stdout_file": "replacement-command-13c.stdout.txt",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_bytes": 0,
+          "stderr_file": "replacement-command-13c.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_bytes": 0,
+          "normalization": {
+            "encoding": "UTF-8 without BOM",
+            "line_endings": "LF only",
+            "nonempty_final_newline": true
+          }
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/replacement-command-13d.result.json",
+        "record_sha256": "db10b770f7ea048900dd07e85febd47065559dd8d7ee96ca9c00e59d90c89d5a",
+        "result": {
+          "schema": "plotpilot-e0-remediation-command-result/v1",
+          "id": "E0-R13D",
+          "stem": "replacement-command-13d",
+          "environment_profile": {
+            "name": "compileall_profile",
+            "PYTHONPYCACHEPREFIX": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\ppa-e0-evidence-rerun-pyc-v1"
+          },
+          "command": "& 'C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe' -B -m compileall -q first-party-plugins/project-planner",
+          "expected": "exit 0",
+          "exit_code": 0,
+          "passed": true,
+          "pass_count": null,
+          "expected_pass_count": null,
+          "expectation_met": true,
+          "started_at": "2026-08-30T16:51:52.9371329+08:00",
+          "finished_at": "2026-08-30T16:51:53.3541884+08:00",
+          "duration_ms": 417,
+          "stdout_file": "replacement-command-13d.stdout.txt",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_bytes": 0,
+          "stderr_file": "replacement-command-13d.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_bytes": 0,
+          "normalization": {
+            "encoding": "UTF-8 without BOM",
+            "line_endings": "LF only",
+            "nonempty_final_newline": true
+          }
+        }
+      },
+      {
+        "record_path": "coordination/integration-queue/E0-20260830/raw/replacement-command-13e.result.json",
+        "record_sha256": "e2342ea4dc4ed85d845efe9c04a800722539be4db826e38111071d853d3ae65a",
+        "result": {
+          "schema": "plotpilot-e0-remediation-command-result/v1",
+          "id": "E0-R13E",
+          "stem": "replacement-command-13e",
+          "environment_profile": {
+            "name": "compileall_profile",
+            "PYTHONPYCACHEPREFIX": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\ppa-e0-evidence-rerun-pyc-v1"
+          },
+          "command": "& 'C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe' -B -m compileall -q first-party-plugins/chapter-workflow",
+          "expected": "exit 0",
+          "exit_code": 0,
+          "passed": true,
+          "pass_count": null,
+          "expected_pass_count": null,
+          "expectation_met": true,
+          "started_at": "2026-08-30T16:51:53.3572382+08:00",
+          "finished_at": "2026-08-30T16:51:53.7337116+08:00",
+          "duration_ms": 376,
+          "stdout_file": "replacement-command-13e.stdout.txt",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_bytes": 0,
+          "stderr_file": "replacement-command-13e.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_bytes": 0,
+          "normalization": {
+            "encoding": "UTF-8 without BOM",
+            "line_endings": "LF only",
+            "nonempty_final_newline": true
+          }
+        }
+      }
+    ]
+  },
+  "original_17_final_criteria": [
     {
       "index": 1,
-      "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B -m pytest -p no:cacheprovider tests/p3-execution/job-rpc -q",
-      "exit_code": 1,
-      "passed": false,
-      "started_at": "2026-08-30T16:17:55.6196193+08:00",
-      "finished_at": "2026-08-30T16:17:56.2895578+08:00",
-      "duration_ms": 668,
-      "stdout_file": "command-01.stdout.txt",
-      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stdout_bytes": 0,
-      "stderr_file": "command-01.stderr.txt",
-      "stderr_sha256": "704cc72795245eed494681c4648d6b17f545dd24341c163117f3eca2e82066a7",
-      "stderr_bytes": 723
+      "original_record": "coordination/integration-queue/E0-20260830/raw/command-01.result.json",
+      "original_exit_code": 1,
+      "original_fact_preserved": true,
+      "criterion": "AUTHORIZED_ENVIRONMENT_RERUN",
+      "effective_status": "PASS",
+      "closure_record": "coordination/integration-queue/E0-20260830/raw/rerun-command-01.result.json",
+      "pass_count": 32
     },
     {
       "index": 2,
-      "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B -m pytest -p no:cacheprovider tests/p3-execution/event-sse -q",
-      "exit_code": 1,
-      "passed": false,
-      "started_at": "2026-08-30T16:17:56.3325412+08:00",
-      "finished_at": "2026-08-30T16:17:56.5955402+08:00",
-      "duration_ms": 262,
-      "stdout_file": "command-02.stdout.txt",
-      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stdout_bytes": 0,
-      "stderr_file": "command-02.stderr.txt",
-      "stderr_sha256": "704cc72795245eed494681c4648d6b17f545dd24341c163117f3eca2e82066a7",
-      "stderr_bytes": 723
+      "original_record": "coordination/integration-queue/E0-20260830/raw/command-02.result.json",
+      "original_exit_code": 1,
+      "original_fact_preserved": true,
+      "criterion": "AUTHORIZED_ENVIRONMENT_RERUN",
+      "effective_status": "PASS",
+      "closure_record": "coordination/integration-queue/E0-20260830/raw/rerun-command-02.result.json",
+      "pass_count": 20
     },
     {
       "index": 3,
-      "command": "node --experimental-strip-types --test tests/p4-webui/core-flows/*.test.mts",
-      "exit_code": 0,
-      "passed": true,
-      "started_at": "2026-08-30T16:17:56.6002914+08:00",
-      "finished_at": "2026-08-30T16:17:57.2620593+08:00",
-      "duration_ms": 661,
-      "stdout_file": "command-03.stdout.txt",
-      "stdout_sha256": "d709a8dbbbed59036ca4018ecaccaa4716fe7c4d8a973c8e3dfde70c286d87b7",
-      "stdout_bytes": 3153,
-      "stderr_file": "command-03.stderr.txt",
-      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stderr_bytes": 0
+      "original_record": "coordination/integration-queue/E0-20260830/raw/command-03.result.json",
+      "original_exit_code": 0,
+      "original_fact_preserved": true,
+      "criterion": "REUSED_UNCHANGED_SOURCE_GATE",
+      "effective_status": "PASS",
+      "closure_record": "coordination/integration-queue/E0-20260830/raw/command-03.result.json"
     },
     {
       "index": 4,
-      "command": "node --experimental-strip-types --test tests/p4-webui/job-drawer/*.test.mts",
-      "exit_code": 0,
-      "passed": true,
-      "started_at": "2026-08-30T16:17:57.2680864+08:00",
-      "finished_at": "2026-08-30T16:17:57.8464051+08:00",
-      "duration_ms": 578,
-      "stdout_file": "command-04.stdout.txt",
-      "stdout_sha256": "a1ab90d1cba5df2286a0a2b90546aac152b4ddf2afebb551e6b69fa2d860e1d4",
-      "stdout_bytes": 4824,
-      "stderr_file": "command-04.stderr.txt",
-      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stderr_bytes": 0
+      "original_record": "coordination/integration-queue/E0-20260830/raw/command-04.result.json",
+      "original_exit_code": 0,
+      "original_fact_preserved": true,
+      "criterion": "REUSED_UNCHANGED_SOURCE_GATE",
+      "effective_status": "PASS",
+      "closure_record": "coordination/integration-queue/E0-20260830/raw/command-04.result.json"
     },
     {
       "index": 5,
-      "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B -m pytest -p no:cacheprovider tests/p5-planning/planner-runtime -q",
-      "exit_code": 1,
-      "passed": false,
-      "started_at": "2026-08-30T16:17:57.8499905+08:00",
-      "finished_at": "2026-08-30T16:17:58.1167851+08:00",
-      "duration_ms": 266,
-      "stdout_file": "command-05.stdout.txt",
-      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stdout_bytes": 0,
-      "stderr_file": "command-05.stderr.txt",
-      "stderr_sha256": "704cc72795245eed494681c4648d6b17f545dd24341c163117f3eca2e82066a7",
-      "stderr_bytes": 723
+      "original_record": "coordination/integration-queue/E0-20260830/raw/command-05.result.json",
+      "original_exit_code": 1,
+      "original_fact_preserved": true,
+      "criterion": "AUTHORIZED_ENVIRONMENT_RERUN",
+      "effective_status": "PASS",
+      "closure_record": "coordination/integration-queue/E0-20260830/raw/rerun-command-05.result.json",
+      "pass_count": 35
     },
     {
       "index": 6,
-      "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B -m pytest -p no:cacheprovider tests/p6-writing/chapter-workflow -q",
-      "exit_code": 1,
-      "passed": false,
-      "started_at": "2026-08-30T16:17:58.1207516+08:00",
-      "finished_at": "2026-08-30T16:17:58.3863809+08:00",
-      "duration_ms": 265,
-      "stdout_file": "command-06.stdout.txt",
-      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stdout_bytes": 0,
-      "stderr_file": "command-06.stderr.txt",
-      "stderr_sha256": "704cc72795245eed494681c4648d6b17f545dd24341c163117f3eca2e82066a7",
-      "stderr_bytes": 723
+      "original_record": "coordination/integration-queue/E0-20260830/raw/command-06.result.json",
+      "original_exit_code": 1,
+      "original_fact_preserved": true,
+      "criterion": "AUTHORIZED_ENVIRONMENT_RERUN",
+      "effective_status": "PASS",
+      "closure_record": "coordination/integration-queue/E0-20260830/raw/rerun-command-06.result.json",
+      "pass_count": 66
     },
     {
       "index": 7,
-      "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B -m pytest -p no:cacheprovider tests/p3-execution/test_job_execution.py tests/p3-execution/provider-broker -q",
-      "exit_code": 1,
-      "passed": false,
-      "started_at": "2026-08-30T16:17:58.3914997+08:00",
-      "finished_at": "2026-08-30T16:17:58.6286939+08:00",
-      "duration_ms": 237,
-      "stdout_file": "command-07.stdout.txt",
-      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stdout_bytes": 0,
-      "stderr_file": "command-07.stderr.txt",
-      "stderr_sha256": "704cc72795245eed494681c4648d6b17f545dd24341c163117f3eca2e82066a7",
-      "stderr_bytes": 723
+      "original_record": "coordination/integration-queue/E0-20260830/raw/command-07.result.json",
+      "original_exit_code": 1,
+      "original_fact_preserved": true,
+      "criterion": "AUTHORIZED_ENVIRONMENT_RERUN",
+      "effective_status": "PASS",
+      "closure_record": "coordination/integration-queue/E0-20260830/raw/rerun-command-07.result.json",
+      "pass_count": 39
     },
     {
       "index": 8,
-      "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B -m pytest -p no:cacheprovider tests/p1-core/execution-transaction/test_terminal_transaction.py tests/p1-core/execution-transaction/test_terminal_failure_windows.py tests/p2-plugin-platform/supervisor/test_rpc.py -q",
-      "exit_code": 1,
-      "passed": false,
-      "started_at": "2026-08-30T16:17:58.6327057+08:00",
-      "finished_at": "2026-08-30T16:17:58.8839035+08:00",
-      "duration_ms": 251,
-      "stdout_file": "command-08.stdout.txt",
-      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stdout_bytes": 0,
-      "stderr_file": "command-08.stderr.txt",
-      "stderr_sha256": "704cc72795245eed494681c4648d6b17f545dd24341c163117f3eca2e82066a7",
-      "stderr_bytes": 723
+      "original_record": "coordination/integration-queue/E0-20260830/raw/command-08.result.json",
+      "original_exit_code": 1,
+      "original_fact_preserved": true,
+      "criterion": "AUTHORIZED_ENVIRONMENT_RERUN",
+      "effective_status": "PASS",
+      "closure_record": "coordination/integration-queue/E0-20260830/raw/rerun-command-08.result.json",
+      "pass_count": 54
     },
     {
       "index": 9,
-      "command": "node --experimental-strip-types --test tests/p4-webui/*.test.mts",
-      "exit_code": 0,
-      "passed": true,
-      "started_at": "2026-08-30T16:17:58.8865927+08:00",
-      "finished_at": "2026-08-30T16:17:59.5655601+08:00",
-      "duration_ms": 678,
-      "stdout_file": "command-09.stdout.txt",
-      "stdout_sha256": "33006277d329e9273ab535df413915e731d9d316269dd73e44cb9e2e3720f34b",
-      "stdout_bytes": 1157,
-      "stderr_file": "command-09.stderr.txt",
-      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stderr_bytes": 0
+      "original_record": "coordination/integration-queue/E0-20260830/raw/command-09.result.json",
+      "original_exit_code": 0,
+      "original_fact_preserved": true,
+      "criterion": "REUSED_UNCHANGED_SOURCE_GATE",
+      "effective_status": "PASS",
+      "closure_record": "coordination/integration-queue/E0-20260830/raw/command-09.result.json"
     },
     {
       "index": 10,
-      "command": "node --experimental-strip-types --test frontend/tests/job-drawer/*.test.mts",
-      "exit_code": 0,
-      "passed": true,
-      "started_at": "2026-08-30T16:17:59.5687149+08:00",
-      "finished_at": "2026-08-30T16:18:00.7243868+08:00",
-      "duration_ms": 1155,
-      "stdout_file": "command-10.stdout.txt",
-      "stdout_sha256": "83caff3c1de455d371b9e870732981b63b4176841652e8f2a1671e74b0843d66",
-      "stdout_bytes": 435,
-      "stderr_file": "command-10.stderr.txt",
-      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stderr_bytes": 0
+      "original_record": "coordination/integration-queue/E0-20260830/raw/command-10.result.json",
+      "original_exit_code": 0,
+      "original_fact_preserved": true,
+      "criterion": "REUSED_UNCHANGED_SOURCE_GATE",
+      "effective_status": "PASS",
+      "closure_record": "coordination/integration-queue/E0-20260830/raw/command-10.result.json"
     },
     {
       "index": 11,
-      "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B -m pytest -p no:cacheprovider tests/p5-planning/test_planning_slice.py -q",
-      "exit_code": 1,
-      "passed": false,
-      "started_at": "2026-08-30T16:18:00.7276598+08:00",
-      "finished_at": "2026-08-30T16:18:00.9768852+08:00",
-      "duration_ms": 249,
-      "stdout_file": "command-11.stdout.txt",
-      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stdout_bytes": 0,
-      "stderr_file": "command-11.stderr.txt",
-      "stderr_sha256": "704cc72795245eed494681c4648d6b17f545dd24341c163117f3eca2e82066a7",
-      "stderr_bytes": 723
+      "original_record": "coordination/integration-queue/E0-20260830/raw/command-11.result.json",
+      "original_exit_code": 1,
+      "original_fact_preserved": true,
+      "criterion": "AUTHORIZED_ENVIRONMENT_RERUN",
+      "effective_status": "PASS",
+      "closure_record": "coordination/integration-queue/E0-20260830/raw/rerun-command-11.result.json",
+      "pass_count": 19
     },
     {
       "index": 12,
-      "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B -m pytest -p no:cacheprovider tests/p6-writing/test_dependency_free_domains.py -q",
-      "exit_code": 1,
-      "passed": false,
-      "started_at": "2026-08-30T16:18:00.9803891+08:00",
-      "finished_at": "2026-08-30T16:18:01.2749847+08:00",
-      "duration_ms": 294,
-      "stdout_file": "command-12.stdout.txt",
-      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stdout_bytes": 0,
-      "stderr_file": "command-12.stderr.txt",
-      "stderr_sha256": "704cc72795245eed494681c4648d6b17f545dd24341c163117f3eca2e82066a7",
-      "stderr_bytes": 723
+      "original_record": "coordination/integration-queue/E0-20260830/raw/command-12.result.json",
+      "original_exit_code": 1,
+      "original_fact_preserved": true,
+      "criterion": "AUTHORIZED_ENVIRONMENT_RERUN",
+      "effective_status": "PASS",
+      "closure_record": "coordination/integration-queue/E0-20260830/raw/rerun-command-12.result.json",
+      "pass_count": 5
     },
     {
       "index": 13,
-      "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\ruff.exe check --no-cache backend/plotpilot_core/api/v1/jobs/rpc backend/plotpilot_core/jobs/http_rpc backend/plotpilot_core/api/v1/jobs/sse backend/plotpilot_core/events first-party-plugins/project-planner/src/plotpilot_project_planner first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow tests/p3-execution/job-rpc tests/p3-execution/event-sse tests/p5-planning/planner-runtime tests/p5-planning/test_planning_slice.py tests/p6-writing/chapter-workflow tests/p6-writing/test_dependency_free_domains.py",
-      "exit_code": 1,
-      "passed": false,
-      "started_at": "2026-08-30T16:18:01.2789998+08:00",
-      "finished_at": "2026-08-30T16:18:01.5603281+08:00",
-      "duration_ms": 281,
-      "stdout_file": "command-13.stdout.txt",
-      "stdout_sha256": "bbd6210d1aa0b54cfaa8dfb83b1ee92f1d83c411349dda417ff34c8a08cf13a8",
-      "stdout_bytes": 96655,
-      "stderr_file": "command-13.stderr.txt",
-      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stderr_bytes": 0
+      "original_record": "coordination/integration-queue/E0-20260830/raw/command-13.result.json",
+      "original_exit_code": 1,
+      "original_fact_preserved": true,
+      "criterion": "SUPERSEDED_BY_ADJUDICATED_SPLIT_AND_NARROW_13A_13E",
+      "effective_status": "PASS_REPLACEMENT",
+      "closure_records": [
+        "coordination/integration-queue/E0-20260830/raw/replacement-command-13a.result.json",
+        "coordination/integration-queue/E0-20260830/raw/replacement-command-13b.result.json",
+        "coordination/integration-queue/E0-20260830/raw/replacement-command-13c.result.json",
+        "coordination/integration-queue/E0-20260830/raw/replacement-command-13d.result.json",
+        "coordination/integration-queue/E0-20260830/raw/replacement-command-13e.result.json"
+      ],
+      "original_broad_failure_retained": true,
+      "repository_wide_ruff_cleanliness_claimed": false
     },
     {
       "index": 14,
-      "command": "frontend/node_modules/.bin/vue-tsc.cmd --noEmit -p frontend/tsconfig.app.json --incremental false",
-      "exit_code": 0,
-      "passed": true,
-      "started_at": "2026-08-30T16:18:01.5644088+08:00",
-      "finished_at": "2026-08-30T16:18:17.1518496+08:00",
-      "duration_ms": 15587,
-      "stdout_file": "command-14.stdout.txt",
-      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stdout_bytes": 0,
-      "stderr_file": "command-14.stderr.txt",
-      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stderr_bytes": 0
+      "original_record": "coordination/integration-queue/E0-20260830/raw/command-14.result.json",
+      "original_exit_code": 0,
+      "original_fact_preserved": true,
+      "criterion": "REUSED_UNCHANGED_SOURCE_GATE",
+      "effective_status": "PASS",
+      "closure_record": "coordination/integration-queue/E0-20260830/raw/command-14.result.json"
     },
     {
       "index": 15,
-      "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B tools/integration/generate_contract_manifest.py --check",
-      "exit_code": 0,
-      "passed": true,
-      "started_at": "2026-08-30T16:18:17.1550062+08:00",
-      "finished_at": "2026-08-30T16:18:17.5863291+08:00",
-      "duration_ms": 431,
-      "stdout_file": "command-15.stdout.txt",
-      "stdout_sha256": "1ab3ec41405de2e069954c4b744b666e092ec6d63828638d25888cce07dd7381",
-      "stdout_bytes": 48,
-      "stderr_file": "command-15.stderr.txt",
-      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stderr_bytes": 0
+      "original_record": "coordination/integration-queue/E0-20260830/raw/command-15.result.json",
+      "original_exit_code": 0,
+      "original_fact_preserved": true,
+      "criterion": "REUSED_UNCHANGED_SOURCE_GATE",
+      "effective_status": "PASS",
+      "closure_record": "coordination/integration-queue/E0-20260830/raw/command-15.result.json"
     },
     {
       "index": 16,
-      "command": "git --no-optional-locks diff --check e5b29b23bc51209ef5bcffd40d0557a2bea2c489 HEAD --",
-      "exit_code": 0,
-      "passed": true,
-      "started_at": "2026-08-30T16:18:17.5893522+08:00",
-      "finished_at": "2026-08-30T16:18:17.8469781+08:00",
-      "duration_ms": 257,
-      "stdout_file": "command-16.stdout.txt",
-      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stdout_bytes": 0,
-      "stderr_file": "command-16.stderr.txt",
-      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stderr_bytes": 0
+      "original_record": "coordination/integration-queue/E0-20260830/raw/command-16.result.json",
+      "original_exit_code": 0,
+      "original_fact_preserved": true,
+      "criterion": "FINAL_COMMITTED_EVIDENCE_DIFF_CHECKS",
+      "effective_status": "PASS_STAGED_TREE_EQUIVALENT_POST_COMMIT_EXACT_RECHECK_REQUIRED",
+      "staged_tree_equivalent_required": true,
+      "staged_checks": [
+        "parent",
+        "source",
+        "baseline"
+      ]
     },
     {
       "index": 17,
-      "command": "if (@(git --no-optional-locks status --porcelain=v1 --untracked-files=all).Count -ne 0) { throw 'post-gate worktree is not clean' }",
-      "exit_code": 0,
-      "passed": true,
-      "started_at": "2026-08-30T16:18:17.8493139+08:00",
-      "finished_at": "2026-08-30T16:18:18.1455877+08:00",
-      "duration_ms": 296,
-      "stdout_file": "command-17.stdout.txt",
-      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stdout_bytes": 0,
-      "stderr_file": "command-17.stderr.txt",
-      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stderr_bytes": 0
+      "original_record": "coordination/integration-queue/E0-20260830/raw/command-17.result.json",
+      "original_exit_code": 0,
+      "original_fact_preserved": true,
+      "criterion": "FINAL_COMMITTED_WORKTREE_CLEAN",
+      "effective_status": "PENDING_FINAL_POST_COMMIT_CLEAN_RECHECK"
     }
-  ]
+  ],
+  "ruff_adjudication": {
+    "original_command_13": "HISTORICAL_FAILED_INADMISSIBLE_OVERBROAD_GATE",
+    "replacement_13a": "PASS_PLANNER_EXACT_SCOPE",
+    "replacement_13b_13e": "PASS_FOUR_COMPILEALL_SCOPES",
+    "repository_wide_ruff_cleanliness_claimed": false,
+    "recorded_out_of_contract_source_diagnostics": [
+      "I001 backend/plotpilot_core/api/v1/jobs/rpc/command_query.py:3:1",
+      "I001 backend/plotpilot_core/api/v1/jobs/sse/adapter.py:1:1",
+      "F401 backend/plotpilot_core/api/v1/jobs/sse/adapter.py:4:8",
+      "UP035 backend/plotpilot_core/api/v1/jobs/sse/adapter.py:6:1",
+      "UP012 backend/plotpilot_core/api/v1/jobs/sse/adapter.py:56:12",
+      "RUF022 backend/plotpilot_core/events/__init__.py:16:11",
+      "I001 backend/plotpilot_core/events/recovery.py:1:1",
+      "F401 backend/plotpilot_core/events/recovery.py:10:65",
+      "I001 backend/plotpilot_core/events/snapshots.py:1:1",
+      "RUF012 backend/plotpilot_core/events/snapshots.py:214:17",
+      "I001 backend/plotpilot_core/events/store.py:1:1",
+      "UP035 backend/plotpilot_core/events/store.py:7:1",
+      "I001 backend/plotpilot_core/jobs/http_rpc/dispatcher.py:8:1",
+      "UP035 backend/plotpilot_core/jobs/http_rpc/dispatcher.py:12:1",
+      "I001 first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow/planning.py:7:1",
+      "TRY004 first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow/planning.py:35:13",
+      "I001 first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow/workflow.py:8:1",
+      "UP035 first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow/workflow.py:17:1"
+    ]
+  },
+  "post_commit_checks": {
+    "identity": "REQUIRED",
+    "diff_parent": "REQUIRED",
+    "diff_source": "REQUIRED",
+    "diff_baseline": "REQUIRED",
+    "manifest_normalization": "REQUIRED",
+    "same_reviewer_consumption_required": true,
+    "precommit_staged_diff_checks": {
+      "status": "PASS",
+      "checks": [
+        {
+          "name": "parent",
+          "staged_equivalent_command": "git --no-optional-locks diff --cached --check 060d10d0312e500607a1f12d0df6bd3a333feb33 --",
+          "post_commit_exact_command": "git --no-optional-locks diff --check 060d10d0312e500607a1f12d0df6bd3a333feb33 HEAD --",
+          "exit_code": 0,
+          "duration_ms": 69,
+          "output_line_count": 0,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "source",
+          "staged_equivalent_command": "git --no-optional-locks diff --cached --check 6de42d026df84aa56ba40c9e5b5c6b66904a2d1c --",
+          "post_commit_exact_command": "git --no-optional-locks diff --check 6de42d026df84aa56ba40c9e5b5c6b66904a2d1c HEAD --",
+          "exit_code": 0,
+          "duration_ms": 57,
+          "output_line_count": 0,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "baseline",
+          "staged_equivalent_command": "git --no-optional-locks diff --cached --check e5b29b23bc51209ef5bcffd40d0557a2bea2c489 --",
+          "post_commit_exact_command": "git --no-optional-locks diff --check e5b29b23bc51209ef5bcffd40d0557a2bea2c489 HEAD --",
+          "exit_code": 0,
+          "duration_ms": 73,
+          "output_line_count": 0,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    },
+    "normalization_scan": {
+      "status": "PASS",
+      "evidence_path_count": 98,
+      "manifest_entry_count": 97,
+      "bom_count": 0,
+      "cr_byte_file_count": 0,
+      "missing_final_newline_count": 0
+    }
+  }
 }

@@ -10,6 +10,6 @@
   "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "stdout_bytes": 0,
   "stderr_file": "command-12.stderr.txt",
-  "stderr_sha256": "704cc72795245eed494681c4648d6b17f545dd24341c163117f3eca2e82066a7",
-  "stderr_bytes": 723
+  "stderr_sha256": "1e1b0774437067a6f1aa32a2155f0173a41bf723298526684bed7563ef7f9b69",
+  "stderr_bytes": 712
 }

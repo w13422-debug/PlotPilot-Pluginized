@@ -1,0 +1,15 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized
+configfile: pytest.ini
+plugins: anyio-4.14.2, asyncio-0.26.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 54 items
+
+tests\p1-core\execution-transaction\test_terminal_transaction.py ....... [ 12%]
+..........                                                               [ 31%]
+tests\p1-core\execution-transaction\test_terminal_failure_windows.py ... [ 37%]
+...........                                                              [ 57%]
+tests\p2-plugin-platform\supervisor\test_rpc.py .......................  [100%]
+
+============================= 54 passed in 1.98s ==============================
