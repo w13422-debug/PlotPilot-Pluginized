@@ -41,6 +41,11 @@ from ..candidates import CandidateError, CandidateService
 from ..domain.entities import utc_now
 from ..jobs.states import ATTEMPT_EDGES, JOB_EDGES, STEP_EDGES, can_transition
 from .authority import CoreAuthorityRepository, verify_attempt_snapshot_binding
+from .checkpoints import (
+    SQLiteCheckpointStore,
+    SQLiteExecutionControlPort,
+    SQLiteOrchestrationOwnerStore,
+)
 
 
 _INVOKE = "host.capability.invoke/v1"
@@ -334,6 +339,15 @@ class ExecutionAuthority:
         self.operation_ledger = SQLiteBrokerOperationLedger(repository)
         self.child_records = SQLiteBrokerChildRecordStore(repository)
         self.candidates = CandidateService(repository, assets)
+        # These are internal P1 composition ports.  They deliberately remain
+        # attributes rather than public ExecutionAuthority methods so the
+        # frozen P3 HTTP/RPC surface is not expanded by this stage.
+        self.checkpoint_store = SQLiteCheckpointStore(repository, assets)
+        self.checkpoints = self.checkpoint_store
+        self.snapshot_extensions = self.checkpoint_store
+        self.control_port = SQLiteExecutionControlPort(repository, self.checkpoint_store)
+        self.orchestration_owners = SQLiteOrchestrationOwnerStore(repository)
+        self.owner_store = self.orchestration_owners
 
     def find_by_request_key(self, workspace_id: str, request_key: str) -> Mapping[str, Any] | None:
         with self.repository.read_connection() as connection:
