@@ -1,0 +1,70 @@
+{
+  "batch_id": "Plugin-Management-G2",
+  "binding": {
+    "merge_tip": "08cd1726dce76419408af786789b28c7a09f8e3c",
+    "merge_tip_tree": "ac2c9bdacf657864d85e4f6828446c057835ee88",
+    "ordered_merge_commits": [
+      "93526465b7b59353e769119c0f28d2110659e050",
+      "7ae521f2090a3a2a14cc586eeae485c0b612eda3",
+      "290ed63c7b0cb602c96c7718f5b43a5b707f3026",
+      "d6c7115024070b00f2c6cc69febdf18348ee8652",
+      "08cd1726dce76419408af786789b28c7a09f8e3c"
+    ],
+    "ordered_source_heads": [
+      "28b2f7e307d166e85d5a715b9992eed5f0701151",
+      "7b6e104c39d89417a3d7594a6d75ffc83f5b3371",
+      "2b096d3dc0810bb73947f4cb2c9c8ea48372d141",
+      "fad52f0b91a477da4be7695f20ab6ff7a22f88d8",
+      "eda1a7e34f73c78b9819c390653906b70afa56af"
+    ],
+    "start_head": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+    "start_tree": "eab64b7d5b1e3ad652aeaf48bd0085d930beca5d"
+  },
+  "merge_commit": "d6c7115024070b00f2c6cc69febdf18348ee8652",
+  "merge_method": "git merge --no-ff --no-commit <exact-source>; exact staged delta verification; commit",
+  "merge_tree": "62360ddab07100ac935739f73ce18c01a2fcee47",
+  "order": 4,
+  "ordered_parents": [
+    "290ed63c7b0cb602c96c7718f5b43a5b707f3026",
+    "fad52f0b91a477da4be7695f20ab6ff7a22f88d8"
+  ],
+  "schema": "wave-d-merge-receipt/v1",
+  "source_delta_path_count": 17,
+  "source_delta_paths": [
+    "coordination/PPA-04/plugin-management/active-work-v1.json",
+    "coordination/PPA-04/plugin-management/raw-diff-check.txt",
+    "coordination/PPA-04/plugin-management/raw-p4-tests.txt",
+    "coordination/PPA-04/plugin-management/raw-plugin-tests.txt",
+    "coordination/PPA-04/plugin-management/raw-vue-tsc.txt",
+    "coordination/PPA-04/plugin-management/source-evidence-v1.json",
+    "docs/deliveries/PPA-04/plugin-management/source-delivery-v1.md",
+    "frontend/src/components/settings/plugin-management/PlanManager.vue",
+    "frontend/src/components/settings/plugin-management/PluginInstallCard.vue",
+    "frontend/src/components/settings/plugin-management/PluginManagementPanel.vue",
+    "frontend/src/components/settings/plugin-management/index.ts",
+    "frontend/src/core/plugins/index.ts",
+    "frontend/src/core/plugins/model.ts",
+    "frontend/src/core/plugins/types.ts",
+    "tests/p4-webui/plugin-management/plan-model.test.mts",
+    "tests/p4-webui/plugin-management/preflight-progress-epoch.test.mts",
+    "tests/p4-webui/plugin-management/vue-proxy-boundary.test.mts"
+  ],
+  "source_head": "fad52f0b91a477da4be7695f20ab6ff7a22f88d8",
+  "source_is_merge_tip_ancestor": true,
+  "source_review": {
+    "completion_allowed": true,
+    "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\verdicts\\wave-d-g2-nw-p4-plugin-mgmt-sol-targeted-validated-verdict-v1.json",
+    "sha256": "0816c80fa8f0297ab18fa3b1a29568503261c4d9c77c834530c3bd6fe83fdd69",
+    "verdict": "PASS"
+  },
+  "source_tree": "d089378d2d3b0048e1b1cb51a171dde77d7a99bd",
+  "staged_delta_equals_source": true,
+  "status": "source_integrated_evidence_blocked_by_combined_gate",
+  "validation_exit_code": 0,
+  "validation_raw": {
+    "bytes": 3670,
+    "path": "coordination/integration-queue/WAVE-D-20260830/evidence/raw/04-p4-plugin-management.json",
+    "sha256": "d6a3b962d60195805c5dd938415298655876bab03d3aed38e3962c2bea611877"
+  },
+  "write_set_outside_count": 0
+}

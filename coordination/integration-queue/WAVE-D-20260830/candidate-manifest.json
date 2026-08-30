@@ -1,0 +1,183 @@
+{
+  "binding": {
+    "merge_tip": "08cd1726dce76419408af786789b28c7a09f8e3c",
+    "merge_tip_tree": "ac2c9bdacf657864d85e4f6828446c057835ee88",
+    "ordered_merge_commits": [
+      "93526465b7b59353e769119c0f28d2110659e050",
+      "7ae521f2090a3a2a14cc586eeae485c0b612eda3",
+      "290ed63c7b0cb602c96c7718f5b43a5b707f3026",
+      "d6c7115024070b00f2c6cc69febdf18348ee8652",
+      "08cd1726dce76419408af786789b28c7a09f8e3c"
+    ],
+    "ordered_source_heads": [
+      "28b2f7e307d166e85d5a715b9992eed5f0701151",
+      "7b6e104c39d89417a3d7594a6d75ffc83f5b3371",
+      "2b096d3dc0810bb73947f4cb2c9c8ea48372d141",
+      "fad52f0b91a477da4be7695f20ab6ff7a22f88d8",
+      "eda1a7e34f73c78b9819c390653906b70afa56af"
+    ],
+    "start_head": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+    "start_tree": "eab64b7d5b1e3ad652aeaf48bd0085d930beca5d"
+  },
+  "directed_gate": {
+    "bytes": 3393,
+    "path": "coordination/integration-queue/WAVE-D-20260830/directed-gate.json",
+    "sha256": "5ac2e5c28391e106782224aaea01272340343ae2c543e864feeeffdb6301fc60"
+  },
+  "evidence_commit_binding": {
+    "required_parent": "08cd1726dce76419408af786789b28c7a09f8e3c",
+    "rule": "exactly one evidence-only commit; all changed paths under coordination/integration-queue/WAVE-D-20260830/**"
+  },
+  "file_count": 22,
+  "files": [
+    {
+      "bytes": 50,
+      "path": "coordination/integration-queue/WAVE-D-20260830/.gitattributes",
+      "sha256": "4d07da6bf59632783d8926c9c6038edb764f8ffe634d744c6de1bf35b6a7b1bb"
+    },
+    {
+      "bytes": 3393,
+      "path": "coordination/integration-queue/WAVE-D-20260830/directed-gate.json",
+      "sha256": "5ac2e5c28391e106782224aaea01272340343ae2c543e864feeeffdb6301fc60"
+    },
+    {
+      "bytes": 1959,
+      "path": "coordination/integration-queue/WAVE-D-20260830/evidence/raw/00-harness-events.json",
+      "sha256": "52e972c339f88283055e1d9cd0a4fda97c0652070a79d267d7994e851727ea57"
+    },
+    {
+      "bytes": 1845,
+      "path": "coordination/integration-queue/WAVE-D-20260830/evidence/raw/01-p1-authority-publication-seam.json",
+      "sha256": "5fe86e071523b6fa0721c9d7737e33aecee2c5756796ce8d42085b4204dbdfbd"
+    },
+    {
+      "bytes": 2072,
+      "path": "coordination/integration-queue/WAVE-D-20260830/evidence/raw/02-p2-plugin-api.json",
+      "sha256": "9db0110e5d5e7ccdc7dfab4777ebd0f610e181e762196983e40a3f65baaae327"
+    },
+    {
+      "bytes": 2345,
+      "path": "coordination/integration-queue/WAVE-D-20260830/evidence/raw/03-p2-prompt-skill-runtime.json",
+      "sha256": "fb6d6784c586c0e3cd529f3571fc00b0c2d04c254aadd43ad4f2772a154cbb04"
+    },
+    {
+      "bytes": 3670,
+      "path": "coordination/integration-queue/WAVE-D-20260830/evidence/raw/04-p4-plugin-management.json",
+      "sha256": "d6a3b962d60195805c5dd938415298655876bab03d3aed38e3962c2bea611877"
+    },
+    {
+      "bytes": 2527,
+      "path": "coordination/integration-queue/WAVE-D-20260830/evidence/raw/05-p4-root-regression.json",
+      "sha256": "8da95a825ff3b1a438a046464b5bc2ee00bab56622c5af773407b10edb595627"
+    },
+    {
+      "bytes": 1251,
+      "path": "coordination/integration-queue/WAVE-D-20260830/evidence/raw/06-p4-vue-tsc.json",
+      "sha256": "a94476733e3eb3c5a732fc059a9a09bb669d1af120d5051a0e67d7b5dd66fa61"
+    },
+    {
+      "bytes": 4765,
+      "path": "coordination/integration-queue/WAVE-D-20260830/evidence/raw/07-p5-story-state-runtime.json",
+      "sha256": "5b124d5427d11183adc97ad0bf9cd3304b27b400f61ce46d2ea7a8745ee8eac6"
+    },
+    {
+      "bytes": 7305,
+      "path": "coordination/integration-queue/WAVE-D-20260830/evidence/raw/08-ruff-affected-python.json",
+      "sha256": "c994c4c8b64de102b31134581892d32f65584e3c8530e02701098b39ca581036"
+    },
+    {
+      "bytes": 1512,
+      "path": "coordination/integration-queue/WAVE-D-20260830/evidence/raw/09-compileall-affected.json",
+      "sha256": "c1cdb2b42349a6722d4e81678cced0891014e9eb62691530678c6d1a512cd989"
+    },
+    {
+      "bytes": 1260,
+      "path": "coordination/integration-queue/WAVE-D-20260830/evidence/raw/10-contract-manifest-check.json",
+      "sha256": "2baf636d694aace8a08b0bae54fe44bb43e9d54ed4a13a26fa010a1aa4d11f0f"
+    },
+    {
+      "bytes": 1240,
+      "path": "coordination/integration-queue/WAVE-D-20260830/evidence/raw/11-git-diff-check.json",
+      "sha256": "e474f79206f12ed481df22057e7b092ec531093286b21a52772cf7237749cf25"
+    },
+    {
+      "bytes": 1288,
+      "path": "coordination/integration-queue/WAVE-D-20260830/evidence/raw/12-precommit-evidence-audit.json",
+      "sha256": "9d0022daa7374480dc3bf6be870caff6f90c96e2933541913d2dbb7e0c568e07"
+    },
+    {
+      "bytes": 14415,
+      "path": "coordination/integration-queue/WAVE-D-20260830/preflight.json",
+      "sha256": "5cfbbfe138d5ddd1036c2ed31bae3124e89f81f3b32e55e44e51d798b0db7c6a"
+    },
+    {
+      "bytes": 3570,
+      "path": "coordination/integration-queue/WAVE-D-20260830/receipts/01-Authority-Publication-Seam-G2.json",
+      "sha256": "15a680e01be3af1169fbcae267999e5f2f30d4b746f4d9cda0c5b6cf5d987e03"
+    },
+    {
+      "bytes": 3747,
+      "path": "coordination/integration-queue/WAVE-D-20260830/receipts/02-Plugin-API-G2.json",
+      "sha256": "aa69f1a86838dcc3a0aafb7f9399206975fbf5fd9a807385a37cbd7193d1195a"
+    },
+    {
+      "bytes": 5643,
+      "path": "coordination/integration-queue/WAVE-D-20260830/receipts/03-Prompt-Skill-Runtime-G2.json",
+      "sha256": "e271c0c754477b229f02bda6463f831b27e913f664ab98fb63036df2b9dd8377"
+    },
+    {
+      "bytes": 3396,
+      "path": "coordination/integration-queue/WAVE-D-20260830/receipts/04-Plugin-Management-G2.json",
+      "sha256": "9785085d102a40017807a94ecc1405d1c955aa76e8cc04c312aed8c22e9a7878"
+    },
+    {
+      "bytes": 5285,
+      "path": "coordination/integration-queue/WAVE-D-20260830/receipts/05-Story-State-Runtime-G3.json",
+      "sha256": "9a9c9d046fcde38765af1da4302614990399dec8c004b08a1e5fe7fb44623198"
+    },
+    {
+      "bytes": 1305,
+      "path": "coordination/integration-queue/WAVE-D-20260830/summary.md",
+      "sha256": "d5f5796e7d775c7348d3da6d46fdc9cbb4b254f4fd35763a66aef35af195f2a6"
+    }
+  ],
+  "fresh_sol_acceptance": "not_requested_while_blocked",
+  "merge_eligible": false,
+  "merge_receipts": [
+    {
+      "bytes": 3570,
+      "path": "coordination/integration-queue/WAVE-D-20260830/receipts/01-Authority-Publication-Seam-G2.json",
+      "sha256": "15a680e01be3af1169fbcae267999e5f2f30d4b746f4d9cda0c5b6cf5d987e03"
+    },
+    {
+      "bytes": 3747,
+      "path": "coordination/integration-queue/WAVE-D-20260830/receipts/02-Plugin-API-G2.json",
+      "sha256": "aa69f1a86838dcc3a0aafb7f9399206975fbf5fd9a807385a37cbd7193d1195a"
+    },
+    {
+      "bytes": 5643,
+      "path": "coordination/integration-queue/WAVE-D-20260830/receipts/03-Prompt-Skill-Runtime-G2.json",
+      "sha256": "e271c0c754477b229f02bda6463f831b27e913f664ab98fb63036df2b9dd8377"
+    },
+    {
+      "bytes": 3396,
+      "path": "coordination/integration-queue/WAVE-D-20260830/receipts/04-Plugin-Management-G2.json",
+      "sha256": "9785085d102a40017807a94ecc1405d1c955aa76e8cc04c312aed8c22e9a7878"
+    },
+    {
+      "bytes": 5285,
+      "path": "coordination/integration-queue/WAVE-D-20260830/receipts/05-Story-State-Runtime-G3.json",
+      "sha256": "9a9c9d046fcde38765af1da4302614990399dec8c004b08a1e5fe7fb44623198"
+    }
+  ],
+  "preflight": {
+    "bytes": 14415,
+    "path": "coordination/integration-queue/WAVE-D-20260830/preflight.json",
+    "sha256": "5cfbbfe138d5ddd1036c2ed31bae3124e89f81f3b32e55e44e51d798b0db7c6a"
+  },
+  "release_tag_created": false,
+  "schema": "wave-d-integration-candidate-manifest/v1",
+  "source_path_union_count": 130,
+  "status": "BLOCKED_INTEGRATION_VALIDATION_EVIDENCE_FROZEN",
+  "write_set_outside_count": 0
+}

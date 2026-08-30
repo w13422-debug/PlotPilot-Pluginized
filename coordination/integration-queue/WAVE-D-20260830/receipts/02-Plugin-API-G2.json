@@ -1,0 +1,76 @@
+{
+  "batch_id": "Plugin-API-G2",
+  "binding": {
+    "merge_tip": "08cd1726dce76419408af786789b28c7a09f8e3c",
+    "merge_tip_tree": "ac2c9bdacf657864d85e4f6828446c057835ee88",
+    "ordered_merge_commits": [
+      "93526465b7b59353e769119c0f28d2110659e050",
+      "7ae521f2090a3a2a14cc586eeae485c0b612eda3",
+      "290ed63c7b0cb602c96c7718f5b43a5b707f3026",
+      "d6c7115024070b00f2c6cc69febdf18348ee8652",
+      "08cd1726dce76419408af786789b28c7a09f8e3c"
+    ],
+    "ordered_source_heads": [
+      "28b2f7e307d166e85d5a715b9992eed5f0701151",
+      "7b6e104c39d89417a3d7594a6d75ffc83f5b3371",
+      "2b096d3dc0810bb73947f4cb2c9c8ea48372d141",
+      "fad52f0b91a477da4be7695f20ab6ff7a22f88d8",
+      "eda1a7e34f73c78b9819c390653906b70afa56af"
+    ],
+    "start_head": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+    "start_tree": "eab64b7d5b1e3ad652aeaf48bd0085d930beca5d"
+  },
+  "merge_commit": "7ae521f2090a3a2a14cc586eeae485c0b612eda3",
+  "merge_method": "git merge --no-ff --no-commit <exact-source>; exact staged delta verification; commit",
+  "merge_tree": "8138e4507f65868209e07e29c918615f9cde544b",
+  "order": 2,
+  "ordered_parents": [
+    "93526465b7b59353e769119c0f28d2110659e050",
+    "7b6e104c39d89417a3d7594a6d75ffc83f5b3371"
+  ],
+  "schema": "wave-d-merge-receipt/v1",
+  "source_delta_path_count": 23,
+  "source_delta_paths": [
+    "backend/plotpilot_core/api/v1/plugins/__init__.py",
+    "backend/plotpilot_core/api/v1/plugins/composition.py",
+    "backend/plotpilot_core/api/v1/plugins/models.py",
+    "backend/plotpilot_core/api/v1/plugins/ports.py",
+    "backend/plotpilot_core/api/v1/plugins/router.py",
+    "coordination/PPA-02/plugin-api/active-work.json",
+    "coordination/PPA-02/plugin-api/composition-delta-v1.json",
+    "coordination/PPA-02/plugin-api/reuse-decision.md",
+    "coordination/PPA-02/plugin-api/state.json",
+    "docs/deliveries/PPA-02/plugin-api/NW-P2-PLUGIN-API-G2.md",
+    "docs/deliveries/PPA-02/plugin-api/evidence/raw/compileall.txt",
+    "docs/deliveries/PPA-02/plugin-api/evidence/raw/contract-manifest.txt",
+    "docs/deliveries/PPA-02/plugin-api/evidence/raw/git-diff-check.txt",
+    "docs/deliveries/PPA-02/plugin-api/evidence/raw/pytest-lifecycle-supervisor.txt",
+    "docs/deliveries/PPA-02/plugin-api/evidence/raw/pytest-plugin-api.txt",
+    "docs/deliveries/PPA-02/plugin-api/evidence/raw/ruff.txt",
+    "docs/deliveries/PPA-02/plugin-api/evidence/verification.json",
+    "docs/deliveries/PPA-02/plugin-api/finding-coverage-v1.json",
+    "tests/p2-plugin-platform/plugin-api/conftest.py",
+    "tests/p2-plugin-platform/plugin-api/helpers.py",
+    "tests/p2-plugin-platform/plugin-api/test_packages_releases.py",
+    "tests/p2-plugin-platform/plugin-api/test_route_inventory.py",
+    "tests/p2-plugin-platform/plugin-api/test_worker_status.py"
+  ],
+  "source_head": "7b6e104c39d89417a3d7594a6d75ffc83f5b3371",
+  "source_is_merge_tip_ancestor": true,
+  "source_review": {
+    "completion_allowed": true,
+    "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\verdicts\\wave-d-g2-nw-p2-plugin-api-sol-targeted-validated-verdict-v1.json",
+    "sha256": "b6c9fa318f7147bc620dc78283dfcf8d4daf744ba15b6ca7e273a8792e4a6595",
+    "verdict": "PASS"
+  },
+  "source_tree": "08c8a95583bfffc4202fd4b4eff6bb5ab7653634",
+  "staged_delta_equals_source": true,
+  "status": "source_integrated_evidence_blocked_by_combined_gate",
+  "validation_exit_code": 0,
+  "validation_raw": {
+    "bytes": 2072,
+    "path": "coordination/integration-queue/WAVE-D-20260830/evidence/raw/02-p2-plugin-api.json",
+    "sha256": "9db0110e5d5e7ccdc7dfab4777ebd0f610e181e762196983e40a3f65baaae327"
+  },
+  "write_set_outside_count": 0
+}

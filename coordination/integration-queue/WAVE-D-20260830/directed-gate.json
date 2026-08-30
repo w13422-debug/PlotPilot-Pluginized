@@ -1,0 +1,92 @@
+{
+  "binding": {
+    "merge_tip": "08cd1726dce76419408af786789b28c7a09f8e3c",
+    "merge_tip_tree": "ac2c9bdacf657864d85e4f6828446c057835ee88",
+    "ordered_merge_commits": [
+      "93526465b7b59353e769119c0f28d2110659e050",
+      "7ae521f2090a3a2a14cc586eeae485c0b612eda3",
+      "290ed63c7b0cb602c96c7718f5b43a5b707f3026",
+      "d6c7115024070b00f2c6cc69febdf18348ee8652",
+      "08cd1726dce76419408af786789b28c7a09f8e3c"
+    ],
+    "ordered_source_heads": [
+      "28b2f7e307d166e85d5a715b9992eed5f0701151",
+      "7b6e104c39d89417a3d7594a6d75ffc83f5b3371",
+      "2b096d3dc0810bb73947f4cb2c9c8ea48372d141",
+      "fad52f0b91a477da4be7695f20ab6ff7a22f88d8",
+      "eda1a7e34f73c78b9819c390653906b70afa56af"
+    ],
+    "start_head": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+    "start_tree": "eab64b7d5b1e3ad652aeaf48bd0085d930beca5d"
+  },
+  "blocking_findings": [
+    {
+      "command_label": "07-p5-story-state-runtime",
+      "evidence": {
+        "bytes": 4765,
+        "path": "coordination/integration-queue/WAVE-D-20260830/evidence/raw/07-p5-story-state-runtime.json",
+        "sha256": "5b124d5427d11183adc97ad0bf9cd3304b27b400f61ce46d2ea7a8745ee8eac6"
+      },
+      "exit_code": 2,
+      "id": "WAVE-D-INTEGRATION-SEMANTIC-001",
+      "reason": "Prompt/Skill Runtime G2 no longer exports run_skill_chain while Story State G3 test support imports it; three collection errors."
+    },
+    {
+      "command_label": "08-ruff-affected-python",
+      "evidence": {
+        "bytes": 7305,
+        "path": "coordination/integration-queue/WAVE-D-20260830/evidence/raw/08-ruff-affected-python.json",
+        "sha256": "c994c4c8b64de102b31134581892d32f65584e3c8530e02701098b39ca581036"
+      },
+      "exit_code": 1,
+      "id": "WAVE-D-INTEGRATION-RUFF-001",
+      "reason": "Ruff reports two I001 import-order errors and one F401 unused dataclasses.replace in accepted P1 source."
+    }
+  ],
+  "checks": {
+    "donor_push_disabled": true,
+    "five_source_ancestors": true,
+    "forbidden_heads_are_not_ancestors": true,
+    "head_untagged": true,
+    "ordered_merge_parent_chain_exact": true,
+    "source_path_union_count": 130,
+    "source_union_matches_merge_tip_delta": true,
+    "upstream_absent": true,
+    "worktree_clean_before_evidence": true,
+    "write_set_outside_count": 0
+  },
+  "command_exit_codes": {
+    "01-p1-authority-publication-seam": 0,
+    "02-p2-plugin-api": 0,
+    "03-p2-prompt-skill-runtime": 0,
+    "04-p4-plugin-management": 0,
+    "05-p4-root-regression": 0,
+    "06-p4-vue-tsc": 0,
+    "07-p5-story-state-runtime": 2,
+    "08-ruff-affected-python": 1,
+    "09-compileall-affected": 0,
+    "10-contract-manifest-check": 0,
+    "11-git-diff-check": 0
+  },
+  "forbidden_heads": {
+    "da8f3c692af84806a6ea91d8a60a6caa865b30cd": false,
+    "df43e9c1202305c117319559a6092fff1a2c58ca": false,
+    "ed76ebd84bb302784d3005194bc6956ea75cbc1f": false
+  },
+  "fresh_sol_acceptance": "not_requested_while_blocked",
+  "merge_eligible": false,
+  "nonblocking_passes": [
+    "P1 32 passed",
+    "P2 Plugin API 60 passed",
+    "P2 Prompt Runtime 96 passed",
+    "P4 Plugin Management 24 passed",
+    "P4 root 13 passed",
+    "vue-tsc exit 0",
+    "compileall exit 0",
+    "contract manifest deterministic (141 files)",
+    "git diff --check exit 0"
+  ],
+  "passed": false,
+  "schema": "wave-d-directed-integration-gate/v1",
+  "status": "BLOCKED_INTEGRATION_VALIDATION"
+}

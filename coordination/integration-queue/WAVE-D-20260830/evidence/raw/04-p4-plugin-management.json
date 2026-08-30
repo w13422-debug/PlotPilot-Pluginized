@@ -1,0 +1,32 @@
+{
+  "binding": {
+    "merge_tip": "08cd1726dce76419408af786789b28c7a09f8e3c",
+    "merge_tip_tree": "ac2c9bdacf657864d85e4f6828446c057835ee88",
+    "ordered_merge_commits": [
+      "93526465b7b59353e769119c0f28d2110659e050",
+      "7ae521f2090a3a2a14cc586eeae485c0b612eda3",
+      "290ed63c7b0cb602c96c7718f5b43a5b707f3026",
+      "d6c7115024070b00f2c6cc69febdf18348ee8652",
+      "08cd1726dce76419408af786789b28c7a09f8e3c"
+    ],
+    "ordered_source_heads": [
+      "28b2f7e307d166e85d5a715b9992eed5f0701151",
+      "7b6e104c39d89417a3d7594a6d75ffc83f5b3371",
+      "2b096d3dc0810bb73947f4cb2c9c8ea48372d141",
+      "fad52f0b91a477da4be7695f20ab6ff7a22f88d8",
+      "eda1a7e34f73c78b9819c390653906b70afa56af"
+    ],
+    "start_head": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+    "start_tree": "eab64b7d5b1e3ad652aeaf48bd0085d930beca5d"
+  },
+  "result": {
+    "command": "node --experimental-strip-types --test tests/p4-webui/plugin-management/plan-model.test.mts tests/p4-webui/plugin-management/preflight-progress-epoch.test.mts tests/p4-webui/plugin-management/vue-proxy-boundary.test.mts",
+    "duration_seconds": 0.41,
+    "exit_code": 0,
+    "label": "04-p4-plugin-management",
+    "required": true,
+    "stderr": "",
+    "stdout": "✔ plugin-mgmt-invalid-order-fail-closed (2.4475ms)\n✔ plugin-mgmt-legal-sparse-order (0.9125ms)\n✔ append adds to normalized tail and leaves all non-order authority fields unchanged (0.4318ms)\n✔ move and remove return dense new values and reject unsafe boundaries (0.6131ms)\n✔ removing an interpreter in use fails closed and leaves the Plan unchanged (0.324ms)\n✔ synthesizer is closed, exact, enabled, and cleared outside synthesize mode (0.321ms)\n✔ dirty editor builds an immutable create-revision CAS intent and accepts exact response only (0.9224ms)\n✔ dirty refresh preserves same-base draft and new authority revision creates explicit conflict (0.745ms)\n✔ same immutable revision content drift conflicts for clean and dirty editors (0.4495ms)\n✔ save acceptance is bound to the exact request and rejects same-base local or result drift (0.8193ms)\n✔ prototype-backed Plan and nested binding ingress are rejected (0.4737ms)\n✔ same plan id can coexist at multiple revisions but exact duplicate identity is rejected in snapshots (0.7837ms)\n✔ preflight accepts zip and ppplugin with a canonical root manifest (3.3212ms)\n✔ preflight uses frozen NFC/full-casefold identities and rejects collisions (4.6186ms)\n✔ preflight rejects nested-only, ambiguous roots, and non-package extensions (0.8276ms)\n✔ preflight preserves normalizeWindowsPath negative corpus (1.9075ms)\n✔ five lifecycle terminal states and failure codes stop unknown-total processing (0.5479ms)\n✔ stream interruption stops processing without forging lifecycle authority (0.1585ms)\n✔ snapshot epoch rejects stale success and preserves all new release projections (1.7709ms)\n✔ stale error/finalizer cannot clear or overwrite the current request state (0.8011ms)\n▶ plugin-mgmt-vue-proxy-regression\n  ✔ real Vue ref load and save boundary materializes recursive plain values (61.8027ms)\n  ✔ real Vue append/remove/move uses shallow replacement and never retains Proxy values (1.9187ms)\n  ✔ real Vue dirty refresh preserves draft and stale authority conflicts without Proxy leakage (1.0706ms)\n  ✔ owned production sources contain no generic graph-clone call (1.0553ms)\n✔ plugin-mgmt-vue-proxy-regression (66.655ms)\nℹ tests 24\nℹ suites 1\nℹ pass 24\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 330.0937\n"
+  },
+  "schema": "wave-d-integrated-command-result/v1"
+}

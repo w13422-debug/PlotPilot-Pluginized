@@ -1,0 +1,50 @@
+{
+  "binding": {
+    "merge_tip": "08cd1726dce76419408af786789b28c7a09f8e3c",
+    "merge_tip_tree": "ac2c9bdacf657864d85e4f6828446c057835ee88",
+    "ordered_merge_commits": [
+      "93526465b7b59353e769119c0f28d2110659e050",
+      "7ae521f2090a3a2a14cc586eeae485c0b612eda3",
+      "290ed63c7b0cb602c96c7718f5b43a5b707f3026",
+      "d6c7115024070b00f2c6cc69febdf18348ee8652",
+      "08cd1726dce76419408af786789b28c7a09f8e3c"
+    ],
+    "ordered_source_heads": [
+      "28b2f7e307d166e85d5a715b9992eed5f0701151",
+      "7b6e104c39d89417a3d7594a6d75ffc83f5b3371",
+      "2b096d3dc0810bb73947f4cb2c9c8ea48372d141",
+      "fad52f0b91a477da4be7695f20ab6ff7a22f88d8",
+      "eda1a7e34f73c78b9819c390653906b70afa56af"
+    ],
+    "start_head": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+    "start_tree": "eab64b7d5b1e3ad652aeaf48bd0085d930beca5d"
+  },
+  "events": [
+    {
+      "cause": "Python subprocess inherited CP936 and failed decoding Node UTF-8 output; source/test verdict not captured",
+      "classification": "output-decoding-only",
+      "first_three_results": [
+        "32 passed in 2.03s",
+        "60 passed in 0.84s",
+        "96 passed in 1.21s"
+      ],
+      "id": "WD-HARNESS-001",
+      "rerun": "P4 and subsequent commands only with encoding=utf-8 errors=replace",
+      "schema": "wave-d-harness-event/v1",
+      "source_changed": false,
+      "stage": "04-p4-plugin-management"
+    },
+    {
+      "cause": "CP936 controller stdout could not encode Node checkmark after successful P4 test",
+      "classification": "console-encoding-only",
+      "id": "WD-HARNESS-002",
+      "rerun": "05 and subsequent commands only; ASCII console summaries",
+      "reused_result": ".codex/wave-d-integration/raw/04-p4-plugin-management.json exit_code=0",
+      "schema": "wave-d-harness-event/v1",
+      "source_changed": false,
+      "stage": "post-04-console-serialization"
+    }
+  ],
+  "schema": "wave-d-harness-events/v1",
+  "source_changed": false
+}
