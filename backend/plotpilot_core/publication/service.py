@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import hashlib
 import sqlite3
 import uuid
+from dataclasses import dataclass
 from typing import Any
 
 from backend.plotpilot_plugin_sdk import (
@@ -13,7 +13,10 @@ from backend.plotpilot_plugin_sdk import (
     verify_result_bundle,
     verify_snapshot,
 )
-from backend.plotpilot_plugin_sdk.verifier import hash_without_field, validate_rpc_result
+from backend.plotpilot_plugin_sdk.verifier import (
+    hash_without_field,
+    validate_rpc_result,
+)
 
 from ..assets import AssetStore
 from ..candidates.service import CandidateService
@@ -67,81 +70,101 @@ class PublicationService:
     def preflight(self, candidate_id: str, *, expected_workspace_id: str | None = None) -> PublicationPreflight:
         """Validate the complete immutable input graph before any durable write."""
         with self.repository.read_connection() as connection:
-            visited: dict[str, tuple[dict[str, Any], bytes, CandidateFingerprint]] = {}
-            active: set[str] = set()
-            root_workspace: list[str | None] = [expected_workspace_id]
-
-            def visit(current_id: str, *, root: bool = False) -> None:
-                if current_id in active:
-                    raise IncompletePublicationError("Candidate parent graph contains a cycle")
-                if current_id in visited:
-                    return
-                row = connection.execute("SELECT * FROM candidate WHERE candidate_id=?", (current_id,)).fetchone()
-                if row is None:
-                    if root:
-                        raise UnknownReferenceError("Candidate does not exist")
-                    raise UnknownReferenceError("Candidate parent closure is missing an ancestor")
-                status = row["status"]
-                if status not in self._VISIBLE_PARENT_STATES:
-                    raise IncompletePublicationError("Candidate lifecycle is not publication-visible")
-                if status == "staged" and connection.execute(
-                    "SELECT 1 FROM publication_receipt WHERE candidate_id=?", (current_id,)
-                ).fetchone() is not None:
-                    raise IncompletePublicationError("staged Candidate already has a publication receipt")
-                if status == "staged" and connection.execute(
-                    "SELECT 1 FROM execution_publication_binding WHERE candidate_id=?", (current_id,)
-                ).fetchone() is not None:
-                    raise IncompletePublicationError("staged Candidate already has a publication binding")
-                item = self._decode_candidate_row(row)
-                workspace_id = item["target"]["workspace_id"]
-                if root_workspace[0] is None:
-                    root_workspace[0] = workspace_id
-                if workspace_id != root_workspace[0]:
-                    raise CrossWorkspaceError("Candidate parent graph crosses workspace")
-                payload = self._verify_candidate_authority(connection, item, root=root, row_status=status)
-                fingerprint = CandidateFingerprint(
-                    current_id, row["item_id"], row["item_hash"], row["item_json"], status
-                )
-                visited[current_id] = (item, payload, fingerprint)
-                active.add(current_id)
-                try:
-                    for parent_id in item["parent_candidate_ids"]:
-                        visit(parent_id)
-                finally:
-                    active.remove(current_id)
-                if status == "published":
-                    self._verify_published_candidate(connection, current_id, item, payload)
-
-            try:
-                visit(candidate_id, root=True)
-                closure_ids = set(visited)
-                # Execution evidence is intentionally checked only after the
-                # complete durable parent graph has been traversed.  The
-                # result-bundle verifier therefore receives every known
-                # ancestor, not merely the current item's direct parents.
-                for current_id, (current_item, _payload, _fingerprint) in visited.items():
-                    self._verify_execution_evidence(
-                        connection,
-                        current_id,
-                        current_item,
-                        known_parent_ids=closure_ids,
-                    )
-                item, payload, _ = visited[candidate_id]
-                payload_text = payload.decode("utf-8")
-            except (IncompletePublicationError, CrossWorkspaceError, UnknownReferenceError, StaleCasError):
-                raise
-            except Exception as exc:
-                raise IncompletePublicationError("durable Candidate authority is incomplete") from exc
-
-            return PublicationPreflight(
-                candidate_id=candidate_id,
-                workspace_id=str(root_workspace[0]),
-                item=item,
-                payload_bytes=payload,
-                payload_text=payload_text,
-                fingerprints=tuple(value[2] for value in visited.values()),
-                root_status=visited[candidate_id][2].status,
+            return self.verify_candidate_closure(
+                connection,
+                candidate_id,
+                expected_workspace_id=expected_workspace_id,
             )
+
+    def verify_candidate_closure(
+        self,
+        connection: sqlite3.Connection,
+        candidate_id: str,
+        *,
+        expected_workspace_id: str | None = None,
+    ) -> PublicationPreflight:
+        """Rehydrate one complete Candidate authority closure on ``connection``.
+
+        Publication and source-Candidate Revision provenance deliberately use
+        this same verifier.  Callers that already own the Core transaction can
+        therefore validate the exact snapshot they will mutate without a
+        second Candidate decoder or an Asset-only approximation.
+        """
+        visited: dict[str, tuple[dict[str, Any], bytes, CandidateFingerprint]] = {}
+        active: set[str] = set()
+        root_workspace: list[str | None] = [expected_workspace_id]
+
+        def visit(current_id: str, *, root: bool = False) -> None:
+            if current_id in active:
+                raise IncompletePublicationError("Candidate parent graph contains a cycle")
+            if current_id in visited:
+                return
+            row = connection.execute("SELECT * FROM candidate WHERE candidate_id=?", (current_id,)).fetchone()
+            if row is None:
+                if root:
+                    raise UnknownReferenceError("Candidate does not exist")
+                raise UnknownReferenceError("Candidate parent closure is missing an ancestor")
+            status = row["status"]
+            if status not in self._VISIBLE_PARENT_STATES:
+                raise IncompletePublicationError("Candidate lifecycle is not publication-visible")
+            if status == "staged" and connection.execute(
+                "SELECT 1 FROM publication_receipt WHERE candidate_id=?", (current_id,)
+            ).fetchone() is not None:
+                raise IncompletePublicationError("staged Candidate already has a publication receipt")
+            if status == "staged" and connection.execute(
+                "SELECT 1 FROM execution_publication_binding WHERE candidate_id=?", (current_id,)
+            ).fetchone() is not None:
+                raise IncompletePublicationError("staged Candidate already has a publication binding")
+            item = self._decode_candidate_row(row)
+            workspace_id = item["target"]["workspace_id"]
+            if root_workspace[0] is None:
+                root_workspace[0] = workspace_id
+            if workspace_id != root_workspace[0]:
+                raise CrossWorkspaceError("Candidate parent graph crosses workspace")
+            payload = self._verify_candidate_authority(connection, item, root=root, row_status=status)
+            fingerprint = CandidateFingerprint(
+                current_id, row["item_id"], row["item_hash"], row["item_json"], status
+            )
+            visited[current_id] = (item, payload, fingerprint)
+            active.add(current_id)
+            try:
+                for parent_id in item["parent_candidate_ids"]:
+                    visit(parent_id)
+            finally:
+                active.remove(current_id)
+            if status == "published":
+                self._verify_published_candidate(connection, current_id, item, payload)
+
+        try:
+            visit(candidate_id, root=True)
+            closure_ids = set(visited)
+            # Execution evidence is intentionally checked only after the
+            # complete durable parent graph has been traversed.  The
+            # result-bundle verifier therefore receives every known ancestor,
+            # not merely the current item's direct parents.
+            for current_id, (current_item, _payload, _fingerprint) in visited.items():
+                self._verify_execution_evidence(
+                    connection,
+                    current_id,
+                    current_item,
+                    known_parent_ids=closure_ids,
+                )
+            item, payload, _ = visited[candidate_id]
+            payload_text = payload.decode("utf-8")
+        except (IncompletePublicationError, CrossWorkspaceError, UnknownReferenceError, StaleCasError):
+            raise
+        except Exception as exc:
+            raise IncompletePublicationError("durable Candidate authority is incomplete") from exc
+
+        return PublicationPreflight(
+            candidate_id=candidate_id,
+            workspace_id=str(root_workspace[0]),
+            item=item,
+            payload_bytes=payload,
+            payload_text=payload_text,
+            fingerprints=tuple(value[2] for value in visited.values()),
+            root_status=visited[candidate_id][2].status,
+        )
 
     def accept(self, operation_key: str, candidate_id: str, *, created_by: str) -> PublicationReceipt:
         preflight = self.preflight(candidate_id)
@@ -171,7 +194,6 @@ class PublicationService:
             preflight = self.preflight(candidate_id)
         if preflight.candidate_id != candidate_id:
             raise IncompletePublicationError("Publication preflight identity drifted")
-        self._recheck_fingerprints(connection, preflight)
         previous = connection.execute(
             "SELECT * FROM publication_receipt WHERE operation_key=?", (operation_key,)
         ).fetchone()
@@ -181,6 +203,11 @@ class PublicationService:
             return self._verify_committed_receipt(
                 connection, previous, preflight, operation_key=operation_key, created_by=created_by
             )
+
+        # A same-key winner may have committed after this caller completed its
+        # staged preflight.  Receipt/replay is authoritative in that case;
+        # only a genuinely new operation must still match every fingerprint.
+        self._recheck_fingerprints(connection, preflight)
 
         if preflight.root_status != "staged":
             raise IncompletePublicationError("published Candidate lacks its operation receipt")
@@ -671,7 +698,7 @@ class PublicationService:
             bundle_bytes = self._verify_asset(authority["result_bundle_asset_id"], None, utf8=False)
             bundle = parse_json_bytes(bundle_bytes)
             if not isinstance(bundle, dict):
-                raise ValueError("Bundle is not an object")
+                raise TypeError("Bundle is not an object")
             if canonical_bytes(bundle) != bundle_bytes:
                 raise ValueError("Bundle is not canonical")
             verify_result_bundle(

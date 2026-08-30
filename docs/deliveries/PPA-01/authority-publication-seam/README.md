@@ -1,36 +1,44 @@
-# NW-P1-AUTHORITY-PUBLICATION-SEAM-G2 delivery
+# NW-P1-AUTHORITY-PUBLICATION-SEAM-G2 finding-scoped remediation
 
 ## Scope delivered
 
-- Rebuilt Publication from the accepted H_C authority surface as a complete-preflight then single-transaction flow.
-- Traverses the durable Candidate parent graph with `visited`/`active` sets and rejects cycles, missing ancestors, lifecycle-ineligible parents and cross-Workspace ancestry before publication writes.
-- Verifies canonical Candidate rows, target/base/write-set/source closure and Asset metadata, byte length, UTF-8 and SHA-256 bindings before opening the publication transaction.
-- Decodes durable Candidate/Event/Snapshot/Bundle/Receipt/Outcome records through typed `incomplete_publication` failures and rechecks the immutable Candidate closure under CAS before commit.
-- Adds the transport-free Publication and Core Authority application seams, including the sole Core-database 12-command ledger; no HTTP mount, SDK or public contract was changed.
+This direct-child remediation payload is based on reviewed HEAD `6c0f7920d1968ded03d0f6eb704e070ac1345918` and is limited to `NW-P1-APS-SOL-F-004`, `NW-P1-APS-SOL-F-005`, and `NW-P1-APS-SOL-F-006`.
+
+- F-004: Core Authority source-Candidate mutation reuses `PublicationService.verify_candidate_closure`; the full durable parent/source/Asset closure and authoritative base Revision content/hash are validated inside the same Core transaction snapshot before any durable write.
+- F-005: the scoped Delta reports only implemented-and-tested behavior, keeps F-004/F-006 and Core HTTP G2 closure dependencies explicit, keeps all stopped capabilities inactive, and leaves `merge_eligible=false`.
+- F-006: committed operation receipt replay is consulted before new-operation Candidate fingerprint CAS; overlapping identical operation-key/payload requests converge on the first result, while different payload reuse remains a typed conflict.
+
+No public HTTP/SDK/schema, `app.py`, root manifest/lock, Core HTTP G2, second authority/database/ledger, or final Windows artifact was changed or activated.
 
 ## Decisive validation
 
-Raw command transcripts are recorded in `evidence/raw-validation.txt` and summarized in `evidence/verification-summary.json`.
+The current remediation transcript is `evidence/remediation-raw-validation.txt`; its structured index is `evidence/remediation-verification-summary.json`. The older `evidence/raw-validation.txt` and `evidence/verification-summary.json` describe the original G2 source commit and are historical only, not Finding-remediation evidence.
 
-- Owned authority/publication seam: **22 passed**.
-- Existing execution-transaction regression: **78 passed**.
-- Complete P1 regression: **180 passed, 1 skipped**.
+Manifest-required labels:
+
+- `aps-source-candidate-full-closure`: **1 passed in 0.66s**.
+- `aps-zero-side-effects-on-source-drift`: **6 passed in 0.78s**.
+- `aps-concurrent-identical-operation-replay`: **1 passed in 0.54s**.
+- `aps-operation-key-payload-conflict`: **1 passed in 0.64s**.
+- `aps-delta-claim-consistency`: **1 passed in 0.49s**.
+- `aps-publication-regression`: **32 passed in 1.57s**.
+- `aps-p1-regression`: **191 passed in 18.32s**.
+
+Additional gates:
+
+- Ruff on the three affected Python files: **All checks passed**.
 - Targeted repository/publication `compileall`: **exit 0**.
-- Contract manifest check: **deterministic (141 files)**.
-- `git diff --check`: **exit 0** (line-ending notices only).
+- Contract manifest: **deterministic (141 files)**.
+- `git diff --check`: **exit 0**; only Git LF-to-CRLF working-copy notices were emitted.
 
-Coverage includes two- and three-node parent cycles, missing grandparent, cross-Workspace parent and ancestor, staged multi-level closure, parent lifecycle, published Receipt/Revision/Event lineage, Asset metadata shape/size/bytes/hash/UTF-8 drift, typed durable decode failures, replay/result drift, and atomic zero-side-effect failure windows.
+## Finding implementation state
 
-## Finding disposition
+- `NW-P1-APS-SOL-F-004`: `implemented_and_tested_pending_same_reviewer_targeted_closure`.
+- `NW-P1-APS-SOL-F-005`: `implemented_and_tested_pending_same_reviewer_targeted_closure`.
+- `NW-P1-APS-SOL-F-006`: `implemented_and_tested_pending_same_reviewer_targeted_closure`.
 
-- `NW-P1-APS-SOL-F-001`: source remediation implemented; complete durable parent closure and cycle/cross-Workspace rejection are covered by the owned suite.
-- `NW-P1-APS-SOL-F-002`: source remediation implemented; Asset metadata/bytes/hash and decode failures normalize to typed `incomplete_publication`.
-- `NW-P1-APS-SOL-F-003`: **CLOSED** and preserved by the replay/result-lineage checks.
-- `NW-P1-APS-SOL-F-004`: **CLOSED** and preserved by the source-Candidate Revision binding checks.
-- `NW-P1-APS-SOL-F-005`: `implemented_pending_fresh_sol_max_review`; the scoped Delta deliberately does not claim central PASS or merge eligibility.
+This source task does not mark any of those Findings `CLEARED`, does not perform central acceptance, and does not claim merge eligibility. `scope_deviations=[]` and `skips=[]`.
 
-## Reuse and boundary
+## Dependencies and stopped capabilities
 
-The implementation thin-adapts the accepted H_C `CoreAuthorityRepository`, `AssetStore`, Candidate service and execution evidence verifier. No frozen G1 candidate was merged, cherry-picked or copied, and no new dependency or second database was introduced.
-
-The required fresh `gpt-5.6-sol/max` structural review remains outstanding. Stopped/deferred capabilities are `publication.node_structure`, `publication.relation_set`, `publication.incomplete_stream`, cascade-dependent Workspace/Node delete semantics, `revision.content offset>total`, HTTP/app mounting and all public-contract/SDK changes, automatic Publication and any second ledger/database.
+Same-reviewer targeted closure and controller serialization remain required before Core HTTP G2 can proceed. Stopped/deferred capabilities remain: `publication.node_structure`, `publication.relation_set`, `publication.incomplete_stream`, cascade-dependent Workspace/Node deletion, `revision.content offset>total`, HTTP/app/public-contract/SDK changes, automatic Publication, and any second database/ledger.

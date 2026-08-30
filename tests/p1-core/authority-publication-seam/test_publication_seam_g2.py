@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-import hashlib
 import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import Barrier
 
 import pytest
 
@@ -12,10 +13,14 @@ from backend.plotpilot_core.domain import Document, Workspace
 from backend.plotpilot_core.publication import PublicationService
 from backend.plotpilot_core.publication.application import PublicationApplication
 from backend.plotpilot_core.repositories import CoreAuthorityRepository
+from backend.plotpilot_core.repositories.authority_application import (
+    CoreAuthorityApplication,
+)
 from backend.plotpilot_core.repositories.authority_application.errors import (
     CrossWorkspaceError,
     IncompletePublicationError,
     OperationKeyReuseError,
+    StaleCasError,
     UnknownReferenceError,
 )
 
@@ -67,11 +72,26 @@ def _counts(repo):
         table: repo._connection.execute(f"SELECT count(*) FROM {table}").fetchone()[0]
         for table in (
             "revision",
-        "publication_receipt",
-        "execution_core_event",
-        "execution_publication_binding",
-        "core_authority_operation",
+            "publication_receipt",
+            "execution_core_event",
+            "execution_publication_binding",
+            "core_authority_operation",
         )
+    }
+
+
+def _revision_command(base, candidate_id: str, *, operation_key: str, revision_id: str, content: str = "new"):
+    return {
+        "schema": "core-document-revision-create-command/v1",
+        "operation_key": operation_key,
+        "workspace_id": "ws-1",
+        "document_id": "doc-1",
+        "revision_id": revision_id,
+        "base_revision_id": base.revision_id,
+        "content": content,
+        "created_by": "user",
+        "source_candidate_id": candidate_id,
+        "payload_schema": "core/document-text/v1",
     }
 
 
@@ -374,3 +394,250 @@ def test_asset_metadata_bytes_and_encoding_closure_fail_typed_and_atomic(tmp_pat
     assert caught.value.error_code == "incomplete_publication"
     assert _counts(repo) == before
     assert repo.get_document("doc-1").content == "old"
+
+
+def test_aps_source_candidate_full_closure(tmp_path):
+    repo, assets, base, _ = _stack(tmp_path)
+    candidates = CandidateService(repo, assets)
+    payloads = {
+        name: assets.put(name.encode(), mime="text/plain", logical_role="candidate_payload", provenance="test")
+        for name in ("grandparent", "parent", "new")
+    }
+    grandparent = candidates.stage(
+        "source-grandparent",
+        _item(base, payloads["grandparent"], item_id="source-grandparent"),
+    )
+    parent = candidates.stage(
+        "source-parent",
+        _item(base, payloads["parent"], item_id="source-parent", parents=(grandparent.candidate_id,)),
+    )
+    root = candidates.stage(
+        "source-root",
+        _item(base, payloads["new"], item_id="source-root", parents=(parent.candidate_id,)),
+    )
+    app = CoreAuthorityApplication(repo, PublicationService(repo, assets))
+
+    result = app.execute_command(
+        _revision_command(
+            base,
+            root.candidate_id,
+            operation_key="source-full-closure",
+            revision_id="revision-source-full-closure",
+        )
+    )
+
+    assert result["source_candidate_id"] == root.candidate_id
+    assert repo._connection.execute(
+        "SELECT content FROM revision WHERE revision_id=?", (result["revision_id"],)
+    ).fetchone()[0] == "new"
+    assert repo._connection.execute(
+        "SELECT count(*) FROM core_authority_operation WHERE route_id='document.revision.create'"
+    ).fetchone()[0] == 1
+
+
+@pytest.mark.parametrize(
+    "tamper",
+    [
+        "asset_deleted",
+        "metadata_drift",
+        "bytes_drift",
+        "missing_ancestor",
+        "cross_workspace_ancestor",
+        "base_content_hash_drift",
+    ],
+)
+def test_aps_zero_side_effects_on_source_drift(tmp_path, tamper):
+    repo, assets, base1, base2 = _stack(tmp_path)
+    candidates = CandidateService(repo, assets)
+    parent_payload = assets.put(
+        b"parent", mime="text/plain", logical_role="candidate_payload", provenance="test"
+    )
+    root_payload = assets.put(b"new", mime="text/plain", logical_role="candidate_payload", provenance="test")
+    parent = candidates.stage("source-parent", _item(base1, parent_payload, item_id="source-parent"))
+    root = candidates.stage(
+        "source-root",
+        _item(base1, root_payload, item_id="source-root", parents=(parent.candidate_id,)),
+    )
+    app = CoreAuthorityApplication(repo, PublicationService(repo, assets))
+
+    if tamper == "asset_deleted":
+        (assets.metadata / f"{root_payload.sha256}.json").unlink()
+        (assets.objects / root_payload.sha256[:2] / root_payload.sha256).unlink()
+    elif tamper == "metadata_drift":
+        metadata_path = assets.metadata / f"{root_payload.sha256}.json"
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        metadata["size"] += 1
+        metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+    elif tamper == "bytes_drift":
+        (assets.objects / root_payload.sha256[:2] / root_payload.sha256).write_bytes(b"tampered")
+    elif tamper == "missing_ancestor":
+        _rewrite_candidate(
+            repo,
+            parent.candidate_id,
+            _item(base1, parent_payload, item_id="source-parent", parents=("candidate-missing",)),
+        )
+    elif tamper == "cross_workspace_ancestor":
+        foreign_payload = assets.put(
+            b"foreign", mime="text/plain", logical_role="candidate_payload", provenance="test"
+        )
+        foreign = candidates.stage(
+            "source-foreign",
+            _item(
+                base2,
+                foreign_payload,
+                item_id="source-foreign",
+                workspace_id="ws-2",
+                document_id="doc-2",
+            ),
+        )
+        _rewrite_candidate(
+            repo,
+            parent.candidate_id,
+            _item(base1, parent_payload, item_id="source-parent", parents=(foreign.candidate_id,)),
+        )
+    else:
+        with repo.transaction() as connection:
+            connection.execute(
+                "UPDATE revision SET content=? WHERE revision_id=?",
+                ("drifted-base-content", base1.revision_id),
+            )
+
+    before = _counts(repo)
+    current_revision = repo._connection.execute(
+        "SELECT current_revision_id FROM document WHERE document_id='doc-1'"
+    ).fetchone()[0]
+    with pytest.raises(
+        (IncompletePublicationError, UnknownReferenceError, CrossWorkspaceError, StaleCasError)
+    ) as caught:
+        app.execute_command(
+            _revision_command(
+                base1,
+                root.candidate_id,
+                operation_key=f"source-drift-{tamper}",
+                revision_id=f"revision-source-drift-{tamper}",
+            )
+        )
+    assert caught.value.error_code in {
+        "incomplete_publication",
+        "unknown_reference",
+        "cross_workspace",
+        "stale_cas",
+    }
+    assert _counts(repo) == before
+    assert repo._connection.execute(
+        "SELECT current_revision_id FROM document WHERE document_id='doc-1'"
+    ).fetchone()[0] == current_revision
+
+
+def test_aps_concurrent_identical_operation_replay(tmp_path):
+    repo1, assets1, base, _ = _stack(tmp_path)
+    payload = assets1.put(b"new", mime="text/plain", logical_role="candidate_payload", provenance="test")
+    staged = CandidateService(repo1, assets1).stage("concurrent", _item(base, payload, item_id="concurrent"))
+    repo2 = CoreAuthorityRepository(repo1.database)
+    assets2 = AssetStore(assets1.root)
+    services = (PublicationService(repo1, assets1), PublicationService(repo2, assets2))
+    apps = tuple(PublicationApplication(service) for service in services)
+    barrier = Barrier(2)
+
+    for service in services:
+        original = service.preflight
+
+        def gated_preflight(candidate_id, *, expected_workspace_id=None, _original=original):
+            preflight = _original(candidate_id, expected_workspace_id=expected_workspace_id)
+            barrier.wait(timeout=10)
+            return preflight
+
+        service.preflight = gated_preflight
+
+    command = {
+        "schema": "publication-command/v1",
+        "publication_operation_key": "concurrent-identical",
+        "workspace_id": "ws-1",
+        "candidate_id": staged.candidate_id,
+        "accepted_by": "user",
+    }
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(executor.map(lambda app: app.accept(command), apps))
+
+    assert sorted(result["idempotent"] for result in results) == [False, True]
+    first = next(result for result in results if result["idempotent"] is False)
+    replay = next(result for result in results if result["idempotent"] is True)
+    assert {**replay, "idempotent": False} == first
+    assert repo1._connection.execute("SELECT count(*) FROM publication_receipt").fetchone()[0] == 1
+    assert repo1._connection.execute("SELECT count(*) FROM execution_core_event").fetchone()[0] == 1
+    assert repo1._connection.execute(
+        "SELECT count(*) FROM core_authority_operation WHERE route_id='publication.accept'"
+    ).fetchone()[0] == 1
+    assert repo1._connection.execute(
+        "SELECT count(*) FROM revision WHERE source_candidate_id=?", (staged.candidate_id,)
+    ).fetchone()[0] == 1
+
+
+def test_aps_operation_key_payload_conflict(tmp_path):
+    repo, assets, base, _ = _stack(tmp_path)
+    payload = assets.put(b"new", mime="text/plain", logical_role="candidate_payload", provenance="test")
+    staged = CandidateService(repo, assets).stage("conflict", _item(base, payload, item_id="conflict"))
+    app = PublicationApplication(PublicationService(repo, assets))
+    command = {
+        "schema": "publication-command/v1",
+        "publication_operation_key": "payload-conflict",
+        "workspace_id": "ws-1",
+        "candidate_id": staged.candidate_id,
+        "accepted_by": "user",
+    }
+    app.accept(command)
+    before = _counts(repo)
+
+    with pytest.raises(OperationKeyReuseError) as caught:
+        app.accept({**command, "accepted_by": "different-user"})
+
+    assert caught.value.error_code == "operation_key_reuse"
+    assert _counts(repo) == before
+
+
+def test_aps_delta_claim_consistency():
+    root = Path(__file__).resolve().parents[3]
+    delta = json.loads(
+        (root / "coordination/PPA-01/authority-publication-seam/scoped-contract-delta-v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert delta["status"] == "remediation_implemented_pending_same_reviewer_targeted_closure"
+    assert delta["finding_disposition"] == {
+        "NW-P1-APS-SOL-F-001": "CLOSED",
+        "NW-P1-APS-SOL-F-002": "CLOSED",
+        "NW-P1-APS-SOL-F-003": "CLOSED",
+        "NW-P1-APS-SOL-F-004": "implemented_and_tested_pending_same_reviewer_targeted_closure",
+        "NW-P1-APS-SOL-F-005": "implemented_and_tested_pending_same_reviewer_targeted_closure",
+        "NW-P1-APS-SOL-F-006": "implemented_and_tested_pending_same_reviewer_targeted_closure",
+    }
+    assert delta["core_http_g2_unlocked"] is False
+    assert delta["merge_eligible"] is False
+    assert delta["closure_dependencies"] == [
+        (
+            "F-004 remains uncleared until the same reviewer accepts "
+            "aps-source-candidate-full-closure, aps-zero-side-effects-on-source-drift, "
+            "and aps-p1-regression evidence"
+        ),
+        (
+            "F-006 remains uncleared until the same reviewer accepts "
+            "aps-concurrent-identical-operation-replay, "
+            "aps-operation-key-payload-conflict, and aps-publication-regression evidence"
+        ),
+        "Core HTTP G2 remains blocked until controller-serialized targeted closure",
+    ]
+    assert delta["stopped_or_deferred"] == [
+        "publication.node_structure",
+        "publication.relation_set",
+        "publication.incomplete_stream",
+        "cascade-dependent Workspace/Node delete semantics",
+        "revision.content offset>total",
+        "HTTP/app mount and public-contract/SDK changes",
+        "automatic Publication and any second database/ledger",
+    ]
+    assert delta["scope_deviations"] == []
+    assert delta["skips"] == []
+    assert delta["central_acceptance"] == (
+        "not performed; same-reviewer targeted closure remains mandatory"
+    )
+    assert delta["donor_push"] == "DISABLED"

@@ -2,15 +2,24 @@
   "schema": "parent-state-update-request/v1",
   "node_id": "NW-P1-AUTHORITY-PUBLICATION-SEAM-G2",
   "task_id": "WAVE-D-G2-NW-P1-APS-SOURCE-01",
-  "requested_transition": "source_commit_ready_for_fresh_sol_max_review",
-  "base": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
-  "evidence": "docs/deliveries/PPA-01/authority-publication-seam/evidence/verification-summary.json",
-  "next_steps": [
-    "Verify one direct-child source commit, exact owned path set and clean tree.",
-    "Dispatch a fresh gpt-5.6-sol/max read-only structural review for F-001/F-002/F-005.",
-    "Keep P0 integration, merge eligibility, tags and pushes disabled until the controller serializes review results."
+  "requested_transition": "remediation_commit_ready_for_same_reviewer_targeted_closure",
+  "reviewed_parent": "6c0f7920d1968ded03d0f6eb704e070ac1345918",
+  "containing_commit": "reported out of band",
+  "evidence": "docs/deliveries/PPA-01/authority-publication-seam/evidence/remediation-verification-summary.json",
+  "finding_ids": [
+    "NW-P1-APS-SOL-F-004",
+    "NW-P1-APS-SOL-F-005",
+    "NW-P1-APS-SOL-F-006"
   ],
-  "note": "Parent case state.json and controller evidence are P0-owned and outside this node write set; apply this request centrally after source verification.",
+  "next_steps": [
+    "Verify the containing commit is the unique direct child of the reviewed parent, with out_of_set=0 and a clean tree.",
+    "Dispatch the same reviewer for Finding-ID-targeted closure using all seven exact evidence labels.",
+    "Keep Core HTTP G2, central integration, merge eligibility, tags and pushes disabled until controller serialization."
+  ],
+  "scope_deviations": [],
+  "skips": [],
+  "note": "Parent case state.json and controller evidence are outside this node write set; apply this request centrally after identity verification.",
   "central_acceptance": "not performed",
+  "merge_eligible": false,
   "donor_push": "DISABLED"
 }

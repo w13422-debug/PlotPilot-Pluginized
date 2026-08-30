@@ -1,0 +1,148 @@
+NW-P1 Authority Publication Seam G2 Finding-scoped Remediation Raw Validation
+REVIEWED_PARENT: 6c0f7920d1968ded03d0f6eb704e070ac1345918
+FINDING_MANIFEST_SHA256: c5765d6f7224a6110c26721b553b0130eb2c041867d696917cc624329dfc6e43
+GENERATED_AT: 2026-08-30T12:13:54.1376994+08:00
+
+EVIDENCE_LABEL: aps-source-candidate-full-closure
+COMMAND: python -B -m pytest -p no:cacheprovider tests/p1-core/authority-publication-seam/test_publication_seam_g2.py::test_aps_source_candidate_full_closure -q
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-NW-P1-Authority-Publication-Seam-G2
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 1 item
+
+tests\p1-core\authority-publication-seam\test_publication_seam_g2.py .   [100%]
+
+============================== 1 passed in 0.66s ==============================
+EXIT_CODE: 0
+
+EVIDENCE_LABEL: aps-zero-side-effects-on-source-drift
+COMMAND: python -B -m pytest -p no:cacheprovider tests/p1-core/authority-publication-seam/test_publication_seam_g2.py::test_aps_zero_side_effects_on_source_drift -q
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-NW-P1-Authority-Publication-Seam-G2
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 6 items
+
+tests\p1-core\authority-publication-seam\test_publication_seam_g2.py ... [ 50%]
+...                                                                      [100%]
+
+============================== 6 passed in 0.78s ==============================
+EXIT_CODE: 0
+
+EVIDENCE_LABEL: aps-concurrent-identical-operation-replay
+COMMAND: python -B -m pytest -p no:cacheprovider tests/p1-core/authority-publication-seam/test_publication_seam_g2.py::test_aps_concurrent_identical_operation_replay -q
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-NW-P1-Authority-Publication-Seam-G2
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 1 item
+
+tests\p1-core\authority-publication-seam\test_publication_seam_g2.py .   [100%]
+
+============================== 1 passed in 0.54s ==============================
+EXIT_CODE: 0
+
+EVIDENCE_LABEL: aps-operation-key-payload-conflict
+COMMAND: python -B -m pytest -p no:cacheprovider tests/p1-core/authority-publication-seam/test_publication_seam_g2.py::test_aps_operation_key_payload_conflict -q
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-NW-P1-Authority-Publication-Seam-G2
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 1 item
+
+tests\p1-core\authority-publication-seam\test_publication_seam_g2.py .   [100%]
+
+============================== 1 passed in 0.64s ==============================
+EXIT_CODE: 0
+
+EVIDENCE_LABEL: aps-delta-claim-consistency
+COMMAND: python -B -m pytest -p no:cacheprovider tests/p1-core/authority-publication-seam/test_publication_seam_g2.py::test_aps_delta_claim_consistency -q
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-NW-P1-Authority-Publication-Seam-G2
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 1 item
+
+tests\p1-core\authority-publication-seam\test_publication_seam_g2.py .   [100%]
+
+============================== 1 passed in 0.49s ==============================
+EXIT_CODE: 0
+
+EVIDENCE_LABEL: aps-publication-regression
+COMMAND: python -B -m pytest -p no:cacheprovider tests/p1-core/authority-publication-seam -q
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-NW-P1-Authority-Publication-Seam-G2
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 32 items
+
+tests\p1-core\authority-publication-seam\test_publication_seam_g2.py ... [  9%]
+.............................                                            [100%]
+
+============================= 32 passed in 1.57s ==============================
+EXIT_CODE: 0
+
+EVIDENCE_LABEL: aps-p1-regression
+COMMAND: python -B -m pytest -p no:cacheprovider tests/p1-core -q
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-NW-P1-Authority-Publication-Seam-G2
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 191 items
+
+tests\p1-core\authority-publication-seam\test_publication_seam_g2.py ... [  1%]
+.............................                                            [ 16%]
+tests\p1-core\backup-data-plane\test_backup_data_plane.py .............. [ 24%]
+............................................................             [ 55%]
+tests\p1-core\execution-transaction\test_broker_persistence.py ......... [ 60%]
+...........                                                              [ 65%]
+tests\p1-core\execution-transaction\test_frozen_findings_remediation.py . [ 66%]
+..........................                                               [ 80%]
+tests\p1-core\execution-transaction\test_terminal_failure_windows.py ... [ 81%]
+...........                                                              [ 87%]
+tests\p1-core\execution-transaction\test_terminal_transaction.py ....... [ 91%]
+..........                                                               [ 96%]
+tests\p1-core\test_asset_store.py ..                                     [ 97%]
+tests\p1-core\test_candidate_publication.py ..                           [ 98%]
+tests\p1-core\test_core_authority.py ...                                 [100%]
+
+============================ 191 passed in 18.32s =============================
+EXIT_CODE: 0
+
+EVIDENCE_LABEL: aps-ruff
+COMMAND: python -B -m ruff check backend/plotpilot_core/publication/service.py backend/plotpilot_core/repositories/authority_application/service.py tests/p1-core/authority-publication-seam/test_publication_seam_g2.py --no-cache
+All checks passed!
+EXIT_CODE: 0
+EVIDENCE_LABEL: aps-compileall
+COMMAND: python -B -m compileall -q backend/plotpilot_core/repositories backend/plotpilot_core/publication
+(no output)
+EXIT_CODE: 0
+PYTHONPYCACHEPREFIX: C:\t\aps-g2-compileall-final
+
+EVIDENCE_LABEL: aps-contract-manifest
+COMMAND: python -B tools/integration/generate_contract_manifest.py --check
+contract manifest is deterministic (141 files)
+EXIT_CODE: 0
+
+EVIDENCE_LABEL: aps-git-diff-check
+COMMAND: git diff --check
+warning: in the working copy of 'backend/plotpilot_core/publication/service.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/plotpilot_core/repositories/authority_application/service.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'coordination/PPA-01/authority-publication-seam/scoped-contract-delta-v1.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p1-core/authority-publication-seam/test_publication_seam_g2.py', LF will be replaced by CRLF the next time Git touches it
+EXIT_CODE: 0

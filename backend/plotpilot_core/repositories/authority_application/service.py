@@ -1,23 +1,26 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
 import hashlib
 import json
 import sqlite3
-from typing import Any
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any
 
-from backend.plotpilot_plugin_sdk import assert_valid, canonical_bytes
+from backend.plotpilot_plugin_sdk import canonical_bytes
 from backend.plotpilot_plugin_sdk.core_api import parse_core_authority
 
-from ...candidates.service import CandidateService
 from ...domain.entities import utc_now
 from ..authority import CoreAuthorityRepository
 from .errors import (
     CrossWorkspaceError,
+    IncompletePublicationError,
     OperationKeyReuseError,
     StaleCasError,
     UnknownReferenceError,
 )
+
+if TYPE_CHECKING:
+    from ...publication.service import PublicationService
 
 
 _COMMAND_ROUTES = {
@@ -78,8 +81,15 @@ class CoreAuthorityApplication:
     command_routes = frozenset(_COMMAND_ROUTES.values())
     query_routes = frozenset(_QUERY_ROUTES.values())
 
-    def __init__(self, repository: CoreAuthorityRepository) -> None:
+    def __init__(
+        self,
+        repository: CoreAuthorityRepository,
+        publication_service: PublicationService | None = None,
+    ) -> None:
         self.repository = repository
+        if publication_service is not None and publication_service.repository is not repository:
+            raise ValueError("Publication verifier must share the Core authority repository")
+        self.publication_service = publication_service
         repository.ensure_authority_application_schema()
 
     def handle(self, route_id: str, request: Mapping[str, Any]) -> dict[str, Any]:
@@ -605,8 +615,8 @@ class CoreAuthorityApplication:
                 raise CrossWorkspaceError("node parent is outside workspace")
             current = parent["parent_node_id"]
 
-    @staticmethod
     def _verify_source_candidate(
+        self,
         connection: sqlite3.Connection,
         command: dict[str, Any],
         target_kind: str,
@@ -615,28 +625,22 @@ class CoreAuthorityApplication:
         candidate_id = command["source_candidate_id"]
         if candidate_id is None:
             return
-        row = connection.execute("SELECT * FROM candidate WHERE candidate_id=?", (candidate_id,)).fetchone()
-        if row is None:
-            raise UnknownReferenceError("source Candidate does not exist")
-        try:
-            item = json.loads(row["item_json"])
-            assert_valid("candidate-item/v1", item)
-            canonical, item_hash = CandidateService._canonical(item)
-        except Exception as exc:
-            raise StaleCasError("source Candidate authority is invalid") from exc
-        if canonical != row["item_json"] or item_hash != row["item_hash"] or item["item_id"] != row["item_id"]:
-            raise StaleCasError("source Candidate authority drifted")
+        if self.publication_service is None:
+            raise IncompletePublicationError("source Candidate closure verifier is not configured")
+
+        # Reuse the Publication service's complete parent/source/Asset/base
+        # closure verifier on this exact transaction snapshot.  The remaining
+        # checks bind that verified authority to this Revision command only.
+        preflight = self.publication_service.verify_candidate_closure(
+            connection,
+            candidate_id,
+            expected_workspace_id=command["workspace_id"],
+        )
+        item = preflight.item
         target = item["target"]
         base = item["base"]
-        expected_write = {
-            "workspace_id": command["workspace_id"],
-            "entity_kind": target_kind,
-            "entity_id": target_id,
-            "revision_id": command["base_revision_id"],
-            "content_hash": base["content_hash"],
-        }
         if (
-            row["status"] != "staged"
+            preflight.root_status != "staged"
             or item["status"] != "complete"
             or item["item_kind"] != target_kind
             or target != {
@@ -645,7 +649,6 @@ class CoreAuthorityApplication:
                 "entity_id": target_id,
             }
             or base["revision_id"] != command["base_revision_id"]
-            or item["write_set"] != [expected_write]
             or item["mutation"]["payload_schema"] != command["payload_schema"]
             or item["mutation"]["mode"] not in {"replace", "append_text"}
         ):
@@ -664,17 +667,18 @@ class CoreAuthorityApplication:
                 or base_row["workspace_id"] != command["workspace_id"]
                 or base_row[f"{target_kind}_id"] != target_id
                 or base_row["content_hash"] != base["content_hash"]
+                or not isinstance(base_row["content"], str)
+                or hashlib.sha256(base_row["content"].encode("utf-8")).hexdigest()
+                != base_row["content_hash"]
             ):
                 raise StaleCasError("source Candidate base drifted")
             base_content = base_row["content"]
-        content = command["content"]
-        if item["mutation"]["mode"] == "replace":
-            payload = content
-        else:
-            if not content.startswith(base_content):
-                raise StaleCasError("source Candidate append payload drifted")
-            payload = content[len(base_content) :]
-        if hashlib.sha256(payload.encode("utf-8")).hexdigest() != item["mutation"]["payload_hash"]:
+        expected_content = (
+            preflight.payload_text
+            if item["mutation"]["mode"] == "replace"
+            else base_content + preflight.payload_text
+        )
+        if command["content"] != expected_content:
             raise StaleCasError("source Candidate mutation drifted")
 
 
