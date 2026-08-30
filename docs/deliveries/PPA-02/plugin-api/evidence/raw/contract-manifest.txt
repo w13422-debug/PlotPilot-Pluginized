@@ -1,0 +1,3 @@
+command: python -B tools/integration/generate_contract_manifest.py --check
+exit_code: 0
+contract manifest is deterministic (141 files)

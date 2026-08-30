@@ -1,0 +1,47 @@
+{
+  "schema": "plotpilot-plugin-api-source-verification/v1",
+  "generation_id": "NW-P2-PLUGIN-API-G2",
+  "base": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+  "python": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+  "results": [
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p2-plugin-platform/plugin-api -q",
+      "exit_code": 0,
+      "result": "55 passed in 0.68s",
+      "raw": "raw/pytest-plugin-api.txt"
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p2-plugin-platform/lifecycle tests/p2-plugin-platform/supervisor -q",
+      "exit_code": 0,
+      "result": "171 passed in 5.11s",
+      "raw": "raw/pytest-lifecycle-supervisor.txt"
+    },
+    {
+      "command": "python -B -m compileall -q backend/plotpilot_core/api/v1/plugins",
+      "exit_code": 0,
+      "result": "no stdout",
+      "raw": "raw/compileall.txt"
+    },
+    {
+      "command": "python -B tools/integration/generate_contract_manifest.py --check",
+      "exit_code": 0,
+      "result": "contract manifest is deterministic (141 files)",
+      "raw": "raw/contract-manifest.txt"
+    },
+    {
+      "command": "python -B -m ruff check --no-cache backend/plotpilot_core/api/v1/plugins tests/p2-plugin-platform/plugin-api",
+      "exit_code": 0,
+      "result": "All checks passed!",
+      "raw": "raw/ruff.txt"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "result": "no stdout",
+      "raw": "raw/git-diff-check.txt"
+    }
+  ],
+  "review_status": "not_performed_by_source_task",
+  "central_pass_claimed": false,
+  "merge_eligible_claimed": false
+}

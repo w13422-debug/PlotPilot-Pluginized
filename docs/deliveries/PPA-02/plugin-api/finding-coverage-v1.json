@@ -1,0 +1,65 @@
+{
+  "schema": "plotpilot-plugin-api-finding-coverage/v1",
+  "generation_id": "NW-P2-PLUGIN-API-G2",
+  "source_role": "implementation_only",
+  "review_status": "pending_fresh_sol_max",
+  "findings": [
+    {
+      "id": "NW-P2-API-SOL-F-001",
+      "prior_status": "CLOSED",
+      "preservation": "Settings query and mutation routes and ports are absent; stopped routes are negative-tested."
+    },
+    {
+      "id": "NW-P2-API-SOL-F-002",
+      "prior_status": "CLOSED",
+      "preservation": "LKG promotion and caller qualification evidence remain absent; qualification authority is stopped in the Delta."
+    },
+    {
+      "id": "NW-P2-API-SOL-F-003",
+      "prior_status": "CLOSED",
+      "preservation": "Safe-mode mutation and external pin releaser remain absent; operation ledger and internal release seams are stopped."
+    },
+    {
+      "id": "NW-P2-API-SOL-F-004",
+      "prior_status": "CLOSED",
+      "preservation": "Only three read DTOs remain, with frozen manifest validation, finite JSON and typed authority-drift rejection."
+    },
+    {
+      "id": "NW-P2-API-SOL-F-005",
+      "prior_status": "CLOSED",
+      "preservation": "Retained IDs, exact SemVer and lowercase hashes return typed 422 before authority access; stderr uses canonical Base64."
+    },
+    {
+      "id": "NW-P2-API-SOL-F-006",
+      "prior_status": "OPEN",
+      "implemented_surface": "The exact H_C PackageStore missing-release sentinel maps to local typed 404; registry, manifest, content, hash and integrity failures are non-404 without broad OSError handling.",
+      "tests": [
+        "test_real_packagestore_missing_release_is_typed_404",
+        "test_corrupt_real_packagestore_is_never_disguised_as_404",
+        "test_internal_filenotfound_shape_is_typed_500_not_404"
+      ]
+    },
+    {
+      "id": "NW-P2-API-SOL-F-007",
+      "prior_status": "OPEN",
+      "implemented_surface": "Composition Delta equals actual APIRoute inventory and explicitly names Workspace Plan-switch CAS, NW-P0-RUNTIME-COMPOSITION-02, public error-family and SPA mount ordering.",
+      "tests": [
+        "test_actual_router_inventory_equals_independent_three_get_allowlist",
+        "test_committed_delta_is_generated_from_actual_inventory_and_names_all_gates",
+        "test_delta_keeps_all_mutation_authority_seams_stopped"
+      ]
+    },
+    {
+      "id": "NW-P2-API-SOL-F-008",
+      "prior_status": "OPEN",
+      "implemented_surface": "Concrete PackageStore positive/missing/corrupt cases, strict authority projections, independent allowlist and forbidden method/path SPA probes are covered.",
+      "tests": [
+        "tests/p2-plugin-platform/plugin-api/test_packages_releases.py",
+        "tests/p2-plugin-platform/plugin-api/test_worker_status.py",
+        "tests/p2-plugin-platform/plugin-api/test_route_inventory.py"
+      ]
+    }
+  ],
+  "central_pass_claimed": false,
+  "merge_eligible_claimed": false
+}

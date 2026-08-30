@@ -1,0 +1,103 @@
+{
+  "schema": "active-work/v1",
+  "revision": 2,
+  "status": "completed_source_content_ready_for_single_commit",
+  "generation_id": "NW-P2-PLUGIN-API-G2",
+  "task_id": "WAVE-D-G2-NW-P2-PLUGIN-API-SOURCE-01",
+  "objective": "Build an H_C-native read-only Plugin API allowlist and bounded Composition Delta.",
+  "identity": {
+    "base": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+    "branch": "codex/nw-p2-plugin-api-g2",
+    "frozen_rejected_head": "67f154e27f09507a6308f0bfb8fb4e8c0475aa62",
+    "frozen_head_must_not_be_ancestor": true,
+    "donor_push": "DISABLED"
+  },
+  "protected_dirty_worktree": false,
+  "taskgraph": {
+    "status": "kernel_unavailable",
+    "fallback": "graph-free single writer with two disjoint read-only evidence tasks"
+  },
+  "tasks": [
+    {
+      "task_id": "WAVE-D-G2-NW-P2-PLUGIN-API-SOURCE-01-HC-INVENTORY",
+      "owner": "hc_api_inventory",
+      "input": "exact H_C implementation and conventions",
+      "writes": [],
+      "status": "completed"
+    },
+    {
+      "task_id": "WAVE-D-G2-NW-P2-PLUGIN-API-SOURCE-01-FINDING-DELTA",
+      "owner": "finding_delta_analysis",
+      "input": "frozen controller findings and G2 taskbook",
+      "writes": [],
+      "status": "completed"
+    },
+    {
+      "task_id": "WAVE-D-G2-NW-P2-PLUGIN-API-SOURCE-01-IMPLEMENTATION",
+      "owner": "root",
+      "input": "H_C and accepted authorities",
+      "writes": [
+        "backend/plotpilot_core/api/v1/plugins/**",
+        "tests/p2-plugin-platform/plugin-api/**",
+        "docs/deliveries/PPA-02/plugin-api/**",
+        "coordination/PPA-02/plugin-api/**"
+      ],
+      "status": "completed"
+    }
+  ],
+  "completed": [
+    "Recovered local controls, controller state, taskbook, adjudication and exact H_C acceptance.",
+    "Verified clean exact H_C branch, donor push DISABLED, no upstream and no HEAD tag.",
+    "Queried both callable KB routing and the canonical local Vault; read the highest relevant scoped records.",
+    "Rejected unrelated local source-tool candidates; existing H_C modules are the reuse source.",
+    "Integrated both disjoint read-only evidence tasks without accepting any external writes.",
+    "Implemented the exact three-GET allowlist, narrow PackageStore 404 boundary, closed projections, SPA guard and actual-inventory-derived Delta.",
+    "Directed validation passed: Plugin API 55, Lifecycle/Supervisor 171, compileall, manifest determinism, Ruff and diff-check."
+  ],
+  "in_progress": null,
+  "next_steps": [
+    "Create exactly one direct-child source commit and recheck final identity.",
+    "Controller performs identity and write-set intake.",
+    "Fresh gpt-5.6-sol/max performs the full structural review; the source task does not self-accept."
+  ],
+  "validation": [
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p2-plugin-platform/plugin-api -q",
+      "result": "55 passed in 0.68s",
+      "exit_code": 0
+    },
+    {
+      "command": "python -B -m pytest -p no:cacheprovider tests/p2-plugin-platform/lifecycle tests/p2-plugin-platform/supervisor -q",
+      "result": "171 passed in 5.11s",
+      "exit_code": 0
+    },
+    {
+      "command": "python -B -m compileall -q backend/plotpilot_core/api/v1/plugins",
+      "result": "no stdout",
+      "exit_code": 0
+    },
+    {
+      "command": "python -B tools/integration/generate_contract_manifest.py --check",
+      "result": "contract manifest is deterministic (141 files)",
+      "exit_code": 0
+    },
+    {
+      "command": "python -B -m ruff check --no-cache backend/plotpilot_core/api/v1/plugins tests/p2-plugin-platform/plugin-api",
+      "result": "All checks passed!",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --check",
+      "result": "no stdout",
+      "exit_code": 0
+    }
+  ],
+  "prohibitions": [
+    "No writes outside the exclusive taskbook write set.",
+    "No merge, rebase, cherry-pick, reset, amend, tag or push.",
+    "No app.py, public contract, generated SDK, root manifest or lock changes.",
+    "No browser, GUI, Tauri, desktop, EXE, installer or final-only gate.",
+    "No self-review or merge-eligibility claim."
+  ],
+  "updated_at": "2026-08-28T23:38:00+08:00"
+}

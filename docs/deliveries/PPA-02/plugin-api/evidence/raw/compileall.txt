@@ -1,0 +1,3 @@
+command: python -B -m compileall -q backend/plotpilot_core/api/v1/plugins
+exit_code: 0
+stdout: <empty>
