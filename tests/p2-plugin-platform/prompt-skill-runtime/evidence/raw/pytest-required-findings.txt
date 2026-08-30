@@ -1,0 +1,25 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.13, pytest-9.0.3, pluggy-1.6.0 -- C:\Program Files\ruanjian\Open-tgtylab\.work\novel-agent-build-venv\Scripts\python.exe
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-NW-P2-Prompt-Skill-Runtime-G2
+configfile: pytest.ini (WARNING: ignoring pytest config in pyproject.toml!)
+plugins: anyio-4.14.2
+collecting ... collected 9 items
+
+tests/p2-plugin-platform/prompt-skill-runtime/test_finding_remediation.py::test_opaque_handle_ownership[psr-opaque-handle-ownership] PASSED [ 11%]
+tests/p2-plugin-platform/prompt-skill-runtime/test_finding_remediation.py::test_forged_cross_runtime_handle_negative[psr-forged-cross-runtime-handle-negative] PASSED [ 22%]
+tests/p2-plugin-platform/prompt-skill-runtime/test_finding_remediation.py::test_prepare_execute_regression[psr-prepare-execute-regression] PASSED [ 33%]
+tests/p2-plugin-platform/prompt-skill-runtime/test_finding_remediation.py::test_terminal_receipt_pin_required[psr-terminal-receipt-pin-required] PASSED [ 44%]
+tests/p2-plugin-platform/prompt-skill-runtime/test_finding_remediation.py::test_full_model_receipt_drift_negative[psr-full-model-receipt-drift-negative] PASSED [ 55%]
+tests/p2-plugin-platform/prompt-skill-runtime/test_finding_remediation.py::test_attribution_reload_regression[psr-attribution-reload-regression] PASSED [ 66%]
+tests/p2-plugin-platform/prompt-skill-runtime/test_finding_remediation.py::test_reconcile_before_execute[psr-reconcile-before-execute] PASSED [ 77%]
+tests/p2-plugin-platform/prompt-skill-runtime/test_finding_remediation.py::test_uncertain_crash_window_convergence[psr-uncertain-crash-window-convergence] PASSED [ 88%]
+tests/p2-plugin-platform/prompt-skill-runtime/test_finding_remediation.py::test_terminal_state_regression[psr-terminal-state-regression] PASSED [100%]
+
+============================== warnings summary ===============================
+..\..\..\..\AppData\Local\Temp\ppa-psr-pydeps-b1\_pytest\config\__init__.py:1434
+  C:\Users\Administrator\AppData\Local\Temp\ppa-psr-pydeps-b1\_pytest\config\__init__.py:1434: PytestConfigWarning: Unknown config option: asyncio_mode
+
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 9 passed, 1 warning in 0.51s =========================

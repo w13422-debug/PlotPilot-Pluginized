@@ -1,0 +1,20 @@
+{
+  "schema": "psr-remediation-validation-exit-codes/v1",
+  "psr-opaque-handle-ownership": 0,
+  "psr-forged-cross-runtime-handle-negative": 0,
+  "psr-prepare-execute-regression": 0,
+  "psr-terminal-receipt-pin-required": 0,
+  "psr-full-model-receipt-drift-negative": 0,
+  "psr-attribution-reload-regression": 0,
+  "psr-reconcile-before-execute": 0,
+  "psr-uncertain-crash-window-convergence": 0,
+  "psr-terminal-state-regression": 0,
+  "pytest_required_findings": 0,
+  "pytest_prompt_skill_runtime": 0,
+  "pytest_p2_central": 0,
+  "pytest_p3_job": 0,
+  "pytest_p1_core": 0,
+  "ruff": 0,
+  "compileall": 0,
+  "git_diff_check": 0
+}

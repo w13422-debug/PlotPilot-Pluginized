@@ -327,6 +327,7 @@ class SkillExecution:
     warnings: tuple[Mapping[str, Any], ...] = ()
     replacement_assets: Mapping[str, bytes | str] | None = None
     attribution_proof: AttributionProof | None = None
+    terminal_chain_status: str | None = None
 
 
 def build_receipt(
@@ -621,6 +622,7 @@ def _coerce_execution(value: Any) -> SkillExecution:
             warnings=tuple(value.get("warnings", ())),
             replacement_assets=value.get("replacement_assets"),
             attribution_proof=value.get("attribution_proof"),
+            terminal_chain_status=value.get("terminal_chain_status"),
         )
     raise _invalid("Skill executor must return SkillExecution or a closed result mapping")
 
@@ -653,6 +655,7 @@ def _materialize_skill_chain(
     replay_context: dict[str, tuple[bytes | str, Mapping[str, bytes | str]]] = {}
     previous_receipt_hash: str | None = None
     halted: str | None = None
+    terminal_chain_status: str | None = None
     if not callable(execute):
         raise _invalid("Skill materialization requires an explicit authoritative executor")
     prefix = receipt_id_prefix or f"{chain_id}:receipt"
@@ -665,6 +668,10 @@ def _materialize_skill_chain(
             execution = _coerce_execution(execute(step, current))
             if execution.step_state not in {"executed", "failed", "skipped"}:
                 raise _invalid("callback returned an invalid Skill step state")
+            if execution.terminal_chain_status is not None:
+                if execution.terminal_chain_status not in {"failed", "cancelled"}:
+                    raise _invalid("callback returned an invalid terminal chain status")
+                terminal_chain_status = execution.terminal_chain_status
         output_ref: AssetRef | None = None
         if execution.output is not None and execution.step_state == "executed":
             output_ref = AssetRef.from_value(execution.output)
@@ -706,7 +713,10 @@ def _materialize_skill_chain(
         elif output_ref is not None:
             current = output_ref
     if chain_status is None:
-        chain_status = "failed" if halted == "failed" else "partial" if halted == "skipped" else "succeeded"
+        chain_status = (
+            terminal_chain_status
+            or ("failed" if halted == "failed" else "partial" if halted == "skipped" else "succeeded")
+        )
     final_ref = current if chain_status in {"succeeded", "partial"} and halted != "failed" else None
     chain = build_chain_result(
         chain_id=chain_id,

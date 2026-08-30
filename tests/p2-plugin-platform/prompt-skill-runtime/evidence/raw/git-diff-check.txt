@@ -1,0 +1,6 @@
+warning: in the working copy of 'first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/attribution.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/chain.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/persistence.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/runtime.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p2-plugin-platform/prompt-skill-runtime/test_model_receipt.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p2-plugin-platform/prompt-skill-runtime/test_runtime.py', LF will be replaced by CRLF the next time Git touches it

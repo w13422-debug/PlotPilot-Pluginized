@@ -55,7 +55,7 @@ def complete_receipt() -> dict:
     return value
 
 
-def binding(receipt: dict, *, pin_terminal: bool = True) -> FrozenModelInvocation:
+def binding(receipt: dict) -> FrozenModelInvocation:
     return FrozenModelInvocation(
         invocation_id=receipt["invocation_id"],
         invocation_key=receipt["invocation_key"],
@@ -70,8 +70,8 @@ def binding(receipt: dict, *, pin_terminal: bool = True) -> FrozenModelInvocatio
         model=receipt["model"],
         profile_revision=receipt["profile_revision"],
         max_retries=2,
-        terminal_receipt_id=receipt["receipt_id"] if pin_terminal else None,
-        terminal_receipt_hash=receipt["receipt_hash"] if pin_terminal else None,
+        terminal_receipt_id=receipt["receipt_id"],
+        terminal_receipt_hash=receipt["receipt_hash"],
     )
 
 
@@ -194,7 +194,7 @@ def test_failed_uncertain_and_retry_drift_cannot_create_attribution() -> None:
         )
         with pytest.raises(ContractError):
             verify_model_receipt_asset(
-                receipt_asset(value), invocation=binding(value, pin_terminal=False)
+                receipt_asset(value), invocation=binding(value), require_receipted=True
             )
     value = complete_receipt()
     value["retry_count"] = 3
@@ -202,4 +202,4 @@ def test_failed_uncertain_and_retry_drift_cannot_create_attribution() -> None:
         "model-receipt/v1", {key: item for key, item in value.items() if key != "receipt_hash"}
     )
     with pytest.raises(ContractError):
-        verify_model_receipt_asset(receipt_asset(value), invocation=binding(value, pin_terminal=False))
+        verify_model_receipt_asset(receipt_asset(value), invocation=binding(value))

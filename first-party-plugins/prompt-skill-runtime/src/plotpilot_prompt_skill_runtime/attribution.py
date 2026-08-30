@@ -212,10 +212,8 @@ class FrozenModelInvocation:
         _hash(self.provider_release_id, "provider_release_id", nullable=True)
         for field in ("response_asset_id", "profile_revision_id", "provider_plugin_id", "endpoint", "model"):
             _text(getattr(self, field), field, nullable=True)
-        _text(self.terminal_receipt_id, "terminal_receipt_id", nullable=True)
-        _hash(self.terminal_receipt_hash, "terminal_receipt_hash", nullable=True)
-        if (self.terminal_receipt_id is None) != (self.terminal_receipt_hash is None):
-            raise _invalid("terminal ModelReceipt ID/hash must be all-null or all-present")
+        _text(self.terminal_receipt_id, "terminal_receipt_id")
+        _hash(self.terminal_receipt_hash, "terminal_receipt_hash")
         if self.max_retries is not None and (type(self.max_retries) is not int or self.max_retries < 0):
             raise _invalid("max_retries must be a non-negative integer or null")
         if (self.response_asset_id is None) != (self.response_hash is None):
@@ -316,7 +314,7 @@ def validate_model_receipt_binding(
         raise _invalid("model receipt profile_revision does not match the frozen invocation", path="profile_revision")
     if invocation.max_retries is not None and decoded["retry_count"] > invocation.max_retries:
         raise _invalid("model receipt retry_count exceeds the frozen invocation", path="retry_count")
-    if invocation.terminal_receipt_id is not None and (
+    if (
         decoded["receipt_id"] != invocation.terminal_receipt_id
         or decoded["receipt_hash"] != invocation.terminal_receipt_hash
     ):

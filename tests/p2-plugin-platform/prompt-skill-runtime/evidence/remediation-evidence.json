@@ -1,0 +1,26 @@
+{
+  "schema": "psr-finding-remediation-evidence/v1",
+  "reviewed_parent": "2cbc3e6740f449214c7bcf7d91a31a16ccec61f6",
+  "finding_manifest": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\findings\\wave-d-g2-nw-p2-prompt-skill-runtime-finding-manifest-v1.json",
+  "finding_manifest_sha256": "a92f7811c37b6f56884e4ce9adb19597fe2a388e26dfc5dda10b7aa46547b083",
+  "finding_ids": [
+    "NW-P2-PSR-SOL-F-001",
+    "NW-P2-PSR-SOL-F-004",
+    "NW-P2-PSR-SOL-F-013"
+  ],
+  "required_test_labels": [
+    "psr-opaque-handle-ownership",
+    "psr-forged-cross-runtime-handle-negative",
+    "psr-prepare-execute-regression",
+    "psr-terminal-receipt-pin-required",
+    "psr-full-model-receipt-drift-negative",
+    "psr-attribution-reload-regression",
+    "psr-reconcile-before-execute",
+    "psr-uncertain-crash-window-convergence",
+    "psr-terminal-state-regression"
+  ],
+  "raw_evidence_directory": "tests/p2-plugin-platform/prompt-skill-runtime/evidence/raw",
+  "scope_deviations": [],
+  "skips": [],
+  "review_status": "source remediation only; no self-clearance verdict"
+}

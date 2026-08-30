@@ -5,6 +5,7 @@ import sqlite3
 import threading
 from contextlib import contextmanager
 
+import pytest
 from plotpilot_plugin_sdk import hash_jcs, sha256_hex
 from plotpilot_plugin_sdk.package import build_files_sha256
 from plotpilot_plugin_sdk.verifier import request_key, snapshot_hash
@@ -211,7 +212,6 @@ def test_runtime_binds_closed_model_receipt_before_durable_attribution() -> None
 
         def reconcile_skill(self, **_kwargs):
             self.reconcile_calls += 1
-            raise AssertionError("reconcile not expected")
 
     authority = Authority()
     repository = SQLiteSkillRepository(authority, asset_reader=assets.__getitem__)
@@ -238,5 +238,7 @@ def test_runtime_binds_closed_model_receipt_before_durable_attribution() -> None
     assert result.receipts[0]["model_claimed"] is True
     assert repository.skill_receipt_reader("chain-1")[0]["receipt_hash"] == result.receipts[0]["receipt_hash"]
     assert broker.execute_calls == 1
-    assert runtime.execute(prepared).chain["chain_id"] == "chain-1"
+    assert broker.reconcile_calls == 1
+    with pytest.raises(TypeError, match="already consumed"):
+        runtime.execute(prepared)
     assert broker.execute_calls == 1

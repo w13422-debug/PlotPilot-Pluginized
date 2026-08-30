@@ -374,19 +374,46 @@ class SQLiteSkillRepository:
             attributed = receipt["participated"] or receipt["model_claimed"]
             if attributed and proof is None:
                 raise _invalid("attributed Skill receipt lacks a validated ModelReceipt")
-            if not attributed and proof is not None:
-                raise _invalid("unattributed Skill receipt must not carry a ModelReceipt proof")
             proof_context: dict[str, Any] | None = None
             if proof is not None:
-                if receipt["claim_evidence_asset_id"] != proof.asset_id:
+                if attributed and receipt["claim_evidence_asset_id"] != proof.asset_id:
                     raise _invalid("Skill claim evidence does not identify the validated ModelReceipt Asset")
+                if not attributed and receipt["claim_evidence_asset_id"] is not None:
+                    raise _invalid("terminal non-attribution evidence cannot become public claim evidence")
                 claim_asset = self._read_asset(proof.asset_id, proof.asset_hash)
-                verified = verify_model_receipt_asset(claim_asset, invocation=proof.invocation)
+                verified = verify_model_receipt_asset(
+                    claim_asset,
+                    invocation=proof.invocation,
+                    require_receipted=attributed,
+                )
                 if verified.receipt.receipt_hash != proof.receipt.receipt_hash:
                     raise _invalid("ModelReceipt changed after attribution preflight")
+                if not attributed and verified.receipt["state"] == "receipted":
+                    raise _invalid("successful ModelReceipt evidence must produce attribution")
+                warning_codes = {item["code"] for item in receipt["warnings"]}
+                terminal_state = verified.receipt["state"]
+                if terminal_state == "receipted" and receipt["step_state"] != "executed":
+                    raise _invalid("receipted invocation must produce an executed Skill receipt")
+                if terminal_state == "failed" and (
+                    receipt["step_state"] != "failed" or chain["chain_status"] != "failed"
+                ):
+                    raise _invalid("failed invocation terminal semantics drift")
+                if terminal_state == "cancelled" and (
+                    receipt["step_state"] != "skipped"
+                    or chain["chain_status"] != "cancelled"
+                    or "broker_cancelled" not in warning_codes
+                ):
+                    raise _invalid("cancelled invocation terminal semantics drift")
+                if terminal_state == "uncertain" and (
+                    receipt["step_state"] != "failed"
+                    or chain["chain_status"] != "failed"
+                    or "uncertain_external_effect" not in warning_codes
+                ):
+                    raise _invalid("uncertain invocation terminal semantics drift")
                 proof_context = {
                     "asset_id": proof.asset_id,
                     "asset_hash": proof.asset_hash,
+                    "terminal_state": verified.receipt["state"],
                     "invocation": {
                         "invocation_id": proof.invocation.invocation_id,
                         "invocation_key": proof.invocation.invocation_key,
@@ -536,7 +563,42 @@ class SQLiteSkillRepository:
             if proof is not None:
                 invocation = FrozenModelInvocation(**proof["invocation"])
                 claim_asset = self._read_asset(proof["asset_id"], proof["asset_hash"])
-                verify_model_receipt_asset(claim_asset, invocation=invocation)
+                attributed = receipt["participated"] or receipt["model_claimed"]
+                verified = verify_model_receipt_asset(
+                    claim_asset,
+                    invocation=invocation,
+                    require_receipted=attributed,
+                )
+                recorded_state = proof.get("terminal_state")
+                if recorded_state is None:
+                    if not attributed:
+                        raise _invalid("durable terminal ModelReceipt state is missing")
+                    recorded_state = "receipted"
+                if verified.receipt["state"] != recorded_state:
+                    raise _invalid("durable terminal ModelReceipt state drift")
+                if attributed and receipt["claim_evidence_asset_id"] != proof["asset_id"]:
+                    raise _invalid("durable attribution lost its ModelReceipt Asset binding")
+                if not attributed and verified.receipt["state"] == "receipted":
+                    raise _invalid("durable successful ModelReceipt lost attribution")
+                warning_codes = {item["code"] for item in receipt["warnings"]}
+                if verified.receipt["state"] == "receipted" and receipt["step_state"] != "executed":
+                    raise _invalid("durable receipted invocation semantics drift")
+                if verified.receipt["state"] == "failed" and (
+                    receipt["step_state"] != "failed" or chain["chain_status"] != "failed"
+                ):
+                    raise _invalid("durable failed invocation semantics drift")
+                if verified.receipt["state"] == "cancelled" and (
+                    receipt["step_state"] != "skipped"
+                    or chain["chain_status"] != "cancelled"
+                    or "broker_cancelled" not in warning_codes
+                ):
+                    raise _invalid("durable cancelled invocation semantics drift")
+                if verified.receipt["state"] == "uncertain" and (
+                    receipt["step_state"] != "failed"
+                    or chain["chain_status"] != "failed"
+                    or "uncertain_external_effect" not in warning_codes
+                ):
+                    raise _invalid("durable uncertain invocation semantics drift")
             elif receipt["participated"] or receipt["model_claimed"]:
                 raise _invalid("durable attributed Skill receipt lost its ModelReceipt proof")
             receipts.append(receipt)
