@@ -1,0 +1,122 @@
+{
+  "group_id": "m4-m5-v2-02-review-publication",
+  "negative": [
+    {
+      "case_id": "v2-review-closed-extra-field",
+      "expected": "closed_schema_rejection",
+      "fixture": "review.command",
+      "kind": "closed_schema",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "unexpected"
+        ],
+        "value": true
+      }
+    },
+    {
+      "case_id": "v2-publication-normal-partial",
+      "expected": "candidate_not_publishable",
+      "fixture": "publication.command.partial",
+      "kind": "publication_semantics",
+      "mutation": {
+        "op": "noop"
+      }
+    },
+    {
+      "case_id": "v2-publication-cross-workspace",
+      "expected": "cross_workspace",
+      "fixture": "publication.command.complete",
+      "kind": "publication_semantics",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "workspace_id"
+        ],
+        "value": "ws-other"
+      }
+    },
+    {
+      "case_id": "v2-publication-operation-key-reuse",
+      "expected": "duplicate_operation",
+      "fixture": "publication.command.complete",
+      "kind": "operation_key_reuse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "candidate_id"
+        ],
+        "value": "candidate-other"
+      }
+    },
+    {
+      "case_id": "v2-publication-result-binding",
+      "expected": "publication_binding",
+      "fixture": "publication.result.complete",
+      "kind": "publication_semantics",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "entity_id"
+        ],
+        "value": "doc-other"
+      }
+    },
+    {
+      "case_id": "v2-review-http-candidate-binding",
+      "expected": "exchange_binding",
+      "fixture": "http.candidate.review",
+      "kind": "http_exchange",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "response",
+          "candidate_id"
+        ],
+        "value": "candidate-other"
+      },
+      "route_id": "candidate.review"
+    },
+    {
+      "case_id": "v2-publication-http-payload-binding",
+      "expected": "publication_binding",
+      "fixture": "http.publication.accept",
+      "kind": "http_exchange",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "response",
+          "content_hash"
+        ],
+        "value": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "route_id": "publication.accept"
+    },
+    {
+      "case_id": "v2-publication-ledger-response-drift",
+      "expected": "duplicate_operation",
+      "fixture": "http.publication.accept",
+      "kind": "operation_response_drift",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "response",
+          "idempotent"
+        ],
+        "value": true
+      },
+      "route_id": "publication.accept"
+    }
+  ],
+  "positive": [
+    "review.query",
+    "review.command",
+    "review.result",
+    "publication.command.complete",
+    "publication.result.complete",
+    "publication.command.incomplete_stream",
+    "publication.result.incomplete_stream"
+  ],
+  "schema": "m4-m5-public-surface-corpus/v2",
+  "title": "Review is read/review only and Publication is Core-only"
+}

@@ -1,0 +1,277 @@
+{
+  "$id": "https://plotpilot.local/contracts/core-authority-command-query-v2",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "additionalProperties": false,
+      "properties": {
+        "entity_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "entity_kind": {
+          "enum": [
+            "workspace",
+            "document",
+            "node_structure",
+            "relation_set",
+            "revision",
+            "publication"
+          ]
+        },
+        "include_assets": {
+          "type": "boolean"
+        },
+        "schema": {
+          "const": "core-authority-query/v2"
+        },
+        "workspace_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "workspace_id",
+        "entity_kind",
+        "entity_id",
+        "include_assets"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "content_asset_id": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "content_hash": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "derived_from_candidate_id": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "entity_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "entity_kind": {
+          "enum": [
+            "workspace",
+            "document",
+            "node_structure",
+            "relation_set",
+            "revision",
+            "publication"
+          ]
+        },
+        "revision_id": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "revision_number": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "schema": {
+          "const": "core-authority-result/v2"
+        },
+        "workspace_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "workspace_id",
+        "entity_kind",
+        "entity_id",
+        "revision_id",
+        "revision_number",
+        "content_asset_id",
+        "content_hash",
+        "derived_from_candidate_id"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "accepted_by": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "candidate_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "publication_operation_key": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "schema": {
+          "const": "publication-command/v2"
+        },
+        "workspace_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "publication_operation_key",
+        "workspace_id",
+        "candidate_id",
+        "accepted_by"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "content_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "entity_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "entity_kind": {
+          "enum": [
+            "document",
+            "node_structure",
+            "relation_set"
+          ]
+        },
+        "idempotent": {
+          "type": "boolean"
+        },
+        "provenance_receipt_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "publication_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "publication_operation_key": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "revision_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "revision_number": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "schema": {
+          "const": "publication-result/v2"
+        },
+        "workspace_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "publication_id",
+        "publication_operation_key",
+        "candidate_id",
+        "workspace_id",
+        "entity_kind",
+        "entity_id",
+        "revision_id",
+        "revision_number",
+        "content_hash",
+        "provenance_receipt_id",
+        "idempotent"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "error_code": {
+          "enum": [
+            "malformed_request",
+            "unknown_reference",
+            "cross_workspace",
+            "stale_cas",
+            "duplicate_operation",
+            "candidate_not_publishable",
+            "publication_only_core"
+          ]
+        },
+        "message": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "operation_key": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "schema": {
+          "const": "core-http-error/v2"
+        }
+      },
+      "required": [
+        "schema",
+        "error_code",
+        "message",
+        "retryable",
+        "operation_key"
+      ],
+      "type": "object"
+    }
+  ],
+  "title": "PlotPilot core-authority-command-query-v2",
+  "unevaluatedProperties": false
+}

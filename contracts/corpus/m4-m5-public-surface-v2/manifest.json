@@ -1,0 +1,40 @@
+{
+  "golden_root": "contracts/golden/m4-m5-public-surface-v2",
+  "group_count": 5,
+  "group_ids": [
+    "m4-m5-v2-01-candidate",
+    "m4-m5-v2-02-review-publication",
+    "m4-m5-v2-03-story-state",
+    "m4-m5-v2-04-job-sse",
+    "m4-m5-v2-05-plugin-lifecycle"
+  ],
+  "negative_case_count": 44,
+  "schema": "m4-m5-public-surface-corpus-manifest/v2",
+  "semantic_assertions": [
+    "closed_schema_rejection",
+    "cross_workspace",
+    "target_write_set_binding",
+    "base_write_set_binding",
+    "parent_cycle",
+    "preview_bytes",
+    "preview_range",
+    "preview_payload_binding",
+    "candidate_not_publishable",
+    "exchange_binding",
+    "publication_binding",
+    "duplicate_operation",
+    "provenance_closure",
+    "operation_key_reuse",
+    "cursor_domain_mismatch",
+    "cursor_pair",
+    "cursor_ahead",
+    "event_payload_binding",
+    "snapshot_binding",
+    "sse_recovery_required",
+    "generation_conflict",
+    "generation_binding",
+    "route_binding",
+    "release_missing",
+    "publication_forbidden"
+  ]
+}

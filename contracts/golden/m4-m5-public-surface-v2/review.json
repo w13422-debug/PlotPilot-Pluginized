@@ -1,0 +1,30 @@
+{
+  "command": {
+    "candidate_id": "candidate-v2",
+    "decided_by": "user-v2",
+    "decision": "approve",
+    "expected_status": "complete",
+    "operation_key": "review-op-v2",
+    "schema": "candidate-review-command/v2",
+    "workspace_id": "ws-1"
+  },
+  "query": {
+    "candidate_id": "candidate-v2",
+    "include_lineage": true,
+    "include_preview": true,
+    "schema": "candidate-review-query/v2",
+    "workspace_id": "ws-1"
+  },
+  "result": {
+    "candidate_id": "candidate-v2",
+    "decision": "approve",
+    "idempotent": false,
+    "operation_key": "review-op-v2",
+    "publication_eligibility": "eligible",
+    "review_revision": 2,
+    "schema": "candidate-review-result/v2",
+    "status": "reviewed",
+    "workspace_id": "ws-1"
+  },
+  "schema": "m4-m5-public-surface-golden/v2"
+}

@@ -1,0 +1,144 @@
+{
+  "$id": "https://plotpilot.local/contracts/candidate-review-v2",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "include_lineage": {
+          "type": "boolean"
+        },
+        "include_preview": {
+          "type": "boolean"
+        },
+        "schema": {
+          "const": "candidate-review-query/v2"
+        },
+        "workspace_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "workspace_id",
+        "candidate_id",
+        "include_lineage",
+        "include_preview"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "decided_by": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "decision": {
+          "enum": [
+            "approve",
+            "reject"
+          ]
+        },
+        "expected_status": {
+          "enum": [
+            "complete",
+            "partial",
+            "failed",
+            "skipped"
+          ]
+        },
+        "operation_key": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "schema": {
+          "const": "candidate-review-command/v2"
+        },
+        "workspace_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "operation_key",
+        "workspace_id",
+        "candidate_id",
+        "decision",
+        "decided_by",
+        "expected_status"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "decision": {
+          "enum": [
+            "approve",
+            "reject"
+          ]
+        },
+        "idempotent": {
+          "type": "boolean"
+        },
+        "operation_key": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "publication_eligibility": {
+          "enum": [
+            "eligible",
+            "review_only",
+            "none"
+          ]
+        },
+        "review_revision": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "schema": {
+          "const": "candidate-review-result/v2"
+        },
+        "status": {
+          "enum": [
+            "reviewed",
+            "rejected"
+          ]
+        },
+        "workspace_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "operation_key",
+        "workspace_id",
+        "candidate_id",
+        "decision",
+        "status",
+        "publication_eligibility",
+        "idempotent",
+        "review_revision"
+      ],
+      "type": "object"
+    }
+  ],
+  "title": "PlotPilot candidate-review-v2",
+  "unevaluatedProperties": false
+}

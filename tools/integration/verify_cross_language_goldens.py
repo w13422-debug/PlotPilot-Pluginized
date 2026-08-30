@@ -11,12 +11,12 @@ BACKEND = ROOT / "backend"
 if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
 
-from verify_contracts import verify_goldens  # type: ignore  # noqa: E402
+from verify_contracts import verify_goldens, verify_v2_public_surface  # type: ignore  # noqa: E402
 
 
 def main() -> int:
     completed = subprocess.run(
-        ["node", str(ROOT / "tools" / "integration" / "verify_contracts.mjs"), "--all"],
+        ["node", "--experimental-strip-types", str(ROOT / "tools" / "integration" / "verify_contracts.mjs"), "--all"],
         cwd=ROOT,
         capture_output=True,
         text=True,
@@ -28,6 +28,7 @@ def main() -> int:
         return completed.returncode
     node = json.loads(completed.stdout)
     python = verify_goldens()
+    python_v2 = verify_v2_public_surface()
     expected = {
         "package_hash": node["package"]["package_hash"],
         "release_id": node["package"]["release_id"],
@@ -45,7 +46,10 @@ def main() -> int:
     actual.update({"release_id": package_expected["release_id"], "skill_release_id": skill_expected["skill_release_id"]})
     if actual != expected:
         raise SystemExit(f"cross-language mismatch:\npython={actual}\nnode={expected}")
-    print(json.dumps({"status": "ok", "python": actual, "node": expected}, ensure_ascii=False, sort_keys=True, indent=2))
+    node_v2 = node.get("v2")
+    if node_v2 != python_v2:
+        raise SystemExit(f"v2 cross-language mismatch:\npython={python_v2}\nnode={node_v2}")
+    print(json.dumps({"status": "ok", "python": actual, "node": expected, "v2": python_v2}, ensure_ascii=False, sort_keys=True, indent=2))
     return 0
 
 

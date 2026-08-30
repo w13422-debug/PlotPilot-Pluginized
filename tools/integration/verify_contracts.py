@@ -45,6 +45,27 @@ from plotpilot_plugin_sdk.core_api import (  # noqa: E402
     verify_export_current_revisions_asset,
     verify_asset_metadata_range_pair,
 )
+from plotpilot_plugin_sdk.core_api_v2 import (  # noqa: E402
+    parse_candidate_query_result_v2,
+    parse_candidate_review_v2,
+    parse_candidate_v2,
+    parse_core_authority_v2,
+    parse_job_event_page_v2,
+    parse_job_http_v2,
+    parse_job_snapshot_v2,
+    parse_job_sse_recovery_v2,
+    parse_plugin_api_v2,
+    validate_candidate_v2,
+    validate_plugin_lifecycle_v2,
+    validate_publication_v2,
+    validate_story_state_projection_v2,
+)
+from plotpilot_plugin_sdk.m4_m5_http_v2 import (  # noqa: E402
+    OperationKeyLedgerV2,
+    parse_http_request,
+    parse_http_response,
+    validate_http_exchange,
+)
 from plotpilot_plugin_sdk.package import build_files_sha256, normalize_relative_path, package_hash  # noqa: E402
 from plotpilot_plugin_sdk.rpc import (  # noqa: E402
     ChunkUploadLedger,
@@ -627,8 +648,10 @@ def verify_schemas() -> dict[str, Any]:
     if check.returncode:
         raise AssertionError(check.stdout + check.stderr)
     paths = sorted(SCHEMA_DIR.glob("*.schema.json"))
-    if len(paths) != 55:
-        raise AssertionError(f"expected 55 Draft 2020-12 schemas, found {len(paths)}")
+    v1_paths = [path for path in paths if not path.name.endswith("-v2.schema.json")]
+    v2_paths = [path for path in paths if path.name.endswith("-v2.schema.json")]
+    if len(v1_paths) != 55 or len(v2_paths) != 6:
+        raise AssertionError(f"expected 55 v1 + 6 v2 Draft 2020-12 schemas, found {len(v1_paths)} + {len(v2_paths)}")
     for path in paths:
         schema = load_strict_json(path)
         Draft202012Validator.check_schema(schema)
@@ -648,14 +671,14 @@ def verify_schemas() -> dict[str, Any]:
         schema = load_strict_json(SCHEMA_DIR / name)
         if "oneOf" in schema and schema.get("unevaluatedProperties") is not False:
             raise AssertionError(f"union root {name} must set unevaluatedProperties:false")
-    return {"schemas": len(paths), "generator_check": check.stdout.strip()}
+    return {"schemas": len(paths), "v1_schemas": len(v1_paths), "v2_schemas": len(v2_paths), "generator_check": check.stdout.strip()}
 
 
 def verify_contract_manifest() -> dict[str, Any]:
     """Verify the checked-in content inventory and its generated hashes."""
     generator = ROOT / "tools" / "integration" / "generate_contract_manifest.py"
     check = subprocess.run(
-        [sys.executable, str(generator), "--check"],
+        [sys.executable, str(generator), "--all", "--check"],
         cwd=ROOT,
         capture_output=True,
         text=True,
@@ -683,7 +706,22 @@ def verify_contract_manifest() -> dict[str, Any]:
             raise AssertionError(f"contract manifest hash drift: {record['path']}")
     if manifest["inventory"]["schema_count"] != 55 or manifest["inventory"]["negative_group_count"] != 14:
         raise AssertionError("contract manifest inventory does not cover the full M0 contract set")
-    return {"files": len(records), "schemas": manifest["inventory"]["schema_count"], "negative_groups": manifest["inventory"]["negative_group_count"], "generator_check": check.stdout.strip()}
+    v2_manifest_path = ROOT / "contracts" / "manifest-v2.json"
+    v2_manifest = load_strict_json(v2_manifest_path)
+    if v2_manifest.get("schema") != "plotpilot-contract-manifest/v2":
+        raise AssertionError("v2 contract manifest schema drift")
+    if v2_manifest.get("v1_immutable", {}).get("manifest_sha256") != hashlib.sha256(manifest_path.read_bytes()).hexdigest():
+        raise AssertionError("v2 manifest does not retain the v1 manifest identity")
+    if v2_manifest.get("inventory", {}).get("v2_schema_count") != 6 or v2_manifest.get("inventory", {}).get("negative_group_count_v2") != 5:
+        raise AssertionError("v2 manifest inventory does not cover the additive surface")
+    v2_records = v2_manifest.get("files")
+    if not isinstance(v2_records, list):
+        raise AssertionError("v2 manifest has no file inventory")
+    for record in v2_records:
+        path = ROOT / record["path"]
+        if not path.is_file() or path.stat().st_size != record["bytes"] or hashlib.sha256(path.read_bytes()).hexdigest() != record["sha256"]:
+            raise AssertionError(f"v2 contract manifest hash drift: {record['path']}")
+    return {"files": len(records), "schemas": manifest["inventory"]["schema_count"], "negative_groups": manifest["inventory"]["negative_group_count"], "v2_files": len(v2_records), "v2_schemas": v2_manifest["inventory"]["v2_schema_count"], "generator_check": check.stdout.strip()}
 
 
 def verify_goldens() -> dict[str, Any]:
@@ -740,6 +778,308 @@ def verify_goldens() -> dict[str, Any]:
         "request_key": snapshot_expected["request_key"],
         "snapshot_hash": snapshot_expected["snapshot_hash"],
         "backup_hash": backup["bundle_hash"],
+    }
+
+
+def _v2_mutate(value: Any, mutation: Mapping[str, Any]) -> Any:
+    """Apply a declarative v2 corpus mutation without becoming a verifier."""
+
+    if mutation.get("op") == "noop":
+        return copy.deepcopy(value)
+    if mutation.get("op") == "cycle":
+        result = copy.deepcopy(value)
+        result["parent_candidate_ids"] = [result["candidate_id"]]
+        return result
+    result = copy.deepcopy(value)
+    path = list(mutation.get("path", []))
+    if not path:
+        raise AssertionError(f"v2 mutation path is empty: {mutation}")
+    target = result
+    for token in path[:-1]:
+        target = target[token]
+    if mutation.get("op") == "set":
+        target[path[-1]] = copy.deepcopy(mutation["value"])
+    elif mutation.get("op") == "delete":
+        del target[path[-1]]
+    else:
+        raise AssertionError(f"unsupported v2 mutation: {mutation}")
+    return result
+
+
+def verify_v2_public_surface() -> dict[str, Any]:
+    """Verify the additive v2 schemas, goldens, routes and semantic corpus."""
+
+    matrix = load_strict_json(SCHEMA_DIR / "core-api-method-matrix.v2.json")
+    if matrix.get("schema") != "core-api-method-matrix/v2" or matrix.get("publication_path") != "publication.accept" or matrix.get("publication_owner") != "core" or matrix.get("plugin_publication_allowed") is not False:
+        raise AssertionError("v2 method matrix does not keep Core as the sole Publication owner")
+    routes = matrix.get("routes")
+    if not isinstance(routes, list) or len(routes) != 19:
+        raise AssertionError("v2 method matrix route inventory drift")
+    route_ids = [route.get("route_id") for route in routes]
+    if len(route_ids) != len(set(route_ids)) or route_ids.count("publication.accept") != 1:
+        raise AssertionError("v2 method matrix has duplicate or missing Publication route")
+    if any(route.get("route_id") != "publication.accept" and "publication" in route.get("path_template", "") for route in routes):
+        raise AssertionError("v2 matrix exposes a second Publication path")
+    expected_placeholders = {
+        route["route_id"]: re.findall(r"\{([^{}]+)\}", route["path_template"])
+        for route in routes
+    }
+    if any(route.get("path_identity") != expected_placeholders[route["route_id"]] for route in routes):
+        raise AssertionError("v2 path identity is not derived from its template")
+    if set(matrix.get("roots", {})) != {"core", "jobs", "plugins"}:
+        raise AssertionError("v2 API root inventory drift")
+    if set(matrix.get("cursor_domains", {})) != {"candidate", "job", "core"}:
+        raise AssertionError("v2 cursor domain inventory drift")
+
+    golden_root = GOLDEN_DIR / "m4-m5-public-surface-v2"
+    golden = {
+        name: load_strict_json(golden_root / name)
+        for name in ("candidate.json", "review.json", "publication.json", "story-state.json", "job.json", "plugin.json", "http.json", "expected.json")
+    }
+    expected = golden["expected.json"]
+    for name, digest in expected["fixture_files"].items():
+        path = golden_root / name
+        if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != digest:
+            raise AssertionError(f"v2 golden file hash drift: {name}")
+
+    candidate_doc = golden["candidate.json"]
+    candidate = candidate_doc["candidate"]
+    candidate_partial = candidate_doc["candidate_partial"]
+    candidate_incomplete = candidate_doc["candidate_incomplete_stream"]
+    candidate_cross_source = candidate_doc["candidate_cross_workspace_source"]
+    parse_candidate_v2(candidate)
+    parse_candidate_v2(candidate_cross_source)
+    parse_candidate_v2(candidate_partial)
+    parse_candidate_v2(candidate_incomplete)
+    parse_candidate_query_result_v2(candidate_doc["candidate_get_query"])
+    parse_candidate_query_result_v2(candidate_doc["candidate_get_result"])
+    parse_candidate_query_result_v2(candidate_doc["candidate_preview_query"])
+    parse_candidate_query_result_v2(candidate_doc["candidate_preview_result"])
+    parse_candidate_query_result_v2(candidate_doc["candidate_list_result"])
+    for key in ("query", "command", "result"):
+        parse_candidate_review_v2(golden["review.json"][key])
+
+    publication_doc = golden["publication.json"]
+    validate_publication_v2(
+        publication_doc["command_complete"],
+        publication_doc["result_complete"],
+        candidate=candidate,
+        expected_workspace_id="ws-1",
+    )
+    validate_publication_v2(
+        publication_doc["command_incomplete_stream"],
+        publication_doc["result_incomplete_stream"],
+        candidate=candidate_incomplete,
+        expected_workspace_id="ws-1",
+    )
+    projection = golden["story-state.json"]["projection"]
+    validate_story_state_projection_v2(projection, expected_workspace_id="ws-1")
+
+    job_doc = golden["job.json"]
+    parse_job_snapshot_v2(job_doc["snapshot"])
+    for key in ("list_query", "list_result", "snapshot_query", "snapshot_result", "start", "control", "command_result", "event_query", "event_page", "sse_replay_query", "sse_replay", "sse_gap_query", "sse_gap"):
+        parse_job_http_v2(job_doc[key])
+    parse_job_event_page_v2(job_doc["event_page"])
+    parse_job_sse_recovery_v2(job_doc["sse_replay"])
+    parse_job_sse_recovery_v2(job_doc["sse_gap"])
+    plugin_doc = golden["plugin.json"]
+    parse_plugin_api_v2(plugin_doc["discovery_query"])
+    parse_plugin_api_v2(plugin_doc["discovery_result"])
+    for key in ("install", "upgrade", "retire", "rollback", "lifecycle_result_install", "lifecycle_result_upgrade", "lifecycle_result_retire", "lifecycle_result_rollback"):
+        parse_plugin_api_v2(plugin_doc[key])
+    validate_plugin_lifecycle_v2(plugin_doc["install"])
+    validate_plugin_lifecycle_v2(plugin_doc["upgrade"], current_generation_id="generation-1")
+    validate_plugin_lifecycle_v2(plugin_doc["retire"], current_generation_id="generation-2")
+    validate_plugin_lifecycle_v2(plugin_doc["rollback"], current_generation_id="generation-2")
+
+    http_doc = golden["http.json"]
+    if http_doc.get("schema") != "m4-m5-public-surface-http-golden/v2":
+        raise AssertionError("v2 HTTP golden schema drift")
+    http_exchanges = http_doc.get("exchanges")
+    if not isinstance(http_exchanges, list) or http_doc.get("exchange_count") != len(http_exchanges) or len(http_exchanges) != len(routes):
+        raise AssertionError("v2 HTTP golden exchange inventory drift")
+    route_by_id = {route["route_id"]: route for route in routes}
+    observed_route_ids = [exchange.get("route_id") for exchange in http_exchanges]
+    if set(observed_route_ids) != set(route_by_id) or len(observed_route_ids) != len(set(observed_route_ids)):
+        raise AssertionError("v2 HTTP goldens do not cover every method-matrix route exactly once")
+
+    candidate_by_id = {
+        item["candidate_id"]: item
+        for item in (candidate, candidate_partial, candidate_incomplete)
+    }
+    for exchange in http_exchanges:
+        route_id = exchange["route_id"]
+        request = exchange["request"]
+        candidate_for_exchange = candidate_by_id.get(request.get("candidate_id"))
+        validate_http_exchange(route_id, request, exchange["status"], exchange["response"], candidate=candidate_for_exchange)
+
+    fixtures: dict[str, Any] = {
+        "candidate.record": candidate,
+        "candidate.list_result": candidate_doc["candidate_list_result"],
+        "candidate.cross_workspace_source_ref": candidate_cross_source,
+        "candidate.get_result": candidate_doc["candidate_get_result"],
+        "candidate.preview_result": candidate_doc["candidate_preview_result"],
+        "review.query": golden["review.json"]["query"],
+        "review.command": golden["review.json"]["command"],
+        "review.result": golden["review.json"]["result"],
+        "publication.command.complete": publication_doc["command_complete"],
+        "publication.result.complete": publication_doc["result_complete"],
+        "publication.command.partial": publication_doc["command_partial"],
+        "publication.command.incomplete_stream": publication_doc["command_incomplete_stream"],
+        "publication.result.incomplete_stream": publication_doc["result_incomplete_stream"],
+        "story_state.projection": projection,
+        "job.snapshot": job_doc["snapshot"],
+        "job.list_result": job_doc["list_result"],
+        "job.command.start": job_doc["start"],
+        "job.event_page": job_doc["event_page"],
+        "job.sse.replay": job_doc["sse_replay"],
+        "job.sse.gap": job_doc["sse_gap"],
+        "plugin.discovery": plugin_doc["discovery_result"],
+        "plugin.lifecycle.install": plugin_doc["install"],
+        "plugin.lifecycle.upgrade": plugin_doc["upgrade"],
+        "plugin.lifecycle.retire": plugin_doc["retire"],
+        "plugin.lifecycle.rollback": plugin_doc["rollback"],
+        "plugin.lifecycle.result.install": plugin_doc["lifecycle_result_install"],
+        "plugin.lifecycle.result.upgrade": plugin_doc["lifecycle_result_upgrade"],
+        "plugin.lifecycle.result.retire": plugin_doc["lifecycle_result_retire"],
+        "plugin.lifecycle.result.rollback": plugin_doc["lifecycle_result_rollback"],
+    }
+    for exchange in http_exchanges:
+        fixtures[f"http.{exchange['route_id']}"] = exchange
+
+    def parse_fixture(fixture_id: str, value: Any) -> Any:
+        if fixture_id.startswith("candidate."):
+            return parse_candidate_query_result_v2(value)
+        if fixture_id.startswith("review."):
+            return parse_candidate_review_v2(value)
+        if fixture_id.startswith("publication.command"):
+            return parse_core_authority_v2(value)
+        if fixture_id.startswith("publication.result"):
+            return parse_core_authority_v2(value)
+        if fixture_id == "story_state.projection":
+            return validate_story_state_projection_v2(value) or value
+        if fixture_id == "job.snapshot":
+            return parse_job_snapshot_v2(value)
+        if fixture_id == "job.event_page":
+            return parse_job_event_page_v2(value)
+        if fixture_id.startswith("job.sse."):
+            return parse_job_sse_recovery_v2(value)
+        if fixture_id.startswith("job."):
+            return parse_job_http_v2(value)
+        if fixture_id.startswith("plugin."):
+            return parse_plugin_api_v2(value)
+        if fixture_id.startswith("http."):
+            return value
+        raise AssertionError(f"unknown v2 fixture ID: {fixture_id}")
+
+    def expect_rejected(action: Callable[[], Any], case_id: str) -> None:
+        try:
+            action()
+        except (ContractError, ContractValidationError, AssertionError, ValueError, KeyError, TypeError):
+            return
+        raise AssertionError(f"v2 corpus false-accepted: {case_id}")
+
+    corpus_root = CORPUS_DIR / "m4-m5-public-surface-v2"
+    manifest = load_strict_json(corpus_root / "manifest.json")
+    group_paths = sorted(path for path in corpus_root.glob("*.json") if path.name != "manifest.json")
+    if manifest.get("group_count") != 5 or len(group_paths) != 5:
+        raise AssertionError("v2 corpus group inventory drift")
+    total_cases = 0
+    seen_cases: set[str] = set()
+    for group_path in group_paths:
+        group = load_strict_json(group_path)
+        if group.get("schema") != "m4-m5-public-surface-corpus/v2":
+            raise AssertionError(f"v2 corpus schema drift: {group_path.name}")
+        for fixture_id in group["positive"]:
+            if fixture_id not in fixtures:
+                raise AssertionError(f"v2 corpus has no positive fixture: {fixture_id}")
+            parse_fixture(fixture_id, fixtures[fixture_id])
+        for case in group["negative"]:
+            case_id = case["case_id"]
+            if case_id in seen_cases:
+                raise AssertionError(f"duplicate v2 corpus case: {case_id}")
+            seen_cases.add(case_id)
+            total_cases += 1
+            fixture_id = case["fixture"]
+            value = _v2_mutate(fixtures[fixture_id], case["mutation"])
+            kind = case["kind"]
+            if kind == "closed_schema":
+                action = lambda fixture_id=fixture_id, value=value: parse_fixture(fixture_id, value)
+            elif kind == "candidate_semantics":
+                action = lambda value=value: validate_candidate_v2(value)
+            elif kind == "candidate_preview":
+                action = lambda value=value: parse_candidate_query_result_v2(value)
+            elif kind == "candidate_parent_cycle":
+                action = lambda value=value: validate_candidate_v2(value, parent_records={value["candidate_id"]: value})
+            elif kind == "publication_semantics":
+                if fixture_id == "publication.command.partial":
+                    partial_result = copy.deepcopy(publication_doc["result_complete"])
+                    partial_result.update({"publication_operation_key": value["publication_operation_key"], "candidate_id": value["candidate_id"], "content_hash": candidate_partial["mutation"]["payload_hash"]})
+                    action = lambda value=value, partial_result=partial_result: validate_publication_v2(value, partial_result, candidate=candidate_partial, expected_workspace_id="ws-1")
+                elif fixture_id == "publication.command.complete":
+                    action = lambda value=value: validate_publication_v2(value, publication_doc["result_complete"], candidate=candidate, expected_workspace_id="ws-1")
+                else:
+                    action = lambda value=value: validate_publication_v2(publication_doc["command_complete"], value, candidate=candidate, expected_workspace_id="ws-1")
+            elif kind == "projection_semantics":
+                action = lambda value=value: validate_story_state_projection_v2(value)
+            elif kind == "job_cursor":
+                action = lambda fixture_id=fixture_id, value=value: parse_job_event_page_v2(value) if fixture_id == "job.event_page" else parse_job_sse_recovery_v2(value)
+            elif kind == "job_sse":
+                action = lambda value=value: parse_job_sse_recovery_v2(value)
+            elif kind == "http_request":
+                route_id = case["route_id"]
+                action = lambda value=value, route_id=route_id: parse_http_request(route_id, value["request"])
+            elif kind == "http_exchange":
+                route_id = case["route_id"]
+                candidate_for_exchange = candidate_by_id.get(value["request"].get("candidate_id"))
+                action = lambda value=value, route_id=route_id, candidate_for_exchange=candidate_for_exchange: validate_http_exchange(
+                    route_id,
+                    value["request"],
+                    value["status"],
+                    value["response"],
+                    candidate=candidate_for_exchange,
+                )
+            elif kind == "plugin_lifecycle":
+                action = lambda value=value: validate_plugin_lifecycle_v2(value, current_generation_id="generation-1", active_job=value.get("action") == "retire")
+            elif kind == "plugin_publication":
+                action = lambda value=value: parse_plugin_api_v2(value)
+            elif kind == "operation_key_reuse":
+                if fixture_id.startswith("publication"):
+                    route_id, response = "publication.accept", publication_doc["result_complete"]
+                else:
+                    route_id, response = "plugin.upgrade", plugin_doc["lifecycle_result_upgrade"]
+                ledger = OperationKeyLedgerV2()
+                ledger.record(route_id, fixtures[fixture_id], 200 if route_id == "publication.accept" else 200, response)
+                action = lambda value=value, ledger=ledger, route_id=route_id, response=response: ledger.record(route_id, value, 200, response)
+            elif kind == "operation_response_drift":
+                route_id = case["route_id"]
+                original = fixtures[fixture_id]
+                candidate_for_exchange = candidate_by_id.get(original["request"].get("candidate_id"))
+                ledger = OperationKeyLedgerV2()
+                ledger.record(route_id, original["request"], original["status"], original["response"], candidate=candidate_for_exchange)
+                action = lambda value=value, ledger=ledger, route_id=route_id, candidate_for_exchange=candidate_for_exchange: ledger.record(
+                    route_id,
+                    value["request"],
+                    value["status"],
+                    value["response"],
+                    candidate=candidate_for_exchange,
+                )
+            else:
+                raise AssertionError(f"unknown v2 corpus kind: {kind}")
+            expect_rejected(action, case_id)
+    if manifest.get("negative_case_count") != total_cases:
+        raise AssertionError(f"v2 corpus case count drift: manifest={manifest.get('negative_case_count')} actual={total_cases}")
+    case_digest = hashlib.sha256(json.dumps(sorted(seen_cases), ensure_ascii=True, separators=(",", ":")).encode("ascii")).hexdigest()
+    return {
+        "routes": len(routes),
+        "schemas": 6,
+        "golden_files": len(expected["fixture_files"]),
+        "corpus_groups": len(group_paths),
+        "negative_cases": total_cases,
+        "negative_case_digest": case_digest,
+        "http_exchanges": len(http_exchanges),
+        "publication_path": matrix["publication_path"],
+        "cursor_domains": sorted(matrix["cursor_domains"]),
     }
 
 
@@ -2944,6 +3284,7 @@ def verify_all() -> dict[str, Any]:
     result = {
         "manifest": verify_contract_manifest(),
         "schemas": verify_schemas(),
+        "v2_public_surface": verify_v2_public_surface(),
         "goldens": verify_goldens(),
         "positive": verify_positive_fixtures(),
         "corpus": verify_corpus(),

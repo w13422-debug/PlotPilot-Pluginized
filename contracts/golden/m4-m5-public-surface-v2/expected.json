@@ -1,0 +1,28 @@
+{
+  "candidate_ids": [
+    "candidate-v2",
+    "candidate-partial",
+    "candidate-incomplete"
+  ],
+  "cursor_domains": [
+    "candidate",
+    "job",
+    "core"
+  ],
+  "fixture_files": {
+    "candidate.json": "303a324c696988bf39d01391c1f62546cac15237fd3b6dd790b68057af97004f",
+    "http.json": "a11daaa76a624f729b750ead15fa03b0ae792fbf9462a5940ca4b0d6a84ca134",
+    "job.json": "7263c137c8dca33e9deb3eae97c61978c83483c2671d352fe6f98dee3d45b56e",
+    "plugin.json": "82057bc03c08fb3d90504899832686fefd304f816baaf61f88e741d396fe9424",
+    "publication.json": "82507e594f25e18d37368c60593b936a68b3b02db697bda96351eed0686eba1f",
+    "review.json": "3f65b9a5c92f61bd334c3fcfb64fa9fa29e01271c3d780474941a43edfc8860a",
+    "story-state.json": "1d2a7727731fcb1ffcedbfa42815bbf08787f3f57d0f48b14d5c4d4c8b89385e"
+  },
+  "gap_snapshot_hash": "593801172d60fe3ee80e88a537c92007202937a3f084491f18642359378b0675",
+  "http_exchange_count": 19,
+  "publication_paths": [
+    "publication.accept"
+  ],
+  "schema": "m4-m5-public-surface-golden-index/v2",
+  "snapshot_hash": "04dbafa81b9e78beb766b584bb48c5cc2095254960d1020701bdc3d979f560bd"
+}

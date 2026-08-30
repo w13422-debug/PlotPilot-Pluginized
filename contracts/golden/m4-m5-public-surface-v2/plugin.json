@@ -1,0 +1,119 @@
+{
+  "discovery_query": {
+    "cursor": null,
+    "limit": 50,
+    "schema": "plugin-discovery-query/v2",
+    "state": null
+  },
+  "discovery_result": {
+    "cursor_domain": "core",
+    "items": [
+      {
+        "capabilities": [
+          "writing.chapter/v2"
+        ],
+        "generation_id": "generation-1",
+        "package_hash": "6666666666666666666666666666666666666666666666666666666666666666",
+        "plugin_id": "com.plotpilot.demo",
+        "release_id": "5555555555555555555555555555555555555555555555555555555555555555",
+        "state": "active",
+        "updated_at": "2026-08-30T00:00:00Z"
+      }
+    ],
+    "next_cursor": "core/5",
+    "schema": "plugin-discovery-result/v2",
+    "total": 1
+  },
+  "install": {
+    "action": "install",
+    "expected_generation_id": null,
+    "operation_key": "plugin-install-op-v2",
+    "package_hash": "6666666666666666666666666666666666666666666666666666666666666666",
+    "plugin_id": "com.plotpilot.demo",
+    "release_id": "5555555555555555555555555555555555555555555555555555555555555555",
+    "schema": "plugin-lifecycle-command/v2",
+    "target_generation_id": "generation-1"
+  },
+  "lifecycle_result_install": {
+    "action": "install",
+    "failure_code": null,
+    "generation_id": "generation-1",
+    "idempotent": false,
+    "operation_key": "plugin-install-op-v2",
+    "plugin_id": "com.plotpilot.demo",
+    "schema": "plugin-lifecycle-result/v2",
+    "state": "active"
+  },
+  "lifecycle_result_retire": {
+    "action": "retire",
+    "failure_code": null,
+    "generation_id": "generation-2",
+    "idempotent": false,
+    "operation_key": "plugin-retire-op-v2",
+    "plugin_id": "com.plotpilot.demo",
+    "schema": "plugin-lifecycle-result/v2",
+    "state": "retired"
+  },
+  "lifecycle_result_rollback": {
+    "action": "rollback",
+    "failure_code": null,
+    "generation_id": "generation-1",
+    "idempotent": false,
+    "operation_key": "plugin-rollback-op-v2",
+    "plugin_id": "com.plotpilot.demo",
+    "schema": "plugin-lifecycle-result/v2",
+    "state": "active"
+  },
+  "lifecycle_result_upgrade": {
+    "action": "upgrade",
+    "failure_code": null,
+    "generation_id": "generation-2",
+    "idempotent": false,
+    "operation_key": "plugin-upgrade-op-v2",
+    "plugin_id": "com.plotpilot.demo",
+    "schema": "plugin-lifecycle-result/v2",
+    "state": "active"
+  },
+  "plugin": {
+    "capabilities": [
+      "writing.chapter/v2"
+    ],
+    "generation_id": "generation-1",
+    "package_hash": "6666666666666666666666666666666666666666666666666666666666666666",
+    "plugin_id": "com.plotpilot.demo",
+    "release_id": "5555555555555555555555555555555555555555555555555555555555555555",
+    "state": "active",
+    "updated_at": "2026-08-30T00:00:00Z"
+  },
+  "retire": {
+    "action": "retire",
+    "expected_generation_id": "generation-2",
+    "operation_key": "plugin-retire-op-v2",
+    "package_hash": null,
+    "plugin_id": "com.plotpilot.demo",
+    "release_id": null,
+    "schema": "plugin-lifecycle-command/v2",
+    "target_generation_id": "generation-2"
+  },
+  "rollback": {
+    "action": "rollback",
+    "expected_generation_id": "generation-2",
+    "operation_key": "plugin-rollback-op-v2",
+    "package_hash": "6666666666666666666666666666666666666666666666666666666666666666",
+    "plugin_id": "com.plotpilot.demo",
+    "release_id": "5555555555555555555555555555555555555555555555555555555555555555",
+    "schema": "plugin-lifecycle-command/v2",
+    "target_generation_id": "generation-1"
+  },
+  "schema": "m4-m5-public-surface-golden/v2",
+  "upgrade": {
+    "action": "upgrade",
+    "expected_generation_id": "generation-1",
+    "operation_key": "plugin-upgrade-op-v2",
+    "package_hash": "8888888888888888888888888888888888888888888888888888888888888888",
+    "plugin_id": "com.plotpilot.demo",
+    "release_id": "7777777777777777777777777777777777777777777777777777777777777777",
+    "schema": "plugin-lifecycle-command/v2",
+    "target_generation_id": "generation-2"
+  }
+}

@@ -42,6 +42,59 @@ def test_real_typescript_verifier_positive_runtime() -> None:
     assert result == {"collision_rejected": True, "status": "ok", "workspace_id": "ws-1"}
 
 
+def test_typescript_v2_public_surface_matches_python_semantics() -> None:
+    script = r'''
+import { readFileSync } from 'node:fs'
+import { pathToFileURL } from 'node:url'
+
+const core = await import(pathToFileURL('frontend/src/contracts/core-api-v2.ts').href)
+const http = await import(pathToFileURL('frontend/src/contracts/m4-m5-http-v2.ts').href)
+const root = 'contracts/golden/m4-m5-public-surface-v2/'
+const read = name => JSON.parse(readFileSync(root + name, 'utf8'))
+const candidate = read('candidate.json')
+const publication = read('publication.json')
+const job = read('job.json')
+const story = read('story-state.json')
+const httpGoldens = read('http.json')
+const candidates = new Map([candidate.candidate, candidate.candidate_partial, candidate.candidate_incomplete_stream].map(item => [item.candidate_id, item]))
+const rejected = async action => { try { await action(); return false } catch (_) { return true } }
+
+core.parseCandidateV2(candidate.candidate)
+core.validatePublicationV2(publication.command_complete, publication.result_complete, candidate.candidate, 'ws-1')
+core.parseStoryStateProjectionInputV2(story.projection, 'ws-1')
+await core.verifyJobSnapshotHashV2(job.snapshot)
+await http.parseJobSseRecoveryV2(job.sse_replay)
+for (const exchange of httpGoldens.exchanges) await http.validateHttpExchangeV2(exchange.route_id, exchange.request, exchange.status, exchange.response, candidates.get(exchange.request.candidate_id))
+const crossWorkspace = structuredClone(candidate.candidate)
+crossWorkspace.target.workspace_id = 'ws-other'
+const cursorMix = structuredClone(job.event_page)
+cursorMix.next_cursor = 'candidate/ws-1/1'
+const partial = structuredClone(publication.command_partial)
+const partialResult = structuredClone(publication.result_complete)
+partialResult.publication_operation_key = partial.publication_operation_key
+partialResult.candidate_id = partial.candidate_id
+partialResult.content_hash = candidate.candidate_partial.mutation.payload_hash
+const observed = {
+  cross_workspace_rejected: await rejected(() => core.parseCandidateV2(crossWorkspace)),
+  partial_publication_rejected: await rejected(() => core.validatePublicationV2(partial, partialResult, candidate.candidate_partial, 'ws-1')),
+  cursor_mix_rejected: await rejected(() => core.parseJobEventPageV2(cursorMix)),
+  sse_query_pair_rejected: await rejected(() => http.parseHttpRequestV2('job.sse-recovery', { ...httpGoldens.exchanges.find(item => item.route_id === 'job.sse-recovery').request, after_seq: 0 })),
+  plugin_lifecycle_guard_rejected: await rejected(() => http.parseHttpRequestV2('plugin.install', { ...httpGoldens.exchanges.find(item => item.route_id === 'plugin.install').request, release_id: null })),
+  exchange_binding_rejected: await rejected(() => http.validateHttpExchangeV2('publication.accept', httpGoldens.exchanges.find(item => item.route_id === 'publication.accept').request, 200, { ...httpGoldens.exchanges.find(item => item.route_id === 'publication.accept').response, content_hash: '0'.repeat(64) }, candidates.get('candidate-v2'))),
+}
+if (!Object.values(observed).every(Boolean)) throw new Error(`unexpected v2 observations: ${JSON.stringify(observed)}`)
+console.log(JSON.stringify(observed))
+'''
+    assert _run_ts(script) == {
+    "cross_workspace_rejected": True,
+    "cursor_mix_rejected": True,
+    "exchange_binding_rejected": True,
+    "plugin_lifecycle_guard_rejected": True,
+    "partial_publication_rejected": True,
+    "sse_query_pair_rejected": True,
+  }
+
+
 def test_typescript_verifier_negative_runtime_matches_python_contract() -> None:
     script = r'''
 import { readFileSync } from 'node:fs'

@@ -3,12 +3,14 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { createHash } from 'node:crypto'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const ROOT = resolve(fileURLToPath(new URL('../..', import.meta.url)))
 const CONTRACTS = join(ROOT, 'contracts')
 const SCHEMAS = join(CONTRACTS, 'json-schema')
 const GOLDEN = join(CONTRACTS, 'golden')
+const V2_GOLDEN = join(GOLDEN, 'm4-m5-public-surface-v2')
+const V2_CORPUS = join(CONTRACTS, 'corpus', 'm4-m5-public-surface-v2')
 const text = (path) => readFileSync(path, 'utf8')
 const bytes = (path) => readFileSync(path)
 const sha256 = (value) => createHash('sha256').update(value).digest('hex')
@@ -38,6 +40,269 @@ function readJson(path) {
   const raw = bytes(path)
   if (raw.subarray(0, 3).equals(Buffer.from([0xef, 0xbb, 0xbf]))) throw new Error(`BOM: ${path}`)
   return JSON.parse(raw.toString('utf8'))
+}
+
+function jsonEqual(left, right) {
+  return canonicalJson(left) === canonicalJson(right)
+}
+
+// The Node gate only needs the closed-contract subset used by this source
+// wave.  It intentionally mirrors the existing schema ingress rules instead
+// of introducing a second generated schema set or a dependency.
+function validateClosed(value, schema, label = '$') {
+  if (schema === false) throw new Error(`${label}: schema rejects value`)
+  if (schema === true) return
+  if (schema.$ref) throw new Error(`${label}: unexpected external reference ${schema.$ref}`)
+  if (schema.oneOf) {
+    const matches = schema.oneOf.filter((branch) => {
+      try { validateClosed(value, branch, label); return true } catch (_) { return false }
+    })
+    if (matches.length !== 1) throw new Error(`${label}: oneOf matched ${matches.length} branches`)
+    return
+  }
+  if (schema.anyOf) {
+    if (!schema.anyOf.some((branch) => { try { validateClosed(value, branch, label); return true } catch (_) { return false } })) throw new Error(`${label}: anyOf matched no branch`)
+    return
+  }
+  if (schema.const !== undefined && !jsonEqual(value, schema.const)) throw new Error(`${label}: const mismatch`)
+  if (schema.enum !== undefined && !schema.enum.some((item) => jsonEqual(value, item))) throw new Error(`${label}: enum mismatch`)
+  if (schema.type === 'object') {
+    if (value === null || typeof value !== 'object' || Array.isArray(value)) throw new Error(`${label}: expected object`)
+  } else if (schema.type === 'array') {
+    if (!Array.isArray(value)) throw new Error(`${label}: expected array`)
+  } else if (schema.type === 'string') {
+    if (typeof value !== 'string') throw new Error(`${label}: expected string`)
+    if (schema.pattern && !(new RegExp(schema.pattern, 'u')).test(value)) throw new Error(`${label}: pattern mismatch`)
+    if (schema.minLength !== undefined && [...value].length < schema.minLength) throw new Error(`${label}: minLength`)
+    if (schema.maxLength !== undefined && [...value].length > schema.maxLength) throw new Error(`${label}: maxLength`)
+  } else if (schema.type === 'integer') {
+    if (!Number.isSafeInteger(value)) throw new Error(`${label}: expected integer`)
+    if (schema.minimum !== undefined && value < schema.minimum) throw new Error(`${label}: minimum`)
+    if (schema.maximum !== undefined && value > schema.maximum) throw new Error(`${label}: maximum`)
+  } else if (schema.type === 'boolean' && typeof value !== 'boolean') throw new Error(`${label}: expected boolean`)
+  if (Array.isArray(value)) {
+    if (schema.minItems !== undefined && value.length < schema.minItems) throw new Error(`${label}: minItems`)
+    if (schema.maxItems !== undefined && value.length > schema.maxItems) throw new Error(`${label}: maxItems`)
+    if (schema.uniqueItems && new Set(value.map(canonicalJson)).size !== value.length) throw new Error(`${label}: duplicate array item`)
+    if (schema.items && !Array.isArray(schema.items)) value.forEach((item, index) => validateClosed(item, schema.items, `${label}[${index}]`))
+  }
+  if (schema.type === 'object') {
+    const properties = schema.properties ?? {}
+    for (const key of schema.required ?? []) if (!Object.prototype.hasOwnProperty.call(value, key)) throw new Error(`${label}: missing ${key}`)
+    for (const key of Object.keys(value)) {
+      if (!Object.prototype.hasOwnProperty.call(properties, key)) {
+        if (schema.additionalProperties === false) throw new Error(`${label}: unknown ${key}`)
+      } else validateClosed(value[key], properties[key], `${label}.${key}`)
+    }
+  }
+}
+
+async function verifyV2() {
+  const matrix = readJson(join(SCHEMAS, 'core-api-method-matrix.v2.json'))
+  if (matrix.schema !== 'core-api-method-matrix/v2' || matrix.publication_path !== 'publication.accept' || matrix.publication_owner !== 'core' || matrix.plugin_publication_allowed !== false) throw new Error('v2 Publication ownership drift')
+  if (matrix.routes.length !== 19 || matrix.routes.filter((route) => route.route_id === 'publication.accept').length !== 1) throw new Error('v2 route inventory drift')
+  if (matrix.routes.some((route) => route.route_id !== 'publication.accept' && route.path_template.includes('publication'))) throw new Error('v2 exposes a second Publication route')
+  const schema = (name) => readJson(join(SCHEMAS, name))
+  const candidateSchema = schema('candidate-query-result-v2.schema.json')
+  const coreSchema = schema('core-authority-command-query-v2.schema.json')
+  const reviewSchema = schema('candidate-review-v2.schema.json')
+  const projectionSchema = schema('story-state-projection-input-v2.schema.json')
+  const jobSchema = schema('job-http-command-query-v2.schema.json')
+  const pluginSchema = schema('plugin-api-command-query-v2.schema.json')
+  const candidate = readJson(join(V2_GOLDEN, 'candidate.json'))
+  const review = readJson(join(V2_GOLDEN, 'review.json'))
+  const publication = readJson(join(V2_GOLDEN, 'publication.json'))
+  const projection = readJson(join(V2_GOLDEN, 'story-state.json')).projection
+  const job = readJson(join(V2_GOLDEN, 'job.json'))
+  const plugin = readJson(join(V2_GOLDEN, 'plugin.json'))
+  const http = readJson(join(V2_GOLDEN, 'http.json'))
+  const tsCore = await import(pathToFileURL(join(ROOT, 'frontend', 'src', 'contracts', 'core-api-v2.ts')).href)
+  const tsHttp = await import(pathToFileURL(join(ROOT, 'frontend', 'src', 'contracts', 'm4-m5-http-v2.ts')).href)
+  validateClosed(candidate.candidate, candidateSchema, 'candidate')
+  validateClosed(candidate.candidate_list_result, candidateSchema, 'candidate_list_result')
+  validateClosed(candidate.candidate_get_query, candidateSchema, 'candidate_get_query')
+  validateClosed(candidate.candidate_get_result, candidateSchema, 'candidate_get_result')
+  validateClosed(candidate.candidate_preview_query, candidateSchema, 'candidate_preview_query')
+  validateClosed(candidate.candidate_preview_result, candidateSchema, 'candidate_preview_result')
+  validateClosed(review.query, reviewSchema, 'review.query')
+  validateClosed(review.command, reviewSchema, 'review.command')
+  validateClosed(review.result, reviewSchema, 'review.result')
+  for (const name of ['command_complete', 'command_partial', 'command_incomplete_stream', 'result_complete', 'result_incomplete_stream']) validateClosed(publication[name], coreSchema, `publication.${name}`)
+  validateClosed(projection, projectionSchema, 'story-state.projection')
+  for (const name of ['list_query', 'list_result', 'snapshot_query', 'snapshot_result', 'start', 'control', 'command_result', 'event_query', 'event_page', 'sse_replay_query', 'sse_replay', 'sse_gap_query', 'sse_gap']) validateClosed(job[name], jobSchema, `job.${name}`)
+  for (const name of ['discovery_query', 'discovery_result', 'install', 'upgrade', 'retire', 'rollback', 'lifecycle_result_install', 'lifecycle_result_upgrade', 'lifecycle_result_retire', 'lifecycle_result_rollback']) validateClosed(plugin[name], pluginSchema, `plugin.${name}`)
+  if (candidate.candidate.target.workspace_id !== candidate.candidate.workspace_id || candidate.candidate.write_set.some((item) => item.workspace_id !== candidate.candidate.workspace_id)) throw new Error('v2 Candidate Workspace binding drift')
+  if (publication.command_partial.candidate_id !== candidate.candidate_partial.candidate_id || candidate.candidate_partial.publication_eligibility !== 'review_only') throw new Error('v2 partial Candidate fixture drift')
+  if (projection.publication.candidate_id !== projection.candidate.candidate_id || projection.publication.revision_id !== projection.current_revision.revision_id) throw new Error('v2 projection binding drift')
+  if (job.sse_replay.snapshot_required || job.sse_replay.gap || job.sse_gap.snapshot_required !== true || job.sse_gap.gap !== true) throw new Error('v2 SSE recovery fixture drift')
+  if (matrix.cursor_domains.candidate === matrix.cursor_domains.job || matrix.cursor_domains.job === matrix.cursor_domains.core) throw new Error('v2 cursor domains are not disjoint')
+  if (http.schema !== 'm4-m5-public-surface-http-golden/v2' || http.exchange_count !== http.exchanges.length || http.exchanges.length !== matrix.routes.length) throw new Error('v2 HTTP golden exchange inventory drift')
+  const routeIds = matrix.routes.map((route) => route.route_id)
+  const observedRouteIds = http.exchanges.map((exchange) => exchange.route_id)
+  if (new Set(observedRouteIds).size !== observedRouteIds.length || new Set(observedRouteIds).size !== new Set(routeIds).size || !routeIds.every((routeId) => observedRouteIds.includes(routeId))) throw new Error('v2 HTTP goldens do not cover every route exactly once')
+  const corpusFiles = readdirSync(V2_CORPUS).filter((name) => name.endsWith('.json') && name !== 'manifest.json')
+  const corpus = readJson(join(V2_CORPUS, 'manifest.json'))
+  const groups = corpusFiles.map((name) => readJson(join(V2_CORPUS, name)))
+  const negativeCases = groups.reduce((total, group) => total + group.negative.length, 0)
+  if (groups.length !== 5 || corpus.group_count !== 5 || corpus.negative_case_count !== negativeCases) throw new Error('v2 corpus inventory drift')
+  const expected = readJson(join(V2_GOLDEN, 'expected.json'))
+  for (const [name, digest] of Object.entries(expected.fixture_files)) if (sha256(bytes(join(V2_GOLDEN, name))) !== digest) throw new Error(`v2 golden hash drift ${name}`)
+
+  const candidateById = new Map([candidate.candidate, candidate.candidate_partial, candidate.candidate_incomplete_stream].map((item) => [item.candidate_id, item]))
+  tsCore.parseCandidateQueryResultV2(candidate.candidate)
+  tsCore.parseCandidateQueryResultV2(candidate.candidate_list_result)
+  tsCore.parseCandidateQueryResultV2(candidate.candidate_get_query)
+  tsCore.parseCandidateQueryResultV2(candidate.candidate_get_result)
+  tsCore.parseCandidateQueryResultV2(candidate.candidate_preview_query)
+  tsCore.parseCandidateQueryResultV2(candidate.candidate_preview_result)
+  tsCore.parseCandidateQueryResultV2(candidate.candidate_cross_workspace_source)
+  tsCore.parseCandidateQueryResultV2(candidate.candidate_partial)
+  tsCore.parseCandidateQueryResultV2(candidate.candidate_incomplete_stream)
+  tsCore.parseCandidateReviewV2(review.query)
+  tsCore.parseCandidateReviewV2(review.command)
+  tsCore.parseCandidateReviewV2(review.result)
+  tsCore.validatePublicationV2(publication.command_complete, publication.result_complete, candidate.candidate, 'ws-1')
+  tsCore.validatePublicationV2(publication.command_incomplete_stream, publication.result_incomplete_stream, candidate.candidate_incomplete_stream, 'ws-1')
+  tsCore.parseStoryStateProjectionInputV2(projection, 'ws-1')
+  await tsCore.verifyJobSnapshotHashV2(job.snapshot)
+  for (const name of ['list_query', 'list_result', 'snapshot_query', 'snapshot_result', 'start', 'control', 'command_result', 'event_query', 'event_page', 'sse_replay_query', 'sse_replay', 'sse_gap_query', 'sse_gap']) {
+    const value = job[name]
+    if (name === 'event_page') tsCore.parseJobEventPageV2(value)
+    else if (name === 'sse_replay' || name === 'sse_gap') await tsHttp.parseJobSseRecoveryV2(value)
+    else if (name === 'list_result') await tsCore.validateJobListResultV2(value)
+    else if (name === 'snapshot_result') await tsCore.validateJobSnapshotResultV2(value)
+    else if (name === 'command_result') tsCore.validateJobCommandResultV2(value)
+    else if (name === 'event_query') tsCore.validateJobEventPageQueryV2(value)
+    else if (name === 'sse_replay_query' || name === 'sse_gap_query') tsCore.validateJobSseRecoveryQueryV2(value)
+  }
+  for (const name of ['discovery_query', 'discovery_result', 'install', 'upgrade', 'retire', 'rollback', 'lifecycle_result_install', 'lifecycle_result_upgrade', 'lifecycle_result_retire', 'lifecycle_result_rollback']) tsCore.parsePluginApiV2(plugin[name])
+  tsCore.validatePluginLifecycleV2(plugin.install)
+  tsCore.validatePluginLifecycleV2(plugin.upgrade, { currentGenerationId: 'generation-1' })
+  tsCore.validatePluginLifecycleV2(plugin.retire, { currentGenerationId: 'generation-2' })
+  tsCore.validatePluginLifecycleV2(plugin.rollback, { currentGenerationId: 'generation-2' })
+
+  for (const exchange of http.exchanges) {
+    await tsHttp.validateHttpExchangeV2(exchange.route_id, exchange.request, exchange.status, exchange.response, candidateById.get(exchange.request.candidate_id))
+  }
+
+  const fixtures = {
+    'candidate.record': candidate.candidate,
+    'candidate.list_result': candidate.candidate_list_result,
+    'candidate.cross_workspace_source_ref': candidate.candidate_cross_workspace_source,
+    'candidate.get_result': candidate.candidate_get_result,
+    'candidate.preview_result': candidate.candidate_preview_result,
+    'review.query': review.query,
+    'review.command': review.command,
+    'review.result': review.result,
+    'publication.command.complete': publication.command_complete,
+    'publication.result.complete': publication.result_complete,
+    'publication.command.partial': publication.command_partial,
+    'publication.command.incomplete_stream': publication.command_incomplete_stream,
+    'publication.result.incomplete_stream': publication.result_incomplete_stream,
+    'story_state.projection': projection,
+    'job.snapshot': job.snapshot,
+    'job.list_result': job.list_result,
+    'job.command.start': job.start,
+    'job.event_page': job.event_page,
+    'job.sse.replay': job.sse_replay,
+    'job.sse.gap': job.sse_gap,
+    'plugin.discovery': plugin.discovery_result,
+    'plugin.lifecycle.install': plugin.install,
+    'plugin.lifecycle.upgrade': plugin.upgrade,
+    'plugin.lifecycle.retire': plugin.retire,
+    'plugin.lifecycle.rollback': plugin.rollback,
+    'plugin.lifecycle.result.install': plugin.lifecycle_result_install,
+    'plugin.lifecycle.result.upgrade': plugin.lifecycle_result_upgrade,
+    'plugin.lifecycle.result.retire': plugin.lifecycle_result_retire,
+    'plugin.lifecycle.result.rollback': plugin.lifecycle_result_rollback,
+  }
+  for (const exchange of http.exchanges) fixtures[`http.${exchange.route_id}`] = exchange
+
+  const parseFixture = (fixtureId, value) => {
+    if (fixtureId.startsWith('candidate.')) return tsCore.parseCandidateQueryResultV2(value)
+    if (fixtureId.startsWith('review.')) return tsCore.parseCandidateReviewV2(value)
+    if (fixtureId.startsWith('publication.')) return tsCore.parseCoreAuthorityV2(value)
+    if (fixtureId === 'story_state.projection') return tsCore.parseStoryStateProjectionInputV2(value)
+    if (fixtureId === 'job.snapshot') return tsCore.validateJobSnapshotResultV2({ schema: 'job-snapshot-result/v2', workspace_id: value.workspace_id, job_id: value.job_id, snapshot: value, cursor: `job/${value.job_id}/${value.job_event_high_water}` })
+    if (fixtureId.startsWith('job.')) {
+      if (fixtureId === 'job.event_page') return tsCore.parseJobEventPageV2(value)
+      if (fixtureId === 'job.sse.replay' || fixtureId === 'job.sse.gap') return tsHttp.parseJobSseRecoveryV2(value)
+      if (fixtureId === 'job.list_result') return tsCore.validateJobListResultV2(value)
+      if (fixtureId === 'job.command.start') return tsHttp.parseHttpRequestV2('job.start', value)
+      return value
+    }
+    if (fixtureId.startsWith('plugin.')) return tsCore.parsePluginApiV2(value)
+    if (fixtureId.startsWith('http.')) return value
+    throw new Error(`unknown v2 fixture ${fixtureId}`)
+  }
+  const mutate = (input, mutation) => {
+    if (mutation.op === 'noop') return structuredClone(input)
+    const output = structuredClone(input)
+    if (mutation.op === 'cycle') {
+      output.parent_candidate_ids = [output.candidate_id]
+      return output
+    }
+    let target = output
+    for (const token of mutation.path.slice(0, -1)) target = target[token]
+    const key = mutation.path.at(-1)
+    if (mutation.op === 'set') target[key] = structuredClone(mutation.value)
+    else if (mutation.op === 'delete') Array.isArray(target) ? target.splice(Number(key), 1) : delete target[key]
+    else throw new Error(`unsupported v2 mutation ${JSON.stringify(mutation)}`)
+    return output
+  }
+  const rejected = async (action) => {
+    try { await action(); return false } catch (_) { return true }
+  }
+  const executed = []
+  for (const group of groups) {
+    for (const fixtureId of group.positive) {
+      if (!(fixtureId in fixtures)) throw new Error(`v2 corpus has no positive fixture ${fixtureId}`)
+      await parseFixture(fixtureId, fixtures[fixtureId])
+    }
+    for (const testCase of group.negative) {
+      const value = mutate(fixtures[testCase.fixture], testCase.mutation)
+      const kind = testCase.kind
+      let action
+      if (kind === 'closed_schema') action = () => parseFixture(testCase.fixture, value)
+      else if (kind === 'candidate_semantics') action = () => tsCore.validateCandidateV2(value)
+      else if (kind === 'candidate_preview') action = () => tsCore.parseCandidateQueryResultV2(value)
+      else if (kind === 'candidate_parent_cycle') action = () => tsCore.validateCandidateV2(value, undefined, { [value.candidate_id]: value })
+      else if (kind === 'publication_semantics') {
+        if (testCase.fixture === 'publication.command.partial') {
+          const partialResult = { ...publication.result_complete, publication_operation_key: value.publication_operation_key, candidate_id: value.candidate_id, content_hash: candidate.candidate_partial.mutation.payload_hash }
+          action = () => tsCore.validatePublicationV2(value, partialResult, candidate.candidate_partial, 'ws-1')
+        } else if (testCase.fixture === 'publication.command.complete') action = () => tsCore.validatePublicationV2(value, publication.result_complete, candidate.candidate, 'ws-1')
+        else action = () => tsCore.validatePublicationV2(publication.command_complete, value, candidate.candidate, 'ws-1')
+      } else if (kind === 'projection_semantics') action = () => tsCore.parseStoryStateProjectionInputV2(value)
+      else if (kind === 'job_cursor') action = () => testCase.fixture === 'job.event_page' ? tsCore.parseJobEventPageV2(value) : tsHttp.parseJobSseRecoveryV2(value)
+      else if (kind === 'job_sse') action = () => tsHttp.parseJobSseRecoveryV2(value)
+      else if (kind === 'http_request') action = () => tsHttp.parseHttpRequestV2(testCase.route_id, value.request)
+      else if (kind === 'http_exchange') action = () => tsHttp.validateHttpExchangeV2(testCase.route_id, value.request, value.status, value.response, candidateById.get(value.request.candidate_id))
+      else if (kind === 'plugin_lifecycle') action = () => tsCore.validatePluginLifecycleV2(value, { currentGenerationId: 'generation-1', activeJob: value.action === 'retire' })
+      else if (kind === 'plugin_publication') action = () => tsCore.parsePluginApiV2(value)
+      else if (kind === 'operation_key_reuse') {
+        const routeId = testCase.fixture.startsWith('publication') ? 'publication.accept' : 'plugin.upgrade'
+        const response = routeId === 'publication.accept' ? publication.result_complete : plugin.lifecycle_result_upgrade
+        const original = fixtures[testCase.fixture]
+        const candidateForExchange = candidateById.get(original.candidate_id)
+        const ledger = new tsHttp.OperationKeyLedgerV2()
+        await ledger.record(routeId, original, 200, response, candidateForExchange)
+        action = () => ledger.record(routeId, value, 200, response, candidateForExchange)
+      } else if (kind === 'operation_response_drift') {
+        const routeId = testCase.route_id
+        const original = fixtures[testCase.fixture]
+        const candidateForExchange = candidateById.get(original.request.candidate_id)
+        const ledger = new tsHttp.OperationKeyLedgerV2()
+        await ledger.record(routeId, original.request, original.status, original.response, candidateForExchange)
+        action = () => ledger.record(routeId, value.request, value.status, value.response, candidateForExchange)
+      } else throw new Error(`unknown v2 corpus kind ${kind}`)
+      if (!(await rejected(action))) throw new Error(`v2 corpus false-accepted ${testCase.case_id}`)
+      executed.push(testCase.case_id)
+    }
+  }
+  if (executed.length !== negativeCases) throw new Error('v2 corpus execution count drift')
+  const negativeCaseDigest = sha256(Buffer.from(JSON.stringify([...executed].sort()), 'utf8'))
+  return { routes: matrix.routes.length, schemas: 6, golden_files: Object.keys(expected.fixture_files).length, corpus_groups: groups.length, negative_cases: negativeCases, negative_case_digest: negativeCaseDigest, http_exchanges: http.exchanges.length, publication_path: matrix.publication_path, cursor_domains: Object.keys(matrix.cursor_domains).sort() }
 }
 
 function utf8Compare(a, b) {
@@ -116,18 +381,20 @@ function verifyBackup() {
 
 function verifyInventory() {
   const schemaFiles = readdirSync(SCHEMAS).filter((name) => name.endsWith('.schema.json')).sort()
-  if (schemaFiles.length !== 55) throw new Error(`expected 55 schemas, got ${schemaFiles.length}`)
+  const v1Schemas = schemaFiles.filter((name) => !name.endsWith('-v2.schema.json'))
+  const v2Schemas = schemaFiles.filter((name) => name.endsWith('-v2.schema.json'))
+  if (v1Schemas.length !== 55 || v2Schemas.length !== 6) throw new Error(`expected 55 v1 + 6 v2 schemas, got ${v1Schemas.length} + ${v2Schemas.length}`)
   for (const name of schemaFiles) {
     const schema = readJson(join(SCHEMAS, name))
     if (schema.$schema !== 'https://json-schema.org/draft/2020-12/schema') throw new Error(`schema dialect drift: ${name}`)
   }
   const groups = readdirSync(join(CONTRACTS, 'corpus', 'negative', '84.13')).filter((name) => name.endsWith('.json'))
   if (groups.length !== 14) throw new Error(`expected 14 negative groups, got ${groups.length}`)
-  return { schema_count: schemaFiles.length, negative_group_count: groups.length }
+  return { schema_count: schemaFiles.length, v1_schema_count: v1Schemas.length, v2_schema_count: v2Schemas.length, negative_group_count: groups.length }
 }
 
 if (process.argv.includes('--all')) {
-  const result = { inventory: verifyInventory(), package: verifyPackage(), skill: verifySkill(), snapshot: verifySnapshot(), backup: verifyBackup() }
+  const result = { inventory: verifyInventory(), v2: await verifyV2(), package: verifyPackage(), skill: verifySkill(), snapshot: verifySnapshot(), backup: verifyBackup() }
   console.log(JSON.stringify(result, null, 2))
 } else {
   console.error('pass --all')

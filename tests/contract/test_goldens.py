@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "backend"))
 sys.path.insert(0, str(ROOT / "tools" / "integration"))
 
-from verify_contracts import verify_goldens, verify_positive_fixtures  # noqa: E402
+from verify_contracts import verify_goldens, verify_positive_fixtures, verify_v2_public_surface  # noqa: E402
 
 
 def test_design_goldens_recompute_exactly() -> None:
@@ -21,3 +21,12 @@ def test_design_goldens_recompute_exactly() -> None:
 def test_all_positive_fixtures_are_schema_valid() -> None:
     result = verify_positive_fixtures()
     assert result["fixtures"] >= 35
+
+
+def test_additive_m4_m5_v2_goldens_recompute_exactly() -> None:
+    result = verify_v2_public_surface()
+    assert result["routes"] == 19
+    assert result["golden_files"] == 7
+    assert result["http_exchanges"] == 19
+    assert result["negative_cases"] == 44
+    assert result["publication_path"] == "publication.accept"

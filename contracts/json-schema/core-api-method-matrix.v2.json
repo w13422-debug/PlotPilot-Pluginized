@@ -1,0 +1,729 @@
+{
+  "contract_version": "2.0.0",
+  "cursor_domains": {
+    "candidate": "candidate/*",
+    "core": "core/{seq}",
+    "job": "job/{job_id}/{seq}"
+  },
+  "error_codes": [
+    "malformed_request",
+    "unknown_reference",
+    "cross_workspace",
+    "stale_cas",
+    "duplicate_operation",
+    "candidate_not_publishable",
+    "unknown_job",
+    "stale_revision",
+    "cursor_ahead",
+    "cursor_domain_mismatch",
+    "sse_recovery_required",
+    "terminal_job",
+    "invalid_transition",
+    "candidate_not_ready",
+    "unknown_plugin",
+    "release_missing",
+    "generation_conflict",
+    "pinned_release",
+    "active_job",
+    "retire_failed",
+    "rollback_failed",
+    "publication_forbidden"
+  ],
+  "plugin_publication_allowed": false,
+  "publication_owner": "core",
+  "publication_path": "publication.accept",
+  "roots": {
+    "core": "/api/v2/core",
+    "jobs": "/api/v2/jobs",
+    "plugins": "/api/v2/plugins"
+  },
+  "routes": [
+    {
+      "cursor_domain": "candidate",
+      "error_schema": "core-http-error/v2",
+      "failure_statuses": [
+        {
+          "error_codes": [
+            "malformed_request",
+            "cursor_domain_mismatch"
+          ],
+          "status": 400
+        },
+        {
+          "error_codes": [
+            "unknown_reference"
+          ],
+          "status": 404
+        }
+      ],
+      "method": "GET",
+      "operation_key_required": false,
+      "path_identity": [
+        "workspace_id"
+      ],
+      "path_template": "/api/v2/core/workspaces/{workspace_id}/candidates",
+      "read_only": true,
+      "request_schema": "candidate-list-query/v2",
+      "result_schema": "candidate-list-result/v2",
+      "route_id": "candidate.list",
+      "success_statuses": [
+        200
+      ]
+    },
+    {
+      "cursor_domain": null,
+      "error_schema": "core-http-error/v2",
+      "failure_statuses": [
+        {
+          "error_codes": [
+            "malformed_request"
+          ],
+          "status": 400
+        },
+        {
+          "error_codes": [
+            "unknown_reference",
+            "cross_workspace"
+          ],
+          "status": 404
+        }
+      ],
+      "method": "GET",
+      "operation_key_required": false,
+      "path_identity": [
+        "workspace_id",
+        "candidate_id"
+      ],
+      "path_template": "/api/v2/core/workspaces/{workspace_id}/candidates/{candidate_id}",
+      "read_only": true,
+      "request_schema": "candidate-get-query/v2",
+      "result_schema": "candidate-get-result/v2",
+      "route_id": "candidate.get",
+      "success_statuses": [
+        200
+      ]
+    },
+    {
+      "cursor_domain": null,
+      "error_schema": "core-http-error/v2",
+      "failure_statuses": [
+        {
+          "error_codes": [
+            "malformed_request"
+          ],
+          "status": 400
+        },
+        {
+          "error_codes": [
+            "unknown_reference",
+            "cross_workspace"
+          ],
+          "status": 404
+        },
+        {
+          "error_codes": [
+            "stale_cas",
+            "duplicate_operation"
+          ],
+          "status": 409
+        }
+      ],
+      "method": "POST",
+      "operation_key_required": true,
+      "path_identity": [
+        "workspace_id",
+        "candidate_id"
+      ],
+      "path_template": "/api/v2/core/workspaces/{workspace_id}/candidates/{candidate_id}/review",
+      "read_only": false,
+      "request_schema": "candidate-review-command/v2",
+      "result_schema": "candidate-review-result/v2",
+      "route_id": "candidate.review",
+      "success_statuses": [
+        200
+      ]
+    },
+    {
+      "cursor_domain": null,
+      "error_schema": "core-http-error/v2",
+      "failure_statuses": [
+        {
+          "error_codes": [
+            "malformed_request"
+          ],
+          "status": 400
+        },
+        {
+          "error_codes": [
+            "unknown_reference",
+            "cross_workspace"
+          ],
+          "status": 404
+        }
+      ],
+      "method": "GET",
+      "operation_key_required": false,
+      "path_identity": [
+        "workspace_id",
+        "candidate_id"
+      ],
+      "path_template": "/api/v2/core/workspaces/{workspace_id}/candidates/{candidate_id}/preview",
+      "read_only": true,
+      "request_schema": "candidate-preview-query/v2",
+      "result_schema": "candidate-preview-result/v2",
+      "route_id": "candidate.preview",
+      "success_statuses": [
+        200
+      ]
+    },
+    {
+      "cursor_domain": null,
+      "error_schema": "core-http-error/v2",
+      "failure_statuses": [
+        {
+          "error_codes": [
+            "malformed_request",
+            "candidate_not_publishable"
+          ],
+          "status": 400
+        },
+        {
+          "error_codes": [
+            "unknown_reference",
+            "cross_workspace"
+          ],
+          "status": 404
+        },
+        {
+          "error_codes": [
+            "stale_cas",
+            "duplicate_operation"
+          ],
+          "status": 409
+        }
+      ],
+      "method": "POST",
+      "operation_key_required": true,
+      "path_identity": [
+        "workspace_id"
+      ],
+      "path_template": "/api/v2/core/workspaces/{workspace_id}/publications:accept",
+      "read_only": false,
+      "request_schema": "publication-command/v2",
+      "result_schema": "publication-result/v2",
+      "route_id": "publication.accept",
+      "success_statuses": [
+        200,
+        201
+      ]
+    },
+    {
+      "cursor_domain": null,
+      "error_schema": "core-http-error/v2",
+      "failure_statuses": [
+        {
+          "error_codes": [
+            "malformed_request"
+          ],
+          "status": 400
+        },
+        {
+          "error_codes": [
+            "unknown_reference",
+            "cross_workspace"
+          ],
+          "status": 404
+        }
+      ],
+      "method": "GET",
+      "operation_key_required": false,
+      "path_identity": [
+        "workspace_id"
+      ],
+      "path_template": "/api/v2/core/workspaces/{workspace_id}/story-state/projection-input",
+      "read_only": true,
+      "request_schema": "core-authority-query/v2",
+      "result_schema": "story-state-projection-input/v2",
+      "route_id": "story-state.projection-input",
+      "success_statuses": [
+        200
+      ]
+    },
+    {
+      "cursor_domain": "job",
+      "error_schema": "job-http-error/v2",
+      "failure_statuses": [
+        {
+          "error_codes": [
+            "malformed_request",
+            "cursor_domain_mismatch"
+          ],
+          "status": 400
+        }
+      ],
+      "method": "GET",
+      "operation_key_required": false,
+      "path_identity": [
+        "workspace_id"
+      ],
+      "path_template": "/api/v2/jobs/{workspace_id}",
+      "read_only": true,
+      "request_schema": "job-list-query/v2",
+      "result_schema": "job-list-result/v2",
+      "route_id": "job.list",
+      "success_statuses": [
+        200
+      ]
+    },
+    {
+      "cursor_domain": "job",
+      "error_schema": "job-http-error/v2",
+      "failure_statuses": [
+        {
+          "error_codes": [
+            "malformed_request",
+            "cursor_domain_mismatch"
+          ],
+          "status": 400
+        },
+        {
+          "error_codes": [
+            "unknown_job",
+            "cross_workspace"
+          ],
+          "status": 404
+        }
+      ],
+      "method": "GET",
+      "operation_key_required": false,
+      "path_identity": [
+        "workspace_id",
+        "job_id"
+      ],
+      "path_template": "/api/v2/jobs/{workspace_id}/{job_id}",
+      "read_only": true,
+      "request_schema": "job-snapshot-query/v2",
+      "result_schema": "job-snapshot-result/v2",
+      "route_id": "job.get",
+      "success_statuses": [
+        200
+      ]
+    },
+    {
+      "cursor_domain": "job",
+      "error_schema": "job-http-error/v2",
+      "failure_statuses": [
+        {
+          "error_codes": [
+            "malformed_request"
+          ],
+          "status": 400
+        },
+        {
+          "error_codes": [
+            "duplicate_operation",
+            "invalid_transition"
+          ],
+          "status": 409
+        }
+      ],
+      "method": "POST",
+      "operation_key_required": true,
+      "path_identity": [
+        "workspace_id"
+      ],
+      "path_template": "/api/v2/jobs/{workspace_id}/start",
+      "read_only": false,
+      "request_schema": "job-start-command/v2",
+      "result_schema": "job-command-result/v2",
+      "route_id": "job.start",
+      "success_statuses": [
+        201
+      ]
+    },
+    {
+      "cursor_domain": "job",
+      "error_schema": "job-http-error/v2",
+      "failure_statuses": [
+        {
+          "error_codes": [
+            "malformed_request"
+          ],
+          "status": 400
+        },
+        {
+          "error_codes": [
+            "unknown_job",
+            "cross_workspace"
+          ],
+          "status": 404
+        },
+        {
+          "error_codes": [
+            "stale_revision",
+            "terminal_job",
+            "invalid_transition",
+            "duplicate_operation"
+          ],
+          "status": 409
+        }
+      ],
+      "method": "POST",
+      "operation_key_required": true,
+      "path_identity": [
+        "workspace_id",
+        "job_id"
+      ],
+      "path_template": "/api/v2/jobs/{workspace_id}/{job_id}/pause",
+      "read_only": false,
+      "request_schema": "job-control-command/v2",
+      "result_schema": "job-command-result/v2",
+      "route_id": "job.pause",
+      "success_statuses": [
+        200
+      ]
+    },
+    {
+      "cursor_domain": "job",
+      "error_schema": "job-http-error/v2",
+      "failure_statuses": [
+        {
+          "error_codes": [
+            "malformed_request"
+          ],
+          "status": 400
+        },
+        {
+          "error_codes": [
+            "unknown_job",
+            "cross_workspace"
+          ],
+          "status": 404
+        },
+        {
+          "error_codes": [
+            "stale_revision",
+            "terminal_job",
+            "invalid_transition",
+            "duplicate_operation"
+          ],
+          "status": 409
+        }
+      ],
+      "method": "POST",
+      "operation_key_required": true,
+      "path_identity": [
+        "workspace_id",
+        "job_id"
+      ],
+      "path_template": "/api/v2/jobs/{workspace_id}/{job_id}/resume",
+      "read_only": false,
+      "request_schema": "job-control-command/v2",
+      "result_schema": "job-command-result/v2",
+      "route_id": "job.resume",
+      "success_statuses": [
+        200
+      ]
+    },
+    {
+      "cursor_domain": "job",
+      "error_schema": "job-http-error/v2",
+      "failure_statuses": [
+        {
+          "error_codes": [
+            "malformed_request"
+          ],
+          "status": 400
+        },
+        {
+          "error_codes": [
+            "unknown_job",
+            "cross_workspace"
+          ],
+          "status": 404
+        },
+        {
+          "error_codes": [
+            "stale_revision",
+            "terminal_job",
+            "invalid_transition",
+            "duplicate_operation"
+          ],
+          "status": 409
+        }
+      ],
+      "method": "POST",
+      "operation_key_required": true,
+      "path_identity": [
+        "workspace_id",
+        "job_id"
+      ],
+      "path_template": "/api/v2/jobs/{workspace_id}/{job_id}/cancel",
+      "read_only": false,
+      "request_schema": "job-control-command/v2",
+      "result_schema": "job-command-result/v2",
+      "route_id": "job.cancel",
+      "success_statuses": [
+        200
+      ]
+    },
+    {
+      "cursor_domain": "job",
+      "error_schema": "job-http-error/v2",
+      "failure_statuses": [
+        {
+          "error_codes": [
+            "malformed_request",
+            "cursor_domain_mismatch",
+            "cursor_ahead"
+          ],
+          "status": 400
+        },
+        {
+          "error_codes": [
+            "unknown_job",
+            "cross_workspace"
+          ],
+          "status": 404
+        }
+      ],
+      "method": "GET",
+      "operation_key_required": false,
+      "path_identity": [
+        "workspace_id",
+        "job_id"
+      ],
+      "path_template": "/api/v2/jobs/{workspace_id}/{job_id}/events",
+      "read_only": true,
+      "request_schema": "job-event-page-query/v2",
+      "result_schema": "job-event-page-result/v2",
+      "route_id": "job.events",
+      "success_statuses": [
+        200
+      ]
+    },
+    {
+      "cursor_domain": "job",
+      "error_schema": "job-http-error/v2",
+      "failure_statuses": [
+        {
+          "error_codes": [
+            "malformed_request",
+            "cursor_domain_mismatch"
+          ],
+          "status": 400
+        },
+        {
+          "error_codes": [
+            "unknown_job",
+            "cross_workspace"
+          ],
+          "status": 404
+        },
+        {
+          "error_codes": [
+            "sse_recovery_required",
+            "cursor_ahead"
+          ],
+          "status": 409
+        }
+      ],
+      "method": "GET",
+      "operation_key_required": false,
+      "path_identity": [
+        "workspace_id",
+        "job_id"
+      ],
+      "path_template": "/api/v2/jobs/{workspace_id}/{job_id}/events/stream",
+      "read_only": true,
+      "request_schema": "job-sse-recovery-query/v2",
+      "result_schema": "job-sse-recovery-result/v2",
+      "route_id": "job.sse-recovery",
+      "success_statuses": [
+        200
+      ]
+    },
+    {
+      "cursor_domain": "core",
+      "error_schema": "plugin-http-error/v2",
+      "failure_statuses": [
+        {
+          "error_codes": [
+            "malformed_request",
+            "cursor_domain_mismatch"
+          ],
+          "status": 400
+        }
+      ],
+      "method": "GET",
+      "operation_key_required": false,
+      "path_identity": [],
+      "path_template": "/api/v2/plugins",
+      "read_only": true,
+      "request_schema": "plugin-discovery-query/v2",
+      "result_schema": "plugin-discovery-result/v2",
+      "route_id": "plugin.discovery",
+      "success_statuses": [
+        200
+      ]
+    },
+    {
+      "cursor_domain": null,
+      "error_schema": "plugin-http-error/v2",
+      "failure_statuses": [
+        {
+          "error_codes": [
+            "malformed_request"
+          ],
+          "status": 400
+        },
+        {
+          "error_codes": [
+            "unknown_plugin",
+            "release_missing"
+          ],
+          "status": 404
+        },
+        {
+          "error_codes": [
+            "generation_conflict",
+            "duplicate_operation"
+          ],
+          "status": 409
+        }
+      ],
+      "method": "POST",
+      "operation_key_required": true,
+      "path_identity": [
+        "plugin_id"
+      ],
+      "path_template": "/api/v2/plugins/{plugin_id}/install",
+      "read_only": false,
+      "request_schema": "plugin-lifecycle-command/v2",
+      "result_schema": "plugin-lifecycle-result/v2",
+      "route_id": "plugin.install",
+      "success_statuses": [
+        200
+      ]
+    },
+    {
+      "cursor_domain": null,
+      "error_schema": "plugin-http-error/v2",
+      "failure_statuses": [
+        {
+          "error_codes": [
+            "malformed_request"
+          ],
+          "status": 400
+        },
+        {
+          "error_codes": [
+            "unknown_plugin",
+            "release_missing"
+          ],
+          "status": 404
+        },
+        {
+          "error_codes": [
+            "generation_conflict",
+            "duplicate_operation"
+          ],
+          "status": 409
+        }
+      ],
+      "method": "POST",
+      "operation_key_required": true,
+      "path_identity": [
+        "plugin_id"
+      ],
+      "path_template": "/api/v2/plugins/{plugin_id}/upgrade",
+      "read_only": false,
+      "request_schema": "plugin-lifecycle-command/v2",
+      "result_schema": "plugin-lifecycle-result/v2",
+      "route_id": "plugin.upgrade",
+      "success_statuses": [
+        200
+      ]
+    },
+    {
+      "cursor_domain": null,
+      "error_schema": "plugin-http-error/v2",
+      "failure_statuses": [
+        {
+          "error_codes": [
+            "malformed_request"
+          ],
+          "status": 400
+        },
+        {
+          "error_codes": [
+            "unknown_plugin"
+          ],
+          "status": 404
+        },
+        {
+          "error_codes": [
+            "pinned_release",
+            "active_job",
+            "retire_failed",
+            "duplicate_operation"
+          ],
+          "status": 409
+        }
+      ],
+      "method": "POST",
+      "operation_key_required": true,
+      "path_identity": [
+        "plugin_id"
+      ],
+      "path_template": "/api/v2/plugins/{plugin_id}/retire",
+      "read_only": false,
+      "request_schema": "plugin-lifecycle-command/v2",
+      "result_schema": "plugin-lifecycle-result/v2",
+      "route_id": "plugin.retire",
+      "success_statuses": [
+        200
+      ]
+    },
+    {
+      "cursor_domain": null,
+      "error_schema": "plugin-http-error/v2",
+      "failure_statuses": [
+        {
+          "error_codes": [
+            "malformed_request"
+          ],
+          "status": 400
+        },
+        {
+          "error_codes": [
+            "unknown_plugin"
+          ],
+          "status": 404
+        },
+        {
+          "error_codes": [
+            "generation_conflict",
+            "rollback_failed",
+            "duplicate_operation"
+          ],
+          "status": 409
+        }
+      ],
+      "method": "POST",
+      "operation_key_required": true,
+      "path_identity": [
+        "plugin_id"
+      ],
+      "path_template": "/api/v2/plugins/{plugin_id}/rollback",
+      "read_only": false,
+      "request_schema": "plugin-lifecycle-command/v2",
+      "result_schema": "plugin-lifecycle-result/v2",
+      "route_id": "plugin.rollback",
+      "success_statuses": [
+        200
+      ]
+    }
+  ],
+  "schema": "core-api-method-matrix/v2"
+}

@@ -1,0 +1,70 @@
+{
+  "authority_query": {
+    "entity_id": "doc-a",
+    "entity_kind": "document",
+    "include_assets": true,
+    "schema": "core-authority-query/v2",
+    "workspace_id": "ws-1"
+  },
+  "authority_result": {
+    "content_asset_id": "asset-revision-v2",
+    "content_hash": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+    "derived_from_candidate_id": "candidate-v2",
+    "entity_id": "doc-a",
+    "entity_kind": "document",
+    "revision_id": "rev-2",
+    "revision_number": 2,
+    "schema": "core-authority-result/v2",
+    "workspace_id": "ws-1"
+  },
+  "command_complete": {
+    "accepted_by": "user-v2",
+    "candidate_id": "candidate-v2",
+    "publication_operation_key": "publication-op-v2",
+    "schema": "publication-command/v2",
+    "workspace_id": "ws-1"
+  },
+  "command_incomplete_stream": {
+    "accepted_by": "user-v2",
+    "candidate_id": "candidate-incomplete",
+    "publication_operation_key": "publication-op-incomplete-v2",
+    "schema": "publication-command/v2",
+    "workspace_id": "ws-1"
+  },
+  "command_partial": {
+    "accepted_by": "user-v2",
+    "candidate_id": "candidate-partial",
+    "publication_operation_key": "publication-op-partial-v2",
+    "schema": "publication-command/v2",
+    "workspace_id": "ws-1"
+  },
+  "result_complete": {
+    "candidate_id": "candidate-v2",
+    "content_hash": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+    "entity_id": "doc-a",
+    "entity_kind": "document",
+    "idempotent": false,
+    "provenance_receipt_id": "receipt-v2",
+    "publication_id": "publication-v2",
+    "publication_operation_key": "publication-op-v2",
+    "revision_id": "rev-2",
+    "revision_number": 2,
+    "schema": "publication-result/v2",
+    "workspace_id": "ws-1"
+  },
+  "result_incomplete_stream": {
+    "candidate_id": "candidate-incomplete",
+    "content_hash": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+    "entity_id": "doc-a",
+    "entity_kind": "document",
+    "idempotent": false,
+    "provenance_receipt_id": "receipt-incomplete-v2",
+    "publication_id": "publication-incomplete-v2",
+    "publication_operation_key": "publication-op-incomplete-v2",
+    "revision_id": "rev-3",
+    "revision_number": 3,
+    "schema": "publication-result/v2",
+    "workspace_id": "ws-1"
+  },
+  "schema": "m4-m5-public-surface-golden/v2"
+}
