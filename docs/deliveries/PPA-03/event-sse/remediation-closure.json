@@ -1,0 +1,52 @@
+{
+  "schema": "ppa03-event-sse-remediation-evidence/v1",
+  "node_id": "NW-P3-EVENT-SSE-03",
+  "remediation_parent": "4790cbcdb83b2e0bbfad9636552e8fedb22b0d2d",
+  "finding_manifest": {
+    "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\findings\\wave-d-nw-p3-event-sse-sol-block-v1.json",
+    "sha256": "9df4ca6e1254f228acb82a34c276a679105a68da466bbdbbb0ecbb669490f4f7"
+  },
+  "review_result_sha256": "a3af596003bbaed500702224496da9679a8352a950ce4be27fd022c7736b253b",
+  "findings": [
+    {
+      "id": "NW-P3-SSE-SOL-F-001",
+      "source_status": "addressed_pending_reviewer",
+      "implementation": [
+        "Supplied Event connections fail before writes unless connection.in_transaction is true.",
+        "Owned Job append keeps INSERT and high-water CAS inside CoreAuthorityRepository.transaction."
+      ],
+      "tests": [
+        "test_job_insert_and_high_water_cas_roll_back_together"
+      ]
+    },
+    {
+      "id": "NW-P3-SSE-SOL-F-002",
+      "source_status": "addressed_pending_reviewer",
+      "implementation": [
+        "A contract-valid workspace_id=null Core Event fails closed after schema validation and before INSERT.",
+        "The authority/cursor Delta names the nullable migration owner, required downstream surfaces and stop condition."
+      ],
+      "tests": [
+        "test_nullable_global_core_event_fails_closed_until_authority_delta"
+      ],
+      "delta": "coordination/PPA-03/event-sse/authority-and-cursor-delta.md"
+    },
+    {
+      "id": "NW-P3-SSE-SOL-F-003",
+      "source_status": "addressed_pending_reviewer",
+      "implementation": [
+        "Dedicated query-only SQLite connections use an explicit read transaction.",
+        "Job poll projection shares one pinned transaction across terminal anchors, aggregate snapshot, replay high-water, floor and Events.",
+        "next_job_event_seq_to_after makes the next-unread to exclusive-after conversion explicit."
+      ],
+      "tests": [
+        "test_poll_projection_is_pinned_against_second_connection_append_and_prune",
+        "test_next_job_event_seq_conversion_rejects_non_positive_values"
+      ],
+      "delta": "coordination/PPA-03/event-sse/authority-and-cursor-delta.md"
+    }
+  ],
+  "review_owner": "01a04849-2cc2-7542-b07e-bbbc9b4f9b2b",
+  "self_reviewed": false,
+  "acceptance_claimed": false
+}
