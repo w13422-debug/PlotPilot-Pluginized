@@ -1,0 +1,41 @@
+NW-P1-AUTHORITY-PUBLICATION-SEAM-G2 raw validation
+base=8e3d3a7268e0d28559a7212790e3ab9f22c1453a
+branch=codex/nw-p1-authority-publication-seam-g2
+donor_push=DISABLED
+
+COMMAND: python -B -m pytest -p no:cacheprovider tests/p1-core/authority-publication-seam -q --basetemp=C:\Users\Administrator\AppData\Local\Temp\ppa-aps-g2-seam
+RESULT:
+============================= test session starts =============================
+collected 22 items
+============================= 22 passed in 1.11s ==============================
+EXIT: 0
+
+COMMAND: python -B -m pytest -p no:cacheprovider tests/p1-core/execution-transaction -q --basetemp=C:\Users\Administrator\AppData\Local\Temp\ppa-aps-g2-exec2
+RESULT:
+============================= test session starts =============================
+collected 78 items
+============================= 78 passed in 3.66s ==============================
+EXIT: 0
+
+COMMAND: python -B -m pytest -p no:cacheprovider tests/p1-core -q --basetemp=C:\Users\Administrator\AppData\Local\Temp\ppa-aps-g2-full
+RESULT:
+============================= test session starts =============================
+collected 181 items
+======================= 180 passed, 1 skipped in 18.36s =======================
+EXIT: 0
+
+COMMAND: python -B -m compileall -q backend/plotpilot_core/repositories backend/plotpilot_core/publication
+RESULT: no output
+EXIT: 0
+
+COMMAND: python -B tools/integration/generate_contract_manifest.py --check
+RESULT: contract manifest is deterministic (141 files)
+EXIT: 0
+
+COMMAND: git diff --check
+RESULT: exit 0; line-ending notices only
+EXIT: 0
+
+COMMAND: python -B -m ruff check ...
+RESULT: dependency unavailable (`No module named ruff`); not part of the taskbook acceptance commands
+EXIT: 1 (not run as an acceptance gate)

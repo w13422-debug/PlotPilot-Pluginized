@@ -1,0 +1,55 @@
+{
+  "schema": "scoped-contract-delta/v1",
+  "delta_id": "NW-P1-APS-G2-CD-001",
+  "generation_id": "NW-P1-AUTHORITY-PUBLICATION-SEAM-G2",
+  "task_id": "WAVE-D-G2-NW-P1-APS-SOURCE-01",
+  "status": "remediation_implemented_pending_same_reviewer_targeted_closure",
+  "base": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+  "reviewed_parent": "6c0f7920d1968ded03d0f6eb704e070ac1345918",
+  "finding_manifest_sha256": "c5765d6f7224a6110c26721b553b0130eb2c041867d696917cc624329dfc6e43",
+  "affected_contract_ids": [
+    "core-authority-command-query/v1",
+    "publication-command-result/v1",
+    "asset-metadata/v1"
+  ],
+  "public_contract_changes": false,
+  "implemented_capabilities": [
+    "Publication and source-Candidate Revision provenance share one complete durable Candidate parent/source/Asset/base closure verifier",
+    "source-Candidate Asset deletion, metadata/byte/hash drift, missing or cross-Workspace ancestry, and base content/hash drift fail typed before Revision or ledger mutation",
+    "publication receipt replay is consulted before staged fingerprint CAS so overlapping identical operation-key requests converge on the first authoritative result",
+    "same operation key with different canonical command payload remains a typed operation_key_reuse conflict"
+  ],
+  "finding_disposition": {
+    "NW-P1-APS-SOL-F-001": "CLOSED",
+    "NW-P1-APS-SOL-F-002": "CLOSED",
+    "NW-P1-APS-SOL-F-003": "CLOSED",
+    "NW-P1-APS-SOL-F-004": "implemented_and_tested_pending_same_reviewer_targeted_closure",
+    "NW-P1-APS-SOL-F-005": "implemented_and_tested_pending_same_reviewer_targeted_closure",
+    "NW-P1-APS-SOL-F-006": "implemented_and_tested_pending_same_reviewer_targeted_closure"
+  },
+  "closure_dependencies": [
+    "F-004 remains uncleared until the same reviewer accepts aps-source-candidate-full-closure, aps-zero-side-effects-on-source-drift, and aps-p1-regression evidence",
+    "F-006 remains uncleared until the same reviewer accepts aps-concurrent-identical-operation-replay, aps-operation-key-payload-conflict, and aps-publication-regression evidence",
+    "Core HTTP G2 remains blocked until controller-serialized targeted closure"
+  ],
+  "stopped_or_deferred": [
+    "publication.node_structure",
+    "publication.relation_set",
+    "publication.incomplete_stream",
+    "cascade-dependent Workspace/Node delete semantics",
+    "revision.content offset>total",
+    "HTTP/app mount and public-contract/SDK changes",
+    "automatic Publication and any second database/ledger"
+  ],
+  "evidence": [
+    "docs/deliveries/PPA-01/authority-publication-seam/evidence/remediation-raw-validation.txt",
+    "docs/deliveries/PPA-01/authority-publication-seam/evidence/remediation-verification-summary.json",
+    "tests/p1-core/authority-publication-seam/test_publication_seam_g2.py"
+  ],
+  "scope_deviations": [],
+  "skips": [],
+  "core_http_g2_unlocked": false,
+  "central_acceptance": "not performed; same-reviewer targeted closure remains mandatory",
+  "merge_eligible": false,
+  "donor_push": "DISABLED"
+}

@@ -1,0 +1,92 @@
+{
+  "schema": "active-work/v1",
+  "revision": 2,
+  "status": "remediation_source_commit_payload_ready_for_controller_verification",
+  "generation_id": "NW-P1-AUTHORITY-PUBLICATION-SEAM-G2",
+  "task_id": "WAVE-D-G2-NW-P1-APS-SOURCE-01",
+  "identity": {
+    "branch": "codex/nw-p1-authority-publication-seam-g2",
+    "reviewed_parent": "6c0f7920d1968ded03d0f6eb704e070ac1345918",
+    "parent_tree": "deb4328410cf0bb3460ed4b32eb0fbc97f8a8f23",
+    "donor_push": "DISABLED"
+  },
+  "worktree_protection": "The containing remediation commit must be the only direct child of reviewed_parent; only approved/exclusive paths may differ.",
+  "completed": [
+    "Implemented the F-004 source-Candidate full-closure/base-content prewrite checks by reusing the existing Publication closure verifier.",
+    "Implemented the F-006 committed-receipt-before-fingerprint replay ordering while preserving different-payload conflict.",
+    "Aligned the F-005 scoped Delta with tested behavior and explicit blocked dependencies.",
+    "Recorded every frozen-manifest required test under its exact EVIDENCE_LABEL and passed the affected/P1/static gates.",
+    "Recorded scope_deviations=[], skips=[], out_of_set=0 without central acceptance or merge-eligibility claims."
+  ],
+  "in_progress": "The containing commit identity is intentionally reported out of band; same-reviewer targeted closure remains external.",
+  "next_steps": [
+    "Controller verifies the containing commit has exactly one parent equal to 6c0f7920d1968ded03d0f6eb704e070ac1345918, clean tree and owned paths only.",
+    "Same reviewer performs Finding-ID-targeted closure for F-004/F-005/F-006.",
+    "Keep Core HTTP G2, merge, tag and push disabled until controller serialization."
+  ],
+  "validation": [
+    {
+      "label": "aps-source-candidate-full-closure",
+      "result": "1 passed",
+      "exit_code": 0
+    },
+    {
+      "label": "aps-zero-side-effects-on-source-drift",
+      "result": "6 passed",
+      "exit_code": 0
+    },
+    {
+      "label": "aps-concurrent-identical-operation-replay",
+      "result": "1 passed",
+      "exit_code": 0
+    },
+    {
+      "label": "aps-operation-key-payload-conflict",
+      "result": "1 passed",
+      "exit_code": 0
+    },
+    {
+      "label": "aps-delta-claim-consistency",
+      "result": "1 passed",
+      "exit_code": 0
+    },
+    {
+      "label": "aps-publication-regression",
+      "result": "32 passed",
+      "exit_code": 0
+    },
+    {
+      "label": "aps-p1-regression",
+      "result": "191 passed",
+      "exit_code": 0
+    },
+    {
+      "label": "aps-ruff",
+      "result": "All checks passed",
+      "exit_code": 0
+    },
+    {
+      "label": "aps-compileall",
+      "result": "exit 0",
+      "exit_code": 0
+    },
+    {
+      "label": "aps-contract-manifest",
+      "result": "deterministic (141 files)",
+      "exit_code": 0
+    },
+    {
+      "label": "aps-git-diff-check",
+      "result": "exit 0",
+      "exit_code": 0
+    }
+  ],
+  "scope_deviations": [],
+  "skips": [],
+  "prohibitions": [
+    "No merge, rebase, cherry-pick, reset, clean, amend, tag or push.",
+    "No public HTTP/SDK/schema or Core HTTP G2 changes.",
+    "No source-task self-acceptance or Finding CLEARED claim."
+  ],
+  "updated_at": "2026-08-30T12:16:36.0317240+08:00"
+}

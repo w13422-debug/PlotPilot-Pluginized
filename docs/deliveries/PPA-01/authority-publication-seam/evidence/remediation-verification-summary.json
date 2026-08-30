@@ -1,0 +1,109 @@
+{
+  "schema": "ppa-authority-publication-seam-remediation-verification/v1",
+  "generation_id": "NW-P1-AUTHORITY-PUBLICATION-SEAM-G2",
+  "task_id": "WAVE-D-G2-NW-P1-APS-SOURCE-01",
+  "reviewed_parent": "6c0f7920d1968ded03d0f6eb704e070ac1345918",
+  "parent_tree": "deb4328410cf0bb3460ed4b32eb0fbc97f8a8f23",
+  "containing_commit": "reported out of band because embedding its hash would be self-referential",
+  "finding_manifest": {
+    "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\findings\\wave-d-g2-nw-p1-authority-publication-seam-finding-manifest-v1.json",
+    "sha256": "c5765d6f7224a6110c26721b553b0130eb2c041867d696917cc624329dfc6e43"
+  },
+  "required_tests": {
+    "aps-source-candidate-full-closure": {
+      "finding_id": "NW-P1-APS-SOL-F-004",
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/authority-publication-seam/test_publication_seam_g2.py::test_aps_source_candidate_full_closure -q",
+      "result": "1 passed in 0.66s",
+      "exit_code": 0
+    },
+    "aps-zero-side-effects-on-source-drift": {
+      "finding_id": "NW-P1-APS-SOL-F-004",
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/authority-publication-seam/test_publication_seam_g2.py::test_aps_zero_side_effects_on_source_drift -q",
+      "result": "6 passed in 0.78s",
+      "exit_code": 0
+    },
+    "aps-concurrent-identical-operation-replay": {
+      "finding_id": "NW-P1-APS-SOL-F-006",
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/authority-publication-seam/test_publication_seam_g2.py::test_aps_concurrent_identical_operation_replay -q",
+      "result": "1 passed in 0.54s",
+      "exit_code": 0
+    },
+    "aps-operation-key-payload-conflict": {
+      "finding_id": "NW-P1-APS-SOL-F-006",
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/authority-publication-seam/test_publication_seam_g2.py::test_aps_operation_key_payload_conflict -q",
+      "result": "1 passed in 0.64s",
+      "exit_code": 0
+    },
+    "aps-delta-claim-consistency": {
+      "finding_id": "NW-P1-APS-SOL-F-005",
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/authority-publication-seam/test_publication_seam_g2.py::test_aps_delta_claim_consistency -q",
+      "result": "1 passed in 0.49s",
+      "exit_code": 0
+    },
+    "aps-publication-regression": {
+      "finding_id": "NW-P1-APS-SOL-F-006",
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/authority-publication-seam -q",
+      "result": "32 passed in 1.57s",
+      "exit_code": 0
+    },
+    "aps-p1-regression": {
+      "finding_id": "NW-P1-APS-SOL-F-004",
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core -q",
+      "result": "191 passed in 18.32s",
+      "exit_code": 0
+    }
+  },
+  "additional_gates": [
+    {
+      "label": "aps-ruff",
+      "result": "All checks passed!",
+      "exit_code": 0
+    },
+    {
+      "label": "aps-compileall",
+      "result": "no output",
+      "exit_code": 0
+    },
+    {
+      "label": "aps-contract-manifest",
+      "result": "contract manifest is deterministic (141 files)",
+      "exit_code": 0
+    },
+    {
+      "label": "aps-git-diff-check",
+      "result": "exit 0; LF-to-CRLF notices only",
+      "exit_code": 0
+    }
+  ],
+  "raw_transcript": {
+    "path": "evidence/remediation-raw-validation.txt",
+    "sha256": "eacc24ce53e0a43d1b34450835f020694fdfa162f937f0ceb92abba4fa907d91"
+  },
+  "finding_coverage": {
+    "NW-P1-APS-SOL-F-004": "implemented_and_tested_pending_same_reviewer_targeted_closure",
+    "NW-P1-APS-SOL-F-005": "implemented_and_tested_pending_same_reviewer_targeted_closure",
+    "NW-P1-APS-SOL-F-006": "implemented_and_tested_pending_same_reviewer_targeted_closure"
+  },
+  "scope_deviations": [],
+  "skips": [],
+  "out_of_set": 0,
+  "public_contract_changes": false,
+  "core_http_g2_unlocked": false,
+  "central_acceptance": "not performed; same-reviewer targeted closure remains mandatory",
+  "merge_eligible": false,
+  "donor_push": "DISABLED",
+  "dependencies": [
+    "Reviewed parent 6c0f7920d1968ded03d0f6eb704e070ac1345918",
+    "Same-reviewer targeted closure and controller serialization precede Core HTTP G2"
+  ],
+  "stopped_capabilities": [
+    "publication.node_structure",
+    "publication.relation_set",
+    "publication.incomplete_stream",
+    "cascade-dependent Workspace/Node delete semantics",
+    "revision.content offset>total",
+    "HTTP/app mount and public-contract/SDK changes",
+    "automatic Publication and any second database/ledger"
+  ],
+  "generated_at": "2026-08-30T12:16:36.031724+08:00"
+}
