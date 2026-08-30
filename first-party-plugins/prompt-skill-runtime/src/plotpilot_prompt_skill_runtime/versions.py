@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from types import MappingProxyType
-from typing import Any, Mapping
+from typing import Any
 
 from plotpilot_plugin_sdk import ContractValidationError
 
@@ -100,7 +101,7 @@ class SkillReleaseHistory:
     def active(self) -> ActiveVersion | None:
         return next((item for item in self.releases if item.version_id == self.active_version_id), None)
 
-    def add(self, version: ActiveVersion, *, activate: bool = False) -> "SkillReleaseHistory":
+    def add(self, version: ActiveVersion, *, activate: bool = False) -> SkillReleaseHistory:
         if any(item.version_id == version.version_id for item in self.releases):
             raise ContractValidationError("same Skill version ID cannot be replaced")
         return replace(
@@ -109,7 +110,7 @@ class SkillReleaseHistory:
             active_version_id=version.version_id if activate else self.active_version_id,
         )
 
-    def synchronize(self, incoming: ActiveVersion) -> tuple["SkillReleaseHistory", VersionDecision]:
+    def synchronize(self, incoming: ActiveVersion) -> tuple[SkillReleaseHistory, VersionDecision]:
         decision = protect_active_version(self.active, incoming)
         if not decision.changed:
             return self, decision
@@ -122,7 +123,7 @@ class SkillReleaseHistory:
             return replace(self, active_version_id=existing.version_id), VersionDecision(existing, True, "existing-version-selected")
         return self.add(incoming, activate=True), decision
 
-    def delete_package(self, release_id: str) -> "SkillReleaseHistory":
+    def delete_package(self, release_id: str) -> SkillReleaseHistory:
         """Drop executable/package bytes while retaining legacy receipt lookup."""
 
         release = next((item for item in self.releases if item.release_id == release_id), None)

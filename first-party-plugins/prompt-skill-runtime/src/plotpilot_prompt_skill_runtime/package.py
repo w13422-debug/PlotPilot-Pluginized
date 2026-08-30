@@ -13,10 +13,11 @@ import ast
 import json
 import re
 import zipfile
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Iterable, Mapping
+from typing import Any
 
 from plotpilot_plugin_sdk import (
     ContractError,
@@ -24,14 +25,16 @@ from plotpilot_plugin_sdk import (
     assert_valid,
     build_files_sha256,
     parse_json_bytes,
-    sha256_hex,
     skill_package_hash,
     skill_release_id,
     verify_package_manifest,
+)
+from plotpilot_plugin_sdk import (
     verify_skill_identity as _sdk_verify_skill_identity,
 )
 from plotpilot_plugin_sdk.package import normalize_relative_path
 
+from .immutability import freeze_json, thaw_json
 
 _ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$")
 _HASH = re.compile(r"^[0-9a-f]{64}$")
@@ -271,7 +274,7 @@ class SkillPackage:
     supplied_files_sha256: bytes | None = None
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "manifest", MappingProxyType(dict(self.manifest)))
+        object.__setattr__(self, "manifest", freeze_json(dict(self.manifest), path="manifest"))
         object.__setattr__(self, "files", MappingProxyType({k: bytes(v) for k, v in self.files.items()}))
 
     @classmethod
@@ -282,7 +285,7 @@ class SkillPackage:
         expected_package_hash: str | None = None,
         expected_release_id: str | None = None,
         expected_files_sha256: bytes | None = None,
-    ) -> "SkillPackage":
+    ) -> SkillPackage:
         material, supplied_manifest = _normalise_files(files)
         # Every loadable package must carry the canonical control manifest.
         # An external expected value is only an assertion about a control file
@@ -315,7 +318,7 @@ class SkillPackage:
         return package
 
     @classmethod
-    def from_directory(cls, root: str | Path) -> "SkillPackage":
+    def from_directory(cls, root: str | Path) -> SkillPackage:
         base = Path(root)
         if not base.is_dir():
             raise FileNotFoundError(f"Skill package directory not found: {base}")
@@ -330,7 +333,7 @@ class SkillPackage:
         return cls.from_files(files)
 
     @classmethod
-    def from_zip(cls, archive: str | Path) -> "SkillPackage":
+    def from_zip(cls, archive: str | Path) -> SkillPackage:
         with zipfile.ZipFile(archive, "r") as handle:
             files: dict[str, bytes] = {}
             for info in handle.infolist():
@@ -346,7 +349,7 @@ class SkillPackage:
         return cls.from_files(files)
 
     @classmethod
-    def load(cls, source: str | Path) -> "SkillPackage":
+    def load(cls, source: str | Path) -> SkillPackage:
         path = Path(source)
         if path.is_dir():
             return cls.from_directory(path)
@@ -422,8 +425,29 @@ class SkillPackage:
             expected_release,
             expected_files_sha256=expected_files_sha256,
         )
-        # Rehydrate the frozen view as a plain dict for schema validation.
-        assert_valid("plotpilot-skill/v1", dict(self.manifest))
+        # Rehydrate the recursively frozen view for public schema validation.
+        assert_valid("plotpilot-skill/v1", thaw_json(self.manifest))
+
+    def verify_authoritative(self) -> None:
+        """Reparse package bytes and reject any frozen-view or identity drift."""
+
+        material = {path: bytes(content) for path, content in self.files.items()}
+        manifest = _manifest_from_files(material)
+        if manifest != thaw_json(self.manifest):
+            raise ContractValidationError("Skill manifest differs from authoritative package bytes")
+        identity = calculate_skill_identity(
+            material,
+            manifest["skill_id"],
+            manifest["version"],
+            expected_files_sha256=self.supplied_files_sha256,
+        )
+        if identity != self.identity:
+            raise ContractValidationError("Skill package identity differs from authoritative bytes")
+        self.verify(
+            expected_package_hash=identity.package_hash,
+            expected_release_id=identity.release_id,
+            expected_files_sha256=self.supplied_files_sha256,
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -433,11 +457,11 @@ class PromptPackage:
     skill: SkillPackage
 
     @classmethod
-    def load(cls, source: str | Path) -> "PromptPackage":
+    def load(cls, source: str | Path) -> PromptPackage:
         return cls(SkillPackage.load(source))
 
     @classmethod
-    def from_files(cls, files: Mapping[str, bytes]) -> "PromptPackage":
+    def from_files(cls, files: Mapping[str, bytes]) -> PromptPackage:
         return cls(SkillPackage.from_files(files))
 
     @property

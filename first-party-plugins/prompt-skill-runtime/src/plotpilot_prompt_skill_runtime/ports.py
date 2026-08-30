@@ -7,8 +7,21 @@ before it can stage Candidates or create Jobs.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any, Protocol
+
+
+class GenerationPort(Protocol):
+    def get_generation(self, generation_id: str) -> Mapping[str, Any]: ...
+
+    def generation_state(self) -> Mapping[str, Any]: ...
+
+
+class SkillBrokerPort(Protocol):
+    def execute_skill(self, **kwargs: Any) -> Any: ...
+
+    def reconcile_skill(self, **kwargs: Any) -> Any: ...
 
 
 @dataclass(frozen=True, slots=True)

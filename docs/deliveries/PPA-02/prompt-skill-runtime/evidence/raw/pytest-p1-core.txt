@@ -1,0 +1,29 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.13, pytest-9.0.3, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-NW-P2-Prompt-Skill-Runtime-G2
+configfile: pytest.ini (WARNING: ignoring pytest config in pyproject.toml!)
+plugins: anyio-4.14.2
+collected 159 items
+
+tests\p1-core\backup-data-plane\test_backup_data_plane.py .............. [  8%]
+.......s....................................................             [ 46%]
+tests\p1-core\execution-transaction\test_broker_persistence.py ......... [ 52%]
+...........                                                              [ 59%]
+tests\p1-core\execution-transaction\test_frozen_findings_remediation.py . [ 59%]
+..........................                                               [ 76%]
+tests\p1-core\execution-transaction\test_terminal_failure_windows.py ... [ 77%]
+...........                                                              [ 84%]
+tests\p1-core\execution-transaction\test_terminal_transaction.py ....... [ 89%]
+..........                                                               [ 95%]
+tests\p1-core\test_asset_store.py ..                                     [ 96%]
+tests\p1-core\test_candidate_publication.py ..                           [ 98%]
+tests\p1-core\test_core_authority.py ...                                 [100%]
+
+============================== warnings summary ===============================
+..\..\..\..\AppData\Local\Temp\ppa-psr-pydeps-b1\_pytest\config\__init__.py:1434
+  C:\Users\Administrator\AppData\Local\Temp\ppa-psr-pydeps-b1\_pytest\config\__init__.py:1434: PytestConfigWarning: Unknown config option: asyncio_mode
+
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================= 158 passed, 1 skipped, 1 warning in 34.14s ==================

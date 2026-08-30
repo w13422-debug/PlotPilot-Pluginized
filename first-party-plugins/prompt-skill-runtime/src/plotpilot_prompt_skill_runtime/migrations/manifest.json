@@ -1,0 +1,6 @@
+{
+  "schema": "prompt-skill-runtime-migration-manifest/v1",
+  "migration_id": "p2-prompt-skill-runtime-001",
+  "path": "001_prompt_skill_runtime.sql",
+  "sha256": "7fce3f8a4c4c7b90abb12f3197751d34d943fdd1b8d80f03f5b633caad5095ef"
+}

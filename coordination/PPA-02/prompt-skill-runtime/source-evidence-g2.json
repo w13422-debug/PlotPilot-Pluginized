@@ -1,0 +1,54 @@
+{
+  "schema": "p2-prompt-skill-runtime-source-evidence/v1",
+  "task_id": "WAVE-D-G2-NW-P2-PSR-SOURCE-01",
+  "base_commit": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+  "parent_commit": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+  "branch": "codex/nw-p2-prompt-skill-runtime-g2",
+  "source_head": "this single direct-child source commit",
+  "findings_closed": [
+    "NW-P2-PSR-SOL-F-004",
+    "NW-P2-PSR-SOL-F-009"
+  ],
+  "findings_preserved_closed": [
+    "NW-P2-PSR-SOL-F-001",
+    "NW-P2-PSR-SOL-F-002",
+    "NW-P2-PSR-SOL-F-003",
+    "NW-P2-PSR-SOL-F-005",
+    "NW-P2-PSR-SOL-F-006",
+    "NW-P2-PSR-SOL-F-007",
+    "NW-P2-PSR-SOL-F-008",
+    "NW-P2-PSR-SOL-F-010",
+    "NW-P2-PSR-SOL-F-011",
+    "NW-P2-PSR-SOL-F-012",
+    "NW-P2-PSR-SOL-F-013"
+  ],
+  "raw_validation": {
+    "pytest_prompt_skill_runtime": "evidence/raw/pytest-prompt-skill-runtime.txt",
+    "pytest_p2_central": "evidence/raw/pytest-p2-central.txt",
+    "pytest_p3_job": "evidence/raw/pytest-p3-job.txt",
+    "pytest_p1_core": "evidence/raw/pytest-p1-core.txt",
+    "ruff": "evidence/raw/ruff.txt",
+    "compileall": "evidence/raw/compileall.txt",
+    "git_diff_check": "evidence/raw/git-diff-check.txt",
+    "exit_codes": {
+      "pytest_prompt_skill_runtime": 0,
+      "pytest_p2_central": 0,
+      "pytest_p3_job": 0,
+      "pytest_p1_core": 0,
+      "ruff": 0,
+      "compileall": 0,
+      "git_diff_check": 0
+    }
+  },
+  "donor_push": "DISABLED",
+  "tag": "none",
+  "upstream": "none",
+  "stopped_capabilities": [
+    "partial ModelReceipt attribution and local-success fallback",
+    "model_claimed/participated without authoritative receipt",
+    "SQL-text casefold and weak same-name-table migration acceptance",
+    "fake migration ledger and IF NOT EXISTS drift acceptance",
+    "app mount and public-contract changes"
+  ],
+  "review_status": "source only; fresh gpt-5.6-sol/max review remains external"
+}

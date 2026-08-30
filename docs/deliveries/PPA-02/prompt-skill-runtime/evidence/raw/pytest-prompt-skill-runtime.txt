@@ -1,0 +1,22 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.13, pytest-9.0.3, pluggy-1.6.0
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-NW-P2-Prompt-Skill-Runtime-G2
+configfile: pytest.ini (WARNING: ignoring pytest config in pyproject.toml!)
+plugins: anyio-4.14.2
+collected 87 items
+
+tests\p2-plugin-platform\prompt-skill-runtime\test_authority.py .....    [  5%]
+tests\p2-plugin-platform\prompt-skill-runtime\test_migration.py ........ [ 14%]
+.                                                                        [ 16%]
+tests\p2-plugin-platform\prompt-skill-runtime\test_model_receipt.py .... [ 20%]
+....................................................................     [ 98%]
+tests\p2-plugin-platform\prompt-skill-runtime\test_runtime.py .          [100%]
+
+============================== warnings summary ===============================
+..\..\..\..\AppData\Local\Temp\ppa-psr-pydeps-b1\_pytest\config\__init__.py:1434
+  C:\Users\Administrator\AppData\Local\Temp\ppa-psr-pydeps-b1\_pytest\config\__init__.py:1434: PytestConfigWarning: Unknown config option: asyncio_mode
+
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 87 passed, 1 warning in 0.57s ========================
