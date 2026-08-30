@@ -1,0 +1,23 @@
+{
+  "argv": [
+    "git",
+    "diff",
+    "--check",
+    "8e3d3a7268e0d28559a7212790e3ab9f22c1453a..3f06d25e30249a2826442f43808b397f27ef22a7",
+    "--"
+  ],
+  "binding": {
+    "blocked_evidence_commit": "031418350f6ddb835e4a5913ee4ff5c5c23324a5",
+    "h_c": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+    "merge_tip": "08cd1726dce76419408af786789b28c7a09f8e3c",
+    "remediation_head": "3f06d25e30249a2826442f43808b397f27ef22a7",
+    "remediation_tree": "00a7f637342ebd0ea02c5c9f6803bbd591a95c0f"
+  },
+  "command": "git diff --check 8e3d3a7268e0d28559a7212790e3ab9f22c1453a..3f06d25e30249a2826442f43808b397f27ef22a7 --",
+  "duration_seconds": 0.064,
+  "exit_code": 0,
+  "label": "09-git-diff-check",
+  "schema": "wave-d-r2-command-result/v1",
+  "stderr": "",
+  "stdout": ""
+}

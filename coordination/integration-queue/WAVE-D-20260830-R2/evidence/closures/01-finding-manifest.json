@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "reviewed_baseline": "commit:031418350f6ddb835e4a5913ee4ff5c5c23324a5",
+  "findings": [
+    {
+      "finding_id": "WAVE-D-INTEGRATION-SEMANTIC-001",
+      "severity": "P1",
+      "blocking": true,
+      "failure_mechanism": "Story State G3 test support imports the deliberately removed run_skill_chain fallback; production Story State already uses accepted verify_chain, so the stale test builder prevents collection without identifying a product seam defect.",
+      "impact": "The integrated Story State suite cannot collect, so the five-source candidate cannot prove chain parity or zero-write negative behavior.",
+      "file_line_evidence": [
+        "tests/p5-planning/story-state-runtime/support.py:7,83-96",
+        "tests/p2-plugin-platform/prompt-skill-runtime/test_authority.py:82-96",
+        "first-party-plugins/story-state/src/plotpilot_story_state/runtime.py:179-195,385-393",
+        "coordination/integration-queue/WAVE-D-20260830/evidence/raw/07-p5-story-state-runtime.json"
+      ],
+      "approved_scope": [
+        "tests/p5-planning/story-state-runtime/support.py"
+      ],
+      "explicit_exclusions": [
+        "Do not restore or alias run_skill_chain or execute_skill_chain",
+        "Do not import private _materialize_skill_chain",
+        "Do not modify Prompt Runtime, Story State production source, SDK or contracts",
+        "Do not mock/bypass verify_chain or weaken/remove named negative tests",
+        "Do not use unchecked pre-baked chain mappings"
+      ],
+      "acceptance_criteria": [
+        "two_step_chain uses only public build_receipt and build_chain_result builders with frozen bundle-anchored receipts",
+        "Distinct H0/H1/H2, previous_receipt_hash continuity and final-output binding are preserved",
+        "Prompt fallback negative proves run_skill_chain and execute_skill_chain remain absent",
+        "Story State 41 and full P5 60 pass with existing positive/negative mutation assertions intact"
+      ],
+      "required_tests": [
+        "prompt-runtime-no-public-local-success-fallback",
+        "story-state-public-builder-chain-positive",
+        "story-state-foreign-snapshot-negative",
+        "story-state-recomputed-h0-negative",
+        "story-state-runtime-41",
+        "p5-planning-60"
+      ]
+    },
+    {
+      "finding_id": "WAVE-D-INTEGRATION-RUFF-001",
+      "severity": "P2",
+      "blocking": true,
+      "failure_mechanism": "Two accepted P1 import blocks are not Ruff ordered and authority.py retains an unused dataclasses.replace import.",
+      "impact": "The integrated affected-path quality gate fails even though executable behavior is unchanged.",
+      "file_line_evidence": [
+        "backend/plotpilot_core/publication/application/service.py:1-16",
+        "backend/plotpilot_core/repositories/authority.py:1-16",
+        "coordination/integration-queue/WAVE-D-20260830/evidence/raw/08-ruff-affected-python.json"
+      ],
+      "approved_scope": [
+        "backend/plotpilot_core/publication/application/service.py",
+        "backend/plotpilot_core/repositories/authority.py"
+      ],
+      "explicit_exclusions": [
+        "No executable-body changes",
+        "No public contract, SDK, schema, test expectation or dependency changes",
+        "No edits outside the two import blocks"
+      ],
+      "acceptance_criteria": [
+        "Ruff I001 is cleared in both files",
+        "Unused dataclasses.replace is removed",
+        "No executable statement changes",
+        "Focused and original affected-path Ruff commands exit 0",
+        "Authority/Publication seam 32 tests remain green"
+      ],
+      "required_tests": [
+        "focused-p1-import-ruff",
+        "original-affected-path-ruff",
+        "authority-publication-seam-32"
+      ]
+    }
+  ]
+}

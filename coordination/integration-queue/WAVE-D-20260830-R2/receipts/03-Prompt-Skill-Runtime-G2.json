@@ -1,0 +1,126 @@
+{
+  "batch_id": "Prompt-Skill-Runtime-G2",
+  "binding": {
+    "blocked_evidence": {
+      "commit": "031418350f6ddb835e4a5913ee4ff5c5c23324a5",
+      "r1_directory_tree": "51ba6b1a5931c346faf3c944d4cfa35015620df3",
+      "tree": "5fb378934575fcbcd9bc5207ae312433b65ed01a"
+    },
+    "h_c": {
+      "commit": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+      "tree": "eab64b7d5b1e3ad652aeaf48bd0085d930beca5d"
+    },
+    "merge_tip": {
+      "commit": "08cd1726dce76419408af786789b28c7a09f8e3c",
+      "tree": "ac2c9bdacf657864d85e4f6828446c057835ee88"
+    },
+    "ordered_merge_commits": [
+      "93526465b7b59353e769119c0f28d2110659e050",
+      "7ae521f2090a3a2a14cc586eeae485c0b612eda3",
+      "290ed63c7b0cb602c96c7718f5b43a5b707f3026",
+      "d6c7115024070b00f2c6cc69febdf18348ee8652",
+      "08cd1726dce76419408af786789b28c7a09f8e3c"
+    ],
+    "ordered_source_heads": [
+      "28b2f7e307d166e85d5a715b9992eed5f0701151",
+      "7b6e104c39d89417a3d7594a6d75ffc83f5b3371",
+      "2b096d3dc0810bb73947f4cb2c9c8ea48372d141",
+      "fad52f0b91a477da4be7695f20ab6ff7a22f88d8",
+      "eda1a7e34f73c78b9819c390653906b70afa56af"
+    ],
+    "remediation": {
+      "changed_paths": [
+        "backend/plotpilot_core/publication/application/service.py",
+        "backend/plotpilot_core/repositories/authority.py",
+        "tests/p5-planning/story-state-runtime/support.py"
+      ],
+      "commit": "3f06d25e30249a2826442f43808b397f27ef22a7",
+      "parent": "031418350f6ddb835e4a5913ee4ff5c5c23324a5",
+      "tree": "00a7f637342ebd0ea02c5c9f6803bbd591a95c0f"
+    }
+  },
+  "merge_commit": "290ed63c7b0cb602c96c7718f5b43a5b707f3026",
+  "merge_tree": "169e8c05dff0a388098974014135a4b203df0b82",
+  "order": 3,
+  "ordered_parents": [
+    "7ae521f2090a3a2a14cc586eeae485c0b612eda3",
+    "2b096d3dc0810bb73947f4cb2c9c8ea48372d141"
+  ],
+  "original_blocked_receipt": {
+    "bytes": 5643,
+    "path": "coordination/integration-queue/WAVE-D-20260830/receipts/03-Prompt-Skill-Runtime-G2.json",
+    "sha256": "e271c0c754477b229f02bda6463f831b27e913f664ab98fb63036df2b9dd8377"
+  },
+  "schema": "wave-d-r2-merge-receipt/v1",
+  "source_delta_path_count": 38,
+  "source_delta_paths": [
+    "coordination/PPA-02/prompt-skill-runtime/source-evidence-g2.json",
+    "docs/deliveries/PPA-02/prompt-skill-runtime/evidence/raw/compileall.txt",
+    "docs/deliveries/PPA-02/prompt-skill-runtime/evidence/raw/git-diff-check.txt",
+    "docs/deliveries/PPA-02/prompt-skill-runtime/evidence/raw/pytest-p1-core.txt",
+    "docs/deliveries/PPA-02/prompt-skill-runtime/evidence/raw/pytest-p2-central.txt",
+    "docs/deliveries/PPA-02/prompt-skill-runtime/evidence/raw/pytest-p3-job.txt",
+    "docs/deliveries/PPA-02/prompt-skill-runtime/evidence/raw/pytest-prompt-skill-runtime.txt",
+    "docs/deliveries/PPA-02/prompt-skill-runtime/evidence/raw/ruff.txt",
+    "docs/deliveries/PPA-02/prompt-skill-runtime/source-candidate-g2.md",
+    "first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/__init__.py",
+    "first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/attribution.py",
+    "first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/chain.py",
+    "first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/domain.py",
+    "first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/immutability.py",
+    "first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/migrations/.gitattributes",
+    "first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/migrations/001_prompt_skill_runtime.sql",
+    "first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/migrations/manifest.json",
+    "first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/package.py",
+    "first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/persistence.py",
+    "first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/ports.py",
+    "first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/runtime.py",
+    "first-party-plugins/prompt-skill-runtime/src/plotpilot_prompt_skill_runtime/versions.py",
+    "tests/p2-plugin-platform/prompt-skill-runtime/conftest.py",
+    "tests/p2-plugin-platform/prompt-skill-runtime/evidence/raw/compileall.txt",
+    "tests/p2-plugin-platform/prompt-skill-runtime/evidence/raw/git-diff-check.txt",
+    "tests/p2-plugin-platform/prompt-skill-runtime/evidence/raw/pytest-p1-core.txt",
+    "tests/p2-plugin-platform/prompt-skill-runtime/evidence/raw/pytest-p2-central.txt",
+    "tests/p2-plugin-platform/prompt-skill-runtime/evidence/raw/pytest-p3-job.txt",
+    "tests/p2-plugin-platform/prompt-skill-runtime/evidence/raw/pytest-prompt-skill-runtime.txt",
+    "tests/p2-plugin-platform/prompt-skill-runtime/evidence/raw/pytest-required-findings.txt",
+    "tests/p2-plugin-platform/prompt-skill-runtime/evidence/raw/ruff.txt",
+    "tests/p2-plugin-platform/prompt-skill-runtime/evidence/raw/validation-exit-codes.json",
+    "tests/p2-plugin-platform/prompt-skill-runtime/evidence/remediation-evidence.json",
+    "tests/p2-plugin-platform/prompt-skill-runtime/test_authority.py",
+    "tests/p2-plugin-platform/prompt-skill-runtime/test_finding_remediation.py",
+    "tests/p2-plugin-platform/prompt-skill-runtime/test_migration.py",
+    "tests/p2-plugin-platform/prompt-skill-runtime/test_model_receipt.py",
+    "tests/p2-plugin-platform/prompt-skill-runtime/test_runtime.py"
+  ],
+  "source_head": "2b096d3dc0810bb73947f4cb2c9c8ea48372d141",
+  "source_is_remediation_ancestor": true,
+  "source_review": {
+    "completion_allowed": true,
+    "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\verdicts\\wave-d-g2-nw-p2-prompt-skill-runtime-sol-targeted-validated-verdict-v1.json",
+    "sha256": "c01964b9681c22062defd56d8786c865adf0402e9d9940d4c584639a90515eef",
+    "verdict": "PASS"
+  },
+  "source_tree": "8cdd188d8ad98c386a5be016dc38ec4d3c4b71a9",
+  "staged_delta_equals_source": true,
+  "status": "INTEGRATED_SOURCE_PRESERVED",
+  "validation": [
+    {
+      "bytes": 1524,
+      "command": "python -B -m pytest -p no:cacheprovider tests/p2-plugin-platform/prompt-skill-runtime/test_authority.py::test_no_public_or_defined_local_success_fallback -q",
+      "exit_code": 0,
+      "label": "01-prompt-fallback-negative",
+      "path": "coordination/integration-queue/WAVE-D-20260830-R2/evidence/raw/01-prompt-fallback-negative.json",
+      "sha256": "03bf9b04a5988785e4aeeaa2400fb4bb6a847ecbf7ef1fcc544b1f3d771b56d3"
+    },
+    {
+      "bytes": 1985,
+      "command": "python -B -m pytest -p no:cacheprovider tests/p2-plugin-platform/prompt-skill-runtime -q",
+      "exit_code": 0,
+      "label": "04-prompt-skill-runtime-96",
+      "path": "coordination/integration-queue/WAVE-D-20260830-R2/evidence/raw/04-prompt-skill-runtime-96.json",
+      "sha256": "f624ce4f8b9f322bbd56dbf37d38e1552711904c920dd19997fd4a17e12b6dd3"
+    }
+  ],
+  "write_set_outside_count": 0
+}

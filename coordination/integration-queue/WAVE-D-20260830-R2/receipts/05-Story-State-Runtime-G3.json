@@ -1,0 +1,124 @@
+{
+  "batch_id": "Story-State-Runtime-G3",
+  "binding": {
+    "blocked_evidence": {
+      "commit": "031418350f6ddb835e4a5913ee4ff5c5c23324a5",
+      "r1_directory_tree": "51ba6b1a5931c346faf3c944d4cfa35015620df3",
+      "tree": "5fb378934575fcbcd9bc5207ae312433b65ed01a"
+    },
+    "h_c": {
+      "commit": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+      "tree": "eab64b7d5b1e3ad652aeaf48bd0085d930beca5d"
+    },
+    "merge_tip": {
+      "commit": "08cd1726dce76419408af786789b28c7a09f8e3c",
+      "tree": "ac2c9bdacf657864d85e4f6828446c057835ee88"
+    },
+    "ordered_merge_commits": [
+      "93526465b7b59353e769119c0f28d2110659e050",
+      "7ae521f2090a3a2a14cc586eeae485c0b612eda3",
+      "290ed63c7b0cb602c96c7718f5b43a5b707f3026",
+      "d6c7115024070b00f2c6cc69febdf18348ee8652",
+      "08cd1726dce76419408af786789b28c7a09f8e3c"
+    ],
+    "ordered_source_heads": [
+      "28b2f7e307d166e85d5a715b9992eed5f0701151",
+      "7b6e104c39d89417a3d7594a6d75ffc83f5b3371",
+      "2b096d3dc0810bb73947f4cb2c9c8ea48372d141",
+      "fad52f0b91a477da4be7695f20ab6ff7a22f88d8",
+      "eda1a7e34f73c78b9819c390653906b70afa56af"
+    ],
+    "remediation": {
+      "changed_paths": [
+        "backend/plotpilot_core/publication/application/service.py",
+        "backend/plotpilot_core/repositories/authority.py",
+        "tests/p5-planning/story-state-runtime/support.py"
+      ],
+      "commit": "3f06d25e30249a2826442f43808b397f27ef22a7",
+      "parent": "031418350f6ddb835e4a5913ee4ff5c5c23324a5",
+      "tree": "00a7f637342ebd0ea02c5c9f6803bbd591a95c0f"
+    }
+  },
+  "merge_commit": "08cd1726dce76419408af786789b28c7a09f8e3c",
+  "merge_tree": "ac2c9bdacf657864d85e4f6828446c057835ee88",
+  "order": 5,
+  "ordered_parents": [
+    "d6c7115024070b00f2c6cc69febdf18348ee8652",
+    "eda1a7e34f73c78b9819c390653906b70afa56af"
+  ],
+  "original_blocked_receipt": {
+    "bytes": 5285,
+    "path": "coordination/integration-queue/WAVE-D-20260830/receipts/05-Story-State-Runtime-G3.json",
+    "sha256": "9a9c9d046fcde38765af1da4302614990399dec8c004b08a1e5fe7fb44623198"
+  },
+  "schema": "wave-d-r2-merge-receipt/v1",
+  "source_delta_path_count": 36,
+  "source_delta_paths": [
+    "coordination/PPA-05/story-state-runtime/evidence/raw/compileall-story-state-long-path-failure.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/raw/compileall-story-state.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/raw/git-diff-check.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/raw/git-gates.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/raw/pytest-p5-planning.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/raw/pytest-required-parity-probes.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/raw/pytest-story-state-runtime.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/raw/ruff-story-state.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/raw/write-set-check.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/remediation/raw/compileall-story-state.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/remediation/raw/git-diff-check.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/remediation/raw/git-gates.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/remediation/raw/pytest-finding-labels.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/remediation/raw/pytest-p5-planning.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/remediation/raw/pytest-required-regressions.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/remediation/raw/pytest-story-state-runtime.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/remediation/raw/review-manifest-packet.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/remediation/raw/review-manifest-validate.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/remediation/raw/ruff-story-state.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/remediation/raw/write-set-check.txt",
+    "coordination/PPA-05/story-state-runtime/finding-closure-v1.json",
+    "coordination/PPA-05/story-state-runtime/remediation-evidence-v1.json",
+    "coordination/PPA-05/story-state-runtime/runtime-integration-delta-v1.json",
+    "coordination/PPA-05/story-state-runtime/source-candidate.json",
+    "docs/deliveries/PPA-05/story-state-runtime/NW-P5-STORY-STATE-RUNTIME-G3.md",
+    "first-party-plugins/story-state/src/plotpilot_story_state/__init__.py",
+    "first-party-plugins/story-state/src/plotpilot_story_state/domain.py",
+    "first-party-plugins/story-state/src/plotpilot_story_state/payloads.py",
+    "first-party-plugins/story-state/src/plotpilot_story_state/ports.py",
+    "first-party-plugins/story-state/src/plotpilot_story_state/projection.py",
+    "first-party-plugins/story-state/src/plotpilot_story_state/runtime.py",
+    "tests/p5-planning/story-state-runtime/conftest.py",
+    "tests/p5-planning/story-state-runtime/support.py",
+    "tests/p5-planning/story-state-runtime/test_payload_and_retry.py",
+    "tests/p5-planning/story-state-runtime/test_projection.py",
+    "tests/p5-planning/story-state-runtime/test_runtime.py"
+  ],
+  "source_head": "eda1a7e34f73c78b9819c390653906b70afa56af",
+  "source_is_remediation_ancestor": true,
+  "source_review": {
+    "completion_allowed": true,
+    "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\wave-d-g3-nw-p5-story-state-runtime-sol-targeted-pass-v1.json",
+    "sha256": "af2307695f84ffd1e120f88238dc657cdca83b5443d04f9ad4a75cd029f50e56",
+    "verdict": "PASS"
+  },
+  "source_tree": "dc6bf229ec9261fdd4f5cfe1586bd53914dcbd0a",
+  "staged_delta_equals_source": true,
+  "status": "INTEGRATED_SOURCE_PRESERVED",
+  "validation": [
+    {
+      "bytes": 1710,
+      "command": "python -B -m pytest -p no:cacheprovider tests/p5-planning/story-state-runtime -q",
+      "exit_code": 0,
+      "label": "02-story-state-runtime-41",
+      "path": "coordination/integration-queue/WAVE-D-20260830-R2/evidence/raw/02-story-state-runtime-41.json",
+      "sha256": "725711b84ee48ac97629eafa28ac251911ed316c2035ca353c54a18a563d19a6"
+    },
+    {
+      "bytes": 1747,
+      "command": "python -B -m pytest -p no:cacheprovider tests/p5-planning -q",
+      "exit_code": 0,
+      "label": "03-p5-planning-60",
+      "path": "coordination/integration-queue/WAVE-D-20260830-R2/evidence/raw/03-p5-planning-60.json",
+      "sha256": "18b74ad1d643d1edd81768f1d8221d180cb2b3a1b2710c4956e792f8fc4d2f94"
+    }
+  ],
+  "write_set_outside_count": 0
+}

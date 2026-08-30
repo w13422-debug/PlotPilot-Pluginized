@@ -1,0 +1,26 @@
+{
+  "argv": [
+    "python",
+    "-B",
+    "-m",
+    "pytest",
+    "-p",
+    "no:cacheprovider",
+    "tests/p2-plugin-platform/prompt-skill-runtime/test_authority.py::test_no_public_or_defined_local_success_fallback",
+    "-q"
+  ],
+  "binding": {
+    "blocked_evidence_commit": "031418350f6ddb835e4a5913ee4ff5c5c23324a5",
+    "h_c": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+    "merge_tip": "08cd1726dce76419408af786789b28c7a09f8e3c",
+    "remediation_head": "3f06d25e30249a2826442f43808b397f27ef22a7",
+    "remediation_tree": "00a7f637342ebd0ea02c5c9f6803bbd591a95c0f"
+  },
+  "command": "python -B -m pytest -p no:cacheprovider tests/p2-plugin-platform/prompt-skill-runtime/test_authority.py::test_no_public_or_defined_local_success_fallback -q",
+  "duration_seconds": 1.301,
+  "exit_code": 0,
+  "label": "01-prompt-fallback-negative",
+  "schema": "wave-d-r2-command-result/v1",
+  "stderr": "",
+  "stdout": "============================= test session starts =============================\r\nplatform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0\r\nrootdir: C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\r\nconfigfile: pytest.ini\r\nplugins: asyncio-0.26.0, anyio-4.14.2\r\nasyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\r\ncollected 1 item\r\n\r\ntests\\p2-plugin-platform\\prompt-skill-runtime\\test_authority.py .        [100%]\r\n\r\n============================== 1 passed in 0.54s ==============================\r\n"
+}

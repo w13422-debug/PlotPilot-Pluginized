@@ -1,0 +1,79 @@
+{
+  "binding": {
+    "blocked_evidence": {
+      "commit": "031418350f6ddb835e4a5913ee4ff5c5c23324a5",
+      "r1_directory_tree": "51ba6b1a5931c346faf3c944d4cfa35015620df3",
+      "tree": "5fb378934575fcbcd9bc5207ae312433b65ed01a"
+    },
+    "h_c": {
+      "commit": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+      "tree": "eab64b7d5b1e3ad652aeaf48bd0085d930beca5d"
+    },
+    "merge_tip": {
+      "commit": "08cd1726dce76419408af786789b28c7a09f8e3c",
+      "tree": "ac2c9bdacf657864d85e4f6828446c057835ee88"
+    },
+    "ordered_merge_commits": [
+      "93526465b7b59353e769119c0f28d2110659e050",
+      "7ae521f2090a3a2a14cc586eeae485c0b612eda3",
+      "290ed63c7b0cb602c96c7718f5b43a5b707f3026",
+      "d6c7115024070b00f2c6cc69febdf18348ee8652",
+      "08cd1726dce76419408af786789b28c7a09f8e3c"
+    ],
+    "ordered_source_heads": [
+      "28b2f7e307d166e85d5a715b9992eed5f0701151",
+      "7b6e104c39d89417a3d7594a6d75ffc83f5b3371",
+      "2b096d3dc0810bb73947f4cb2c9c8ea48372d141",
+      "fad52f0b91a477da4be7695f20ab6ff7a22f88d8",
+      "eda1a7e34f73c78b9819c390653906b70afa56af"
+    ],
+    "remediation": {
+      "changed_paths": [
+        "backend/plotpilot_core/publication/application/service.py",
+        "backend/plotpilot_core/repositories/authority.py",
+        "tests/p5-planning/story-state-runtime/support.py"
+      ],
+      "commit": "3f06d25e30249a2826442f43808b397f27ef22a7",
+      "parent": "031418350f6ddb835e4a5913ee4ff5c5c23324a5",
+      "tree": "00a7f637342ebd0ea02c5c9f6803bbd591a95c0f"
+    }
+  },
+  "r1_candidate_manifest_sha256": "8ee436f779c49db39d56951296fc2368fb4ab8971aa53aa479cc07acfac18b30",
+  "r1_directory_tree": "51ba6b1a5931c346faf3c944d4cfa35015620df3",
+  "records": [
+    {
+      "bytes": 2072,
+      "exit_code": 0,
+      "label": "02-p2-plugin-api",
+      "path": "coordination/integration-queue/WAVE-D-20260830/evidence/raw/02-p2-plugin-api.json",
+      "reuse_basis": "immutable R1 tree is ancestor of remediation and file blob is unchanged",
+      "sha256": "9db0110e5d5e7ccdc7dfab4777ebd0f610e181e762196983e40a3f65baaae327"
+    },
+    {
+      "bytes": 3670,
+      "exit_code": 0,
+      "label": "04-p4-plugin-management",
+      "path": "coordination/integration-queue/WAVE-D-20260830/evidence/raw/04-p4-plugin-management.json",
+      "reuse_basis": "immutable R1 tree is ancestor of remediation and file blob is unchanged",
+      "sha256": "d6a3b962d60195805c5dd938415298655876bab03d3aed38e3962c2bea611877"
+    },
+    {
+      "bytes": 2527,
+      "exit_code": 0,
+      "label": "05-p4-root-regression",
+      "path": "coordination/integration-queue/WAVE-D-20260830/evidence/raw/05-p4-root-regression.json",
+      "reuse_basis": "immutable R1 tree is ancestor of remediation and file blob is unchanged",
+      "sha256": "8da95a825ff3b1a438a046464b5bc2ee00bab56622c5af773407b10edb595627"
+    },
+    {
+      "bytes": 1251,
+      "exit_code": 0,
+      "label": "06-p4-vue-tsc",
+      "path": "coordination/integration-queue/WAVE-D-20260830/evidence/raw/06-p4-vue-tsc.json",
+      "reuse_basis": "immutable R1 tree is ancestor of remediation and file blob is unchanged",
+      "sha256": "a94476733e3eb3c5a732fc059a9a09bb669d1af120d5051a0e67d7b5dd66fa61"
+    }
+  ],
+  "schema": "wave-d-r2-ancestor-validation-reuse/v1",
+  "status": "PASS_ANCESTOR_REUSE"
+}

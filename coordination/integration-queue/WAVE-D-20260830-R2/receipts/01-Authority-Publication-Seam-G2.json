@@ -1,0 +1,96 @@
+{
+  "batch_id": "Authority-Publication-Seam-G2",
+  "binding": {
+    "blocked_evidence": {
+      "commit": "031418350f6ddb835e4a5913ee4ff5c5c23324a5",
+      "r1_directory_tree": "51ba6b1a5931c346faf3c944d4cfa35015620df3",
+      "tree": "5fb378934575fcbcd9bc5207ae312433b65ed01a"
+    },
+    "h_c": {
+      "commit": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+      "tree": "eab64b7d5b1e3ad652aeaf48bd0085d930beca5d"
+    },
+    "merge_tip": {
+      "commit": "08cd1726dce76419408af786789b28c7a09f8e3c",
+      "tree": "ac2c9bdacf657864d85e4f6828446c057835ee88"
+    },
+    "ordered_merge_commits": [
+      "93526465b7b59353e769119c0f28d2110659e050",
+      "7ae521f2090a3a2a14cc586eeae485c0b612eda3",
+      "290ed63c7b0cb602c96c7718f5b43a5b707f3026",
+      "d6c7115024070b00f2c6cc69febdf18348ee8652",
+      "08cd1726dce76419408af786789b28c7a09f8e3c"
+    ],
+    "ordered_source_heads": [
+      "28b2f7e307d166e85d5a715b9992eed5f0701151",
+      "7b6e104c39d89417a3d7594a6d75ffc83f5b3371",
+      "2b096d3dc0810bb73947f4cb2c9c8ea48372d141",
+      "fad52f0b91a477da4be7695f20ab6ff7a22f88d8",
+      "eda1a7e34f73c78b9819c390653906b70afa56af"
+    ],
+    "remediation": {
+      "changed_paths": [
+        "backend/plotpilot_core/publication/application/service.py",
+        "backend/plotpilot_core/repositories/authority.py",
+        "tests/p5-planning/story-state-runtime/support.py"
+      ],
+      "commit": "3f06d25e30249a2826442f43808b397f27ef22a7",
+      "parent": "031418350f6ddb835e4a5913ee4ff5c5c23324a5",
+      "tree": "00a7f637342ebd0ea02c5c9f6803bbd591a95c0f"
+    }
+  },
+  "merge_commit": "93526465b7b59353e769119c0f28d2110659e050",
+  "merge_tree": "67f96ab8b135d49764eb05999d3f552bffc23e42",
+  "order": 1,
+  "ordered_parents": [
+    "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+    "28b2f7e307d166e85d5a715b9992eed5f0701151"
+  ],
+  "original_blocked_receipt": {
+    "bytes": 3570,
+    "path": "coordination/integration-queue/WAVE-D-20260830/receipts/01-Authority-Publication-Seam-G2.json",
+    "sha256": "15a680e01be3af1169fbcae267999e5f2f30d4b746f4d9cda0c5b6cf5d987e03"
+  },
+  "schema": "wave-d-r2-merge-receipt/v1",
+  "source_delta_path_count": 16,
+  "source_delta_paths": [
+    "backend/plotpilot_core/publication/application/__init__.py",
+    "backend/plotpilot_core/publication/application/service.py",
+    "backend/plotpilot_core/publication/service.py",
+    "backend/plotpilot_core/repositories/authority.py",
+    "backend/plotpilot_core/repositories/authority_application/__init__.py",
+    "backend/plotpilot_core/repositories/authority_application/errors.py",
+    "backend/plotpilot_core/repositories/authority_application/service.py",
+    "coordination/PPA-01/authority-publication-seam/PARENT-STATE-UPDATE-REQUEST.json",
+    "coordination/PPA-01/authority-publication-seam/active-work.json",
+    "coordination/PPA-01/authority-publication-seam/scoped-contract-delta-v1.json",
+    "docs/deliveries/PPA-01/authority-publication-seam/README.md",
+    "docs/deliveries/PPA-01/authority-publication-seam/evidence/raw-validation.txt",
+    "docs/deliveries/PPA-01/authority-publication-seam/evidence/remediation-raw-validation.txt",
+    "docs/deliveries/PPA-01/authority-publication-seam/evidence/remediation-verification-summary.json",
+    "docs/deliveries/PPA-01/authority-publication-seam/evidence/verification-summary.json",
+    "tests/p1-core/authority-publication-seam/test_publication_seam_g2.py"
+  ],
+  "source_head": "28b2f7e307d166e85d5a715b9992eed5f0701151",
+  "source_is_remediation_ancestor": true,
+  "source_review": {
+    "completion_allowed": true,
+    "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\verdicts\\wave-d-g2-nw-p1-authority-publication-seam-sol-targeted-validated-verdict-v1.json",
+    "sha256": "207ade89e3949eae7c4136b19bbfe6fb47d38971ffd965357eb551c88d7505a9",
+    "verdict": "PASS"
+  },
+  "source_tree": "67f96ab8b135d49764eb05999d3f552bffc23e42",
+  "staged_delta_equals_source": true,
+  "status": "INTEGRATED_SOURCE_PRESERVED",
+  "validation": [
+    {
+      "bytes": 1466,
+      "command": "python -B -m pytest -p no:cacheprovider tests/p1-core/authority-publication-seam -q",
+      "exit_code": 0,
+      "label": "05-p1-authority-publication-32",
+      "path": "coordination/integration-queue/WAVE-D-20260830-R2/evidence/raw/05-p1-authority-publication-32.json",
+      "sha256": "57bf7b93e2f167aca924321c86b49c0f46f6dfb48e8386125635ae2cab9a28a1"
+    }
+  ],
+  "write_set_outside_count": 0
+}

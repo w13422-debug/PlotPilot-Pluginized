@@ -1,0 +1,28 @@
+{
+  "completion_allowed": true,
+  "remediated_baseline": "commit:3f06d25e30249a2826442f43808b397f27ef22a7",
+  "reviewed_baseline": "commit:031418350f6ddb835e4a5913ee4ff5c5c23324a5",
+  "verdicts": [
+    {
+      "evidence": [
+        "Exact direct-child diff changes only the three authorized paths; Story support is the sole semantic-path edit.",
+        "support.py uses public build_receipt/build_chain_result with distinct H0/H1/H2, receipt continuity and final-output binding; run_skill_chain, execute_skill_chain and private _materialize_skill_chain are absent.",
+        "Independent in-memory recheck passed SDK verify_skill_chain, Prompt verify_chain, Story verification and commit-once; foreign-snapshot and recomputed-H0 negatives rejected before terminal writes.",
+        "Bound remediation evidence records Prompt fallback 1, Story State 41, full P5 60 and Prompt Runtime 96 passing with no skipped checks or scope deviations."
+      ],
+      "finding_id": "WAVE-D-INTEGRATION-SEMANTIC-001",
+      "verdict": "CLEARED"
+    },
+    {
+      "evidence": [
+        "The two P1 files contain import-only edits; independent AST comparison confirms both non-import module bodies invariant.",
+        "Independent focused Ruff and exact original affected-path Ruff replay both returned All checks passed at remediated HEAD.",
+        "Bound remediation evidence records Authority/Publication seam 32, affected compileall and diff hygiene passing.",
+        "Remediated HEAD is clean, untagged, has no upstream, donor push is DISABLED, and accepted source/merge ancestry is intact."
+      ],
+      "finding_id": "WAVE-D-INTEGRATION-RUFF-001",
+      "verdict": "CLEARED"
+    }
+  ],
+  "version": 1
+}

@@ -1,0 +1,26 @@
+{
+  "schema": "wave-d-integration-blocker-targeted-review-result/v1",
+  "reviewer_agent_id": "01a0516c-450d-7120-953c-2c14b31aaa92",
+  "model": "gpt-5.6-sol",
+  "reasoning_effort": "max",
+  "reviewed_head": "031418350f6ddb835e4a5913ee4ff5c5c23324a5",
+  "remediated_head": "3f06d25e30249a2826442f43808b397f27ef22a7",
+  "remediated_tree": "00a7f637342ebd0ea02c5c9f6803bbd591a95c0f",
+  "verdict": "PASS",
+  "closed_finding_ids": [
+    "WAVE-D-INTEGRATION-SEMANTIC-001",
+    "WAVE-D-INTEGRATION-RUFF-001"
+  ],
+  "open_finding_ids": [],
+  "completion_allowed": true,
+  "merge_eligible": true,
+  "full_rereview_trigger": false,
+  "raw_review_path": "cases/plotpilot-pluginized-seven-project-construction-20260826/evidence/reviews/wave-d-integration-blocker-same-sol-targeted-pass-raw-v1.md",
+  "raw_review_sha256": "db08a4cd556f2a297b8114d015bb041bd740eb328f6f92a271b9c10bfcf57215",
+  "verdict_report_path": "cases/plotpilot-pluginized-seven-project-construction-20260826/evidence/verdicts/wave-d-integration-blocker-same-sol-targeted-verdict-report-v1.json",
+  "verdict_report_sha256": "893c49afd65ac50d2d0d2c14eb6bd5fdb6835f4f21d04a3e96558cdb1d058634",
+  "validated_verdict_path": "cases/plotpilot-pluginized-seven-project-construction-20260826/evidence/verdicts/wave-d-integration-blocker-same-sol-targeted-validated-verdict-v1.json",
+  "validated_verdict_sha256": "1f2ada95f10c57b4889794514852dee44479b15152c363e14a56a869f0cd5d6c",
+  "reviewed_at": "2026-08-30T15:08:32+08:00",
+  "serialization_owner": "controller"
+}

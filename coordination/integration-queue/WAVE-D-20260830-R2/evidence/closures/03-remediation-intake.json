@@ -1,0 +1,59 @@
+{
+  "schema": "wave-d-bounded-integration-remediation-central-intake/v1",
+  "task_id": "WAVE-D-BOUNDED-INTEGRATION-REMEDIATION-01",
+  "p0_thread_id": "01a03c8c-eee8-7830-8fa6-05528019f69f",
+  "parent": "031418350f6ddb835e4a5913ee4ff5c5c23324a5",
+  "head": "3f06d25e30249a2826442f43808b397f27ef22a7",
+  "tree": "00a7f637342ebd0ea02c5c9f6803bbd591a95c0f",
+  "direct_child": true,
+  "changed_path_count": 3,
+  "changed_paths": [
+    "backend/plotpilot_core/publication/application/service.py",
+    "backend/plotpilot_core/repositories/authority.py",
+    "tests/p5-planning/story-state-runtime/support.py"
+  ],
+  "write_set_outside_count": 0,
+  "worktree_clean": true,
+  "donor_push": "DISABLED",
+  "upstream": "NONE",
+  "tag_count": 0,
+  "five_source_ancestors": {
+    "28b2f7e307d166e85d5a715b9992eed5f0701151": true,
+    "7b6e104c39d89417a3d7594a6d75ffc83f5b3371": true,
+    "2b096d3dc0810bb73947f4cb2c9c8ea48372d141": true,
+    "fad52f0b91a477da4be7695f20ab6ff7a22f88d8": true,
+    "eda1a7e34f73c78b9819c390653906b70afa56af": true
+  },
+  "forbidden_ancestor_checks": {
+    "df43e9c1202305c117319559a6092fff1a2c58ca": false,
+    "da8f3c692af84806a6ea91d8a60a6caa865b30cd": false,
+    "ed76ebd84bb302784d3005194bc6956ea75cbc1f": false
+  },
+  "finding_manifest_path": "cases/plotpilot-pluginized-seven-project-construction-20260826/evidence/findings/wave-d-integration-blocker-finding-manifest-v1.json",
+  "finding_manifest_sha256": "d911ecbfd8635f0da2ddbf2c9a87d00d0a55f3d2c27c87d9a181957303ee6e2e",
+  "remediation_evidence_path": "cases/plotpilot-pluginized-seven-project-construction-20260826/evidence/remediations/wave-d-integration-blocker-remediation-evidence-v1.json",
+  "remediation_evidence_sha256": "a7d6bb70ea4ee930c692fc12a321671b1228d27dedffeb4affba95244baa9ff4",
+  "packet_validation": "targeted_recheck",
+  "controller_validation": [
+    "1 Prompt fallback negative passed",
+    "41 Story State passed",
+    "60 full P5 passed",
+    "96 Prompt Runtime passed",
+    "32 Authority/Publication seam passed",
+    "focused and original affected-path Ruff PASS",
+    "affected compileall PASS",
+    "diff check PASS",
+    "AST non-import bodies unchanged in both Ruff-only files",
+    "forbidden success-fallback/private materializer symbols absent from Story support",
+    "post-validation worktree clean"
+  ],
+  "executable_body_invariant": {
+    "backend/plotpilot_core/publication/application/service.py": true,
+    "backend/plotpilot_core/repositories/authority.py": true
+  },
+  "same_reviewer_agent_id": "01a0516c-450d-7120-953c-2c14b31aaa92",
+  "same_reviewer_status": "ready",
+  "integration_authorized": false,
+  "serialized_at": "2026-08-30T15:04:41+08:00",
+  "serialization_owner": "controller"
+}

@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "original_reviewed_baseline": "commit:031418350f6ddb835e4a5913ee4ff5c5c23324a5",
+  "remediated_baseline": "commit:3f06d25e30249a2826442f43808b397f27ef22a7",
+  "finding_ids": [
+    "WAVE-D-INTEGRATION-SEMANTIC-001",
+    "WAVE-D-INTEGRATION-RUFF-001"
+  ],
+  "changed_files": [
+    "backend/plotpilot_core/publication/application/service.py",
+    "backend/plotpilot_core/repositories/authority.py",
+    "tests/p5-planning/story-state-runtime/support.py"
+  ],
+  "tests": [
+    {
+      "name": "prompt-runtime-no-public-local-success-fallback",
+      "status": "pass",
+      "evidence": "1 passed in 0.79s; run_skill_chain and execute_skill_chain remain absent"
+    },
+    {
+      "name": "story-state-public-builder-chain-positive",
+      "status": "pass",
+      "evidence": "Story State 41 suite includes distinct H0/H1/H2 public-builder parity and committed-once checks"
+    },
+    {
+      "name": "story-state-foreign-snapshot-negative",
+      "status": "pass",
+      "evidence": "Existing Story State 41 suite passed with zero-write foreign snapshot rejection"
+    },
+    {
+      "name": "story-state-recomputed-h0-negative",
+      "status": "pass",
+      "evidence": "Existing Story State 41 suite passed with recomputed-H0 rejection before any write"
+    },
+    {
+      "name": "story-state-runtime-41",
+      "status": "pass",
+      "evidence": "41 passed in 1.05s"
+    },
+    {
+      "name": "p5-planning-60",
+      "status": "pass",
+      "evidence": "60 passed in 1.07s"
+    },
+    {
+      "name": "focused-p1-import-ruff",
+      "status": "pass",
+      "evidence": "Focused Ruff on two P1 files: All checks passed"
+    },
+    {
+      "name": "original-affected-path-ruff",
+      "status": "pass",
+      "evidence": "Exact original Wave D affected-path Ruff command: All checks passed"
+    },
+    {
+      "name": "authority-publication-seam-32",
+      "status": "pass",
+      "evidence": "32 passed in 1.97s"
+    },
+    {
+      "name": "prompt-skill-runtime-96",
+      "status": "pass",
+      "evidence": "96 passed in 1.13s"
+    },
+    {
+      "name": "affected-compileall",
+      "status": "pass",
+      "evidence": "Exact affected compileall replay exited 0 with short external PYTHONPYCACHEPREFIX"
+    },
+    {
+      "name": "diff-hygiene",
+      "status": "pass",
+      "evidence": "git diff --check 03141835 HEAD exited 0"
+    },
+    {
+      "name": "ruff-files-executable-body-invariant",
+      "status": "pass",
+      "evidence": "AST non-import module bodies are byte-semantic-equivalent for both Ruff-only files"
+    }
+  ],
+  "skipped_checks": [],
+  "scope_deviations": [],
+  "approved_scope_changes": [],
+  "full_rereview_triggers": []
+}

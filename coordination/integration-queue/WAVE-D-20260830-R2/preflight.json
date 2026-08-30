@@ -1,0 +1,111 @@
+{
+  "ancestor_reuse": {
+    "bytes": 3294,
+    "path": "coordination/integration-queue/WAVE-D-20260830-R2/evidence/ancestor-reuse.json",
+    "sha256": "39fe67e8ec81222a62475274a6fab686d5435cbb6c69c5864592c9d860998525"
+  },
+  "binding": {
+    "blocked_evidence": {
+      "commit": "031418350f6ddb835e4a5913ee4ff5c5c23324a5",
+      "r1_directory_tree": "51ba6b1a5931c346faf3c944d4cfa35015620df3",
+      "tree": "5fb378934575fcbcd9bc5207ae312433b65ed01a"
+    },
+    "h_c": {
+      "commit": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+      "tree": "eab64b7d5b1e3ad652aeaf48bd0085d930beca5d"
+    },
+    "merge_tip": {
+      "commit": "08cd1726dce76419408af786789b28c7a09f8e3c",
+      "tree": "ac2c9bdacf657864d85e4f6828446c057835ee88"
+    },
+    "ordered_merge_commits": [
+      "93526465b7b59353e769119c0f28d2110659e050",
+      "7ae521f2090a3a2a14cc586eeae485c0b612eda3",
+      "290ed63c7b0cb602c96c7718f5b43a5b707f3026",
+      "d6c7115024070b00f2c6cc69febdf18348ee8652",
+      "08cd1726dce76419408af786789b28c7a09f8e3c"
+    ],
+    "ordered_source_heads": [
+      "28b2f7e307d166e85d5a715b9992eed5f0701151",
+      "7b6e104c39d89417a3d7594a6d75ffc83f5b3371",
+      "2b096d3dc0810bb73947f4cb2c9c8ea48372d141",
+      "fad52f0b91a477da4be7695f20ab6ff7a22f88d8",
+      "eda1a7e34f73c78b9819c390653906b70afa56af"
+    ],
+    "remediation": {
+      "changed_paths": [
+        "backend/plotpilot_core/publication/application/service.py",
+        "backend/plotpilot_core/repositories/authority.py",
+        "tests/p5-planning/story-state-runtime/support.py"
+      ],
+      "commit": "3f06d25e30249a2826442f43808b397f27ef22a7",
+      "parent": "031418350f6ddb835e4a5913ee4ff5c5c23324a5",
+      "tree": "00a7f637342ebd0ea02c5c9f6803bbd591a95c0f"
+    }
+  },
+  "checks": {
+    "blocked_evidence_is_parent_of_remediation": true,
+    "donor_push_disabled": true,
+    "five_merges_are_ancestors": true,
+    "five_sources_are_ancestors": true,
+    "forbidden_heads_are_not_ancestors": true,
+    "head_untagged": true,
+    "merge_order_exact": true,
+    "r1_manifest_records_verified": 22,
+    "r1_tree_unchanged": true,
+    "remediation_changed_path_count": 3,
+    "remediation_direct_child": true,
+    "remediation_paths_subset_of_source_union": true,
+    "upstream_absent": true
+  },
+  "controller_closures": [
+    {
+      "bytes": 3842,
+      "path": "coordination/integration-queue/WAVE-D-20260830-R2/evidence/closures/01-finding-manifest.json",
+      "sha256": "d911ecbfd8635f0da2ddbf2c9a87d00d0a55f3d2c27c87d9a181957303ee6e2e",
+      "source_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\findings\\wave-d-integration-blocker-finding-manifest-v1.json"
+    },
+    {
+      "bytes": 2760,
+      "path": "coordination/integration-queue/WAVE-D-20260830-R2/evidence/closures/02-remediation-evidence.json",
+      "sha256": "a7d6bb70ea4ee930c692fc12a321671b1228d27dedffeb4affba95244baa9ff4",
+      "source_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\remediations\\wave-d-integration-blocker-remediation-evidence-v1.json"
+    },
+    {
+      "bytes": 2773,
+      "path": "coordination/integration-queue/WAVE-D-20260830-R2/evidence/closures/03-remediation-intake.json",
+      "sha256": "6521325ebcb774eec0e7b47c8c08c7dc6c6988d6635126f4910923b21b453837",
+      "source_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\candidates\\WAVE-D-bounded-integration-remediation-central-intake-v1.json"
+    },
+    {
+      "bytes": 1542,
+      "path": "coordination/integration-queue/WAVE-D-20260830-R2/evidence/closures/04-same-sol-pass.json",
+      "sha256": "cc411ff4292d70ba8e5af8eabff737ebfe077a5a769a2ff18ae67ab91188636f",
+      "source_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\wave-d-integration-blocker-same-sol-targeted-pass-v1.json"
+    },
+    {
+      "bytes": 1728,
+      "path": "coordination/integration-queue/WAVE-D-20260830-R2/evidence/closures/05-validated-verdict.json",
+      "sha256": "1f2ada95f10c57b4889794514852dee44479b15152c363e14a56a869f0cd5d6c",
+      "source_path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\verdicts\\wave-d-integration-blocker-same-sol-targeted-validated-verdict-v1.json"
+    }
+  ],
+  "fresh_validation_count": 10,
+  "path_accounting": {
+    "explanation": "The requested 130 count is the integrated source path domain. The complete Git diff also contains the immutable 23-path R1 evidence-only generation.",
+    "five_source_union_count": 130,
+    "full_h_c_to_remediation_git_diff_count": 153,
+    "integrated_source_path_count": 130,
+    "r1_evidence_only_path_count": 23,
+    "remediation_changed_path_count": 3,
+    "remediation_new_unique_source_paths": 0,
+    "source_pairwise_overlap_count": 0
+  },
+  "r1_unchanged_proof": {
+    "candidate_manifest_sha256": "8ee436f779c49db39d56951296fc2368fb4ab8971aa53aa479cc07acfac18b30",
+    "tree_at_blocked_evidence": "51ba6b1a5931c346faf3c944d4cfa35015620df3",
+    "tree_at_remediation": "51ba6b1a5931c346faf3c944d4cfa35015620df3"
+  },
+  "schema": "wave-d-r2-preflight/v1",
+  "status": "PASS"
+}
