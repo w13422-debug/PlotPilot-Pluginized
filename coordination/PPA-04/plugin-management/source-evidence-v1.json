@@ -1,0 +1,75 @@
+{
+  "schema": "plotpilot-plugin-management-g2-source-evidence/v1",
+  "task_id": "WAVE-D-G2-NW-P4-PLUGIN-MGMT-SOURCE-01",
+  "base": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+  "branch": "codex/nw-p4-plugin-mgmt-g2",
+  "source_commit": "pending-single-direct-child-commit",
+  "write_set_only": true,
+  "donor_push": "DISABLED",
+  "implementation": {
+    "plain_plan_materialization": true,
+    "structured_clone_plan_path": false,
+    "immutable_reducer": true,
+    "create_revision_cas_intent": true,
+    "dense_ordering": true,
+    "dirty_refresh_conflict": true,
+    "snapshot_epoch_guard": true,
+    "path_preflight_reuses_hc_helpers": true,
+    "lifecycle_terminal_predicate": true,
+    "vue_mounting": "stopped; NW-P4-ASSEMBLY-04 owns AppSettingsModal"
+  },
+  "finding_coverage": {
+    "NW-P4-PM-SOL-F-001": "addressed-in-source-tests; pending fresh controller review",
+    "NW-P4-PM-SOL-F-002": "addressed-in-source-tests; pending fresh controller review",
+    "NW-P4-PM-SOL-F-003": "regression-preserved-in-source-tests; pending fresh controller review",
+    "NW-P4-PM-SOL-F-004": "regression-preserved-in-source-tests; pending fresh controller review",
+    "NW-P4-PM-SOL-F-005": "regression-preserved-in-source-tests; pending fresh controller review",
+    "NW-P4-PM-SOL-F-006": "addressed-in-source-tests; pending fresh controller review"
+  },
+  "tests": {
+    "plugin_management": {
+      "command": "node --experimental-strip-types --test tests/p4-webui/plugin-management/*.test.mts",
+      "result": "23 passed, 0 failed",
+      "raw_output": "coordination/PPA-04/plugin-management/raw-plugin-tests.txt"
+    },
+    "p4_webui": {
+      "command": "node --experimental-strip-types --test tests/p4-webui/*.test.mts",
+      "result": "13 passed, 0 failed",
+      "raw_output": "coordination/PPA-04/plugin-management/raw-p4-tests.txt"
+    },
+    "vue_tsc": {
+      "command": "frontend/node_modules/.bin/vue-tsc.cmd --noEmit -p frontend/tsconfig.app.json --incremental false",
+      "result": "ENV_UNAVAILABLE_NOT_SOURCE_FAILURE",
+      "raw_output": "coordination/PPA-04/plugin-management/raw-vue-tsc.txt"
+    },
+    "diff_check": {
+      "command": "git diff --check",
+      "result": "exit=0",
+      "raw_output": "coordination/PPA-04/plugin-management/raw-diff-check.txt"
+    }
+  },
+  "dependencies": [
+    "Plugin API G2",
+    "Plan repository and Plan-switch CAS",
+    "NW-P4-ASSEMBLY-04",
+    "NW-P0-RUNTIME-COMPOSITION-02"
+  ],
+  "stopped_capabilities": [
+    "real Plan durable save",
+    "install/enable/disable/retire/delete/Apply",
+    "AppSettingsModal mounting",
+    "router/main/store/package/root-manifest changes"
+  ],
+  "forbidden_operations": [
+    "merge",
+    "rebase",
+    "cherry-pick",
+    "tag",
+    "push",
+    "browser",
+    "GUI",
+    "Tauri",
+    "EXE",
+    "installer"
+  ]
+}
