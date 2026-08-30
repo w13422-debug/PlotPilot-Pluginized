@@ -118,7 +118,7 @@ async function verifyV2() {
   const http = readJson(join(V2_GOLDEN, 'http.json'))
   const tsCore = await import(pathToFileURL(join(ROOT, 'frontend', 'src', 'contracts', 'core-api-v2.ts')).href)
   const tsHttp = await import(pathToFileURL(join(ROOT, 'frontend', 'src', 'contracts', 'm4-m5-http-v2.ts')).href)
-  validateClosed(candidate.candidate, candidateSchema, 'candidate')
+  for (const [name, value] of [['candidate', candidate.candidate], ['candidate_text_patch', candidate.candidate_text_patch], ['candidate_replace', candidate.candidate_replace], ['candidate_structure_patch', candidate.candidate_structure_patch], ['candidate_relation_patch', candidate.candidate_relation_patch]]) validateClosed(value, candidateSchema, `candidate.${name}`)
   validateClosed(candidate.candidate_list_result, candidateSchema, 'candidate_list_result')
   validateClosed(candidate.candidate_get_query, candidateSchema, 'candidate_get_query')
   validateClosed(candidate.candidate_get_result, candidateSchema, 'candidate_get_result')
@@ -127,10 +127,10 @@ async function verifyV2() {
   validateClosed(review.query, reviewSchema, 'review.query')
   validateClosed(review.command, reviewSchema, 'review.command')
   validateClosed(review.result, reviewSchema, 'review.result')
-  for (const name of ['command_complete', 'command_partial', 'command_incomplete_stream', 'result_complete', 'result_incomplete_stream']) validateClosed(publication[name], coreSchema, `publication.${name}`)
+  for (const name of ['command_complete', 'command_partial', 'command_incomplete_stream', 'result_complete', 'result_incomplete_stream', 'command_replace', 'result_replace', 'command_structure_patch', 'result_structure_patch', 'command_relation_patch', 'result_relation_patch']) validateClosed(publication[name], coreSchema, `publication.${name}`)
   validateClosed(projection, projectionSchema, 'story-state.projection')
   for (const name of ['list_query', 'list_result', 'snapshot_query', 'snapshot_result', 'start', 'control', 'command_result', 'event_query', 'event_page', 'sse_replay_query', 'sse_replay', 'sse_gap_query', 'sse_gap']) validateClosed(job[name], jobSchema, `job.${name}`)
-  for (const name of ['discovery_query', 'discovery_result', 'install', 'upgrade', 'retire', 'rollback', 'lifecycle_result_install', 'lifecycle_result_upgrade', 'lifecycle_result_retire', 'lifecycle_result_rollback']) validateClosed(plugin[name], pluginSchema, `plugin.${name}`)
+  for (const name of ['discovery_query', 'discovery_result', 'discovery_error', 'install', 'upgrade', 'retire', 'rollback', 'lifecycle_result_install', 'lifecycle_result_upgrade', 'lifecycle_result_retire', 'lifecycle_result_rollback']) validateClosed(plugin[name], pluginSchema, `plugin.${name}`)
   if (candidate.candidate.target.workspace_id !== candidate.candidate.workspace_id || candidate.candidate.write_set.some((item) => item.workspace_id !== candidate.candidate.workspace_id)) throw new Error('v2 Candidate Workspace binding drift')
   if (publication.command_partial.candidate_id !== candidate.candidate_partial.candidate_id || candidate.candidate_partial.publication_eligibility !== 'review_only') throw new Error('v2 partial Candidate fixture drift')
   if (projection.publication.candidate_id !== projection.candidate.candidate_id || projection.publication.revision_id !== projection.current_revision.revision_id) throw new Error('v2 projection binding drift')
@@ -148,7 +148,7 @@ async function verifyV2() {
   const expected = readJson(join(V2_GOLDEN, 'expected.json'))
   for (const [name, digest] of Object.entries(expected.fixture_files)) if (sha256(bytes(join(V2_GOLDEN, name))) !== digest) throw new Error(`v2 golden hash drift ${name}`)
 
-  const candidateById = new Map([candidate.candidate, candidate.candidate_partial, candidate.candidate_incomplete_stream].map((item) => [item.candidate_id, item]))
+  const candidateById = new Map([candidate.candidate, candidate.candidate_text_patch, candidate.candidate_replace, candidate.candidate_structure_patch, candidate.candidate_relation_patch, candidate.candidate_partial, candidate.candidate_incomplete_stream].map((item) => [item.candidate_id, item]))
   tsCore.parseCandidateQueryResultV2(candidate.candidate)
   tsCore.parseCandidateQueryResultV2(candidate.candidate_list_result)
   tsCore.parseCandidateQueryResultV2(candidate.candidate_get_query)
@@ -161,7 +161,10 @@ async function verifyV2() {
   tsCore.parseCandidateReviewV2(review.query)
   tsCore.parseCandidateReviewV2(review.command)
   tsCore.parseCandidateReviewV2(review.result)
-  tsCore.validatePublicationV2(publication.command_complete, publication.result_complete, candidate.candidate, 'ws-1')
+  for (const [candidateValue, commandValue, resultValue] of [[candidate.candidate_replace, publication.command_replace, publication.result_replace], [candidate.candidate, publication.command_complete, publication.result_complete], [candidate.candidate_structure_patch, publication.command_structure_patch, publication.result_structure_patch], [candidate.candidate_relation_patch, publication.command_relation_patch, publication.result_relation_patch]]) {
+    await tsCore.validatePublicationV2(commandValue, resultValue, candidateValue, 'ws-1')
+    if (resultValue.content_hash === candidateValue.mutation.payload_hash) throw new Error('Publication golden collapsed mutation payload hash into final Revision hash')
+  }
   tsCore.validatePublicationV2(publication.command_incomplete_stream, publication.result_incomplete_stream, candidate.candidate_incomplete_stream, 'ws-1')
   tsCore.parseStoryStateProjectionInputV2(projection, 'ws-1')
   await tsCore.verifyJobSnapshotHashV2(job.snapshot)
@@ -181,12 +184,18 @@ async function verifyV2() {
   tsCore.validatePluginLifecycleV2(plugin.retire, { currentGenerationId: 'generation-2' })
   tsCore.validatePluginLifecycleV2(plugin.rollback, { currentGenerationId: 'generation-2' })
 
+  for (const exchange of http.error_exchanges ?? []) await tsHttp.validateHttpExchangeV2(exchange.route_id, exchange.request, exchange.status, exchange.response)
+
   for (const exchange of http.exchanges) {
     await tsHttp.validateHttpExchangeV2(exchange.route_id, exchange.request, exchange.status, exchange.response, candidateById.get(exchange.request.candidate_id))
   }
 
   const fixtures = {
     'candidate.record': candidate.candidate,
+    'candidate.text_patch': candidate.candidate_text_patch,
+    'candidate.replace': candidate.candidate_replace,
+    'candidate.structure_patch': candidate.candidate_structure_patch,
+    'candidate.relation_patch': candidate.candidate_relation_patch,
     'candidate.list_result': candidate.candidate_list_result,
     'candidate.cross_workspace_source_ref': candidate.candidate_cross_workspace_source,
     'candidate.get_result': candidate.candidate_get_result,
@@ -196,10 +205,17 @@ async function verifyV2() {
     'review.result': review.result,
     'publication.command.complete': publication.command_complete,
     'publication.result.complete': publication.result_complete,
+    'publication.command.replace': publication.command_replace,
+    'publication.result.replace': publication.result_replace,
+    'publication.command.structure_patch': publication.command_structure_patch,
+    'publication.result.structure_patch': publication.result_structure_patch,
+    'publication.command.relation_patch': publication.command_relation_patch,
+    'publication.result.relation_patch': publication.result_relation_patch,
     'publication.command.partial': publication.command_partial,
     'publication.command.incomplete_stream': publication.command_incomplete_stream,
     'publication.result.incomplete_stream': publication.result_incomplete_stream,
     'story_state.projection': projection,
+    'story_state.projection_with_unreachable_receipt': readJson(join(V2_GOLDEN, 'story-state.json')).projection_with_unreachable_receipt,
     'job.snapshot': job.snapshot,
     'job.list_result': job.list_result,
     'job.command.start': job.start,
@@ -207,6 +223,7 @@ async function verifyV2() {
     'job.sse.replay': job.sse_replay,
     'job.sse.gap': job.sse_gap,
     'plugin.discovery': plugin.discovery_result,
+    'plugin.discovery_error': plugin.discovery_error,
     'plugin.lifecycle.install': plugin.install,
     'plugin.lifecycle.upgrade': plugin.upgrade,
     'plugin.lifecycle.retire': plugin.retire,
@@ -217,12 +234,13 @@ async function verifyV2() {
     'plugin.lifecycle.result.rollback': plugin.lifecycle_result_rollback,
   }
   for (const exchange of http.exchanges) fixtures[`http.${exchange.route_id}`] = exchange
+  for (const exchange of http.error_exchanges ?? []) fixtures['http.plugin.discovery.error'] = exchange
 
   const parseFixture = (fixtureId, value) => {
     if (fixtureId.startsWith('candidate.')) return tsCore.parseCandidateQueryResultV2(value)
     if (fixtureId.startsWith('review.')) return tsCore.parseCandidateReviewV2(value)
     if (fixtureId.startsWith('publication.')) return tsCore.parseCoreAuthorityV2(value)
-    if (fixtureId === 'story_state.projection') return tsCore.parseStoryStateProjectionInputV2(value)
+    if (fixtureId.startsWith('story_state.projection')) return tsCore.parseStoryStateProjectionInputV2(value)
     if (fixtureId === 'job.snapshot') return tsCore.validateJobSnapshotResultV2({ schema: 'job-snapshot-result/v2', workspace_id: value.workspace_id, job_id: value.job_id, snapshot: value, cursor: `job/${value.job_id}/${value.job_event_high_water}` })
     if (fixtureId.startsWith('job.')) {
       if (fixtureId === 'job.event_page') return tsCore.parseJobEventPageV2(value)

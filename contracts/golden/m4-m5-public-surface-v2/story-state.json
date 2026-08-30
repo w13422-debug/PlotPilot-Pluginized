@@ -9,7 +9,7 @@
       {
         "asset_id": "asset-revision-v2",
         "role": "revision.content",
-        "sha256": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+        "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
       }
     ],
     "candidate": {
@@ -25,7 +25,7 @@
     },
     "current_revision": {
       "content_asset_id": "asset-revision-v2",
-      "content_hash": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+      "content_hash": "2222222222222222222222222222222222222222222222222222222222222222",
       "revision_id": "rev-2",
       "revision_number": 2
     },
@@ -33,15 +33,17 @@
     "projection_input_id": "projection-v2",
     "provenance": {
       "package_hash": "6666666666666666666666666666666666666666666666666666666666666666",
-      "parent_receipt_ids": [],
-      "receipt_hash": "3333333333333333333333333333333333333333333333333333333333333333",
+      "parent_receipt_ids": [
+        "receipt-parent-v2"
+      ],
+      "receipt_hash": "ad59779b1ed5d96708f24cdc5664bd7ddab6288ac856f91cc63c878834a3d3eb",
       "receipt_id": "receipt-v2",
       "release_id": "5555555555555555555555555555555555555555555555555555555555555555",
       "run_snapshot_hash": "4444444444444444444444444444444444444444444444444444444444444444"
     },
     "publication": {
       "candidate_id": "candidate-v2",
-      "content_hash": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+      "content_hash": "2222222222222222222222222222222222222222222222222222222222222222",
       "publication_id": "publication-v2",
       "revision_id": "rev-2",
       "revision_number": 2
@@ -49,8 +51,86 @@
     "receipt_closure": [
       {
         "parent_receipt_ids": [],
-        "receipt_hash": "3333333333333333333333333333333333333333333333333333333333333333",
+        "receipt_hash": "2bd7cb10e44944bc401520363fd9d5ca4a1486228b90f2ea475975e0713b3e5c",
+        "receipt_id": "receipt-parent-v2"
+      },
+      {
+        "parent_receipt_ids": [
+          "receipt-parent-v2"
+        ],
+        "receipt_hash": "ad59779b1ed5d96708f24cdc5664bd7ddab6288ac856f91cc63c878834a3d3eb",
         "receipt_id": "receipt-v2"
+      }
+    ],
+    "schema": "story-state-projection-input/v2",
+    "workspace_id": "ws-1"
+  },
+  "projection_with_unreachable_receipt": {
+    "assets": [
+      {
+        "asset_id": "asset-candidate-v2",
+        "role": "candidate.payload",
+        "sha256": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+      },
+      {
+        "asset_id": "asset-revision-v2",
+        "role": "revision.content",
+        "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    ],
+    "candidate": {
+      "candidate_id": "candidate-v2",
+      "payload_asset_id": "asset-candidate-v2",
+      "payload_hash": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+      "status": "complete",
+      "target": {
+        "entity_id": "doc-a",
+        "entity_kind": "document",
+        "workspace_id": "ws-1"
+      }
+    },
+    "current_revision": {
+      "content_asset_id": "asset-revision-v2",
+      "content_hash": "2222222222222222222222222222222222222222222222222222222222222222",
+      "revision_id": "rev-2",
+      "revision_number": 2
+    },
+    "derived_at": "2026-08-30T00:00:01Z",
+    "projection_input_id": "projection-v2",
+    "provenance": {
+      "package_hash": "6666666666666666666666666666666666666666666666666666666666666666",
+      "parent_receipt_ids": [
+        "receipt-parent-v2"
+      ],
+      "receipt_hash": "ad59779b1ed5d96708f24cdc5664bd7ddab6288ac856f91cc63c878834a3d3eb",
+      "receipt_id": "receipt-v2",
+      "release_id": "5555555555555555555555555555555555555555555555555555555555555555",
+      "run_snapshot_hash": "4444444444444444444444444444444444444444444444444444444444444444"
+    },
+    "publication": {
+      "candidate_id": "candidate-v2",
+      "content_hash": "2222222222222222222222222222222222222222222222222222222222222222",
+      "publication_id": "publication-v2",
+      "revision_id": "rev-2",
+      "revision_number": 2
+    },
+    "receipt_closure": [
+      {
+        "parent_receipt_ids": [],
+        "receipt_hash": "2bd7cb10e44944bc401520363fd9d5ca4a1486228b90f2ea475975e0713b3e5c",
+        "receipt_id": "receipt-parent-v2"
+      },
+      {
+        "parent_receipt_ids": [
+          "receipt-parent-v2"
+        ],
+        "receipt_hash": "ad59779b1ed5d96708f24cdc5664bd7ddab6288ac856f91cc63c878834a3d3eb",
+        "receipt_id": "receipt-v2"
+      },
+      {
+        "parent_receipt_ids": [],
+        "receipt_hash": "4fe4de4ef055ee716cf50331e4f84682e2f2c7b5200809753abfc5cdeb756b65",
+        "receipt_id": "receipt-unreachable-v2"
       }
     ],
     "schema": "story-state-projection-input/v2",

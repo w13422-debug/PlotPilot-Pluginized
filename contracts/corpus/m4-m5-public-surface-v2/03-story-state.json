@@ -55,6 +55,73 @@
         ],
         "value": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       }
+    },
+    {
+      "case_id": "v2-projection-duplicate-asset-identity",
+      "expected": "asset_identity_uniqueness",
+      "fixture": "story_state.projection",
+      "kind": "projection_semantics",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "assets",
+          1,
+          "asset_id"
+        ],
+        "value": "asset-candidate-v2"
+      }
+    },
+    {
+      "case_id": "v2-projection-extra-unreachable-receipt",
+      "expected": "receipt_reachability",
+      "fixture": "story_state.projection_with_unreachable_receipt",
+      "kind": "projection_semantics",
+      "mutation": {
+        "op": "noop"
+      }
+    },
+    {
+      "case_id": "v2-projection-duplicate-receipt-identity",
+      "expected": "receipt_identity_uniqueness",
+      "fixture": "story_state.projection",
+      "kind": "projection_semantics",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "receipt_closure",
+          1,
+          "receipt_id"
+        ],
+        "value": "receipt-parent-v2"
+      }
+    },
+    {
+      "case_id": "v2-projection-missing-parent-receipt",
+      "expected": "receipt_parent_closure",
+      "fixture": "story_state.projection",
+      "kind": "projection_semantics",
+      "mutation": {
+        "op": "delete",
+        "path": [
+          "receipt_closure",
+          0
+        ]
+      }
+    },
+    {
+      "case_id": "v2-projection-tampered-receipt-hash",
+      "expected": "receipt_content_hash",
+      "fixture": "story_state.projection",
+      "kind": "projection_semantics",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "receipt_closure",
+          1,
+          "receipt_hash"
+        ],
+        "value": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
     }
   ],
   "positive": [

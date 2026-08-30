@@ -311,6 +311,7 @@
         "error_code": {
           "enum": [
             "malformed_request",
+            "cursor_domain_mismatch",
             "unknown_plugin",
             "release_missing",
             "generation_conflict",

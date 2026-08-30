@@ -1,4 +1,17 @@
 {
+  "discovery_error": {
+    "error_code": "cursor_domain_mismatch",
+    "message": "plugin discovery cursor must use the core domain",
+    "operation_key": null,
+    "retryable": false,
+    "schema": "plugin-http-error/v2"
+  },
+  "discovery_error_request": {
+    "cursor": "core/1",
+    "limit": 50,
+    "schema": "plugin-discovery-query/v2",
+    "state": null
+  },
   "discovery_query": {
     "cursor": null,
     "limit": 50,

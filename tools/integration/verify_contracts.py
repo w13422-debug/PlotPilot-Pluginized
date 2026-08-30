@@ -837,6 +837,8 @@ def verify_v2_public_surface() -> dict[str, Any]:
         for name in ("candidate.json", "review.json", "publication.json", "story-state.json", "job.json", "plugin.json", "http.json", "expected.json")
     }
     expected = golden["expected.json"]
+    if expected.get("mutation_kinds") != ["replace", "text_patch", "structure_patch", "relation_patch"]:
+        raise AssertionError("v2 mutation-kind golden inventory drift")
     for name, digest in expected["fixture_files"].items():
         path = golden_root / name
         if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != digest:
@@ -844,10 +846,17 @@ def verify_v2_public_surface() -> dict[str, Any]:
 
     candidate_doc = golden["candidate.json"]
     candidate = candidate_doc["candidate"]
+    candidate_text_patch = candidate_doc["candidate_text_patch"]
+    candidate_replace = candidate_doc["candidate_replace"]
+    candidate_structure_patch = candidate_doc["candidate_structure_patch"]
+    candidate_relation_patch = candidate_doc["candidate_relation_patch"]
     candidate_partial = candidate_doc["candidate_partial"]
     candidate_incomplete = candidate_doc["candidate_incomplete_stream"]
     candidate_cross_source = candidate_doc["candidate_cross_workspace_source"]
-    parse_candidate_v2(candidate)
+    for candidate_variant in (candidate, candidate_text_patch, candidate_replace, candidate_structure_patch, candidate_relation_patch):
+        parse_candidate_v2(candidate_variant)
+    if candidate_text_patch != candidate:
+        raise AssertionError("text-patch Candidate golden is not the primary Candidate vector")
     parse_candidate_v2(candidate_cross_source)
     parse_candidate_v2(candidate_partial)
     parse_candidate_v2(candidate_incomplete)
@@ -860,6 +869,21 @@ def verify_v2_public_surface() -> dict[str, Any]:
         parse_candidate_review_v2(golden["review.json"][key])
 
     publication_doc = golden["publication.json"]
+    publication_variants = (
+        (candidate_replace, publication_doc["command_replace"], publication_doc["result_replace"]),
+        (candidate, publication_doc["command_complete"], publication_doc["result_complete"]),
+        (candidate_structure_patch, publication_doc["command_structure_patch"], publication_doc["result_structure_patch"]),
+        (candidate_relation_patch, publication_doc["command_relation_patch"], publication_doc["result_relation_patch"]),
+    )
+    for publication_candidate, publication_command_variant, publication_result_variant in publication_variants:
+        validate_publication_v2(
+            publication_command_variant,
+            publication_result_variant,
+            candidate=publication_candidate,
+            expected_workspace_id="ws-1",
+        )
+        if publication_result_variant["content_hash"] == publication_candidate["mutation"]["payload_hash"]:
+            raise AssertionError("Publication golden collapsed mutation payload hash into final Revision hash")
     validate_publication_v2(
         publication_doc["command_complete"],
         publication_doc["result_complete"],
@@ -885,6 +909,7 @@ def verify_v2_public_surface() -> dict[str, Any]:
     plugin_doc = golden["plugin.json"]
     parse_plugin_api_v2(plugin_doc["discovery_query"])
     parse_plugin_api_v2(plugin_doc["discovery_result"])
+    parse_plugin_api_v2(plugin_doc["discovery_error"])
     for key in ("install", "upgrade", "retire", "rollback", "lifecycle_result_install", "lifecycle_result_upgrade", "lifecycle_result_retire", "lifecycle_result_rollback"):
         parse_plugin_api_v2(plugin_doc[key])
     validate_plugin_lifecycle_v2(plugin_doc["install"])
@@ -905,16 +930,27 @@ def verify_v2_public_surface() -> dict[str, Any]:
 
     candidate_by_id = {
         item["candidate_id"]: item
-        for item in (candidate, candidate_partial, candidate_incomplete)
+        for item in (candidate, candidate_text_patch, candidate_replace, candidate_structure_patch, candidate_relation_patch, candidate_partial, candidate_incomplete)
     }
     for exchange in http_exchanges:
         route_id = exchange["route_id"]
         request = exchange["request"]
         candidate_for_exchange = candidate_by_id.get(request.get("candidate_id"))
         validate_http_exchange(route_id, request, exchange["status"], exchange["response"], candidate=candidate_for_exchange)
+    error_exchanges = http_doc.get("error_exchanges")
+    if not isinstance(error_exchanges, list) or len(error_exchanges) != 1:
+        raise AssertionError("v2 HTTP error golden inventory drift")
+    for exchange in error_exchanges:
+        if exchange.get("route_id") != "plugin.discovery" or exchange.get("status") != 400 or exchange.get("response", {}).get("schema") != "plugin-http-error/v2" or exchange.get("response", {}).get("error_code") != "cursor_domain_mismatch":
+            raise AssertionError("plugin.discovery cursor-domain error golden drift")
+        validate_http_exchange(exchange["route_id"], exchange["request"], exchange["status"], exchange["response"])
 
     fixtures: dict[str, Any] = {
         "candidate.record": candidate,
+        "candidate.text_patch": candidate_text_patch,
+        "candidate.replace": candidate_replace,
+        "candidate.structure_patch": candidate_structure_patch,
+        "candidate.relation_patch": candidate_relation_patch,
         "candidate.list_result": candidate_doc["candidate_list_result"],
         "candidate.cross_workspace_source_ref": candidate_cross_source,
         "candidate.get_result": candidate_doc["candidate_get_result"],
@@ -924,10 +960,17 @@ def verify_v2_public_surface() -> dict[str, Any]:
         "review.result": golden["review.json"]["result"],
         "publication.command.complete": publication_doc["command_complete"],
         "publication.result.complete": publication_doc["result_complete"],
+        "publication.command.replace": publication_doc["command_replace"],
+        "publication.result.replace": publication_doc["result_replace"],
+        "publication.command.structure_patch": publication_doc["command_structure_patch"],
+        "publication.result.structure_patch": publication_doc["result_structure_patch"],
+        "publication.command.relation_patch": publication_doc["command_relation_patch"],
+        "publication.result.relation_patch": publication_doc["result_relation_patch"],
         "publication.command.partial": publication_doc["command_partial"],
         "publication.command.incomplete_stream": publication_doc["command_incomplete_stream"],
         "publication.result.incomplete_stream": publication_doc["result_incomplete_stream"],
         "story_state.projection": projection,
+        "story_state.projection_with_unreachable_receipt": golden["story-state.json"]["projection_with_unreachable_receipt"],
         "job.snapshot": job_doc["snapshot"],
         "job.list_result": job_doc["list_result"],
         "job.command.start": job_doc["start"],
@@ -935,6 +978,7 @@ def verify_v2_public_surface() -> dict[str, Any]:
         "job.sse.replay": job_doc["sse_replay"],
         "job.sse.gap": job_doc["sse_gap"],
         "plugin.discovery": plugin_doc["discovery_result"],
+        "plugin.discovery_error": plugin_doc["discovery_error"],
         "plugin.lifecycle.install": plugin_doc["install"],
         "plugin.lifecycle.upgrade": plugin_doc["upgrade"],
         "plugin.lifecycle.retire": plugin_doc["retire"],
@@ -946,6 +990,8 @@ def verify_v2_public_surface() -> dict[str, Any]:
     }
     for exchange in http_exchanges:
         fixtures[f"http.{exchange['route_id']}"] = exchange
+    for exchange in error_exchanges:
+        fixtures["http.plugin.discovery.error"] = exchange
 
     def parse_fixture(fixture_id: str, value: Any) -> Any:
         if fixture_id.startswith("candidate."):
@@ -956,7 +1002,7 @@ def verify_v2_public_surface() -> dict[str, Any]:
             return parse_core_authority_v2(value)
         if fixture_id.startswith("publication.result"):
             return parse_core_authority_v2(value)
-        if fixture_id == "story_state.projection":
+        if fixture_id.startswith("story_state.projection"):
             return validate_story_state_projection_v2(value) or value
         if fixture_id == "job.snapshot":
             return parse_job_snapshot_v2(value)

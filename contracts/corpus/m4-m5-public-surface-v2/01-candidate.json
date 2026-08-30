@@ -44,6 +44,36 @@
       }
     },
     {
+      "case_id": "v2-candidate-write-set-duplicate-full-identity",
+      "expected": "duplicate_entity_identity",
+      "fixture": "candidate.record",
+      "kind": "candidate_semantics",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "write_set",
+          1,
+          "entity_id"
+        ],
+        "value": "doc-a"
+      }
+    },
+    {
+      "case_id": "v2-candidate-write-set-unstable-order",
+      "expected": "stable_entity_order",
+      "fixture": "candidate.record",
+      "kind": "candidate_semantics",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "write_set",
+          0,
+          "entity_id"
+        ],
+        "value": "doc-z"
+      }
+    },
+    {
       "case_id": "v2-candidate-target-write-set-mismatch",
       "expected": "target_write_set_binding",
       "fixture": "candidate.record",
@@ -70,6 +100,34 @@
           "content_hash"
         ],
         "value": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "case_id": "v2-candidate-failed-query-surface",
+      "expected": "staging_outcome_rejection",
+      "fixture": "candidate.record",
+      "kind": "closed_schema",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "status"
+        ],
+        "value": "failed"
+      }
+    },
+    {
+      "case_id": "v2-candidate-skipped-review-surface",
+      "expected": "staging_outcome_rejection",
+      "fixture": "candidate.list_result",
+      "kind": "closed_schema",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "items",
+          0,
+          "status"
+        ],
+        "value": "skipped"
       }
     },
     {
@@ -149,6 +207,10 @@
   ],
   "positive": [
     "candidate.record",
+    "candidate.text_patch",
+    "candidate.replace",
+    "candidate.structure_patch",
+    "candidate.relation_patch",
     "candidate.list_result",
     "candidate.cross_workspace_source_ref",
     "candidate.get_result",

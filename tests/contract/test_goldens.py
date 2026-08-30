@@ -28,5 +28,5 @@ def test_additive_m4_m5_v2_goldens_recompute_exactly() -> None:
     assert result["routes"] == 19
     assert result["golden_files"] == 7
     assert result["http_exchanges"] == 19
-    assert result["negative_cases"] == 44
+    assert result["negative_cases"] == 60
     assert result["publication_path"] == "publication.accept"

@@ -256,19 +256,26 @@ export async function parseJobSseRecoveryV2(value: unknown): Promise<Readonly<Js
   const snapshotSeq = cursor(parsed.snapshot_cursor, 'job', parsed.job_id)
   if (parsed.requested_after_seq > parsed.durable_high_water_seq) fail('SSE cursor is ahead of durable high-water')
   if (snapshotSeq === null || snapshotSeq > parsed.durable_high_water_seq) fail('SSE snapshot cursor is ahead of durable high-water')
+  let continuationBaseline = parsed.requested_after_seq
   if (parsed.gap) {
     if (!parsed.snapshot_required || parsed.snapshot === null || parsed.replay_floor_seq <= parsed.requested_after_seq) fail('SSE gap requires snapshot recovery')
     if (parsed.snapshot.workspace_id !== parsed.workspace_id || parsed.snapshot.job_id !== parsed.job_id) fail('SSE recovery snapshot is not bound to its outer Workspace and Job')
     await verifyJobSnapshotHashV2(parsed.snapshot)
     if (snapshotSeq !== parsed.snapshot.job_event_high_water) fail('SSE snapshot cursor is not bound to the recovered snapshot')
+    if (parsed.replay_floor_seq > snapshotSeq) fail('SSE replay floor is beyond the recovered snapshot high-water')
+    continuationBaseline = snapshotSeq
   } else if (parsed.snapshot_required || parsed.snapshot !== null || parsed.replay_floor_seq > parsed.requested_after_seq + 1) {
     fail('SSE replay has inconsistent gap markers')
   }
   for (let index = 1; index < parsed.tail.length; index += 1) if (parsed.tail[index - 1].job_event_seq >= parsed.tail[index].job_event_seq) fail('SSE tail events are not strictly ordered')
+  let expectedSeq = continuationBaseline + 1
   for (const event of parsed.tail) {
     validateJobEventV2(event, parsed.job_id)
-    if (event.job_event_seq <= parsed.requested_after_seq || event.job_event_seq > parsed.durable_high_water_seq) fail('SSE tail is outside requested range')
+    if (event.job_event_seq !== expectedSeq) fail('SSE tail cursor is not continuous after its continuation baseline')
+    if (event.job_event_seq > parsed.durable_high_water_seq) fail('SSE tail is outside the durable Job high-water')
+    expectedSeq += 1
   }
+  if (expectedSeq - 1 !== parsed.durable_high_water_seq) fail('SSE tail does not converge to the durable Job high-water')
   return parsed
 }
 

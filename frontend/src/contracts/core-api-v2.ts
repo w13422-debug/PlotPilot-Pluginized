@@ -9,7 +9,7 @@ import { canonicalJson, hashJcs } from './canonical.ts'
 
 export type JsonRecord = Record<string, any>
 export type V2EntityKind = 'document' | 'node_structure' | 'relation_set'
-export type V2Status = 'complete' | 'partial' | 'failed' | 'skipped'
+export type V2Status = 'complete' | 'partial'
 
 export interface V2Target {
   workspace_id: string
@@ -35,6 +35,14 @@ export interface CandidateV2 {
   source_job_id: string | null
 }
 
+export interface V2CasResult {
+  base_revision_id: string
+  base_content_hash: string
+  revision_id: string
+  revision_number: number
+  content_hash: string
+}
+
 export interface PublicationCommandV2 {
   schema: 'publication-command/v2'
   publication_operation_key: string
@@ -53,6 +61,7 @@ export interface PublicationResultV2 {
   entity_id: string
   revision_id: string
   revision_number: number
+  cas: V2CasResult
   content_hash: string
   provenance_receipt_id: string
   idempotent: boolean
@@ -151,6 +160,14 @@ function sha256Bytes(bytes: Uint8Array): string {
   return [h0, h1, h2, h3, h4, h5, h6, h7].map(word => word.toString(16).padStart(8, '0')).join('')
 }
 
+// Story-State receipts are checked synchronously while the projection is
+// crossing the ingress boundary. Keep this helper beside the existing
+// synchronous byte hash so the receipt hash covers the exact JCS bytes
+// without changing the async WebCrypto API used by snapshots.
+function hashJcsSync(prefix: string, value: unknown): string {
+  return sha256Bytes(new TextEncoder().encode(`${prefix}\n${canonicalJson(value)}`))
+}
+
 function fail(message: string): never {
   throw new Error(`M4/M5 v2 contract validation failed: ${message}`)
 }
@@ -211,9 +228,13 @@ export function validateCandidateV2(value: unknown, expectedWorkspaceId?: string
   const candidate = value as CandidateV2
   if (expectedWorkspaceId !== undefined && candidate.workspace_id !== expectedWorkspaceId) fail('Candidate crosses Workspace')
   if (candidate.target.workspace_id !== candidate.workspace_id) fail('Candidate target crosses Workspace')
+  if (candidate.write_set.some(item => item.workspace_id !== candidate.workspace_id)) fail('Candidate write_set crosses Workspace')
+  const identities = candidate.write_set.map(item => `${item.workspace_id}\0${item.entity_kind}\0${item.entity_id}`)
+  if (new Set(identities).size !== identities.length) fail('Candidate write_set contains a duplicate entity identity')
+  const sortedIdentities = [...identities].sort()
+  if (identities.some((identity, index) => identity !== sortedIdentities[index])) fail('Candidate write_set is not in stable entity identity order')
   const target = `${candidate.target.entity_kind}\0${candidate.target.entity_id}`
   const matching = candidate.write_set.filter(item => `${item.entity_kind}\0${item.entity_id}` === target)
-  if (candidate.write_set.some(item => item.workspace_id !== candidate.workspace_id)) fail('Candidate write_set crosses Workspace')
   if (matching.length !== 1) fail('Candidate target must occur exactly once in write_set')
   if (matching[0].revision_id !== candidate.base.revision_id || matching[0].content_hash !== candidate.base.content_hash) fail('Candidate base is not bound to target write_set')
   const modes: Record<string, string[]> = {
@@ -229,7 +250,7 @@ export function validateCandidateV2(value: unknown, expectedWorkspaceId?: string
   } else if (candidate.status === 'partial' && candidate.publication_eligibility === 'eligible') {
     fail('normal partial Candidate is review-only')
   }
-  if ((candidate.status === 'failed' || candidate.status === 'skipped') && candidate.publication_eligibility !== 'none') fail('failed/skipped Candidate cannot be publishable')
+  if (candidate.status !== 'complete' && candidate.status !== 'partial') fail('failed/skipped staging outcome cannot cross the Candidate query/review surface')
   if (parentRecords !== undefined) validateParentClosure(candidate, parentRecords)
 }
 
@@ -290,12 +311,16 @@ export function validatePublicationV2(commandValue: unknown, resultValue: unknow
   const result = parsePublicationResultV2(resultValue)
   if (command.publication_operation_key !== result.publication_operation_key || command.candidate_id !== result.candidate_id || command.workspace_id !== result.workspace_id) fail('Publication result does not match its command')
   if (expectedWorkspaceId !== undefined && command.workspace_id !== expectedWorkspaceId) fail('Publication crosses Workspace')
+  if (result.cas.revision_id !== result.revision_id || result.cas.revision_number !== result.revision_number || result.cas.content_hash !== result.content_hash) fail('Publication result is not bound to the Core CAS Revision')
   if (candidateValue !== undefined) {
     const candidate = parseCandidateV2(candidateValue, command.workspace_id)
     if (candidate.candidate_id !== result.candidate_id || candidate.target.entity_kind !== result.entity_kind || candidate.target.entity_id !== result.entity_id) fail('Publication result is not bound to Candidate target')
     if (candidate.publication_eligibility !== 'eligible' || candidate.status === 'failed' || candidate.status === 'skipped') fail('Candidate is not publishable')
     if (candidate.status === 'partial' && candidate.item_kind !== 'incomplete_stream') fail('normal partial Candidate is review-only')
-    if (candidate.mutation.payload_hash !== result.content_hash) fail('Publication result is not bound to Candidate payload')
+    const targetWrite = candidate.write_set.find(item => item.entity_kind === candidate.target.entity_kind && item.entity_id === candidate.target.entity_id)
+    if (!targetWrite || result.cas.base_revision_id !== targetWrite.revision_id || result.cas.base_content_hash !== targetWrite.content_hash) fail('Publication result CAS base is not bound to Candidate write_set')
+    // The mutation payload Asset/hash is independently validated on Candidate;
+    // the result hash is the final Revision hash computed by Core and may differ.
   }
 }
 
@@ -310,10 +335,22 @@ export function validateStoryStateProjectionV2(value: JsonRecord, expectedWorksp
   if (value.publication.candidate_id !== value.candidate.candidate_id || value.publication.revision_id !== value.current_revision.revision_id) fail('projection references are not bound')
   if (value.publication.revision_number !== value.current_revision.revision_number || value.publication.content_hash !== value.current_revision.content_hash) fail('projection Publication/current Revision mismatch')
   if (value.candidate.target.workspace_id !== value.workspace_id) fail('projection Candidate crosses Workspace')
-  const assets = new Map<string, string>(value.assets.map((item: JsonRecord) => [item.asset_id, item.sha256]))
-  if (assets.get(value.candidate.payload_asset_id) !== value.candidate.payload_hash) fail('projection Candidate payload is absent from Asset closure')
-  if (assets.get(value.current_revision.content_asset_id) !== value.current_revision.content_hash) fail('projection Revision content is absent from Asset closure')
-  const receipts = new Map<string, JsonRecord>(value.receipt_closure.map((item: JsonRecord) => [item.receipt_id, item]))
+  const assets = new Map<string, JsonRecord>()
+  for (const item of value.assets as JsonRecord[]) {
+    if (assets.has(item.asset_id)) fail(`projection Asset identity is duplicated: ${item.asset_id}`)
+    assets.set(item.asset_id, item)
+  }
+  const requiredAssetIds = new Set([value.candidate.payload_asset_id, value.current_revision.content_asset_id])
+  if (assets.size !== requiredAssetIds.size || [...assets.keys()].some(assetId => !requiredAssetIds.has(assetId))) fail('projection Asset closure is not exactly the reachable Asset set')
+  const payloadAsset = assets.get(value.candidate.payload_asset_id)
+  const contentAsset = assets.get(value.current_revision.content_asset_id)
+  if (!payloadAsset || payloadAsset.role !== 'candidate.payload' || payloadAsset.sha256 !== value.candidate.payload_hash) fail('projection Candidate payload is absent from Asset closure')
+  if (!contentAsset || contentAsset.role !== 'revision.content' || contentAsset.sha256 !== value.current_revision.content_hash) fail('projection Revision content is absent from Asset closure')
+  const receipts = new Map<string, JsonRecord>()
+  for (const item of value.receipt_closure as JsonRecord[]) {
+    if (receipts.has(item.receipt_id)) fail(`projection receipt identity is duplicated: ${item.receipt_id}`)
+    receipts.set(item.receipt_id, item)
+  }
   const root = receipts.get(value.provenance.receipt_id)
   if (!root || root.receipt_hash !== value.provenance.receipt_hash) fail('projection provenance root is absent from receipt closure')
   if (JSON.stringify(root.parent_receipt_ids) !== JSON.stringify(value.provenance.parent_receipt_ids)) fail('projection provenance parent binding is inconsistent')
@@ -324,12 +361,16 @@ export function validateStoryStateProjectionV2(value: JsonRecord, expectedWorksp
     if (visited.has(receiptId)) return
     const receipt = receipts.get(receiptId)
     if (!receipt) fail(`provenance receipt parent is missing: ${receiptId}`)
+    const unsigned = { ...receipt }
+    delete unsigned.receipt_hash
+    if (receipt.receipt_hash !== hashJcsSync('story-state-receipt/v2', unsigned)) fail(`provenance receipt hash mismatch: ${receiptId}`)
     visiting.add(receiptId)
     for (const parentId of receipt.parent_receipt_ids) visit(parentId)
     visiting.delete(receiptId)
     visited.add(receiptId)
   }
   visit(value.provenance.receipt_id)
+  if (visited.size !== receipts.size || [...receipts.keys()].some(receiptId => !visited.has(receiptId))) fail('projection receipt closure contains an unreachable receipt')
 }
 
 export async function verifyJobSnapshotHashV2(snapshot: JsonRecord): Promise<void> {

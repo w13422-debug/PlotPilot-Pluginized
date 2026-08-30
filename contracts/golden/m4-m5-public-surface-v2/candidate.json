@@ -39,6 +39,13 @@
         "entity_kind": "document",
         "revision_id": "rev-1",
         "workspace_id": "ws-1"
+      },
+      {
+        "content_hash": "7777777777777777777777777777777777777777777777777777777777777777",
+        "entity_id": "doc-b",
+        "entity_kind": "document",
+        "revision_id": "rev-b",
+        "workspace_id": "ws-1"
       }
     ]
   },
@@ -81,6 +88,13 @@
         "entity_id": "doc-a",
         "entity_kind": "document",
         "revision_id": "rev-1",
+        "workspace_id": "ws-1"
+      },
+      {
+        "content_hash": "7777777777777777777777777777777777777777777777777777777777777777",
+        "entity_id": "doc-b",
+        "entity_kind": "document",
+        "revision_id": "rev-b",
         "workspace_id": "ws-1"
       }
     ]
@@ -131,6 +145,13 @@
           "entity_kind": "document",
           "revision_id": "rev-1",
           "workspace_id": "ws-1"
+        },
+        {
+          "content_hash": "7777777777777777777777777777777777777777777777777777777777777777",
+          "entity_id": "doc-b",
+          "entity_kind": "document",
+          "revision_id": "rev-b",
+          "workspace_id": "ws-1"
         }
       ]
     },
@@ -176,6 +197,13 @@
         "entity_id": "doc-a",
         "entity_kind": "document",
         "revision_id": "rev-1",
+        "workspace_id": "ws-1"
+      },
+      {
+        "content_hash": "7777777777777777777777777777777777777777777777777777777777777777",
+        "entity_id": "doc-b",
+        "entity_kind": "document",
+        "revision_id": "rev-b",
         "workspace_id": "ws-1"
       }
     ]
@@ -229,6 +257,13 @@
             "entity_kind": "document",
             "revision_id": "rev-1",
             "workspace_id": "ws-1"
+          },
+          {
+            "content_hash": "7777777777777777777777777777777777777777777777777777777777777777",
+            "entity_id": "doc-b",
+            "entity_kind": "document",
+            "revision_id": "rev-b",
+            "workspace_id": "ws-1"
           }
         ]
       }
@@ -278,6 +313,13 @@
         "entity_kind": "document",
         "revision_id": "rev-1",
         "workspace_id": "ws-1"
+      },
+      {
+        "content_hash": "7777777777777777777777777777777777777777777777777777777777777777",
+        "entity_id": "doc-b",
+        "entity_kind": "document",
+        "revision_id": "rev-b",
+        "workspace_id": "ws-1"
       }
     ]
   },
@@ -300,6 +342,185 @@
     "schema": "candidate-preview-result/v2",
     "total_length": 5,
     "workspace_id": "ws-1"
+  },
+  "candidate_relation_patch": {
+    "base": {
+      "content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "revision_id": "rev-relation-1"
+    },
+    "candidate_id": "candidate-relation-v2",
+    "created_at": "2026-08-30T00:00:00Z",
+    "item_kind": "relation_set",
+    "mutation": {
+      "mode": "relation_patch",
+      "payload_hash": "fc8fbb48a3a16bfdd85345d0b6aa543ebd805c370e5b763ed75207185093fca3",
+      "payload_schema": "core/relation-set/v2"
+    },
+    "parent_candidate_ids": [],
+    "payload_asset_id": "asset-candidate-relation-v2",
+    "publication_eligibility": "eligible",
+    "schema": "candidate/v2",
+    "source_job_id": "job-v2",
+    "source_refs": [
+      {
+        "revision_or_hash": "source-rev-1",
+        "source_id": "source-candidate",
+        "source_type": "candidate",
+        "workspace_id": "ws-source"
+      }
+    ],
+    "status": "complete",
+    "target": {
+      "entity_id": "relation-a",
+      "entity_kind": "relation_set",
+      "workspace_id": "ws-1"
+    },
+    "workspace_id": "ws-1",
+    "write_set": [
+      {
+        "content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entity_id": "relation-a",
+        "entity_kind": "relation_set",
+        "revision_id": "rev-relation-1",
+        "workspace_id": "ws-1"
+      }
+    ]
+  },
+  "candidate_replace": {
+    "base": {
+      "content_hash": "8888888888888888888888888888888888888888888888888888888888888888",
+      "revision_id": "rev-replace-1"
+    },
+    "candidate_id": "candidate-replace-v2",
+    "created_at": "2026-08-30T00:00:00Z",
+    "item_kind": "document",
+    "mutation": {
+      "mode": "replace",
+      "payload_hash": "7ab3778776cde4fa728a162a53ad3abcc967d1bd7361039e0942888240c4ce86",
+      "payload_schema": "core/document-text/v2"
+    },
+    "parent_candidate_ids": [],
+    "payload_asset_id": "asset-candidate-replace-v2",
+    "publication_eligibility": "eligible",
+    "schema": "candidate/v2",
+    "source_job_id": "job-v2",
+    "source_refs": [
+      {
+        "revision_or_hash": "source-rev-1",
+        "source_id": "source-candidate",
+        "source_type": "candidate",
+        "workspace_id": "ws-source"
+      }
+    ],
+    "status": "complete",
+    "target": {
+      "entity_id": "doc-replace",
+      "entity_kind": "document",
+      "workspace_id": "ws-1"
+    },
+    "workspace_id": "ws-1",
+    "write_set": [
+      {
+        "content_hash": "8888888888888888888888888888888888888888888888888888888888888888",
+        "entity_id": "doc-replace",
+        "entity_kind": "document",
+        "revision_id": "rev-replace-1",
+        "workspace_id": "ws-1"
+      }
+    ]
+  },
+  "candidate_structure_patch": {
+    "base": {
+      "content_hash": "9999999999999999999999999999999999999999999999999999999999999999",
+      "revision_id": "rev-structure-1"
+    },
+    "candidate_id": "candidate-structure-v2",
+    "created_at": "2026-08-30T00:00:00Z",
+    "item_kind": "node_structure",
+    "mutation": {
+      "mode": "structure_patch",
+      "payload_hash": "520cdb563bf80b193aab6aad62781a9647c75dbf76748117299c7dac0ae63a87",
+      "payload_schema": "core/node-structure/v2"
+    },
+    "parent_candidate_ids": [],
+    "payload_asset_id": "asset-candidate-structure-v2",
+    "publication_eligibility": "eligible",
+    "schema": "candidate/v2",
+    "source_job_id": "job-v2",
+    "source_refs": [
+      {
+        "revision_or_hash": "source-rev-1",
+        "source_id": "source-candidate",
+        "source_type": "candidate",
+        "workspace_id": "ws-source"
+      }
+    ],
+    "status": "complete",
+    "target": {
+      "entity_id": "node-a",
+      "entity_kind": "node_structure",
+      "workspace_id": "ws-1"
+    },
+    "workspace_id": "ws-1",
+    "write_set": [
+      {
+        "content_hash": "9999999999999999999999999999999999999999999999999999999999999999",
+        "entity_id": "node-a",
+        "entity_kind": "node_structure",
+        "revision_id": "rev-structure-1",
+        "workspace_id": "ws-1"
+      }
+    ]
+  },
+  "candidate_text_patch": {
+    "base": {
+      "content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "revision_id": "rev-1"
+    },
+    "candidate_id": "candidate-v2",
+    "created_at": "2026-08-30T00:00:00Z",
+    "item_kind": "document",
+    "mutation": {
+      "mode": "text_patch",
+      "payload_hash": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+      "payload_schema": "core/document-text/v2"
+    },
+    "parent_candidate_ids": [],
+    "payload_asset_id": "asset-candidate-v2",
+    "publication_eligibility": "eligible",
+    "schema": "candidate/v2",
+    "source_job_id": "job-v2",
+    "source_refs": [
+      {
+        "revision_or_hash": "source-rev-1",
+        "source_id": "source-candidate",
+        "source_type": "candidate",
+        "workspace_id": "ws-source"
+      }
+    ],
+    "status": "complete",
+    "target": {
+      "entity_id": "doc-a",
+      "entity_kind": "document",
+      "workspace_id": "ws-1"
+    },
+    "workspace_id": "ws-1",
+    "write_set": [
+      {
+        "content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+        "entity_id": "doc-a",
+        "entity_kind": "document",
+        "revision_id": "rev-1",
+        "workspace_id": "ws-1"
+      },
+      {
+        "content_hash": "7777777777777777777777777777777777777777777777777777777777777777",
+        "entity_id": "doc-b",
+        "entity_kind": "document",
+        "revision_id": "rev-b",
+        "workspace_id": "ws-1"
+      }
+    ]
   },
   "schema": "m4-m5-public-surface-golden/v2"
 }

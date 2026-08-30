@@ -2,7 +2,10 @@
   "candidate_ids": [
     "candidate-v2",
     "candidate-partial",
-    "candidate-incomplete"
+    "candidate-incomplete",
+    "candidate-replace-v2",
+    "candidate-structure-v2",
+    "candidate-relation-v2"
   ],
   "cursor_domains": [
     "candidate",
@@ -10,16 +13,22 @@
     "core"
   ],
   "fixture_files": {
-    "candidate.json": "303a324c696988bf39d01391c1f62546cac15237fd3b6dd790b68057af97004f",
-    "http.json": "a11daaa76a624f729b750ead15fa03b0ae792fbf9462a5940ca4b0d6a84ca134",
-    "job.json": "7263c137c8dca33e9deb3eae97c61978c83483c2671d352fe6f98dee3d45b56e",
-    "plugin.json": "82057bc03c08fb3d90504899832686fefd304f816baaf61f88e741d396fe9424",
-    "publication.json": "82507e594f25e18d37368c60593b936a68b3b02db697bda96351eed0686eba1f",
+    "candidate.json": "ba4aaad8cd1de6e5b038761092191e1fae03f73a2375063b22a4f8858f103f9d",
+    "http.json": "877a84012f9d1e1e00e9f73b3b30c371313891a22875ffd00e57f73b40e997d5",
+    "job.json": "73867e609724e10bc23a4cab209d7c6dbfe86df0b252b1cf5c2a04720dabef1b",
+    "plugin.json": "4f98b5ab5ea9e74580cbe649b5f89c5d913c048c44f509dad7b406559b6dc24d",
+    "publication.json": "51cad4aa46dc777192fa4ba34de777ae8add52819a30d4ac63ee6f6c8bcda2d6",
     "review.json": "3f65b9a5c92f61bd334c3fcfb64fa9fa29e01271c3d780474941a43edfc8860a",
-    "story-state.json": "1d2a7727731fcb1ffcedbfa42815bbf08787f3f57d0f48b14d5c4d4c8b89385e"
+    "story-state.json": "63eb937f08e9fdd7fec4f7049780df1b5d900757ead5d1dbedf99d440efcfe84"
   },
   "gap_snapshot_hash": "593801172d60fe3ee80e88a537c92007202937a3f084491f18642359378b0675",
   "http_exchange_count": 19,
+  "mutation_kinds": [
+    "replace",
+    "text_patch",
+    "structure_patch",
+    "relation_patch"
+  ],
   "publication_paths": [
     "publication.accept"
   ],

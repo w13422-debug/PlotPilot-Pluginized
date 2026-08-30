@@ -123,10 +123,41 @@
         "value": "com.plotpilot.other"
       },
       "route_id": "plugin.upgrade"
+    },
+    {
+      "case_id": "v2-plugin-discovery-cursor-error-schema",
+      "expected": "plugin_http_error_binding",
+      "fixture": "http.plugin.discovery.error",
+      "kind": "http_exchange",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "response",
+          "schema"
+        ],
+        "value": "core-http-error/v2"
+      },
+      "route_id": "plugin.discovery"
+    },
+    {
+      "case_id": "v2-plugin-discovery-cursor-request-domain",
+      "expected": "cursor_domain_mismatch",
+      "fixture": "http.plugin.discovery.error",
+      "kind": "http_request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "request",
+          "cursor"
+        ],
+        "value": "candidate/ws-1/1"
+      },
+      "route_id": "plugin.discovery"
     }
   ],
   "positive": [
     "plugin.discovery",
+    "plugin.discovery_error",
     "plugin.lifecycle.install",
     "plugin.lifecycle.upgrade",
     "plugin.lifecycle.retire",

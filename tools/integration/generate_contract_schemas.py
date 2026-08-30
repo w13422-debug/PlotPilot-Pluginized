@@ -1115,7 +1115,10 @@ def compatibility_schema() -> dict[str, Any]:
 
 V2_CURSOR = {"type": "string", "pattern": r"^(?:candidate|job|core)/[A-Za-z0-9][A-Za-z0-9._:/-]*$"}
 V2_ENTITY_KIND = enum("document", "node_structure", "relation_set")
-V2_STATUS = enum("complete", "partial", "failed", "skipped")
+# Failed/skipped values belong to staging/outcome mappings.  They are not
+# Candidate records and therefore must not be representable on the public
+# Candidate query/review surface.
+V2_CANDIDATE_STATUS = enum("complete", "partial")
 
 
 def v2_union(*branches: dict[str, Any]) -> dict[str, Any]:
@@ -1179,7 +1182,7 @@ def v2_candidate_record() -> dict[str, Any]:
             "write_set": array(v2_write_set_entry(), min_items=1, unique=True),
             "parent_candidate_ids": array(ID, unique=True),
             "source_refs": array(v2_source_ref(), unique=True),
-            "status": V2_STATUS,
+            "status": V2_CANDIDATE_STATUS,
             "publication_eligibility": enum("eligible", "review_only", "none"),
             "created_at": UTC,
             "source_job_id": nullable(ID),
@@ -1236,9 +1239,35 @@ def v2_core_authority_schemas() -> dict[str, dict[str, Any]]:
         {"schema": const("publication-command/v2"), "publication_operation_key": ID, "workspace_id": ID, "candidate_id": ID, "accepted_by": ID},
         ("schema", "publication_operation_key", "workspace_id", "candidate_id", "accepted_by"),
     )
+    publication_cas = obj(
+        {
+            "base_revision_id": ID,
+            "base_content_hash": HASH,
+            "revision_id": ID,
+            "revision_number": POS_INT,
+            "content_hash": HASH,
+        },
+        ("base_revision_id", "base_content_hash", "revision_id", "revision_number", "content_hash"),
+    )
     publication_result = obj(
-        {"schema": const("publication-result/v2"), "publication_id": ID, "publication_operation_key": ID, "candidate_id": ID, "workspace_id": ID, "entity_kind": V2_ENTITY_KIND, "entity_id": ID, "revision_id": ID, "revision_number": POS_INT, "content_hash": HASH, "provenance_receipt_id": ID, "idempotent": BOOL},
-        ("schema", "publication_id", "publication_operation_key", "candidate_id", "workspace_id", "entity_kind", "entity_id", "revision_id", "revision_number", "content_hash", "provenance_receipt_id", "idempotent"),
+        {
+            "schema": const("publication-result/v2"),
+            "publication_id": ID,
+            "publication_operation_key": ID,
+            "candidate_id": ID,
+            "workspace_id": ID,
+            "entity_kind": V2_ENTITY_KIND,
+            "entity_id": ID,
+            "revision_id": ID,
+            "revision_number": POS_INT,
+            # ``content_hash`` is the final Revision hash returned by Core.
+            # The mutation payload hash is intentionally not substituted here.
+            "content_hash": HASH,
+            "cas": publication_cas,
+            "provenance_receipt_id": ID,
+            "idempotent": BOOL,
+        },
+        ("schema", "publication_id", "publication_operation_key", "candidate_id", "workspace_id", "entity_kind", "entity_id", "revision_id", "revision_number", "content_hash", "cas", "provenance_receipt_id", "idempotent"),
     )
     error = obj(
         {"schema": const("core-http-error/v2"), "error_code": enum("malformed_request", "unknown_reference", "cross_workspace", "stale_cas", "duplicate_operation", "candidate_not_publishable", "publication_only_core"), "message": NONEMPTY, "retryable": BOOL, "operation_key": nullable(ID)},
@@ -1253,7 +1282,7 @@ def v2_candidate_review_schemas() -> dict[str, dict[str, Any]]:
         ("schema", "workspace_id", "candidate_id", "include_lineage", "include_preview"),
     )
     review_command = obj(
-        {"schema": const("candidate-review-command/v2"), "operation_key": ID, "workspace_id": ID, "candidate_id": ID, "decision": enum("approve", "reject"), "decided_by": ID, "expected_status": V2_STATUS},
+        {"schema": const("candidate-review-command/v2"), "operation_key": ID, "workspace_id": ID, "candidate_id": ID, "decision": enum("approve", "reject"), "decided_by": ID, "expected_status": V2_CANDIDATE_STATUS},
         ("schema", "operation_key", "workspace_id", "candidate_id", "decision", "decided_by", "expected_status"),
     )
     review_result = obj(
@@ -1269,7 +1298,7 @@ def v2_story_state_projection_schemas() -> dict[str, dict[str, Any]]:
         ("publication_id", "candidate_id", "revision_id", "revision_number", "content_hash"),
     )
     candidate_ref = obj(
-        {"candidate_id": ID, "target": v2_target(), "payload_asset_id": ID, "payload_hash": HASH, "status": V2_STATUS},
+        {"candidate_id": ID, "target": v2_target(), "payload_asset_id": ID, "payload_hash": HASH, "status": V2_CANDIDATE_STATUS},
         ("candidate_id", "target", "payload_asset_id", "payload_hash", "status"),
     )
     revision_ref = obj(
@@ -1322,7 +1351,7 @@ def v2_plugin_api_schemas() -> dict[str, dict[str, Any]]:
     discovery_result = obj({"schema": const("plugin-discovery-result/v2"), "items": array(plugin), "next_cursor": nullable(V2_CURSOR), "cursor_domain": const("core"), "total": NONNEG_INT}, ("schema", "items", "next_cursor", "cursor_domain", "total"))
     lifecycle = obj({"schema": const("plugin-lifecycle-command/v2"), "operation_key": ID, "plugin_id": ID, "action": enum("install", "upgrade", "retire", "rollback"), "release_id": nullable(HASH), "package_hash": nullable(HASH), "expected_generation_id": nullable(ID), "target_generation_id": nullable(ID)}, ("schema", "operation_key", "plugin_id", "action", "release_id", "package_hash", "expected_generation_id", "target_generation_id"))
     lifecycle_result = obj({"schema": const("plugin-lifecycle-result/v2"), "operation_key": ID, "plugin_id": ID, "action": enum("install", "upgrade", "retire", "rollback"), "state": enum("discovered", "installed", "active", "retiring", "retired", "failed"), "generation_id": nullable(ID), "idempotent": BOOL, "failure_code": nullable(enum("package_invalid", "release_missing", "generation_conflict", "pinned_release", "active_job", "retire_failed", "rollback_failed"))}, ("schema", "operation_key", "plugin_id", "action", "state", "generation_id", "idempotent", "failure_code"))
-    error = obj({"schema": const("plugin-http-error/v2"), "error_code": enum("malformed_request", "unknown_plugin", "release_missing", "generation_conflict", "pinned_release", "active_job", "retire_failed", "rollback_failed", "duplicate_operation", "publication_forbidden"), "message": NONEMPTY, "retryable": BOOL, "operation_key": nullable(ID)}, ("schema", "error_code", "message", "retryable", "operation_key"))
+    error = obj({"schema": const("plugin-http-error/v2"), "error_code": enum("malformed_request", "cursor_domain_mismatch", "unknown_plugin", "release_missing", "generation_conflict", "pinned_release", "active_job", "retire_failed", "rollback_failed", "duplicate_operation", "publication_forbidden"), "message": NONEMPTY, "retryable": BOOL, "operation_key": nullable(ID)}, ("schema", "error_code", "message", "retryable", "operation_key"))
     return {"plugin-api-command-query-v2": v2_union(discovery_query, discovery_result, lifecycle, lifecycle_result, error)}
 
 

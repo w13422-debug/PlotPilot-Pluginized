@@ -150,9 +150,7 @@
         "status": {
           "enum": [
             "complete",
-            "partial",
-            "failed",
-            "skipped"
+            "partial"
           ]
         },
         "target": {
@@ -436,9 +434,7 @@
               "status": {
                 "enum": [
                   "complete",
-                  "partial",
-                  "failed",
-                  "skipped"
+                  "partial"
                 ]
               },
               "target": {
@@ -741,9 +737,7 @@
             "status": {
               "enum": [
                 "complete",
-                "partial",
-                "failed",
-                "skipped"
+                "partial"
               ]
             },
             "target": {

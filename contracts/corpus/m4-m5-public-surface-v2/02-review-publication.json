@@ -93,6 +93,34 @@
       "route_id": "publication.accept"
     },
     {
+      "case_id": "v2-publication-cas-final-hash-binding",
+      "expected": "cas_revision_binding",
+      "fixture": "publication.result.complete",
+      "kind": "publication_semantics",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "cas",
+          "content_hash"
+        ],
+        "value": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    {
+      "case_id": "v2-publication-cas-base-write-set-binding",
+      "expected": "cas_write_set_binding",
+      "fixture": "publication.result.complete",
+      "kind": "publication_semantics",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "cas",
+          "base_content_hash"
+        ],
+        "value": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    {
       "case_id": "v2-publication-ledger-response-drift",
       "expected": "duplicate_operation",
       "fixture": "http.publication.accept",
@@ -114,6 +142,12 @@
     "review.result",
     "publication.command.complete",
     "publication.result.complete",
+    "publication.command.replace",
+    "publication.result.replace",
+    "publication.command.structure_patch",
+    "publication.result.structure_patch",
+    "publication.command.relation_patch",
+    "publication.result.relation_patch",
     "publication.command.incomplete_stream",
     "publication.result.incomplete_stream"
   ],

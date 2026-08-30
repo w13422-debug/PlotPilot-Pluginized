@@ -37,6 +37,14 @@ class V2WriteSetEntry(V2Target):
     content_hash: str
 
 
+class V2CasResult(TypedDict):
+    base_revision_id: str
+    base_content_hash: str
+    revision_id: str
+    revision_number: int
+    content_hash: str
+
+
 class CandidateV2(TypedDict):
     schema: Literal["candidate/v2"]
     candidate_id: str
@@ -49,7 +57,7 @@ class CandidateV2(TypedDict):
     write_set: list[V2WriteSetEntry]
     parent_candidate_ids: list[str]
     source_refs: list[dict[str, Any]]
-    status: Literal["complete", "partial", "failed", "skipped"]
+    status: Literal["complete", "partial"]
     publication_eligibility: Literal["eligible", "review_only", "none"]
     created_at: str
     source_job_id: str | None
@@ -73,6 +81,7 @@ class PublicationResultV2(TypedDict):
     entity_id: str
     revision_id: str
     revision_number: int
+    cas: V2CasResult
     content_hash: str
     provenance_receipt_id: str
     idempotent: bool
@@ -245,6 +254,14 @@ def validate_candidate_v2(
     write_set = candidate["write_set"]
     if any(item["workspace_id"] != workspace_id for item in write_set):
         _fail("Candidate write_set crosses Workspace", path="/write_set")
+    identities = [
+        (item["workspace_id"], item["entity_kind"], item["entity_id"])
+        for item in write_set
+    ]
+    if len(identities) != len(set(identities)):
+        _fail("Candidate write_set contains a duplicate entity identity", path="/write_set")
+    if identities != sorted(identities):
+        _fail("Candidate write_set is not in stable entity identity order", path="/write_set")
     target_key = (target["entity_kind"], target["entity_id"])
     target_entries = [item for item in write_set if (item["entity_kind"], item["entity_id"]) == target_key]
     if len(target_entries) != 1:
@@ -276,8 +293,8 @@ def validate_candidate_v2(
             _fail("incomplete_stream Candidate has an unsupported payload schema")
     elif candidate["status"] == "partial" and candidate["publication_eligibility"] == "eligible":
         _fail("normal partial Candidate cannot be publishable")
-    if candidate["status"] in {"failed", "skipped"} and candidate["publication_eligibility"] != "none":
-        _fail("failed/skipped Candidate cannot be eligible")
+    if candidate["status"] not in {"complete", "partial"}:
+        _fail("failed/skipped staging outcome cannot cross the Candidate query/review surface")
 
     if parent_records is not None:
         _assert_parent_closure(candidate, parent_records)
@@ -341,22 +358,41 @@ def validate_story_state_projection_v2(value: Mapping[str, Any], *, expected_wor
         _fail("projection Candidate target crosses Workspace")
     if projection["candidate"]["candidate_id"] != projection["publication"]["candidate_id"]:
         _fail("projection Candidate identity is not bound")
-    assets = {item["asset_id"]: item["sha256"] for item in projection["assets"]}
-    if assets.get(projection["candidate"]["payload_asset_id"]) != projection["candidate"]["payload_hash"]:
+    assets: dict[str, Mapping[str, Any]] = {}
+    for item in projection["assets"]:
+        asset_id = item["asset_id"]
+        if asset_id in assets:
+            _fail(f"projection Asset identity is duplicated: {asset_id}")
+        assets[asset_id] = item
+    payload_asset_id = projection["candidate"]["payload_asset_id"]
+    content_asset_id = projection["current_revision"]["content_asset_id"]
+    required_asset_ids = {payload_asset_id, content_asset_id}
+    if set(assets) != required_asset_ids:
+        _fail("projection Asset closure is not exactly the reachable Asset set")
+    payload_asset = assets.get(payload_asset_id)
+    content_asset = assets.get(content_asset_id)
+    if payload_asset is None or payload_asset["role"] != "candidate.payload" or payload_asset["sha256"] != projection["candidate"]["payload_hash"]:
         _fail("projection Candidate payload is absent from Asset closure")
-    if assets.get(projection["current_revision"]["content_asset_id"]) != projection["current_revision"]["content_hash"]:
+    if content_asset is None or content_asset["role"] != "revision.content" or content_asset["sha256"] != projection["current_revision"]["content_hash"]:
         _fail("projection Revision content is absent from Asset closure")
     provenance = projection["provenance"]
-    receipts = {item["receipt_id"]: item for item in projection["receipt_closure"]}
+    receipts: dict[str, Mapping[str, Any]] = {}
+    for item in projection["receipt_closure"]:
+        receipt_id = item["receipt_id"]
+        if receipt_id in receipts:
+            _fail(f"projection receipt identity is duplicated: {receipt_id}")
+        receipts[receipt_id] = item
     root = receipts.get(provenance["receipt_id"])
     if root is None or root["receipt_hash"] != provenance["receipt_hash"]:
         _fail("projection provenance root is absent from receipt closure")
     if root["parent_receipt_ids"] != provenance["parent_receipt_ids"]:
         _fail("projection provenance parent binding is inconsistent")
-    _assert_receipt_closure(provenance["receipt_id"], receipts)
+    reachable = _assert_receipt_closure(provenance["receipt_id"], receipts)
+    if set(receipts) != reachable:
+        _fail("projection receipt closure contains an unreachable receipt")
 
 
-def _assert_receipt_closure(root_id: str, receipts: Mapping[str, Mapping[str, Any]]) -> None:
+def _assert_receipt_closure(root_id: str, receipts: Mapping[str, Mapping[str, Any]]) -> set[str]:
     visiting: set[str] = set()
     visited: set[str] = set()
 
@@ -368,6 +404,12 @@ def _assert_receipt_closure(root_id: str, receipts: Mapping[str, Mapping[str, An
         receipt = receipts.get(receipt_id)
         if receipt is None:
             _fail(f"provenance receipt parent is missing: {receipt_id}")
+        expected_hash = hash_jcs(
+            "story-state-receipt/v2",
+            {key: value for key, value in receipt.items() if key != "receipt_hash"},
+        )
+        if receipt["receipt_hash"] != expected_hash:
+            _fail(f"provenance receipt hash mismatch: {receipt_id}")
         visiting.add(receipt_id)
         for parent_id in receipt["parent_receipt_ids"]:
             visit(parent_id)
@@ -375,6 +417,7 @@ def _assert_receipt_closure(root_id: str, receipts: Mapping[str, Mapping[str, An
         visited.add(receipt_id)
 
     visit(root_id)
+    return visited
 
 
 def _cursor(value: str | None, expected_domain: str, *, job_id: str | None = None) -> tuple[str, str | None, int | None]:
@@ -523,16 +566,26 @@ def parse_job_sse_recovery_v2(value: Mapping[str, Any]) -> dict[str, Any]:
         parse_job_snapshot_v2(parsed["snapshot"])
         if snapshot_seq != parsed["snapshot"]["job_event_high_water"]:
             _fail("SSE snapshot cursor is not bound to the recovered snapshot")
+        if floor > snapshot_seq:
+            _fail("SSE replay floor is beyond the recovered snapshot high-water")
+        continuation_baseline = snapshot_seq
     else:
         if parsed["snapshot_required"] or parsed["snapshot"] is not None or floor > requested + 1:
             _fail("SSE replay response has an inconsistent gap marker")
+        continuation_baseline = requested
     for left, right in zip(parsed["tail"], parsed["tail"][1:]):
         if left["job_event_seq"] >= right["job_event_seq"]:
             _fail("SSE tail events are not strictly ordered")
+    expected_seq = continuation_baseline + 1
     for event in parsed["tail"]:
         _validate_job_event(event, job_id=parsed["job_id"])
-        if event["job_event_seq"] <= requested or event["job_event_seq"] > durable:
+        if event["job_event_seq"] != expected_seq:
+            _fail("SSE tail cursor is not continuous after its continuation baseline")
+        if event["job_event_seq"] > durable:
             _fail("SSE tail is outside the requested Job cursor range")
+        expected_seq += 1
+    if expected_seq - 1 != durable:
+        _fail("SSE tail does not converge to the durable Job high-water")
     return parsed
 
 
@@ -586,6 +639,17 @@ def validate_publication_v2(
         _fail("Publication result does not match its command")
     if expected_workspace_id is not None and parsed_command["workspace_id"] != expected_workspace_id:
         _fail("Publication crosses Workspace")
+    cas = parsed_result["cas"]
+    if (
+        cas["revision_id"],
+        cas["revision_number"],
+        cas["content_hash"],
+    ) != (
+        parsed_result["revision_id"],
+        parsed_result["revision_number"],
+        parsed_result["content_hash"],
+    ):
+        _fail("Publication result is not bound to the Core CAS Revision")
     if candidate is not None:
         parsed_candidate = parse_candidate_v2(candidate, expected_workspace_id=parsed_command["workspace_id"])
         if parsed_candidate["candidate_id"] != parsed_result["candidate_id"]:
@@ -596,8 +660,23 @@ def validate_publication_v2(
             _fail("normal partial Candidate is review-only")
         if parsed_result["entity_kind"] != parsed_candidate["target"]["entity_kind"] or parsed_result["entity_id"] != parsed_candidate["target"]["entity_id"]:
             _fail("Publication result is not bound to Candidate target")
-        if parsed_result["content_hash"] != parsed_candidate["mutation"]["payload_hash"]:
-            _fail("Publication result is not bound to Candidate payload")
+        target_entry = next(
+            item
+            for item in parsed_candidate["write_set"]
+            if (item["entity_kind"], item["entity_id"])
+            == (parsed_candidate["target"]["entity_kind"], parsed_candidate["target"]["entity_id"])
+        )
+        if (
+            cas["base_revision_id"],
+            cas["base_content_hash"],
+        ) != (
+            target_entry["revision_id"],
+            target_entry["content_hash"],
+        ):
+            _fail("Publication result CAS base is not bound to Candidate write_set")
+        # The Candidate mutation remains independently bound to its payload
+        # Asset/hash.  ``parsed_result.content_hash`` is the final Revision
+        # hash computed by Core and is intentionally allowed to differ.
 
 
 def parse_publication_command_v2(value: Mapping[str, Any]) -> PublicationCommandV2:
@@ -643,6 +722,7 @@ __all__ = [
     "PublicationResultV2",
     "V2Target",
     "V2WriteSetEntry",
+    "V2CasResult",
     "parse_v2",
     "parse_candidate_v2",
     "parse_candidate_query_result_v2",

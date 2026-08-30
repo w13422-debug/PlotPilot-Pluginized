@@ -19,4 +19,4 @@ def test_m0_contract_gate_is_green() -> None:
     assert len(summary["negative"]) == 14
     assert summary["v2_public_surface"]["routes"] == 19
     assert summary["v2_public_surface"]["http_exchanges"] == 19
-    assert summary["v2_public_surface"]["negative_cases"] == 44
+    assert summary["v2_public_surface"]["negative_cases"] == 60

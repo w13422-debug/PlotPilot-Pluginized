@@ -152,6 +152,49 @@
       }
     },
     {
+      "case_id": "v2-job-sse-gap-tail-starts-after-snapshot",
+      "expected": "sse_snapshot_baseline",
+      "fixture": "job.sse.gap",
+      "kind": "job_sse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "tail",
+          0,
+          "job_event_seq"
+        ],
+        "value": 4
+      }
+    },
+    {
+      "case_id": "v2-job-sse-gap-tail-continuity",
+      "expected": "sse_tail_continuity",
+      "fixture": "job.sse.gap",
+      "kind": "job_sse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "tail",
+          1,
+          "job_event_seq"
+        ],
+        "value": 7
+      }
+    },
+    {
+      "case_id": "v2-job-sse-gap-tail-must-reach-high-water",
+      "expected": "sse_high_water_convergence",
+      "fixture": "job.sse.gap",
+      "kind": "job_sse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "tail"
+        ],
+        "value": []
+      }
+    },
+    {
       "case_id": "v2-job-command-snapshot-domain",
       "expected": "cursor_domain_mismatch",
       "fixture": "http.job.start",

@@ -164,6 +164,39 @@
           "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
           "type": "string"
         },
+        "cas": {
+          "additionalProperties": false,
+          "properties": {
+            "base_content_hash": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "base_revision_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            "content_hash": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "revision_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            "revision_number": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "base_revision_id",
+            "base_content_hash",
+            "revision_id",
+            "revision_number",
+            "content_hash"
+          ],
+          "type": "object"
+        },
         "content_hash": {
           "pattern": "^[0-9a-f]{64}$",
           "type": "string"
@@ -221,6 +254,7 @@
         "revision_id",
         "revision_number",
         "content_hash",
+        "cas",
         "provenance_receipt_id",
         "idempotent"
       ],

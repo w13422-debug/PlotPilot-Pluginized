@@ -49,9 +49,7 @@
         "status": {
           "enum": [
             "complete",
-            "partial",
-            "failed",
-            "skipped"
+            "partial"
           ]
         },
         "target": {

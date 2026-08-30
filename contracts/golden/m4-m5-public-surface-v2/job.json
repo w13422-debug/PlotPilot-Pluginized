@@ -182,7 +182,7 @@
     "workspace_id": "ws-1"
   },
   "sse_gap": {
-    "durable_high_water_seq": 4,
+    "durable_high_water_seq": 6,
     "gap": true,
     "job_id": "job-v2",
     "replay_floor_seq": 2,
@@ -221,7 +221,28 @@
     },
     "snapshot_cursor": "job/job-v2/4",
     "snapshot_required": true,
-    "tail": [],
+    "tail": [
+      {
+        "aggregate_revision": 6,
+        "event_id": "job-event-v2-5",
+        "event_type": "job.progress",
+        "job_event_seq": 5,
+        "job_id": "job-v2",
+        "occurred_at": "2026-08-30T00:00:04Z",
+        "payload_asset_id": null,
+        "payload_hash": null
+      },
+      {
+        "aggregate_revision": 7,
+        "event_id": "job-event-v2-6",
+        "event_type": "job.progress",
+        "job_event_seq": 6,
+        "job_id": "job-v2",
+        "occurred_at": "2026-08-30T00:00:05Z",
+        "payload_asset_id": null,
+        "payload_hash": null
+      }
+    ],
     "workspace_id": "ws-1"
   },
   "sse_gap_query": {
