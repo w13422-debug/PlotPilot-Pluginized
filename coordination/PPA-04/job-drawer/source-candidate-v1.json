@@ -1,0 +1,43 @@
+{
+  "schema": "plotpilot-source-candidate/v1",
+  "node_id": "NW-P4-JOB-DRAWER-02",
+  "project": "PPA-NW-P4-Job-Drawer",
+  "parent_project": "P4",
+  "branch": "codex/nw-p4-job-drawer-02",
+  "base_commit": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+  "base_tree": "eab64b7d5b1e3ad652aeaf48bd0085d930beca5d",
+  "candidate_commit": "ENCLOSING_COMMIT",
+  "candidate_parent_expected": "e0c46f94c45dfb0dd41eb418347974a21f1e91ec",
+  "reviewed_candidate_tree": "494b8f8b669ea9ad2d3e5445edb77b961ba252eb",
+  "source_readiness": "source_ready_integration_deferred",
+  "review_status": "same_sol_reviewer_targeted_recheck_required",
+  "self_acceptance_claimed": false,
+  "public_contract_changed": false,
+  "dependency_changed": false,
+  "runtime_route_invented": false,
+  "changed_path_count_expected": 17,
+  "write_set_outside_count_expected": 0,
+  "finding_manifest_sha256": "6699dfbf837ec42104eb9faae4a337757c6a40ee1daf4fe8d2a3c3b8b49ed8a7",
+  "finding_ids": [
+    "NW-P4-JD-SOL-F-001",
+    "NW-P4-JD-SOL-F-002",
+    "NW-P4-JD-SOL-F-003",
+    "NW-P4-JD-SOL-F-004",
+    "NW-P4-JD-SOL-F-005",
+    "NW-P4-JD-SOL-F-006",
+    "NW-P4-JD-SOL-F-007",
+    "NW-P4-JD-SOL-F-008",
+    "NW-P4-JD-SOL-F-009",
+    "NW-P4-JD-SOL-F-010",
+    "NW-P4-JD-SOL-F-011",
+    "NW-P4-JD-SOL-F-012"
+  ],
+  "delivery_record": "docs/deliveries/PPA-04/job-drawer/source-candidate.md",
+  "validation_evidence": "docs/deliveries/PPA-04/job-drawer/validation-evidence.json",
+  "remediation_evidence": "docs/deliveries/PPA-04/job-drawer/remediation-closure-v1.json",
+  "integration_dependencies": [
+    "NW-P3-JOB-RPC-02",
+    "NW-P3-EVENT-SSE-03",
+    "NW-P0-RUNTIME-COMPOSITION-02"
+  ]
+}

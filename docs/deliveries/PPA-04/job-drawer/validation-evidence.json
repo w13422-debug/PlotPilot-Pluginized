@@ -1,0 +1,79 @@
+{
+  "schema": "plotpilot-job-drawer-validation/v1",
+  "node_id": "NW-P4-JOB-DRAWER-02",
+  "status": "bounded_remediation_candidate_targeted_recheck_pending",
+  "self_acceptance_claimed": false,
+  "base_commit": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+  "base_tree": "eab64b7d5b1e3ad652aeaf48bd0085d930beca5d",
+  "reviewed_candidate_parent": "e0c46f94c45dfb0dd41eb418347974a21f1e91ec",
+  "reviewed_candidate_tree": "494b8f8b669ea9ad2d3e5445edb77b961ba252eb",
+  "candidate_locator": "the single enclosing direct-child remediation commit",
+  "changed_path_count": 17,
+  "write_set_outside_count": 0,
+  "source_readiness": "source_ready_integration_deferred",
+  "finding_manifest_sha256": "6699dfbf837ec42104eb9faae4a337757c6a40ee1daf4fe8d2a3c3b8b49ed8a7",
+  "finding_evidence": "remediation-closure-v1.json",
+  "tests": [
+    {
+      "command": "node --experimental-strip-types --test tests/p4-webui/job-drawer/*.test.mts",
+      "result": "29 passed, 0 failed",
+      "exit_code": 0,
+      "raw": "evidence/raw/remediation-job-drawer-tests.txt"
+    },
+    {
+      "command": "node --experimental-strip-types --test tests/p4-webui/*.test.mts",
+      "result": "13 passed, 0 failed",
+      "exit_code": 0,
+      "raw": "evidence/raw/remediation-p4-webui-tests.txt"
+    },
+    {
+      "command": "PLOTPILOT_FRONTEND_DEP_ROOT=<exact-mirror> PLOTPILOT_FRONTEND_SOURCE_ROOT=<exact-mirror> node --experimental-strip-types --test frontend/tests/job-drawer/*.test.mts",
+      "result": "263 source files, 0 SHA-256 differences; 3 passed, 0 failed",
+      "exit_code": 0,
+      "raw": "evidence/raw/remediation-task-drawer-render.txt"
+    },
+    {
+      "command": "frontend/node_modules/.bin/vue-tsc.cmd --noEmit -p frontend/tsconfig.app.json --incremental false",
+      "result": "not runnable because frontend/node_modules is absent",
+      "exit_code": 127,
+      "raw": "evidence/raw/remediation-vue-tsc-required-command.txt"
+    },
+    {
+      "command": "installed vue-tsc --noEmit against isolated exact-current-source mirror",
+      "result": "263 source files, 0 SHA-256 differences; typecheck exit 0",
+      "exit_code": 0,
+      "raw": "evidence/raw/remediation-vue-tsc-mirror.txt"
+    },
+    {
+      "command": "git diff --check",
+      "result": "exit 0, no output",
+      "exit_code": 0,
+      "raw": "evidence/raw/remediation-git-diff-check.txt"
+    }
+  ],
+  "coverage": [
+    "F-001 recovery floor/gap validation, recovery handle closure and live reconnect from Snapshot high-water",
+    "F-002 distinct observed/projection cursors, failed last-event replay and burst convergence pumping",
+    "F-003 post-await generation/serial/barrier fencing for stale asynchronous continuations",
+    "F-004 latest-only refresh ordinal with stale remove/revive response rejection",
+    "F-005 shared Snapshot position/hash classifier and atomic workspace conflict rejection",
+    "F-006 expected Job identity binding before event, action and recovery Snapshot application",
+    "F-007 token-owned action serialization across stop/start generations",
+    "F-008 causally post-action forced Snapshot read that cannot reuse an earlier read",
+    "F-009 complete ten-Job-state action truth table and checkpoint-gated resume",
+    "F-010 complete authoritative Step/Attempt presentation plus future-state fallback",
+    "F-011 signal-stabilized capped exponential reconnect backoff",
+    "F-012 real Vue SFC client rendering for visibility, disabled/loading, emits, errors, progress and status DOM"
+  ],
+  "integration_dependencies": [
+    "NW-P3-JOB-RPC-02",
+    "NW-P3-EVENT-SSE-03",
+    "NW-P0-RUNTIME-COMPOSITION-02"
+  ],
+  "limitations": [
+    "No runtime route or transport is bound in this source-only slice.",
+    "The exact local vue-tsc path is unavailable; an isolated exact-current-source mirror using the repository's already-installed dependency set has zero source hash differences and exits 0.",
+    "No browser, GUI, desktop, Tauri, EXE, installer or final-only gate was run.",
+    "Finding disposition remains with the same Sol reviewer; this record does not claim acceptance or merge eligibility."
+  ]
+}

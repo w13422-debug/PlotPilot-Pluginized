@@ -1,0 +1,13 @@
+command=git diff --check
+scope=single remediation working tree relative to e0c46f94c45dfb0dd41eb418347974a21f1e91ec
+output:
+warning: in the working copy of 'coordination/PPA-04/job-drawer/source-candidate-v1.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/deliveries/PPA-04/job-drawer/source-candidate.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/deliveries/PPA-04/job-drawer/validation-evidence.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/core/jobPresentation.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/core/jobs/controller.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/core/jobs/store.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p4-webui/job-drawer/controller.test.mts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p4-webui/job-drawer/presentation.test.mts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p4-webui/job-drawer/store.test.mts', LF will be replaced by CRLF the next time Git touches it
+exit_code=0

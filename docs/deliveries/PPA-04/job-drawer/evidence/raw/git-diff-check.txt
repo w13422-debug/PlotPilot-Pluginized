@@ -1,0 +1,4 @@
+COMMAND: git diff --check
+warning: in the working copy of 'frontend/src/components/jobs/TaskDrawer.vue', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/core/jobPresentation.ts', LF will be replaced by CRLF the next time Git touches it
+EXIT_CODE=0

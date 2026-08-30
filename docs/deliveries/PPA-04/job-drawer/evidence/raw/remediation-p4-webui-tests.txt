@@ -1,0 +1,22 @@
+✔ calculates progress from the Host-only drawer view model (1.3684ms)
+✔ presents every fixed capability state explicitly (0.2123ms)
+✔ only exposes contract-valid resume and cancel affordances (0.265ms)
+✔ maps a validated Host button node to a non-asset form renderer (2.2994ms)
+✔ keeps asset-backed and Candidate controls behind their authority boundaries (0.6832ms)
+✔ keeps plugin Slot rendering out of the app and router ownership boundary (18.8717ms)
+✔ contains renderer exceptions inside the Slot frame (2.8298ms)
+✔ freezes the eleven v1 slots and rejects dynamic top-level slots (1.4604ms)
+✔ fences old-render duplicate before replaying a previously accepted ACK (1.8151ms)
+✔ replays identical current-render ACK and rejects payload drift (0.3563ms)
+✔ deep-clones and freezes identity, installed tree, dispatch and ACK values (0.3102ms)
+✔ stops tree, intent and ACK unknown ingress until P0 validators exist (1.5697ms)
+✔ rejects prototype-backed values and inherited schema before validator dispatch (0.1804ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 693.6468
+exit_code=0

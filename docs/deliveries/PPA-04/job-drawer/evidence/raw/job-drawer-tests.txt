@@ -1,0 +1,38 @@
+COMMAND: node --experimental-strip-types --test tests/p4-webui/job-drawer/*.test.mts
+(node:34780) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/Administrator/Desktop/%E5%86%99%E4%BD%9C%E8%B5%84%E6%96%99%E6%B1%87%E6%80%BB/PlotPilot-Pluginized-worktrees/PPA-NW-P4-Job-Drawer/tests/p4-webui/job-drawer/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\Administrator\Desktop\写作资料汇总\PlotPilot-Pluginized-worktrees\PPA-NW-P4-Job-Drawer\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ refresh hydrates durable snapshots then attaches only backend-active jobs at their own cursors (2.2372ms)
+✔ continuous event refreshes an authoritative snapshot and terminal convergence detaches (0.6357ms)
+✔ disconnect reconnects once from latest cursor and fences late callbacks from the old subscription (0.5917ms)
+✔ gap reconnect requires a matching snapshot and replaces the complete projection (0.8298ms)
+✔ invalid recovery metadata never applies and enters bounded reconnect (0.3575ms)
+✔ private recovery ingress is closed, plain-data-only and job-domain-only (0.6485ms)
+✔ resume/retry/cancel use injected intents, serialize per Job and apply returned snapshot (0.5382ms)
+(node:5196) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/Administrator/Desktop/%E5%86%99%E4%BD%9C%E8%B5%84%E6%96%99%E6%B1%87%E6%80%BB/PlotPilot-Pluginized-worktrees/PPA-NW-P4-Job-Drawer/tests/p4-webui/job-drawer/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\Administrator\Desktop\写作资料汇总\PlotPilot-Pluginized-worktrees\PPA-NW-P4-Job-Drawer\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ presents all ten frozen Job states without folding partial or needs_attention into failed (0.9304ms)
+✔ calculates progress for empty, mixed, partial and unknown Step states (0.7344ms)
+✔ exposes independent retry, resume and cancel affordances without optimistic state mutation (0.2828ms)
+✔ TaskDrawer source presents Job, every Step and every Attempt with all three explicit intents (7.5544ms)
+✔ source-only Job core uses injected ports and contains no invented API route or shared shell binding (2.4406ms)
+(node:10012) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/Administrator/Desktop/%E5%86%99%E4%BD%9C%E8%B5%84%E6%96%99%E6%B1%87%E6%80%BB/PlotPilot-Pluginized-worktrees/PPA-NW-P4-Job-Drawer/tests/p4-webui/job-drawer/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\Administrator\Desktop\写作资料汇总\PlotPilot-Pluginized-worktrees\PPA-NW-P4-Job-Drawer\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ authoritative snapshots replace nested Step and Attempt collections instead of patching them (1.7467ms)
+✔ enforces monotonic cursor, duplicate idempotence and explicit gap detection (0.3628ms)
+✔ rejects identity conflicts and same-position hash conflicts (0.5012ms)
+✔ refresh listing is atomic, removes absent jobs and reattaches every backend-active state (1.2433ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 327.1545
+EXIT_CODE=0
