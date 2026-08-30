@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+from urllib.parse import quote
 
 import pytest
 from helpers import StatusSource, make_app, package_files
@@ -9,8 +10,14 @@ from plotpilot_core.plugins.store import PackageStore
 ERROR_KEYS = {"schema", "error_code", "message", "retryable"}
 
 
+@pytest.mark.parametrize(
+    "_evidence",
+    [None],
+    ids=["plugin-api-full-regression"],
+)
 def test_release_list_and_exact_lookup_use_real_packagestore(
     package_store: PackageStore,
+    _evidence: None,
 ) -> None:
     second = package_store.publish(
         package_files(
@@ -49,6 +56,38 @@ def test_release_list_and_exact_lookup_use_real_packagestore(
     assert exact.json()["manifest"]["plugin_id"] == first.plugin_id
 
 
+@pytest.mark.parametrize(
+    "_evidence",
+    [None],
+    ids=["plugin-api-slash-id-exact-lookup"],
+)
+def test_slash_bearing_plugin_id_supports_exact_lookup(
+    package_store: PackageStore,
+    _evidence: None,
+) -> None:
+    _, client = make_app(package_store, StatusSource())
+    for plugin_id in (
+        "com.plotpilot/team",
+        "com.plotpilot/team/subteam",
+        "com.plotpilot/team/",
+    ):
+        package = package_store.publish(package_files(plugin_id=plugin_id))
+        path = (
+            "/api/v1/plugins/releases/"
+            f"{quote(package.plugin_id, safe='')}/{package.version}"
+        )
+
+        response = client.get(
+            path,
+            params={"package_hash": package.package_hash},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["plugin_id"] == plugin_id
+        assert response.json()["release_id"] == package.release_id
+        assert client.post(path).status_code == 405
+
+
 def test_real_packagestore_missing_release_is_typed_404(
     package_store: PackageStore,
 ) -> None:
@@ -65,6 +104,54 @@ def test_real_packagestore_missing_release_is_typed_404(
         "message": "the requested plugin release does not exist",
         "retryable": False,
     }
+
+
+@pytest.mark.parametrize(
+    "corrupt_component",
+    ["plugin", "version"],
+    ids=[
+        "plugin-api-missing-vs-corrupt-store",
+        "plugin-api-error-envelope-regression",
+    ],
+)
+def test_non_directory_release_parent_is_typed_non_404(
+    package_store: PackageStore,
+    corrupt_component: str,
+) -> None:
+    plugin_id = "com.plotpilot.corrupt"
+    version = "1.0.0"
+    _, client = make_app(package_store, StatusSource())
+
+    missing = client.get(
+        f"/api/v1/plugins/releases/{plugin_id}/{version}"
+    )
+    assert missing.status_code == 404
+    assert missing.json()["error_code"] == "release_not_found"
+
+    version_parent = package_store.package_path(
+        plugin_id, version, "0" * 64
+    ).parent
+    plugin_parent = version_parent.parent
+    if corrupt_component == "plugin":
+        plugin_parent.write_text("not a directory", encoding="utf-8")
+    else:
+        plugin_parent.mkdir()
+        version_parent.write_text(
+            "not a directory", encoding="utf-8"
+        )
+
+    response = client.get(
+        f"/api/v1/plugins/releases/{plugin_id}/{version}"
+    )
+
+    assert response.status_code == 500
+    assert response.json() == {
+        "schema": "plugin-api-local-error/v1",
+        "error_code": "package_store_error",
+        "message": "PackageStore release bytes are incomplete",
+        "retryable": False,
+    }
+    assert str(package_store.packages_root) not in response.text
 
 
 @pytest.mark.parametrize("corruption", ["registry", "manifest", "content"])
@@ -124,6 +211,24 @@ def test_internal_filenotfound_shape_is_typed_500_not_404() -> None:
 
     assert response.status_code == 500
     assert response.json()["error_code"] == "package_store_error"
+
+
+class StructurallyExplodingStore:
+    def get(self, plugin_id: str, version: str, package_hash: str | None = None):
+        raise NotADirectoryError("release parent changed type")
+
+    def list_releases(self, *, verify: bool = True):
+        return ()
+
+
+def test_internal_store_oserror_is_a_typed_non_404() -> None:
+    _, client = make_app(StructurallyExplodingStore(), StatusSource())
+
+    response = client.get("/api/v1/plugins/releases/com.plotpilot.echo/1.0.0")
+
+    assert response.status_code == 500
+    assert response.json()["error_code"] == "package_store_error"
+    assert "release parent changed type" not in response.text
 
 
 class GuardStore:

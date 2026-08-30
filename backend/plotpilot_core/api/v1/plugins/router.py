@@ -6,6 +6,7 @@ from typing import Any
 
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
+from fastapi.routing import APIRoute
 from starlette.routing import Match
 from starlette.types import ASGIApp, Receive, Scope, Send
 
@@ -37,6 +38,55 @@ ROUTE_ALLOWLIST = (
 )
 
 
+class _SlashPluginIdRoute(APIRoute):
+    """Match only legal slash-bearing identities on the exact-release route."""
+
+    def matches(self, scope: Scope) -> tuple[Match, Scope]:
+        match, child_scope = super().matches(scope)
+        if match is not Match.NONE or self.name != "plugin_release_exact":
+            return match, child_scope
+        if scope.get("type") != "http":
+            return match, child_scope
+
+        prefix = f"{PLUGIN_API_PREFIX}/releases/"
+        raw_prefix = prefix.encode("ascii")
+        raw_path = scope.get("raw_path")
+        if not isinstance(raw_path, bytes):
+            return match, child_scope
+        if not raw_path.startswith(raw_prefix):
+            root_path = str(scope.get("root_path", "")).encode("utf-8")
+            if not root_path or not raw_path.startswith(root_path + raw_prefix):
+                return match, child_scope
+            raw_path = raw_path[len(root_path) :]
+        raw_tail = raw_path[len(raw_prefix) :]
+        raw_plugin_id, raw_separator, raw_version = raw_tail.rpartition(b"/")
+        if (
+            not raw_separator
+            or raw_tail.count(b"/") != 1
+            or b"%2f" not in raw_plugin_id.lower()
+            or b"%2f" in raw_version.lower()
+        ):
+            return match, child_scope
+
+        path = str(scope.get("path", ""))
+        if not path.startswith(prefix):
+            return match, child_scope
+        plugin_id, separator, version = path[len(prefix) :].rpartition("/")
+        if not separator or "/" not in plugin_id:
+            return match, child_scope
+
+        path_params = dict(scope.get("path_params", {}))
+        path_params.update({"plugin_id": plugin_id, "version": version})
+        child_scope = {
+            "endpoint": self.endpoint,
+            "path_params": path_params,
+            "route": self,
+        }
+        if self.methods and scope.get("method") not in self.methods:
+            return Match.PARTIAL, child_scope
+        return Match.FULL, child_scope
+
+
 def error_response(fault: PluginApiFault, *, headers: Mapping[str, str] | None = None) -> JSONResponse:
     return JSONResponse(
         status_code=fault.status_code,
@@ -53,7 +103,11 @@ def _read(call: Callable[[], dict[str, object]]) -> JSONResponse:
 
 
 def create_plugin_router(facade: PluginReadFacade) -> APIRouter:
-    router = APIRouter(prefix=PLUGIN_API_PREFIX, tags=["plugins"])
+    router = APIRouter(
+        prefix=PLUGIN_API_PREFIX,
+        tags=["plugins"],
+        route_class=_SlashPluginIdRoute,
+    )
 
     @router.get("/releases", name="plugin_release_list")
     def list_releases() -> JSONResponse:

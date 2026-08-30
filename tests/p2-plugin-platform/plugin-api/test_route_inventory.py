@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from urllib.parse import quote
 
 import pytest
 from fastapi import APIRouter
@@ -31,7 +32,14 @@ def inventory_router() -> APIRouter:
     return create_plugin_router(NeverCalledFacade())  # type: ignore[arg-type]
 
 
-def test_actual_router_inventory_equals_independent_three_get_allowlist() -> None:
+@pytest.mark.parametrize(
+    "_evidence",
+    [None],
+    ids=["plugin-api-route-inventory"],
+)
+def test_actual_router_inventory_equals_independent_three_get_allowlist(
+    _evidence: None,
+) -> None:
     actual = route_inventory(inventory_router())
 
     assert actual == ROUTE_ALLOWLIST
@@ -44,6 +52,45 @@ def test_actual_router_inventory_equals_independent_three_get_allowlist() -> Non
     }
     actual_pairs = {(item["method"], item["path"]) for item in actual}
     assert actual_pairs.isdisjoint(set(STOPPED_ROUTES))
+
+
+@pytest.mark.parametrize(
+    "_evidence",
+    [None],
+    ids=["plugin-api-invalid-identity-regression"],
+)
+def test_slash_matching_does_not_capture_invalid_or_unrelated_paths(
+    package_store: PackageStore,
+    _evidence: None,
+) -> None:
+    _, client = make_app(package_store, StatusSource())
+
+    invalid_id = client.get("/api/v1/plugins/releases/bad!id/1.0.0")
+    invalid_semver = client.get(
+        "/api/v1/plugins/releases/com.plotpilot.echo/not-semver"
+    )
+    invalid_slash_id = client.get(
+        "/api/v1/plugins/releases/"
+        f"{quote('bad!id/team', safe='')}/1.0.0"
+    )
+    invalid_slash_semver = client.get(
+        "/api/v1/plugins/releases/"
+        f"{quote('com.plotpilot/team', safe='')}/not-semver"
+    )
+    unrelated = client.get(
+        "/api/v1/plugins/releases/com.plotpilot/team/1.0.0/retire"
+    )
+
+    assert invalid_id.status_code == 422
+    assert invalid_id.json()["error_code"] == "invalid_identifier"
+    assert invalid_semver.status_code == 422
+    assert invalid_semver.json()["error_code"] == "invalid_semver"
+    assert invalid_slash_id.status_code == 422
+    assert invalid_slash_id.json()["error_code"] == "invalid_identifier"
+    assert invalid_slash_semver.status_code == 422
+    assert invalid_slash_semver.json()["error_code"] == "invalid_semver"
+    assert unrelated.status_code == 404
+    assert unrelated.json()["error_code"] == "route_not_found"
 
 
 @pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"])
