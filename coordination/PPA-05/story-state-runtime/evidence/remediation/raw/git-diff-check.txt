@@ -1,0 +1,10 @@
+COMMAND=git diff --check
+warning: in the working copy of 'first-party-plugins/story-state/src/plotpilot_story_state/__init__.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'first-party-plugins/story-state/src/plotpilot_story_state/ports.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'first-party-plugins/story-state/src/plotpilot_story_state/projection.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'first-party-plugins/story-state/src/plotpilot_story_state/runtime.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p5-planning/story-state-runtime/test_projection.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/p5-planning/story-state-runtime/test_runtime.py', LF will be replaced by CRLF the next time Git touches it
+EXIT_CODE=0
+COMMAND=git diff --cached --check
+EXIT_CODE=0

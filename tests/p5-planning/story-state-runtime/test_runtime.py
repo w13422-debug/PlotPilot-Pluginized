@@ -1,4 +1,5 @@
 import copy
+from dataclasses import replace
 
 import pytest
 from plotpilot_plugin_sdk import (
@@ -8,15 +9,73 @@ from plotpilot_plugin_sdk import (
     verify_skill_chain,
 )
 from plotpilot_prompt_skill_runtime import verify_chain
-from plotpilot_story_state import SkillChainEvidence, StoryStateRuntime
+from plotpilot_story_state import (
+    AuthoritativeFactBinding,
+    FactRef,
+    SkillChainEvidence,
+    StatePayload,
+    StoryStateRuntime,
+)
 
 from .support import (
+    HASH,
     RecordingTerminal,
     WrongCandidateTerminal,
     proposal,
     request,
     two_step_chain,
 )
+
+
+def _authoritative_binding(
+    *,
+    workspace_id="workspace-1",
+    entity_id="character-2",
+    revision_id="revision-source-2",
+    content_hash="f" * 64,
+):
+    document = {
+        "schema": "core-document/v1",
+        "document_id": entity_id,
+        "workspace_id": workspace_id,
+        "document_type": "story-state/character",
+        "title": "权威角色",
+        "current_revision_id": revision_id,
+        "created_at": "2026-08-30T00:00:00Z",
+        "updated_at": "2026-08-30T00:00:01Z",
+        "revision": 1,
+    }
+    revision = {
+        "schema": "core-revision/v1",
+        "revision_id": revision_id,
+        "workspace_id": workspace_id,
+        "document_id": entity_id,
+        "node_id": None,
+        "parent_revision_id": None,
+        "content_hash": content_hash,
+        "created_by": "user-reviewer",
+        "source_candidate_id": None,
+        "created_at": "2026-08-30T00:00:01Z",
+        "revision_number": 1,
+        "payload_schema": "story-state/character/v1",
+    }
+    return AuthoritativeFactBinding("character", document, revision)
+
+
+class _RecordingFactAuthority:
+    def __init__(self, binding):
+        self.binding = binding
+        self.calls = []
+
+    def resolve_reference(self, *, workspace_id, entity_kind, entity_id):
+        self.calls.append((workspace_id, entity_kind, entity_id))
+        return self.binding
+
+
+def _proposal_referencing(reference):
+    source = proposal()
+    state = replace(StatePayload.coerce(source.payload), references=(reference,))
+    return replace(source, payload=state.to_dict())
 
 
 def _rehash_receipt(receipt):
@@ -36,7 +95,7 @@ def _rehash_chain(chain, receipts):
     )
 
 
-def test_distinct_h0_h1_h2_chain_is_accepted_by_all_three_and_committed_once():
+def _assert_distinct_h0_h1_h2_chain_is_accepted():
     evidence = two_step_chain()
     assert len({evidence.receipts[0]["input_hash"], evidence.receipts[0]["output_hash"], evidence.receipts[1]["output_hash"]}) == 3
     verify_skill_chain(evidence.chain, evidence.receipts)
@@ -47,6 +106,92 @@ def test_distinct_h0_h1_h2_chain_is_accepted_by_all_three_and_committed_once():
     assert result.outcome == "succeeded"
     assert result.committed_receipt["created_at"] == "2026-08-30T00:00:01Z"
     assert result.to_dict()["schema"] == "story-state-terminal-result/v1"
+
+
+def test_distinct_h0_h1_h2_chain_is_accepted_by_all_three_and_committed_once():
+    _assert_distinct_h0_h1_h2_chain_is_accepted()
+
+
+def test_story_state_chain_snapshot_binding_and_story_state_skill_chain_parity_regression():
+    _assert_distinct_h0_h1_h2_chain_is_accepted()
+
+
+def test_story_state_foreign_snapshot_negative():
+    evidence = two_step_chain()
+    verify_skill_chain(evidence.chain, evidence.receipts)
+    verify_chain(evidence.chain, evidence.receipts)
+    terminal = RecordingTerminal()
+    foreign_request = replace(
+        request(skill_chains=(evidence,)),
+        input_snapshot_hash="e" * 64,
+    )
+    with pytest.raises(ValueError, match="foreign input snapshot"):
+        StoryStateRuntime(terminal).execute(foreign_request)
+    assert terminal.calls == []
+
+
+def test_story_state_authoritative_reference_binding():
+    reference = FactRef(
+        "workspace-1",
+        "character",
+        "character-2",
+        "revision-source-2",
+        "f" * 64,
+    )
+    authority = _RecordingFactAuthority(_authoritative_binding())
+    terminal = RecordingTerminal()
+    with pytest.raises(ValueError, match="requires authoritative resolution"):
+        StoryStateRuntime(terminal).execute(
+            request(proposals=(_proposal_referencing(reference),))
+        )
+    assert terminal.calls == []
+    StoryStateRuntime(terminal, authority).execute(
+        request(proposals=(_proposal_referencing(reference),))
+    )
+    assert authority.calls == [("workspace-1", "character", "character-2")]
+    assert len(terminal.calls) == 1
+
+
+@pytest.mark.parametrize("forgery", ["revision", "hash"])
+def test_story_state_forged_revision_negative(forgery):
+    reference = FactRef(
+        "workspace-1",
+        "character",
+        "character-2",
+        "revision-forged" if forgery == "revision" else "revision-source-2",
+        HASH if forgery == "hash" else "f" * 64,
+    )
+    authority = _RecordingFactAuthority(_authoritative_binding())
+    terminal = RecordingTerminal()
+    with pytest.raises(ValueError, match="authority binding drift"):
+        StoryStateRuntime(terminal, authority).execute(
+            request(proposals=(_proposal_referencing(reference),))
+        )
+    assert authority.calls == [("workspace-1", "character", "character-2")]
+    assert terminal.calls == []
+
+
+@pytest.mark.parametrize("authority_crosses_workspace", [False, True])
+def test_story_state_cross_workspace_reference_negative(authority_crosses_workspace):
+    reference_workspace = "workspace-1" if authority_crosses_workspace else "workspace-2"
+    reference = FactRef(
+        reference_workspace,
+        "character",
+        "character-2",
+        "revision-source-2",
+        "f" * 64,
+    )
+    authority = _RecordingFactAuthority(
+        _authoritative_binding(
+            workspace_id="workspace-2" if authority_crosses_workspace else "workspace-1"
+        )
+    )
+    terminal = RecordingTerminal()
+    with pytest.raises(Exception, match="crosses workspace|cross workspace"):
+        StoryStateRuntime(terminal, authority).execute(
+            request(proposals=(_proposal_referencing(reference),))
+        )
+    assert terminal.calls == []
 
 
 def test_recomputed_h0_step_two_receipt_is_rejected_before_any_write():

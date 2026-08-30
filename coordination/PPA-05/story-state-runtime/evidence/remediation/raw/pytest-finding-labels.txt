@@ -1,0 +1,31 @@
+COMMAND=python -m pytest tests/p5-planning/story-state-runtime -vv -k 'story_state_authoritative_reference_binding or story_state_forged_revision_negative or story_state_cross_workspace_reference_negative or story_state_publication_semantic_parser_parity or story_state_cross_workspace_publication_negative or story_state_mismatched_document_negative or story_state_asset_semantic_closure or story_state_receipt_substitution_regression or story_state_chain_snapshot_binding or story_state_foreign_snapshot_negative or story_state_skill_chain_parity_regression'
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\Administrator\AppData\Local\Programs\Python\Python312\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Administrator\Desktop\д�����ϻ���\PlotPilot-Pluginized-worktrees\PPA-NW-P5-Story-State-Runtime-G3
+configfile: pytest.ini
+plugins: asyncio-0.26.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 41 items / 23 deselected / 18 selected
+
+tests/p5-planning/story-state-runtime/test_projection.py::test_story_state_publication_semantic_parser_parity PASSED [  5%]
+tests/p5-planning/story-state-runtime/test_projection.py::test_story_state_cross_workspace_publication_negative[nested] PASSED [ 11%]
+tests/p5-planning/story-state-runtime/test_projection.py::test_story_state_cross_workspace_publication_negative[current] PASSED [ 16%]
+tests/p5-planning/story-state-runtime/test_projection.py::test_story_state_mismatched_document_negative PASSED [ 22%]
+tests/p5-planning/story-state-runtime/test_projection.py::test_story_state_asset_semantic_closure[size] PASSED [ 27%]
+tests/p5-planning/story-state-runtime/test_projection.py::test_story_state_asset_semantic_closure[role] PASSED [ 33%]
+tests/p5-planning/story-state-runtime/test_projection.py::test_story_state_asset_semantic_closure[rebuildable] PASSED [ 38%]
+tests/p5-planning/story-state-runtime/test_projection.py::test_story_state_asset_semantic_closure[mime] PASSED [ 44%]
+tests/p5-planning/story-state-runtime/test_projection.py::test_story_state_asset_semantic_closure[bytes] PASSED [ 50%]
+tests/p5-planning/story-state-runtime/test_projection.py::test_story_state_asset_semantic_closure[hash] PASSED [ 55%]
+tests/p5-planning/story-state-runtime/test_projection.py::test_story_state_receipt_substitution_regression PASSED [ 61%]
+tests/p5-planning/story-state-runtime/test_runtime.py::test_story_state_chain_snapshot_binding_and_story_state_skill_chain_parity_regression PASSED [ 66%]
+tests/p5-planning/story-state-runtime/test_runtime.py::test_story_state_foreign_snapshot_negative PASSED [ 72%]
+tests/p5-planning/story-state-runtime/test_runtime.py::test_story_state_authoritative_reference_binding PASSED [ 77%]
+tests/p5-planning/story-state-runtime/test_runtime.py::test_story_state_forged_revision_negative[revision] PASSED [ 83%]
+tests/p5-planning/story-state-runtime/test_runtime.py::test_story_state_forged_revision_negative[hash] PASSED [ 88%]
+tests/p5-planning/story-state-runtime/test_runtime.py::test_story_state_cross_workspace_reference_negative[False] PASSED [ 94%]
+tests/p5-planning/story-state-runtime/test_runtime.py::test_story_state_cross_workspace_reference_negative[True] PASSED [100%]
+
+====================== 18 passed, 23 deselected in 0.63s ======================
+EXIT_CODE=0

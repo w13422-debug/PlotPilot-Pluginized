@@ -1,0 +1,29 @@
+schema=write-set-proof/v1
+base=555f9434b188621ee8c944feb184421f28a75515
+changed_path_count=18
+out_of_set_count=0
+allowed_prefixes:
+  first-party-plugins/story-state/
+  tests/p5-planning/story-state-runtime/
+  docs/deliveries/PPA-05/story-state-runtime/
+  coordination/PPA-05/story-state-runtime/
+changed_paths:
+  coordination/PPA-05/story-state-runtime/evidence/remediation/raw/compileall-story-state.txt
+  coordination/PPA-05/story-state-runtime/evidence/remediation/raw/git-diff-check.txt
+  coordination/PPA-05/story-state-runtime/evidence/remediation/raw/git-gates.txt
+  coordination/PPA-05/story-state-runtime/evidence/remediation/raw/pytest-finding-labels.txt
+  coordination/PPA-05/story-state-runtime/evidence/remediation/raw/pytest-p5-planning.txt
+  coordination/PPA-05/story-state-runtime/evidence/remediation/raw/pytest-required-regressions.txt
+  coordination/PPA-05/story-state-runtime/evidence/remediation/raw/pytest-story-state-runtime.txt
+  coordination/PPA-05/story-state-runtime/evidence/remediation/raw/review-manifest-packet.txt
+  coordination/PPA-05/story-state-runtime/evidence/remediation/raw/review-manifest-validate.txt
+  coordination/PPA-05/story-state-runtime/evidence/remediation/raw/ruff-story-state.txt
+  coordination/PPA-05/story-state-runtime/evidence/remediation/raw/write-set-check.txt
+  coordination/PPA-05/story-state-runtime/remediation-evidence-v1.json
+  first-party-plugins/story-state/src/plotpilot_story_state/__init__.py
+  first-party-plugins/story-state/src/plotpilot_story_state/ports.py
+  first-party-plugins/story-state/src/plotpilot_story_state/projection.py
+  first-party-plugins/story-state/src/plotpilot_story_state/runtime.py
+  tests/p5-planning/story-state-runtime/test_projection.py
+  tests/p5-planning/story-state-runtime/test_runtime.py
+out_of_set_paths:

@@ -24,10 +24,17 @@ except ModuleNotFoundError:  # pragma: no cover - repository runner fallback
         verify_result_bundle,
     )
 
-from .domain import Proposal
+try:
+    from plotpilot_plugin_sdk.core_api import parse_core_authority
+except ModuleNotFoundError:  # pragma: no cover - repository runner fallback
+    from backend.plotpilot_plugin_sdk.core_api import parse_core_authority
+
+from .domain import FactRef, Proposal
 from .payloads import StatePayload
 from .ports import (
+    AuthoritativeFactBinding,
     CandidateCommit,
+    FactReferenceAuthorityPort,
     PreparedAsset,
     TerminalCommand,
     TerminalCompletion,
@@ -177,9 +184,19 @@ def _verify_chain_through_prompt_runtime(evidence: SkillChainEvidence) -> None:
     verify_chain(evidence.chain, evidence.receipts)
 
 
-def _chain_asset_and_ref(evidence: SkillChainEvidence) -> tuple[PreparedAsset, dict[str, Any]]:
+def _verify_chain_for_snapshot(
+    evidence: SkillChainEvidence,
+    *,
+    input_snapshot_hash: str,
+) -> Mapping[str, Any]:
     _verify_chain_through_prompt_runtime(evidence)
     chain = evidence.chain
+    if chain["run_snapshot_hash"] != input_snapshot_hash:
+        raise ValueError("Story State Skill chain belongs to a foreign input snapshot")
+    return chain
+
+
+def _chain_asset_and_ref(chain: Mapping[str, Any]) -> tuple[PreparedAsset, dict[str, Any]]:
     content = canonical_bytes(dict(chain))
     asset = _asset(content)
     return asset, {
@@ -280,19 +297,75 @@ def _validate_committed_receipt(committed: Mapping[str, Any], prepared: Mapping[
 
 
 class StoryStateRuntime:
-    def __init__(self, terminal: TerminalPort) -> None:
+    def __init__(
+        self,
+        terminal: TerminalPort,
+        reference_authority: FactReferenceAuthorityPort | None = None,
+    ) -> None:
         self._terminal = terminal
+        self._reference_authority = reference_authority
+
+    def _validate_authoritative_reference(
+        self,
+        reference: FactRef,
+        *,
+        workspace_id: str,
+    ) -> None:
+        authority = self._reference_authority
+        if authority is None:
+            raise ValueError("Story State reference requires authoritative resolution")
+        binding = authority.resolve_reference(
+            workspace_id=reference.workspace_id,
+            entity_kind=reference.entity_kind,
+            entity_id=reference.entity_id,
+        )
+        if not isinstance(binding, AuthoritativeFactBinding):
+            raise TypeError("Fact reference authority returned an invalid binding")
+        document = parse_core_authority(
+            binding.document,
+            expected_workspace_id=workspace_id,
+        )
+        revision = parse_core_authority(
+            binding.revision,
+            expected_workspace_id=workspace_id,
+        )
+        if document["schema"] != "core-document/v1" or revision["schema"] != "core-revision/v1":
+            raise ValueError("Fact reference authority requires a Core document and Revision")
+        actual = (
+            binding.entity_kind,
+            document["workspace_id"],
+            document["document_id"],
+            document["current_revision_id"],
+            revision["workspace_id"],
+            revision["document_id"],
+            revision["node_id"],
+            revision["revision_id"],
+            revision["content_hash"],
+        )
+        expected = (
+            reference.entity_kind,
+            reference.workspace_id,
+            reference.entity_id,
+            reference.revision_id,
+            reference.workspace_id,
+            reference.entity_id,
+            None,
+            reference.revision_id,
+            reference.content_hash,
+        )
+        if actual != expected:
+            raise ValueError("Story State reference authority binding drift")
 
     def execute(self, request: StoryStateRequest) -> RuntimeResult:
         """Validate the full operation, then perform exactly one terminal call."""
 
         item_ids: set[str] = set()
-        payload_assets: list[PreparedAsset] = []
-        items: list[dict[str, Any]] = []
         workspace_ids = {proposal.target.workspace_id for proposal in request.proposals}
         if len(workspace_ids) != 1:
             raise ValueError("Story State request cannot cross workspaces")
+        workspace_id = next(iter(workspace_ids))
         batch_entity_ids = frozenset(proposal.target.entity_id for proposal in request.proposals)
+        validated: list[tuple[Proposal, StatePayload]] = []
         for proposal in request.proposals:
             if proposal.item_id in item_ids:
                 raise ValueError("Story State item IDs must be unique")
@@ -305,21 +378,37 @@ class StoryStateRuntime:
                 known_entities=request.known_entity_ids,
                 batch_entity_ids=batch_entity_ids,
             )
-            asset = _asset(canonical_bytes(payload.to_dict()))
-            payload_assets.append(asset)
-            items.append(_candidate_item(proposal, payload, asset))
+            for reference in payload.references:
+                self._validate_authoritative_reference(reference, workspace_id=workspace_id)
+            validated.append((proposal, payload))
+
+        verified_chains = tuple(
+            _verify_chain_for_snapshot(
+                evidence,
+                input_snapshot_hash=request.input_snapshot_hash,
+            )
+            for evidence in request.skill_chains
+        )
+        if len({chain["chain_id"] for chain in verified_chains}) != len(verified_chains):
+            raise ValueError("Story State Skill-chain identities must be unique")
+
         successes = sum(proposal.outcome == "success" for proposal in request.proposals)
         if successes == 0:
             raise ValueError("all-failed Story State work must use a diagnostic terminal contract")
 
+        payload_assets: list[PreparedAsset] = []
+        items: list[dict[str, Any]] = []
+        for proposal, payload in validated:
+            asset = _asset(canonical_bytes(payload.to_dict()))
+            payload_assets.append(asset)
+            items.append(_candidate_item(proposal, payload, asset))
+
         chain_assets: list[PreparedAsset] = []
         chain_refs: list[dict[str, Any]] = []
-        for evidence in request.skill_chains:
-            asset, ref = _chain_asset_and_ref(evidence)
+        for chain in verified_chains:
+            asset, ref = _chain_asset_and_ref(chain)
             chain_assets.append(asset)
             chain_refs.append(ref)
-        if len({ref["chain_result_id"] for ref in chain_refs}) != len(chain_refs):
-            raise ValueError("Story State Skill-chain identities must be unique")
 
         partial = successes != len(request.proposals)
         bundle = {
@@ -341,7 +430,7 @@ class StoryStateRuntime:
         }
         verify_result_bundle(
             bundle,
-            snapshot_workspace_id=next(iter(workspace_ids)),
+            snapshot_workspace_id=workspace_id,
             snapshot_hash_value=request.input_snapshot_hash,
         )
         bundle_asset = _asset(canonical_bytes(bundle))

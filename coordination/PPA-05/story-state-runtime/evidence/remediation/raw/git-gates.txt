@@ -1,0 +1,15 @@
+schema=git-gates/v1
+frozen_reviewed_head=555f9434b188621ee8c944feb184421f28a75515
+actual_precommit_head=555f9434b188621ee8c944feb184421f28a75515
+actual_precommit_tree=0793d1ae063beda8cacdcdafeb69e6302986d66c
+branch=codex/nw-p5-story-state-runtime-g3
+manifest_sha256=4508391d33dd6eab1a060424b4cd5e22e8273fa795fc9f500413fb1b8e1d14e3
+donor_fetch=C:\Users\Administrator\Desktop\写作资料汇总\PlotPilot-update-v4.6.0
+donor_push=DISABLED
+upstream=<none>
+head_tag_count=0
+changed_path_count=18
+out_of_set_count=0
+forbidden_ancestor_df43e9c1202305c117319559a6092fff1a2c58ca=False
+forbidden_ancestor_da8f3c692af84806a6ea91d8a60a6caa865b30cd=False
+forbidden_ancestor_ed76ebd84bb302784d3005194bc6956ea75cbc1f=False

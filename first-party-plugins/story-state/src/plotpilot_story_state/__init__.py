@@ -8,7 +8,9 @@ from .domain import (
 )
 from .payloads import StatePayload
 from .ports import (
+    AuthoritativeFactBinding,
     CandidateCommit,
+    FactReferenceAuthorityPort,
     PreparedAsset,
     TerminalCommand,
     TerminalCompletion,
@@ -31,11 +33,13 @@ from .runtime import (
 )
 
 __all__ = [
+    "AuthoritativeFactBinding",
     "AuthoritativeProjection",
     "CandidateAuthority",
     "CandidateCommit",
     "ExecutionLineage",
     "FactRef",
+    "FactReferenceAuthorityPort",
     "PreparedAsset",
     "Projection",
     "Proposal",

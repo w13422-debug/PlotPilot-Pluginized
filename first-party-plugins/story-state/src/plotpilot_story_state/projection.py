@@ -12,6 +12,19 @@ try:
 except ModuleNotFoundError:  # pragma: no cover - repository runner fallback
     from backend.plotpilot_plugin_sdk import assert_valid, hash_jcs, parse_json_bytes
 
+try:
+    from plotpilot_plugin_sdk.core_api import (
+        parse_asset_contract,
+        parse_core_authority,
+        parse_publication,
+    )
+except ModuleNotFoundError:  # pragma: no cover - repository runner fallback
+    from backend.plotpilot_plugin_sdk.core_api import (
+        parse_asset_contract,
+        parse_core_authority,
+        parse_publication,
+    )
+
 from .domain import FactRef, Projection, build_projection
 from .payloads import StatePayload
 
@@ -92,16 +105,26 @@ class PublishedStateRecord:
     provenance_receipt: Mapping[str, Any]
 
     def validate(self) -> tuple[PublicationAnchor, StatePayload]:
-        publication = dict(self.publication)
-        revision = dict(self.current_revision)
         item = dict(self.candidate.item)
-        asset = dict(self.asset_metadata)
         receipt = dict(self.provenance_receipt)
-        assert_valid("publication-command-result/v1", publication)
-        assert_valid("core-authority-command-query/v1", revision)
         assert_valid("candidate-item/v1", item)
-        assert_valid("asset-metadata/v1", asset)
         assert_valid("provenance-receipt/v1", receipt)
+        target = item["target"]
+        publication = parse_publication(
+            self.publication,
+            expected_workspace_id=target["workspace_id"],
+        )
+        revision = parse_core_authority(
+            self.current_revision,
+            expected_workspace_id=publication["workspace_id"],
+        )
+        asset = parse_asset_contract(self.asset_metadata)
+        if publication["schema"] != "publication-result/v1":
+            raise ValueError("projection requires a Publication result")
+        if revision["schema"] != "core-revision/v1":
+            raise ValueError("projection requires a current Core Revision")
+        if asset["schema"] != "asset-metadata/v1":
+            raise ValueError("projection requires Asset metadata")
         if receipt["receipt_hash"] != hash_jcs(
             "provenance-receipt/v1",
             {key: value for key, value in receipt.items() if key != "receipt_hash"},
@@ -126,35 +149,47 @@ class PublishedStateRecord:
             raise ValueError("Publication Revision is not the current authority pointer")
         if revision["source_candidate_id"] != self.candidate.candidate_id:
             raise ValueError("Revision source Candidate drift")
-        revision_identity = (
-            revision["revision_id"],
+        current_target = (
             revision["workspace_id"],
             "document" if revision["document_id"] is not None else "node_structure",
             revision["document_id"] or revision["node_id"],
+        )
+        publication_target = (
+            publication["workspace_id"],
+            publication["entity_kind"],
+            publication["entity_id"],
+        )
+        if current_target != publication_target:
+            raise ValueError("current Revision target does not match Publication authority")
+        revision_identity = (
+            revision["revision_id"],
             revision["content_hash"],
             revision["revision_number"],
         )
         if revision_identity != (
             result_revision["revision_id"],
-            result_revision["workspace_id"],
-            result_revision["entity_kind"],
-            result_revision["entity_id"],
             result_revision["content_hash"],
             result_revision["revision_number"],
         ):
             raise ValueError("nested Publication Revision drift")
-        target = item["target"]
-        if (
-            publication["workspace_id"],
-            publication["entity_kind"],
-            publication["entity_id"],
-        ) != (target["workspace_id"], target["entity_kind"], target["entity_id"]):
+        if publication_target != (
+            target["workspace_id"],
+            target["entity_kind"],
+            target["entity_id"],
+        ):
             raise ValueError("Publication target does not match Candidate target")
         if item["status"] != "complete" or item["item_id"] != self.publication_receipt.item_id:
             raise ValueError("Publication Candidate item is not the committed complete item")
 
         payload_bytes = bytes(self.payload_bytes)
         payload_hash = hashlib.sha256(payload_bytes).hexdigest()
+        if (
+            asset["size"] != len(payload_bytes)
+            or asset["mime"] != "application/json"
+            or asset["logical_role"] != "story_state_payload"
+            or asset["rebuildable"] is not False
+        ):
+            raise ValueError("Publication Asset semantic closure/content closure drift")
         if (
             asset["asset_id"] != item["payload_asset_id"]
             or asset["sha256"] != payload_hash

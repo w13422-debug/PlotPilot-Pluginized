@@ -1,0 +1,2 @@
+COMMAND=PYTHONPYCACHEPREFIX=C:\ppac-g3-remediation python -m compileall -q first-party-plugins/story-state/src/plotpilot_story_state tests/p5-planning/story-state-runtime
+EXIT_CODE=0

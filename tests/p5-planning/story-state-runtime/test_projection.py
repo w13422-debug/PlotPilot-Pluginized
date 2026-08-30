@@ -1,7 +1,10 @@
 import copy
+from dataclasses import replace
 
+import plotpilot_story_state.projection as projection_module
 import pytest
 from plotpilot_plugin_sdk import hash_jcs
+from plotpilot_plugin_sdk.core_api import parse_publication
 from plotpilot_story_state import (
     CandidateAuthority,
     PublicationReceiptRef,
@@ -107,8 +110,71 @@ def test_publication_revision_fact_asset_candidate_and_execution_lineage_project
     assert projection.projection.source_revisions == ("revision-published-1",)
 
 
-@pytest.mark.parametrize("field", ["receipt_id", "job_id", "attempt_id"])
-def test_unrelated_validly_rehashed_receipt_is_rejected_before_anchor(field):
+def test_story_state_publication_semantic_parser_parity(monkeypatch):
+    calls = []
+
+    def recording_parser(value, *, expected_workspace_id=None, command=None):
+        calls.append((expected_workspace_id, command))
+        return parse_publication(
+            value,
+            expected_workspace_id=expected_workspace_id,
+            command=command,
+        )
+
+    monkeypatch.setattr(projection_module, "parse_publication", recording_parser)
+    anchor, _payload = _record().validate()
+    assert calls == [("workspace-1", None)]
+    assert anchor.fact.workspace_id == "workspace-1"
+
+
+@pytest.mark.parametrize("source", ["nested", "current"])
+def test_story_state_cross_workspace_publication_negative(source):
+    record = _record()
+    if source == "nested":
+        publication = copy.deepcopy(dict(record.publication))
+        publication["resulting_revision"]["workspace_id"] = "workspace-2"
+        forged = replace(record, publication=publication)
+        message = "resulting Revision"
+    else:
+        revision = copy.deepcopy(dict(record.current_revision))
+        revision["workspace_id"] = "workspace-2"
+        forged = replace(record, current_revision=revision)
+        message = "crosses workspace identity"
+    with pytest.raises(Exception, match=message):
+        forged.validate()
+
+
+def test_story_state_mismatched_document_negative():
+    record = _record()
+    revision = copy.deepcopy(dict(record.current_revision))
+    revision["document_id"] = "unrelated-document"
+    with pytest.raises(ValueError, match="current Revision target"):
+        replace(record, current_revision=revision).validate()
+
+
+@pytest.mark.parametrize("drift", ["size", "role", "rebuildable", "mime", "bytes", "hash"])
+def test_story_state_asset_semantic_closure(drift):
+    record = _record()
+    if drift == "bytes":
+        forged = replace(record, payload_bytes=b"{}")
+    else:
+        asset = copy.deepcopy(dict(record.asset_metadata))
+        if drift == "size":
+            asset["size"] += 1
+        elif drift == "role":
+            asset["logical_role"] = "unrelated_payload"
+        elif drift == "rebuildable":
+            asset["rebuildable"] = True
+        elif drift == "mime":
+            asset["mime"] = "application/octet-stream"
+        else:
+            asset["sha256"] = "f" * 64
+        forged = replace(record, asset_metadata=asset)
+    with pytest.raises(ValueError, match="Asset semantic closure|content closure"):
+        forged.validate()
+
+
+def _assert_unrelated_receipt_is_rejected(field):
     record = _record()
     receipt = copy.deepcopy(dict(record.provenance_receipt))
     receipt[field] = f"unrelated-{field}"
@@ -128,6 +194,16 @@ def test_unrelated_validly_rehashed_receipt_is_rejected_before_anchor(field):
     )
     with pytest.raises(ValueError, match="receipt lineage"):
         rebuild_projection((forged,))
+
+
+@pytest.mark.parametrize("field", ["receipt_id", "job_id", "attempt_id"])
+def test_unrelated_validly_rehashed_receipt_is_rejected_before_anchor(field):
+    _assert_unrelated_receipt_is_rejected(field)
+
+
+def test_story_state_receipt_substitution_regression():
+    for field in ("receipt_id", "job_id", "attempt_id"):
+        _assert_unrelated_receipt_is_rejected(field)
 
 
 def test_stale_revision_pointer_and_asset_bytes_are_rejected():

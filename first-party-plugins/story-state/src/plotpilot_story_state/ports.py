@@ -1,4 +1,4 @@
-"""Typed terminal seam; Story State never receives a Core database handle."""
+"""Typed read-only authority and terminal seams; no Core database handle."""
 
 from __future__ import annotations
 
@@ -6,6 +6,33 @@ import hashlib
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, Protocol
+
+
+@dataclass(frozen=True, slots=True)
+class AuthoritativeFactBinding:
+    """Read-only Core authority returned for one semantic Story State fact."""
+
+    entity_kind: str
+    document: Mapping[str, Any]
+    revision: Mapping[str, Any]
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.entity_kind, str) or not self.entity_kind.strip():
+            raise ValueError("authoritative Fact entity_kind must not be blank")
+        if not isinstance(self.document, Mapping) or not isinstance(self.revision, Mapping):
+            raise TypeError("authoritative Fact binding requires document and Revision objects")
+
+
+class FactReferenceAuthorityPort(Protocol):
+    """Resolve a stable fact identity without trusting a caller Revision/hash."""
+
+    def resolve_reference(
+        self,
+        *,
+        workspace_id: str,
+        entity_kind: str,
+        entity_id: str,
+    ) -> AuthoritativeFactBinding: ...
 
 
 @dataclass(frozen=True, slots=True)
