@@ -1,0 +1,15 @@
+{
+  "index": 15,
+  "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B tools/integration/generate_contract_manifest.py --check",
+  "exit_code": 0,
+  "passed": true,
+  "started_at": "2026-08-30T16:18:17.1550062+08:00",
+  "finished_at": "2026-08-30T16:18:17.5863291+08:00",
+  "duration_ms": 431,
+  "stdout_file": "command-15.stdout.txt",
+  "stdout_sha256": "1ab3ec41405de2e069954c4b744b666e092ec6d63828638d25888cce07dd7381",
+  "stdout_bytes": 48,
+  "stderr_file": "command-15.stderr.txt",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr_bytes": 0
+}

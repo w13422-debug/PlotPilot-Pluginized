@@ -1,0 +1,568 @@
+{
+  "schema": "plotpilot-e0-six-merge-directed-gate-evidence-candidate/v1",
+  "json_object_closed": true,
+  "recorded_at": "2026-08-30T16:21:57.4058146+08:00",
+  "task_id": "POST-WAVE-D-E0-P0-SIX-CANDIDATE-INTEGRATION-01",
+  "candidate_status": "EVIDENCE_ONLY_CANDIDATE_NOT_REVIEWED_NOT_ACCEPTED",
+  "integrated_pass_claimed": false,
+  "self_review_performed": false,
+  "control_inputs": [
+    {
+      "role": "controller_central_intake",
+      "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\candidates\\post-wave-d-e0-six-merge-source-tip-central-intake-v1.json",
+      "expected_sha256": "79d57eeff2bdc2ee5b4038f46bbd2086b3e8ed52625b5050370762b91d693704",
+      "observed_sha256": "79d57eeff2bdc2ee5b4038f46bbd2086b3e8ed52625b5050370762b91d693704"
+    },
+    {
+      "role": "authorized_dispatch",
+      "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\post-wave-d-e0-p0-six-candidate-integration-dispatch-v1.json",
+      "expected_sha256": "6148265fbc15df7f9edd2e173597c776c8fe1c529aab6fe7d538bfa86232a7e6",
+      "observed_sha256": "6148265fbc15df7f9edd2e173597c776c8fe1c529aab6fe7d538bfa86232a7e6"
+    },
+    {
+      "role": "sol_max_scope_pass",
+      "path": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\reviews\\post-wave-d-e0-fresh-sol-max-scope-preflight-pass-v1.json",
+      "expected_sha256": "08372916b00a82aba7e758e7e89614f3cedf9101c476f909cbd39f58244ba2a0",
+      "observed_sha256": "08372916b00a82aba7e758e7e89614f3cedf9101c476f909cbd39f58244ba2a0"
+    }
+  ],
+  "authorized_product_write_prefixes": [
+    "coordination/integration-queue/E0-20260830/",
+    "docs/deliveries/PPA-00/E0-20260830/"
+  ],
+  "source_tip": {
+    "branch": "codex/ppa-00-integration-candidate-r2",
+    "head": "6de42d026df84aa56ba40c9e5b5c6b66904a2d1c",
+    "tree": "2361230756e8e14f34a0a1046331685eafe76021",
+    "baseline": "e5b29b23bc51209ef5bcffd40d0557a2bea2c489",
+    "clean_before_gate": true,
+    "clean_after_gate": true,
+    "upstream": null,
+    "donor_push": "DISABLED",
+    "index_lock_present": false
+  },
+  "merges": {
+    "count": 6,
+    "ordered": [
+      {
+        "order": 1,
+        "merge_commit": "5dd869851a37fa6d1c32cc8b71b368be1e441dbf",
+        "actual_parents": [
+          "e5b29b23bc51209ef5bcffd40d0557a2bea2c489",
+          "29c3d6dc714f9781fd082997bab039d9bec15764"
+        ],
+        "expected_first_parent": "e5b29b23bc51209ef5bcffd40d0557a2bea2c489",
+        "expected_second_parent": "29c3d6dc714f9781fd082997bab039d9bec15764",
+        "two_parent_no_ff": true,
+        "parents_match": true
+      },
+      {
+        "order": 2,
+        "merge_commit": "b8895ff89929753a39f6dd6900703a84d5068dc7",
+        "actual_parents": [
+          "5dd869851a37fa6d1c32cc8b71b368be1e441dbf",
+          "ee4d39b20af2091404f836b9e9b75665ca6c2de2"
+        ],
+        "expected_first_parent": "5dd869851a37fa6d1c32cc8b71b368be1e441dbf",
+        "expected_second_parent": "ee4d39b20af2091404f836b9e9b75665ca6c2de2",
+        "two_parent_no_ff": true,
+        "parents_match": true
+      },
+      {
+        "order": 3,
+        "merge_commit": "c7defd0e46b1970a9d057f4fa8b2d87c33e07d26",
+        "actual_parents": [
+          "b8895ff89929753a39f6dd6900703a84d5068dc7",
+          "3e28b86477e16954ff10fdb01bac325c6d62b51f"
+        ],
+        "expected_first_parent": "b8895ff89929753a39f6dd6900703a84d5068dc7",
+        "expected_second_parent": "3e28b86477e16954ff10fdb01bac325c6d62b51f",
+        "two_parent_no_ff": true,
+        "parents_match": true
+      },
+      {
+        "order": 4,
+        "merge_commit": "4a2c0e984af8a82cf6c4172971279321d52dd508",
+        "actual_parents": [
+          "c7defd0e46b1970a9d057f4fa8b2d87c33e07d26",
+          "55897ee56fd460e469e70c196e9bc3a8730cccdb"
+        ],
+        "expected_first_parent": "c7defd0e46b1970a9d057f4fa8b2d87c33e07d26",
+        "expected_second_parent": "55897ee56fd460e469e70c196e9bc3a8730cccdb",
+        "two_parent_no_ff": true,
+        "parents_match": true
+      },
+      {
+        "order": 5,
+        "merge_commit": "f9d8a51cfb7f173000687410462a25281ecb7536",
+        "actual_parents": [
+          "4a2c0e984af8a82cf6c4172971279321d52dd508",
+          "7241d9846fb2e66e41871e452c0591faac58b045"
+        ],
+        "expected_first_parent": "4a2c0e984af8a82cf6c4172971279321d52dd508",
+        "expected_second_parent": "7241d9846fb2e66e41871e452c0591faac58b045",
+        "two_parent_no_ff": true,
+        "parents_match": true
+      },
+      {
+        "order": 6,
+        "merge_commit": "6de42d026df84aa56ba40c9e5b5c6b66904a2d1c",
+        "actual_parents": [
+          "f9d8a51cfb7f173000687410462a25281ecb7536",
+          "143a875bbbb3d5f4bd9a271a8aeda10b905f079c"
+        ],
+        "expected_first_parent": "f9d8a51cfb7f173000687410462a25281ecb7536",
+        "expected_second_parent": "143a875bbbb3d5f4bd9a271a8aeda10b905f079c",
+        "two_parent_no_ff": true,
+        "parents_match": true
+      }
+    ],
+    "all_two_parent_no_ff": true,
+    "all_parent_pairs_match": true
+  },
+  "source_changed_path_union": {
+    "count": 98,
+    "sorted_list_path": "coordination/integration-queue/E0-20260830/source-changed-paths.txt",
+    "sorted_list_sha256": "976a18881f2802c41e471324525a27c90ab5b9fbfdb7ddbbee0edae5a4c124e5",
+    "hash_contract": "SHA-256 of UTF-8, ordinally sorted paths joined by LF with final LF"
+  },
+  "rejected_heads": [
+    {
+      "head": "df43e9c1202305c117319559a6092fff1a2c58ca",
+      "ancestor_of_source_tip": false,
+      "git_exit_code": 1,
+      "expected_absent": true,
+      "preserved_for_any_direct_child_of_source_tip": true
+    },
+    {
+      "head": "da8f3c692af84806a6ea91d8a60a6caa865b30cd",
+      "ancestor_of_source_tip": false,
+      "git_exit_code": 1,
+      "expected_absent": true,
+      "preserved_for_any_direct_child_of_source_tip": true
+    },
+    {
+      "head": "ed76ebd84bb302784d3005194bc6956ea75cbc1f",
+      "ancestor_of_source_tip": false,
+      "git_exit_code": 1,
+      "expected_absent": true,
+      "preserved_for_any_direct_child_of_source_tip": true
+    }
+  ],
+  "directed_gate": {
+    "command_count": 17,
+    "recorded_result_count": 17,
+    "success_count": 8,
+    "failure_count": 9,
+    "all_independent_commands_executed": true,
+    "source_repair_attempted": false,
+    "results": [
+      {
+        "index": 1,
+        "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B -m pytest -p no:cacheprovider tests/p3-execution/job-rpc -q",
+        "exit_code": 1,
+        "passed": false,
+        "duration_ms": 668,
+        "started_at": "2026-08-30T16:17:55.6196193+08:00",
+        "finished_at": "2026-08-30T16:17:56.2895578+08:00",
+        "stdout": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-01.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "stderr": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-01.stderr.txt",
+          "sha256": "704cc72795245eed494681c4648d6b17f545dd24341c163117f3eca2e82066a7",
+          "bytes": 723
+        },
+        "result_metadata_path": "coordination/integration-queue/E0-20260830/raw/command-01.result.json",
+        "failure_fact": "pytest bootstrap failed: ModuleNotFoundError: No module named 'pluggy'; see raw stderr"
+      },
+      {
+        "index": 2,
+        "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B -m pytest -p no:cacheprovider tests/p3-execution/event-sse -q",
+        "exit_code": 1,
+        "passed": false,
+        "duration_ms": 262,
+        "started_at": "2026-08-30T16:17:56.3325412+08:00",
+        "finished_at": "2026-08-30T16:17:56.5955402+08:00",
+        "stdout": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-02.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "stderr": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-02.stderr.txt",
+          "sha256": "704cc72795245eed494681c4648d6b17f545dd24341c163117f3eca2e82066a7",
+          "bytes": 723
+        },
+        "result_metadata_path": "coordination/integration-queue/E0-20260830/raw/command-02.result.json",
+        "failure_fact": "pytest bootstrap failed: ModuleNotFoundError: No module named 'pluggy'; see raw stderr"
+      },
+      {
+        "index": 3,
+        "command": "node --experimental-strip-types --test tests/p4-webui/core-flows/*.test.mts",
+        "exit_code": 0,
+        "passed": true,
+        "duration_ms": 661,
+        "started_at": "2026-08-30T16:17:56.6002914+08:00",
+        "finished_at": "2026-08-30T16:17:57.2620593+08:00",
+        "stdout": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-03.stdout.txt",
+          "sha256": "d709a8dbbbed59036ca4018ecaccaa4716fe7c4d8a973c8e3dfde70c286d87b7",
+          "bytes": 3153
+        },
+        "stderr": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-03.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "result_metadata_path": "coordination/integration-queue/E0-20260830/raw/command-03.result.json",
+        "failure_fact": null
+      },
+      {
+        "index": 4,
+        "command": "node --experimental-strip-types --test tests/p4-webui/job-drawer/*.test.mts",
+        "exit_code": 0,
+        "passed": true,
+        "duration_ms": 578,
+        "started_at": "2026-08-30T16:17:57.2680864+08:00",
+        "finished_at": "2026-08-30T16:17:57.8464051+08:00",
+        "stdout": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-04.stdout.txt",
+          "sha256": "a1ab90d1cba5df2286a0a2b90546aac152b4ddf2afebb551e6b69fa2d860e1d4",
+          "bytes": 4824
+        },
+        "stderr": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-04.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "result_metadata_path": "coordination/integration-queue/E0-20260830/raw/command-04.result.json",
+        "failure_fact": null
+      },
+      {
+        "index": 5,
+        "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B -m pytest -p no:cacheprovider tests/p5-planning/planner-runtime -q",
+        "exit_code": 1,
+        "passed": false,
+        "duration_ms": 266,
+        "started_at": "2026-08-30T16:17:57.8499905+08:00",
+        "finished_at": "2026-08-30T16:17:58.1167851+08:00",
+        "stdout": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-05.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "stderr": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-05.stderr.txt",
+          "sha256": "704cc72795245eed494681c4648d6b17f545dd24341c163117f3eca2e82066a7",
+          "bytes": 723
+        },
+        "result_metadata_path": "coordination/integration-queue/E0-20260830/raw/command-05.result.json",
+        "failure_fact": "pytest bootstrap failed: ModuleNotFoundError: No module named 'pluggy'; see raw stderr"
+      },
+      {
+        "index": 6,
+        "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B -m pytest -p no:cacheprovider tests/p6-writing/chapter-workflow -q",
+        "exit_code": 1,
+        "passed": false,
+        "duration_ms": 265,
+        "started_at": "2026-08-30T16:17:58.1207516+08:00",
+        "finished_at": "2026-08-30T16:17:58.3863809+08:00",
+        "stdout": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-06.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "stderr": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-06.stderr.txt",
+          "sha256": "704cc72795245eed494681c4648d6b17f545dd24341c163117f3eca2e82066a7",
+          "bytes": 723
+        },
+        "result_metadata_path": "coordination/integration-queue/E0-20260830/raw/command-06.result.json",
+        "failure_fact": "pytest bootstrap failed: ModuleNotFoundError: No module named 'pluggy'; see raw stderr"
+      },
+      {
+        "index": 7,
+        "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B -m pytest -p no:cacheprovider tests/p3-execution/test_job_execution.py tests/p3-execution/provider-broker -q",
+        "exit_code": 1,
+        "passed": false,
+        "duration_ms": 237,
+        "started_at": "2026-08-30T16:17:58.3914997+08:00",
+        "finished_at": "2026-08-30T16:17:58.6286939+08:00",
+        "stdout": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-07.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "stderr": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-07.stderr.txt",
+          "sha256": "704cc72795245eed494681c4648d6b17f545dd24341c163117f3eca2e82066a7",
+          "bytes": 723
+        },
+        "result_metadata_path": "coordination/integration-queue/E0-20260830/raw/command-07.result.json",
+        "failure_fact": "pytest bootstrap failed: ModuleNotFoundError: No module named 'pluggy'; see raw stderr"
+      },
+      {
+        "index": 8,
+        "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B -m pytest -p no:cacheprovider tests/p1-core/execution-transaction/test_terminal_transaction.py tests/p1-core/execution-transaction/test_terminal_failure_windows.py tests/p2-plugin-platform/supervisor/test_rpc.py -q",
+        "exit_code": 1,
+        "passed": false,
+        "duration_ms": 251,
+        "started_at": "2026-08-30T16:17:58.6327057+08:00",
+        "finished_at": "2026-08-30T16:17:58.8839035+08:00",
+        "stdout": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-08.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "stderr": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-08.stderr.txt",
+          "sha256": "704cc72795245eed494681c4648d6b17f545dd24341c163117f3eca2e82066a7",
+          "bytes": 723
+        },
+        "result_metadata_path": "coordination/integration-queue/E0-20260830/raw/command-08.result.json",
+        "failure_fact": "pytest bootstrap failed: ModuleNotFoundError: No module named 'pluggy'; see raw stderr"
+      },
+      {
+        "index": 9,
+        "command": "node --experimental-strip-types --test tests/p4-webui/*.test.mts",
+        "exit_code": 0,
+        "passed": true,
+        "duration_ms": 678,
+        "started_at": "2026-08-30T16:17:58.8865927+08:00",
+        "finished_at": "2026-08-30T16:17:59.5655601+08:00",
+        "stdout": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-09.stdout.txt",
+          "sha256": "33006277d329e9273ab535df413915e731d9d316269dd73e44cb9e2e3720f34b",
+          "bytes": 1157
+        },
+        "stderr": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-09.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "result_metadata_path": "coordination/integration-queue/E0-20260830/raw/command-09.result.json",
+        "failure_fact": null
+      },
+      {
+        "index": 10,
+        "command": "node --experimental-strip-types --test frontend/tests/job-drawer/*.test.mts",
+        "exit_code": 0,
+        "passed": true,
+        "duration_ms": 1155,
+        "started_at": "2026-08-30T16:17:59.5687149+08:00",
+        "finished_at": "2026-08-30T16:18:00.7243868+08:00",
+        "stdout": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-10.stdout.txt",
+          "sha256": "83caff3c1de455d371b9e870732981b63b4176841652e8f2a1671e74b0843d66",
+          "bytes": 435
+        },
+        "stderr": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-10.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "result_metadata_path": "coordination/integration-queue/E0-20260830/raw/command-10.result.json",
+        "failure_fact": null
+      },
+      {
+        "index": 11,
+        "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B -m pytest -p no:cacheprovider tests/p5-planning/test_planning_slice.py -q",
+        "exit_code": 1,
+        "passed": false,
+        "duration_ms": 249,
+        "started_at": "2026-08-30T16:18:00.7276598+08:00",
+        "finished_at": "2026-08-30T16:18:00.9768852+08:00",
+        "stdout": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-11.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "stderr": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-11.stderr.txt",
+          "sha256": "704cc72795245eed494681c4648d6b17f545dd24341c163117f3eca2e82066a7",
+          "bytes": 723
+        },
+        "result_metadata_path": "coordination/integration-queue/E0-20260830/raw/command-11.result.json",
+        "failure_fact": "pytest bootstrap failed: ModuleNotFoundError: No module named 'pluggy'; see raw stderr"
+      },
+      {
+        "index": 12,
+        "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B -m pytest -p no:cacheprovider tests/p6-writing/test_dependency_free_domains.py -q",
+        "exit_code": 1,
+        "passed": false,
+        "duration_ms": 294,
+        "started_at": "2026-08-30T16:18:00.9803891+08:00",
+        "finished_at": "2026-08-30T16:18:01.2749847+08:00",
+        "stdout": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-12.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "stderr": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-12.stderr.txt",
+          "sha256": "704cc72795245eed494681c4648d6b17f545dd24341c163117f3eca2e82066a7",
+          "bytes": 723
+        },
+        "result_metadata_path": "coordination/integration-queue/E0-20260830/raw/command-12.result.json",
+        "failure_fact": "pytest bootstrap failed: ModuleNotFoundError: No module named 'pluggy'; see raw stderr"
+      },
+      {
+        "index": 13,
+        "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\ruff.exe check --no-cache backend/plotpilot_core/api/v1/jobs/rpc backend/plotpilot_core/jobs/http_rpc backend/plotpilot_core/api/v1/jobs/sse backend/plotpilot_core/events first-party-plugins/project-planner/src/plotpilot_project_planner first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow tests/p3-execution/job-rpc tests/p3-execution/event-sse tests/p5-planning/planner-runtime tests/p5-planning/test_planning_slice.py tests/p6-writing/chapter-workflow tests/p6-writing/test_dependency_free_domains.py",
+        "exit_code": 1,
+        "passed": false,
+        "duration_ms": 281,
+        "started_at": "2026-08-30T16:18:01.2789998+08:00",
+        "finished_at": "2026-08-30T16:18:01.5603281+08:00",
+        "stdout": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-13.stdout.txt",
+          "sha256": "bbd6210d1aa0b54cfaa8dfb83b1ee92f1d83c411349dda417ff34c8a08cf13a8",
+          "bytes": 96655
+        },
+        "stderr": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-13.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "result_metadata_path": "coordination/integration-queue/E0-20260830/raw/command-13.result.json",
+        "failure_fact": "ruff reported 152 errors; see raw stdout"
+      },
+      {
+        "index": 14,
+        "command": "frontend/node_modules/.bin/vue-tsc.cmd --noEmit -p frontend/tsconfig.app.json --incremental false",
+        "exit_code": 0,
+        "passed": true,
+        "duration_ms": 15587,
+        "started_at": "2026-08-30T16:18:01.5644088+08:00",
+        "finished_at": "2026-08-30T16:18:17.1518496+08:00",
+        "stdout": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-14.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "stderr": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-14.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "result_metadata_path": "coordination/integration-queue/E0-20260830/raw/command-14.result.json",
+        "failure_fact": null
+      },
+      {
+        "index": 15,
+        "command": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe -B tools/integration/generate_contract_manifest.py --check",
+        "exit_code": 0,
+        "passed": true,
+        "duration_ms": 431,
+        "started_at": "2026-08-30T16:18:17.1550062+08:00",
+        "finished_at": "2026-08-30T16:18:17.5863291+08:00",
+        "stdout": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-15.stdout.txt",
+          "sha256": "1ab3ec41405de2e069954c4b744b666e092ec6d63828638d25888cce07dd7381",
+          "bytes": 48
+        },
+        "stderr": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-15.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "result_metadata_path": "coordination/integration-queue/E0-20260830/raw/command-15.result.json",
+        "failure_fact": null
+      },
+      {
+        "index": 16,
+        "command": "git --no-optional-locks diff --check e5b29b23bc51209ef5bcffd40d0557a2bea2c489 HEAD --",
+        "exit_code": 0,
+        "passed": true,
+        "duration_ms": 257,
+        "started_at": "2026-08-30T16:18:17.5893522+08:00",
+        "finished_at": "2026-08-30T16:18:17.8469781+08:00",
+        "stdout": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-16.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "stderr": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-16.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "result_metadata_path": "coordination/integration-queue/E0-20260830/raw/command-16.result.json",
+        "failure_fact": null
+      },
+      {
+        "index": 17,
+        "command": "if (@(git --no-optional-locks status --porcelain=v1 --untracked-files=all).Count -ne 0) { throw 'post-gate worktree is not clean' }",
+        "exit_code": 0,
+        "passed": true,
+        "duration_ms": 296,
+        "started_at": "2026-08-30T16:18:17.8493139+08:00",
+        "finished_at": "2026-08-30T16:18:18.1455877+08:00",
+        "stdout": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-17.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "stderr": {
+          "path": "coordination/integration-queue/E0-20260830/raw/command-17.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "result_metadata_path": "coordination/integration-queue/E0-20260830/raw/command-17.result.json",
+        "failure_fact": null
+      }
+    ]
+  },
+  "environment_identity_path": "coordination/integration-queue/E0-20260830/environment-identities.json",
+  "forbidden_action_counters": {
+    "remerge": 0,
+    "source_edit": 0,
+    "contract_change": 0,
+    "lock_change": 0,
+    "dependency_change": 0,
+    "checkout": 0,
+    "switch": 0,
+    "reset": 0,
+    "clean": 0,
+    "cherry_pick": 0,
+    "rebase": 0,
+    "amend": 0,
+    "tag": 0,
+    "push": 0,
+    "service": 0,
+    "browser": 0,
+    "tauri": 0,
+    "desktop": 0,
+    "exe": 0,
+    "installer": 0,
+    "final_build": 0,
+    "later_m4_m7": 0,
+    "usage_reset_credit": 0,
+    "control_repository_write": 0,
+    "second_product_writer": 0
+  },
+  "evidence_commit_binding": {
+    "head": "SELF",
+    "tree": "SELF^{tree}",
+    "parent": "6de42d026df84aa56ba40c9e5b5c6b66904a2d1c",
+    "branch": "codex/ppa-00-integration-candidate-r2",
+    "commit_count_required": 1,
+    "direct_child_required": true,
+    "scope_required": [
+      "coordination/integration-queue/E0-20260830/",
+      "docs/deliveries/PPA-00/E0-20260830/"
+    ],
+    "final_status_required": "clean",
+    "note": "Exact self commit and tree hashes are non-recursive Git identities resolved and verified after creating the sole commit; they are returned externally. SELF avoids an impossible content-address self-reference."
+  },
+  "evidence_manifest": {
+    "path": "docs/deliveries/PPA-00/E0-20260830/sha256-manifest.json",
+    "algorithm": "SHA-256",
+    "coverage": "every evidence file under both authorized directories except the manifest itself",
+    "exact_manifest_sha256": "reported externally because a manifest cannot hash itself"
+  },
+  "verdict": "COMMAND_FACTS_RECORDED_WITH_FAILURES_NO_INTEGRATED_PASS_CLAIM"
+}

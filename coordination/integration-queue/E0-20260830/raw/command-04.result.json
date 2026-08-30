@@ -1,0 +1,15 @@
+{
+  "index": 4,
+  "command": "node --experimental-strip-types --test tests/p4-webui/job-drawer/*.test.mts",
+  "exit_code": 0,
+  "passed": true,
+  "started_at": "2026-08-30T16:17:57.2680864+08:00",
+  "finished_at": "2026-08-30T16:17:57.8464051+08:00",
+  "duration_ms": 578,
+  "stdout_file": "command-04.stdout.txt",
+  "stdout_sha256": "a1ab90d1cba5df2286a0a2b90546aac152b4ddf2afebb551e6b69fa2d860e1d4",
+  "stdout_bytes": 4824,
+  "stderr_file": "command-04.stderr.txt",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr_bytes": 0
+}

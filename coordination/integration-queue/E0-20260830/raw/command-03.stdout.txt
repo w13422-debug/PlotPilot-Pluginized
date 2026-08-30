@@ -1,0 +1,51 @@
+✔ A to B to C transitions reject every older Workspace generation (3.5717ms)
+✔ explicit invalidation makes a pending load, open, or save response stale (0.1812ms)
+✔ late A and B responses cannot overwrite a completed C Workspace response (0.5967ms)
+✔ only the latest project-list refresh may commit or report success (0.2728ms)
+✔ partial delete reconciliation retains only failed authoritative selections (0.2353ms)
+✔ partial delete reconciliation covers all-success and all-failure boundaries (0.1458ms)
+✔ lists every WritingProject page and keeps the frozen query cursor advancing (1.8693ms)
+✔ creates and CAS-deletes a project with fresh typed operation identities (0.544ms)
+✔ loads chapter navigation, opens paged content, edits and saves a new Core revision (11.63ms)
+✔ opens a never-revised chapter without inventing authority or requesting content (0.258ms)
+✔ rejects a cross-Workspace document page instead of projecting a second truth (0.7763ms)
+▶ rejects Workspace page offset, limit, and cursor drift
+  ✔ offset (0.2452ms)
+  ✔ limit (0.1023ms)
+  ✔ cursor (0.1568ms)
+✔ rejects Workspace page offset, limit, and cursor drift (1.6901ms)
+✔ rejects a Workspace entity repeated across pages (0.4089ms)
+▶ rejects Document page offset, limit, and cursor drift
+  ✔ offset (0.2456ms)
+  ✔ limit (0.1807ms)
+  ✔ cursor (0.161ms)
+✔ rejects Document page offset, limit, and cursor drift (0.9777ms)
+✔ rejects a Document entity repeated across pages (0.2702ms)
+✔ rejects a revision.get response that drifts from the Document current Revision (0.2363ms)
+✔ rejects a non-text current Revision before requesting its content (0.197ms)
+✔ edit is pure and preserves the opened chapter snapshot (0.1951ms)
+✔ reuses the exact create command after an uncertain transport failure (0.4516ms)
+✔ reuses save identities across retry and rejects a mismatched parent revision (0.2999ms)
+▶ binds a saved Revision result to actor, source Candidate, and payload schema
+  ✔ created_by (0.2344ms)
+  ✔ source_candidate_id (0.0789ms)
+  ✔ payload_schema (0.0739ms)
+✔ binds a saved Revision result to actor, source Candidate, and payload schema (0.6775ms)
+✔ rejects a delete result whose CAS receipt is not exact (0.1801ms)
+✔ derives GET path/query from the frozen method matrix and validates the response schema (51.3736ms)
+✔ sends the complete typed revision command and rejects result-schema drift (2.5667ms)
+✔ turns a frozen Core error response into a typed flow error (1.8554ms)
+✔ rejects a request whose schema does not match the selected route (0.8575ms)
+✔ requires the exact success status declared by the frozen matrix (2.6184ms)
+✔ rejects an undeclared failure status/error-code pair (1.9908ms)
+✔ Home is wired to Core flows without a wizard or legacy project authority (3.0974ms)
+✔ Workbench keeps the three-pane split while using document identity for open/edit/save (0.313ms)
+✔ runtime composition has no default fake, legacy fallback, or implicit HTTP mount (0.1527ms)
+ℹ tests 40
+ℹ suites 0
+ℹ pass 40
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 379.9732

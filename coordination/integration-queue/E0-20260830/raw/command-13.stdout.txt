@@ -1,0 +1,2264 @@
+I001 [*] Import block is un-sorted or un-formatted
+  --> backend\plotpilot_core\api\v1\jobs\rpc\command_query.py:3:1
+   |
+ 1 |   """Thin Job command/query application adapter over the accepted authority."""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | from collections.abc import Mapping
+ 6 | | from dataclasses import dataclass
+ 7 | | import json
+ 8 | | import re
+ 9 | | import sqlite3
+10 | | from typing import Any, Protocol
+11 | |
+12 | | from backend.plotpilot_core.repositories.execution import ExecutionAuthority
+13 | | from backend.plotpilot_plugin_sdk import ContractError, ContractValidationError, ErrorCode
+14 | | from backend.plotpilot_plugin_sdk.verifier import (
+15 | |     assert_valid,
+16 | |     hash_without_field,
+17 | |     verify_checkpoint,
+18 | |     verify_snapshot,
+19 | |     verify_job_snapshot,
+20 | | )
+   | |_^
+help: Organize imports
+   |
+4  |
+   - from collections.abc import Mapping
+   - from dataclasses import dataclass
+5  | import json
+6  | import re
+7  | import sqlite3
+8  + from collections.abc import Mapping
+9  + from dataclasses import dataclass
+10 | from typing import Any, Protocol
+11 |
+12 | from backend.plotpilot_core.repositories.execution import ExecutionAuthority
+   - from backend.plotpilot_plugin_sdk import ContractError, ContractValidationError, ErrorCode
+13 + from backend.plotpilot_plugin_sdk import (
+14 +     ContractError,
+15 +     ContractValidationError,
+16 +     ErrorCode,
+17 + )
+18 | from backend.plotpilot_plugin_sdk.verifier import (
+19 |     assert_valid,
+20 |     hash_without_field,
+21 |     verify_checkpoint,
+22 +     verify_job_snapshot,
+23 |     verify_snapshot,
+   -     verify_job_snapshot,
+24 | )
+   -
+25 |
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> backend\plotpilot_core\api\v1\jobs\sse\adapter.py:1:1
+  |
+1 | / from __future__ import annotations
+2 | |
+3 | | from dataclasses import dataclass
+4 | | import json
+5 | | import re
+6 | | from typing import Any, Iterable, Mapping
+7 | |
+8 | | from backend.plotpilot_core.events import EventRecoveryService, RecoveryPlan, SnapshotProvider
+9 | | from backend.plotpilot_plugin_sdk import ContractError, ErrorCode, canonical_bytes
+  | |__________________________________________________________________________________^
+help: Organize imports
+   |
+2  |
+   - from dataclasses import dataclass
+3  | import json
+4  | import re
+5  + from dataclasses import dataclass
+6  | from typing import Any, Iterable, Mapping
+7  |
+   - from backend.plotpilot_core.events import EventRecoveryService, RecoveryPlan, SnapshotProvider
+8  + from backend.plotpilot_core.events import (
+9  +     EventRecoveryService,
+10 +     RecoveryPlan,
+11 +     SnapshotProvider,
+12 + )
+13 | from backend.plotpilot_plugin_sdk import ContractError, ErrorCode, canonical_bytes
+   |
+
+F401 [*] `json` imported but unused
+ --> backend\plotpilot_core\api\v1\jobs\sse\adapter.py:4:8
+  |
+3 | from dataclasses import dataclass
+4 | import json
+  |        ^^^^
+5 | import re
+6 | from typing import Any, Iterable, Mapping
+  |
+help: Remove unused import: `json`
+  |
+3 | from dataclasses import dataclass
+  - import json
+4 | import re
+  |
+
+UP035 [*] Import from `collections.abc` instead: `Iterable`, `Mapping`
+ --> backend\plotpilot_core\api\v1\jobs\sse\adapter.py:6:1
+  |
+4 | import json
+5 | import re
+6 | from typing import Any, Iterable, Mapping
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+7 |
+8 | from backend.plotpilot_core.events import EventRecoveryService, RecoveryPlan, SnapshotProvider
+  |
+help: Import from `collections.abc`
+  |
+5 | import re
+  - from typing import Any, Iterable, Mapping
+6 + from typing import Any
+7 + from collections.abc import Iterable, Mapping
+8 |
+  |
+
+UP012 [*] Unnecessary UTF-8 `encoding` argument to `encode`
+  --> backend\plotpilot_core\api\v1\jobs\sse\adapter.py:56:12
+   |
+54 |     if "\r" in value or "\n" in value:
+55 |         raise ValueError(f"SSE {name} contains a line break")
+56 |     return f"{name}: {value}\n".encode("utf-8")
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: Remove unnecessary `encoding` argument
+   |
+55 |         raise ValueError(f"SSE {name} contains a line break")
+   -     return f"{name}: {value}\n".encode("utf-8")
+56 +     return f"{name}: {value}\n".encode()
+57 |
+   |
+
+RUF022 [*] `__all__` is not sorted
+  --> backend\plotpilot_core\events\__init__.py:16:11
+   |
+14 |   from .store import CoreEventStore, JobEventStore, ReplayWindow, StreamKind
+15 |
+16 |   __all__ = [
+   |  ___________^
+17 | |     "AggregateReader",
+18 | |     "CoreEventStore",
+19 | |     "CoreSnapshotStore",
+20 | |     "EventRecoveryService",
+21 | |     "JobEventStore",
+22 | |     "JobEventPageStore",
+23 | |     "JobPollProjectionStore",
+24 | |     "JobRuntimeProjectionReader",
+25 | |     "JobSnapshotStore",
+26 | |     "PersistedJobEventPage",
+27 | |     "PersistedSnapshot",
+28 | |     "RecoveryPlan",
+29 | |     "ReplayWindow",
+30 | |     "SnapshotProvider",
+31 | |     "SnapshotHighWaterChanged",
+32 | |     "StreamKind",
+33 | |     "next_job_event_seq_to_after",
+34 | | ]
+   | |_^
+help: Apply an isort-style sorting to `__all__`
+   |
+20 |     "EventRecoveryService",
+21 +     "JobEventPageStore",
+22 |     "JobEventStore",
+   -     "JobEventPageStore",
+23 |     "JobPollProjectionStore",
+--------------------------------------------------------------------------------
+29 |     "ReplayWindow",
+30 +     "SnapshotHighWaterChanged",
+31 |     "SnapshotProvider",
+   -     "SnapshotHighWaterChanged",
+32 |     "StreamKind",
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> backend\plotpilot_core\events\recovery.py:1:1
+   |
+ 1 | / from __future__ import annotations
+ 2 | |
+ 3 | | from collections.abc import Callable, Mapping, Sequence
+ 4 | | from dataclasses import dataclass
+ 5 | | from typing import Any
+ 6 | |
+ 7 | | from backend.plotpilot_plugin_sdk import ContractError, ErrorCode, verify_sse_recovery
+ 8 | |
+ 9 | | from .snapshots import PersistedSnapshot, SnapshotHighWaterChanged
+10 | | from .store import CoreEventStore, JobEventStore, ReplayWindow, StreamKind
+   | |__________________________________________________________________________^
+help: Organize imports
+   |
+11 |
+   -
+12 | SnapshotProvider = Callable[[int], PersistedSnapshot]
+   |
+
+F401 [*] `.store.StreamKind` imported but unused
+  --> backend\plotpilot_core\events\recovery.py:10:65
+   |
+ 9 | from .snapshots import PersistedSnapshot, SnapshotHighWaterChanged
+10 | from .store import CoreEventStore, JobEventStore, ReplayWindow, StreamKind
+   |                                                                 ^^^^^^^^^^
+help: Remove unused import: `.store.StreamKind`
+   |
+9  | from .snapshots import PersistedSnapshot, SnapshotHighWaterChanged
+   - from .store import CoreEventStore, JobEventStore, ReplayWindow, StreamKind
+10 + from .store import CoreEventStore, JobEventStore, ReplayWindow
+11 |
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> backend\plotpilot_core\events\snapshots.py:1:1
+   |
+ 1 | / from __future__ import annotations
+ 2 | |
+ 3 | | from collections.abc import Callable, Iterator, Mapping, Sequence
+ 4 | | from contextlib import contextmanager
+ 5 | | from dataclasses import dataclass
+ 6 | | import hashlib
+ 7 | | import sqlite3
+ 8 | | from typing import Any
+ 9 | |
+10 | | from backend.plotpilot_plugin_sdk import assert_valid, canonical_bytes, verify_core_snapshot
+11 | | from backend.plotpilot_plugin_sdk.verifier import hash_without_field, verify_job_snapshot
+12 | |
+13 | | from ..assets import AssetStore
+14 | | from ..broker.service import TERMINAL_STATES
+15 | | from ..domain.entities import utc_now
+16 | | from ..repositories.authority import CoreAuthorityRepository
+17 | | from .store import CoreEventStore, JobEventStore, StreamKind, pinned_read_transaction
+   | |_____________________________________________________________________________________^
+help: Organize imports
+   |
+2  |
+3  + import hashlib
+4  + import sqlite3
+5  | from collections.abc import Callable, Iterator, Mapping, Sequence
+6  | from contextlib import contextmanager
+7  | from dataclasses import dataclass
+   - import hashlib
+   - import sqlite3
+8  | from typing import Any
+9  |
+   - from backend.plotpilot_plugin_sdk import assert_valid, canonical_bytes, verify_core_snapshot
+   - from backend.plotpilot_plugin_sdk.verifier import hash_without_field, verify_job_snapshot
+10 + from backend.plotpilot_plugin_sdk import (
+11 +     assert_valid,
+12 +     canonical_bytes,
+13 +     verify_core_snapshot,
+14 + )
+15 + from backend.plotpilot_plugin_sdk.verifier import (
+16 +     hash_without_field,
+17 +     verify_job_snapshot,
+18 + )
+19 |
+   |
+
+RUF012 Mutable default value for class attribute
+   --> backend\plotpilot_core\events\snapshots.py:214:17
+    |
+212 |     """Production adapter for BrokerChildSnapshotPort.project_poll."""
+213 |
+214 |     _TERMINAL = set(TERMINAL_STATES)
+    |                 ^^^^^^^^^^^^^^^^^^^^
+215 |
+216 |     def __init__(
+    |
+help: Consider initializing in `__init__` or annotating with `typing.ClassVar`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> backend\plotpilot_core\events\store.py:1:1
+   |
+ 1 | / from __future__ import annotations
+ 2 | |
+ 3 | | from contextlib import contextmanager
+ 4 | | from dataclasses import dataclass
+ 5 | | import json
+ 6 | | import sqlite3
+ 7 | | from typing import Any, Iterator, Literal, Mapping, Sequence
+ 8 | |
+ 9 | | from backend.plotpilot_plugin_sdk import ContractError, ErrorCode, assert_valid
+10 | |
+11 | | from ..repositories.authority import CoreAuthorityRepository
+   | |____________________________________________________________^
+help: Organize imports
+   |
+2  |
+   - from contextlib import contextmanager
+   - from dataclasses import dataclass
+3  | import json
+4  | import sqlite3
+5  + from contextlib import contextmanager
+6  + from dataclasses import dataclass
+7  | from typing import Any, Iterator, Literal, Mapping, Sequence
+--------------------------------------------------------------------------------
+11 | from ..repositories.authority import CoreAuthorityRepository
+   -
+12 |
+   |
+
+UP035 [*] Import from `collections.abc` instead: `Iterator`, `Mapping`, `Sequence`
+ --> backend\plotpilot_core\events\store.py:7:1
+  |
+5 | import json
+6 | import sqlite3
+7 | from typing import Any, Iterator, Literal, Mapping, Sequence
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+8 |
+9 | from backend.plotpilot_plugin_sdk import ContractError, ErrorCode, assert_valid
+  |
+help: Import from `collections.abc`
+  |
+6 | import sqlite3
+  - from typing import Any, Iterator, Literal, Mapping, Sequence
+7 + from typing import Any, Literal
+8 + from collections.abc import Iterator, Mapping, Sequence
+9 |
+  |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> backend\plotpilot_core\jobs\http_rpc\dispatcher.py:8:1
+   |
+ 6 |   """
+ 7 |
+ 8 | / from __future__ import annotations
+ 9 | |
+10 | | from collections.abc import Mapping
+11 | | from dataclasses import dataclass
+12 | | from typing import Any, Callable, Protocol
+13 | |
+14 | | from backend.plotpilot_core.supervisor.rpc import RpcEvent
+15 | | from backend.plotpilot_core.supervisor.models import WorkerTicket
+16 | | from backend.plotpilot_plugin_sdk import ContractError, ErrorCode
+17 | | from backend.plotpilot_plugin_sdk.rpc import HOST_METHODS
+18 | | from backend.plotpilot_plugin_sdk.verifier import validate_rpc_request, validate_rpc_result
+   | |___________________________________________________________________________________________^
+help: Organize imports
+   |
+13 |
+14 + from backend.plotpilot_core.supervisor.models import WorkerTicket
+15 | from backend.plotpilot_core.supervisor.rpc import RpcEvent
+   - from backend.plotpilot_core.supervisor.models import WorkerTicket
+16 | from backend.plotpilot_plugin_sdk import ContractError, ErrorCode
+17 | from backend.plotpilot_plugin_sdk.rpc import HOST_METHODS
+   - from backend.plotpilot_plugin_sdk.verifier import validate_rpc_request, validate_rpc_result
+18 + from backend.plotpilot_plugin_sdk.verifier import (
+19 +     validate_rpc_request,
+20 +     validate_rpc_result,
+21 + )
+22 |
+   |
+
+UP035 [*] Import from `collections.abc` instead: `Callable`
+  --> backend\plotpilot_core\jobs\http_rpc\dispatcher.py:12:1
+   |
+10 | from collections.abc import Mapping
+11 | from dataclasses import dataclass
+12 | from typing import Any, Callable, Protocol
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+13 |
+14 | from backend.plotpilot_core.supervisor.rpc import RpcEvent
+   |
+help: Import from `collections.abc`
+   |
+11 | from dataclasses import dataclass
+   - from typing import Any, Callable, Protocol
+12 + from typing import Any, Protocol
+13 + from collections.abc import Callable
+14 |
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> first-party-plugins\chapter-workflow\backend\src\plotpilot_chapter_workflow\planning.py:7:1
+   |
+ 5 |   Core state after the workflow starts.
+ 6 |   """
+ 7 | / from __future__ import annotations
+ 8 | |
+ 9 | | from dataclasses import dataclass
+10 | | from hashlib import sha256
+11 | | import json
+12 | | import re
+   | |_________^
+help: Organize imports
+   |
+8  |
+   - from dataclasses import dataclass
+   - from hashlib import sha256
+9  | import json
+10 | import re
+   -
+11 + from dataclasses import dataclass
+12 + from hashlib import sha256
+13 |
+   |
+
+TRY004 Prefer `TypeError` exception for invalid type
+  --> first-party-plugins\chapter-workflow\backend\src\plotpilot_chapter_workflow\planning.py:35:13
+   |
+33 |             _required(getattr(self, name), f"context {name}")
+34 |         if not isinstance(self.content, str):
+35 |             raise ValueError("context content must be text")
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+36 |         if not isinstance(self.content_hash, str) or _HASH_RE.fullmatch(self.content_hash) is None:
+37 |             raise ValueError("context content_hash must be lowercase SHA-256")
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> first-party-plugins\chapter-workflow\backend\src\plotpilot_chapter_workflow\workflow.py:8:1
+   |
+ 6 |   State proposal.  It cannot write chapter text or Story State directly.
+ 7 |   """
+ 8 | / from __future__ import annotations
+ 9 | |
+10 | | import json
+11 | | import re
+12 | | from dataclasses import dataclass, field
+13 | | from enum import Enum
+14 | | from hashlib import sha256
+15 | | from threading import Lock, RLock
+16 | | from types import MappingProxyType
+17 | | from typing import Any, Mapping, NoReturn, Sequence
+18 | |
+19 | | from .planning import FrozenContextPlan, SkillRef
+   | |_________________________________________________^
+help: Organize imports
+   |
+20 |
+   -
+21 | _ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$")
+   |
+
+UP035 [*] Import from `collections.abc` instead: `Mapping`, `Sequence`
+  --> first-party-plugins\chapter-workflow\backend\src\plotpilot_chapter_workflow\workflow.py:17:1
+   |
+15 | from threading import Lock, RLock
+16 | from types import MappingProxyType
+17 | from typing import Any, Mapping, NoReturn, Sequence
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+18 |
+19 | from .planning import FrozenContextPlan, SkillRef
+   |
+help: Import from `collections.abc`
+   |
+16 | from types import MappingProxyType
+   - from typing import Any, Mapping, NoReturn, Sequence
+17 + from typing import Any, NoReturn
+18 + from collections.abc import Mapping, Sequence
+19 |
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests\p3-execution\event-sse\conftest.py:1:1
+   |
+ 1 | / from __future__ import annotations
+ 2 | |
+ 3 | | import json
+ 4 | | from pathlib import Path
+ 5 | |
+ 6 | | import pytest
+ 7 | |
+ 8 | | from backend.plotpilot_core.assets import AssetStore
+ 9 | | from backend.plotpilot_core.domain import Workspace
+10 | | from backend.plotpilot_core.repositories.authority import CoreAuthorityRepository
+11 | | from backend.plotpilot_core.repositories.execution import ExecutionAuthority
+12 | | from backend.plotpilot_plugin_sdk.verifier import request_key, snapshot_hash
+   | |____________________________________________________________________________^
+help: Organize imports
+   |
+13 |
+   -
+14 | RELEASE = "a" * 64
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests\p3-execution\event-sse\test_event_store.py:1:1
+   |
+ 1 | / from __future__ import annotations
+ 2 | |
+ 3 | | from pathlib import Path
+ 4 | | import json
+ 5 | | import sqlite3
+ 6 | | import sys
+ 7 | |
+ 8 | | import pytest
+ 9 | |
+10 | | from backend.plotpilot_core.events import CoreEventStore, JobEventStore
+11 | | from backend.plotpilot_core.repositories.authority import CoreAuthorityRepository
+12 | | from backend.plotpilot_plugin_sdk import ContractError, ErrorCode, assert_valid
+   | |_______________________________________________________________________________^
+13 |
+14 |   sys.path.insert(0, str(Path(__file__).parent))
+   |
+help: Organize imports
+  |
+2 |
+  - from pathlib import Path
+3 | import json
+4 | import sqlite3
+5 | import sys
+6 + from pathlib import Path
+7 |
+  |
+
+RUF100 [*] Unused `noqa` directive (non-enabled: `E402`)
+  --> tests\p3-execution\event-sse\test_event_store.py:15:58
+   |
+14 | sys.path.insert(0, str(Path(__file__).parent))
+15 | from conftest import append_core, core_event, job_event  # noqa: E402
+   |                                                          ^^^^^^^^^^^^
+help: Remove unused `noqa` directive
+   |
+14 | sys.path.insert(0, str(Path(__file__).parent))
+   - from conftest import append_core, core_event, job_event  # noqa: E402
+15 + from conftest import append_core, core_event, job_event
+16 |
+   |
+
+SIM117 [*] Use a single `with` statement with multiple contexts instead of nested `with` statements
+  --> tests\p3-execution\event-sse\test_event_store.py:22:5
+   |
+20 |       store = CoreEventStore(repository)
+21 |
+22 | /     with pytest.raises(RuntimeError):
+23 | |         with repository.transaction() as connection:
+   | |____________________________________________________^
+24 |               assert store.append(core_event(1), connection=connection)["core_event_seq"] == 1
+25 |               raise RuntimeError("aggregate mutation crashed")
+   |
+help: Combine `with` statements
+   |
+21 |
+   -     with pytest.raises(RuntimeError):
+   -         with repository.transaction() as connection:
+   -             assert store.append(core_event(1), connection=connection)["core_event_seq"] == 1
+   -             raise RuntimeError("aggregate mutation crashed")
+22 +     with pytest.raises(RuntimeError), repository.transaction() as connection:
+23 +         assert store.append(core_event(1), connection=connection)["core_event_seq"] == 1
+24 +         raise RuntimeError("aggregate mutation crashed")
+25 |     assert store.high_water() == 0
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests\p3-execution\event-sse\test_recovery_and_adapter.py:1:1
+   |
+ 1 | / from __future__ import annotations
+ 2 | |
+ 3 | | import json
+ 4 | | from pathlib import Path
+ 5 | | import sys
+ 6 | |
+ 7 | | import pytest
+ 8 | |
+ 9 | | from backend.plotpilot_core.api.v1.jobs.sse import JobSSEAdapter, StreamCursor
+10 | | from backend.plotpilot_core.events import (
+11 | |     CoreEventStore,
+12 | |     CoreSnapshotStore,
+13 | |     EventRecoveryService,
+14 | |     JobEventPageStore,
+15 | |     JobEventStore,
+16 | |     JobPollProjectionStore,
+17 | |     JobSnapshotStore,
+18 | |     next_job_event_seq_to_after,
+19 | | )
+20 | | from backend.plotpilot_core.repositories.authority import CoreAuthorityRepository
+21 | | from backend.plotpilot_plugin_sdk import ContractError, ErrorCode, verify_sse_recovery
+   | |______________________________________________________________________________________^
+22 |
+23 |   sys.path.insert(0, str(Path(__file__).parent))
+   |
+help: Organize imports
+  |
+3 | import json
+4 + import sys
+5 | from pathlib import Path
+  - import sys
+6 |
+  |
+
+RUF100 [*] Unused `noqa` directive (non-enabled: `E402`)
+  --> tests\p3-execution\event-sse\test_recovery_and_adapter.py:24:58
+   |
+23 | sys.path.insert(0, str(Path(__file__).parent))
+24 | from conftest import append_core, core_event, job_event  # noqa: E402
+   |                                                          ^^^^^^^^^^^^
+help: Remove unused `noqa` directive
+   |
+23 | sys.path.insert(0, str(Path(__file__).parent))
+   - from conftest import append_core, core_event, job_event  # noqa: E402
+24 + from conftest import append_core, core_event, job_event
+25 |
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests\p3-execution\job-rpc\test_command_query.py:1:1
+   |
+ 1 | / from __future__ import annotations
+ 2 | |
+ 3 | | from concurrent.futures import ThreadPoolExecutor
+ 4 | | from contextlib import contextmanager
+ 5 | | import json
+ 6 | | from threading import Barrier
+ 7 | |
+ 8 | | import pytest
+ 9 | |
+10 | | from backend.plotpilot_core.api.v1.jobs.rpc import (
+11 | |     AttemptStartBinding,
+12 | |     JobCheckpointBinding,
+13 | |     JobCommandQueryAdapter,
+14 | |     JobSnapshotExtensions,
+15 | |     JobStreamHighWaterBinding,
+16 | | )
+17 | | from backend.plotpilot_plugin_sdk import ContractError, ErrorCode
+18 | | from backend.plotpilot_plugin_sdk.verifier import verify_job_snapshot
+   | |_____________________________________________________________________^
+help: Organize imports
+  |
+2 |
+3 + import json
+4 | from concurrent.futures import ThreadPoolExecutor
+5 | from contextlib import contextmanager
+  - import json
+6 | from threading import Barrier
+  |
+
+RET501 [*] Do not explicitly `return None` in function if it is the only possible return value
+   --> tests\p3-execution\job-rpc\test_command_query.py:310:13
+    |
+308 |             del workspace_id, request_key
+309 |             barrier.wait(timeout=5)
+310 |             return None
+    |             ^^^^^^^^^^^
+311 |
+312 |         def create_from_verified_snapshot(self, job_id, snapshot):
+    |
+help: Remove explicit `return None`
+    |
+309 |             barrier.wait(timeout=5)
+    -             return None
+310 +             return
+311 |
+    |
+
+PLR1711 [*] Useless `return` statement at end of function
+   --> tests\p3-execution\job-rpc\test_command_query.py:310:13
+    |
+308 |             del workspace_id, request_key
+309 |             barrier.wait(timeout=5)
+310 |             return None
+    |             ^^^^^^^^^^^
+311 |
+312 |         def create_from_verified_snapshot(self, job_id, snapshot):
+    |
+help: Remove useless `return` statement
+    |
+309 |             barrier.wait(timeout=5)
+    -             return None
+310 |
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests\p5-planning\test_planning_slice.py:1:1
+   |
+ 1 | / import json
+ 2 | | from pathlib import Path
+ 3 | |
+ 4 | | import jsonschema
+ 5 | | import pytest
+ 6 | |
+ 7 | | from plotpilot_project_planner import Binding, PlanningInput, build_candidate_drafts
+ 8 | | from plotpilot_story_state import FactRef, Proposal, build_projection, failed_items_for_retry, partition_proposals
+   | |__________________________________________________________________________________________________________________^
+ 9 |
+10 |   ROOT = Path(__file__).resolve().parents[2]
+   |
+help: Organize imports
+   |
+5  | import pytest
+   -
+6  | from plotpilot_project_planner import Binding, PlanningInput, build_candidate_drafts
+   - from plotpilot_story_state import FactRef, Proposal, build_projection, failed_items_for_retry, partition_proposals
+7  + from plotpilot_story_state import (
+8  +     FactRef,
+9  +     Proposal,
+10 +     build_projection,
+11 +     failed_items_for_retry,
+12 +     partition_proposals,
+13 + )
+14 |
+   |
+
+C408 Unnecessary `dict()` call (rewrite as a literal)
+  --> tests\p5-planning\test_planning_slice.py:51:14
+   |
+50 | def test_ordered_lineage_sources_and_result_mode_are_in_draft_identity():
+51 |     kwargs = dict(planning_input=_plan(), binding=_binding(), generated={"world": {}}, run_id="synth")
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+52 |     first = build_candidate_drafts(**kwargs, parent_candidate_ids=("a", "b"), source_refs=({"id": "s1"},), result_mode="synthesize")[0]
+53 |     reversed_parents = build_candidate_drafts(**kwargs, parent_candidate_ids=("b", "a"), source_refs=({"id": "s1"},), result_mode="syn…
+   |
+help: Rewrite as a literal
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests\p6-writing\chapter-workflow\conftest.py:1:1
+   |
+ 1 | / from __future__ import annotations
+ 2 | |
+ 3 | | from copy import deepcopy
+ 4 | | from dataclasses import dataclass, field
+ 5 | | from hashlib import sha256
+ 6 | | from pathlib import Path
+ 7 | | import sys
+ 8 | | from typing import Any, Mapping
+ 9 | |
+10 | | import pytest
+   | |_____________^
+help: Organize imports
+   |
+2  |
+3  + import sys
+4  | from copy import deepcopy
+5  | from dataclasses import dataclass, field
+6  | from hashlib import sha256
+7  | from pathlib import Path
+   - import sys
+8  | from typing import Any, Mapping
+9  |
+10 | import pytest
+   -
+11 |
+   |
+
+UP035 [*] Import from `collections.abc` instead: `Mapping`
+  --> tests\p6-writing\chapter-workflow\conftest.py:8:1
+   |
+ 6 | from pathlib import Path
+ 7 | import sys
+ 8 | from typing import Any, Mapping
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 9 |
+10 | import pytest
+   |
+help: Import from `collections.abc`
+   |
+7  | import sys
+   - from typing import Any, Mapping
+8  + from typing import Any
+9  + from collections.abc import Mapping
+10 |
+   |
+
+RUF059 Unpacked variable `core` is never used
+   --> tests\p6-writing\chapter-workflow\conftest.py:252:15
+    |
+250 | @pytest.fixture
+251 | def complete_session(ports):
+252 |     workflow, core, broker, bundles, publication, story = ports
+    |               ^^^^
+253 |     started = workflow.start(make_request())
+254 |     broker.poll_events[started.invocation_id] = event_script(("完整章节".encode(),))
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `bundles` is never used
+   --> tests\p6-writing\chapter-workflow\conftest.py:252:29
+    |
+250 | @pytest.fixture
+251 | def complete_session(ports):
+252 |     workflow, core, broker, bundles, publication, story = ports
+    |                             ^^^^^^^
+253 |     started = workflow.start(make_request())
+254 |     broker.poll_events[started.invocation_id] = event_script(("完整章节".encode(),))
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\conftest.py:252:38
+    |
+250 | @pytest.fixture
+251 | def complete_session(ports):
+252 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+253 |     started = workflow.start(make_request())
+254 |     broker.poll_events[started.invocation_id] = event_script(("完整章节".encode(),))
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+   --> tests\p6-writing\chapter-workflow\conftest.py:252:51
+    |
+250 | @pytest.fixture
+251 | def complete_session(ports):
+252 |     workflow, core, broker, bundles, publication, story = ports
+    |                                                   ^^^^^
+253 |     started = workflow.start(make_request())
+254 |     broker.poll_events[started.invocation_id] = event_script(("完整章节".encode(),))
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:1:1
+  |
+1 | / from __future__ import annotations
+2 | |
+3 | | from copy import deepcopy
+4 | |
+5 | | import pytest
+6 | |
+7 | | from plotpilot_chapter_workflow import PublicationReceipt, WorkflowError
+8 | |
+9 | | from conftest import event_script, make_request, publication_result, story_bundle
+  | |_________________________________________________________________________________^
+help: Organize imports
+  |
+5 | import pytest
+  -
+6 + from conftest import event_script, make_request, publication_result, story_bundle
+7 | from plotpilot_chapter_workflow import PublicationReceipt, WorkflowError
+  -
+  - from conftest import event_script, make_request, publication_result, story_bundle
+8 |
+  |
+
+RUF059 Unpacked variable `core` is never used
+  --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:14:15
+   |
+12 | def test_accept_sends_closed_typed_command_and_is_idempotent(complete_session):
+13 |     completed, ports = complete_session
+14 |     workflow, core, broker, bundles, publication, story = ports
+   |               ^^^^
+15 |     receipt = workflow.accept(completed.session_id, accepted_by="author-1", publication_operation_key="publish-1")
+16 |     assert publication.calls == [
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `broker` is never used
+  --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:14:21
+   |
+12 | def test_accept_sends_closed_typed_command_and_is_idempotent(complete_session):
+13 |     completed, ports = complete_session
+14 |     workflow, core, broker, bundles, publication, story = ports
+   |                     ^^^^^^
+15 |     receipt = workflow.accept(completed.session_id, accepted_by="author-1", publication_operation_key="publish-1")
+16 |     assert publication.calls == [
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `bundles` is never used
+  --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:14:29
+   |
+12 | def test_accept_sends_closed_typed_command_and_is_idempotent(complete_session):
+13 |     completed, ports = complete_session
+14 |     workflow, core, broker, bundles, publication, story = ports
+   |                             ^^^^^^^
+15 |     receipt = workflow.accept(completed.session_id, accepted_by="author-1", publication_operation_key="publish-1")
+16 |     assert publication.calls == [
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+  --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:14:51
+   |
+12 | def test_accept_sends_closed_typed_command_and_is_idempotent(complete_session):
+13 |     completed, ports = complete_session
+14 |     workflow, core, broker, bundles, publication, story = ports
+   |                                                   ^^^^^
+15 |     receipt = workflow.accept(completed.session_id, accepted_by="author-1", publication_operation_key="publish-1")
+16 |     assert publication.calls == [
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `core` is never used
+  --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:31:15
+   |
+30 | def test_partial_candidate_cannot_be_accepted(ports):
+31 |     workflow, core, broker, bundles, publication, story = ports
+   |               ^^^^
+32 |     current = workflow.start(make_request())
+33 |     broker.control_events[("pause", current.invocation_id)] = event_script((b"partial",), "paused")
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `bundles` is never used
+  --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:31:29
+   |
+30 | def test_partial_candidate_cannot_be_accepted(ports):
+31 |     workflow, core, broker, bundles, publication, story = ports
+   |                             ^^^^^^^
+32 |     current = workflow.start(make_request())
+33 |     broker.control_events[("pause", current.invocation_id)] = event_script((b"partial",), "paused")
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+  --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:31:51
+   |
+30 | def test_partial_candidate_cannot_be_accepted(ports):
+31 |     workflow, core, broker, bundles, publication, story = ports
+   |                                                   ^^^^^
+32 |     current = workflow.start(make_request())
+33 |     broker.control_events[("pause", current.invocation_id)] = event_script((b"partial",), "paused")
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `core` is never used
+  --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:53:15
+   |
+51 | def test_malformed_publication_result_fails_closed(complete_session, mutate, match):
+52 |     completed, ports = complete_session
+53 |     workflow, core, broker, bundles, publication, story = ports
+   |               ^^^^
+54 |     publication.response = publication_result(completed.candidate.candidate_id)
+55 |     mutate(publication.response)
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `broker` is never used
+  --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:53:21
+   |
+51 | def test_malformed_publication_result_fails_closed(complete_session, mutate, match):
+52 |     completed, ports = complete_session
+53 |     workflow, core, broker, bundles, publication, story = ports
+   |                     ^^^^^^
+54 |     publication.response = publication_result(completed.candidate.candidate_id)
+55 |     mutate(publication.response)
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `bundles` is never used
+  --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:53:29
+   |
+51 | def test_malformed_publication_result_fails_closed(complete_session, mutate, match):
+52 |     completed, ports = complete_session
+53 |     workflow, core, broker, bundles, publication, story = ports
+   |                             ^^^^^^^
+54 |     publication.response = publication_result(completed.candidate.candidate_id)
+55 |     mutate(publication.response)
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+  --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:53:51
+   |
+51 | def test_malformed_publication_result_fails_closed(complete_session, mutate, match):
+52 |     completed, ports = complete_session
+53 |     workflow, core, broker, bundles, publication, story = ports
+   |                                                   ^^^^^
+54 |     publication.response = publication_result(completed.candidate.candidate_id)
+55 |     mutate(publication.response)
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `broker` is never used
+  --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:62:21
+   |
+60 | def test_story_state_settlement_only_stages_candidates_after_typed_accept(complete_session):
+61 |     completed, ports = complete_session
+62 |     workflow, core, broker, bundles, publication, story = ports
+   |                     ^^^^^^
+63 |     receipt = workflow.accept(completed.session_id, accepted_by="author", publication_operation_key="publish-1")
+64 |     story.bundles = [story_bundle(receipt)]
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `bundles` is never used
+  --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:62:29
+   |
+60 | def test_story_state_settlement_only_stages_candidates_after_typed_accept(complete_session):
+61 |     completed, ports = complete_session
+62 |     workflow, core, broker, bundles, publication, story = ports
+   |                             ^^^^^^^
+63 |     receipt = workflow.accept(completed.session_id, accepted_by="author", publication_operation_key="publish-1")
+64 |     story.bundles = [story_bundle(receipt)]
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+  --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:62:38
+   |
+60 | def test_story_state_settlement_only_stages_candidates_after_typed_accept(complete_session):
+61 |     completed, ports = complete_session
+62 |     workflow, core, broker, bundles, publication, story = ports
+   |                                      ^^^^^^^^^^^
+63 |     receipt = workflow.accept(completed.session_id, accepted_by="author", publication_operation_key="publish-1")
+64 |     story.bundles = [story_bundle(receipt)]
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `core` is never used
+  --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:87:15
+   |
+86 | def test_fabricated_publication_cannot_trigger_story_state(ports):
+87 |     workflow, core, broker, bundles, publication, story = ports
+   |               ^^^^
+88 |     fake = PublicationReceipt("publication-fake", "candidate-fake", "ws-1", "chapter-1", "revision-x", "d" * 64, {})
+89 |     with pytest.raises(WorkflowError, match="typed Publication"):
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `broker` is never used
+  --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:87:21
+   |
+86 | def test_fabricated_publication_cannot_trigger_story_state(ports):
+87 |     workflow, core, broker, bundles, publication, story = ports
+   |                     ^^^^^^
+88 |     fake = PublicationReceipt("publication-fake", "candidate-fake", "ws-1", "chapter-1", "revision-x", "d" * 64, {})
+89 |     with pytest.raises(WorkflowError, match="typed Publication"):
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `bundles` is never used
+  --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:87:29
+   |
+86 | def test_fabricated_publication_cannot_trigger_story_state(ports):
+87 |     workflow, core, broker, bundles, publication, story = ports
+   |                             ^^^^^^^
+88 |     fake = PublicationReceipt("publication-fake", "candidate-fake", "ws-1", "chapter-1", "revision-x", "d" * 64, {})
+89 |     with pytest.raises(WorkflowError, match="typed Publication"):
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+  --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:87:38
+   |
+86 | def test_fabricated_publication_cannot_trigger_story_state(ports):
+87 |     workflow, core, broker, bundles, publication, story = ports
+   |                                      ^^^^^^^^^^^
+88 |     fake = PublicationReceipt("publication-fake", "candidate-fake", "ws-1", "chapter-1", "revision-x", "d" * 64, {})
+89 |     with pytest.raises(WorkflowError, match="typed Publication"):
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `broker` is never used
+   --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:105:21
+    |
+103 | def test_invalid_story_state_candidate_fails_closed(complete_session, mutate, match):
+104 |     completed, ports = complete_session
+105 |     workflow, core, broker, bundles, publication, story = ports
+    |                     ^^^^^^
+106 |     receipt = workflow.accept(completed.session_id, accepted_by="author", publication_operation_key="publish-1")
+107 |     value = story_bundle(receipt)
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `bundles` is never used
+   --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:105:29
+    |
+103 | def test_invalid_story_state_candidate_fails_closed(complete_session, mutate, match):
+104 |     completed, ports = complete_session
+105 |     workflow, core, broker, bundles, publication, story = ports
+    |                             ^^^^^^^
+106 |     receipt = workflow.accept(completed.session_id, accepted_by="author", publication_operation_key="publish-1")
+107 |     value = story_bundle(receipt)
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:105:38
+    |
+103 | def test_invalid_story_state_candidate_fails_closed(complete_session, mutate, match):
+104 |     completed, ports = complete_session
+105 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+106 |     receipt = workflow.accept(completed.session_id, accepted_by="author", publication_operation_key="publish-1")
+107 |     value = story_bundle(receipt)
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `core` is never used
+   --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:118:15
+    |
+116 | def test_duplicate_story_state_bundle_and_candidate_identity_fail_closed(complete_session):
+117 |     completed, ports = complete_session
+118 |     workflow, core, broker, bundles, publication, story = ports
+    |               ^^^^
+119 |     receipt = workflow.accept(completed.session_id, accepted_by="author", publication_operation_key="publish-1")
+120 |     value = story_bundle(receipt)
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `broker` is never used
+   --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:118:21
+    |
+116 | def test_duplicate_story_state_bundle_and_candidate_identity_fail_closed(complete_session):
+117 |     completed, ports = complete_session
+118 |     workflow, core, broker, bundles, publication, story = ports
+    |                     ^^^^^^
+119 |     receipt = workflow.accept(completed.session_id, accepted_by="author", publication_operation_key="publish-1")
+120 |     value = story_bundle(receipt)
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `bundles` is never used
+   --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:118:29
+    |
+116 | def test_duplicate_story_state_bundle_and_candidate_identity_fail_closed(complete_session):
+117 |     completed, ports = complete_session
+118 |     workflow, core, broker, bundles, publication, story = ports
+    |                             ^^^^^^^
+119 |     receipt = workflow.accept(completed.session_id, accepted_by="author", publication_operation_key="publish-1")
+120 |     value = story_bundle(receipt)
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_accept_settlement.py:118:38
+    |
+116 | def test_duplicate_story_state_bundle_and_candidate_identity_fail_closed(complete_session):
+117 |     completed, ports = complete_session
+118 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+119 |     receipt = workflow.accept(completed.session_id, accepted_by="author", publication_operation_key="publish-1")
+120 |     value = story_bundle(receipt)
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:1:1
+   |
+ 1 | / from __future__ import annotations
+ 2 | |
+ 3 | | from copy import deepcopy
+ 4 | | from hashlib import sha256
+ 5 | | import json
+ 6 | | from pathlib import Path
+ 7 | | from threading import Barrier, Event, Lock, Thread
+ 8 | | from typing import Any, Mapping
+ 9 | |
+10 | | import pytest
+11 | |
+12 | | from plotpilot_chapter_workflow import (
+13 | |     ChapterOperation,
+14 | |     ChapterRequest,
+15 | |     FrozenContextPlan,
+16 | |     RewriteSelection,
+17 | |     SessionState,
+18 | |     SkillRef,
+19 | |     WorkflowError,
+20 | |     freeze_context_plan,
+21 | | )
+22 | |
+23 | | from conftest import chain_ref, event_script, make_request, publication_result, story_bundle
+   | |____________________________________________________________________________________________^
+help: Organize imports
+   |
+2  |
+3  + import json
+4  | from copy import deepcopy
+5  | from hashlib import sha256
+   - import json
+6  | from pathlib import Path
+--------------------------------------------------------------------------------
+10 | import pytest
+   -
+11 + from conftest import (
+12 +     chain_ref,
+13 +     event_script,
+14 +     make_request,
+15 +     publication_result,
+16 +     story_bundle,
+17 + )
+18 | from plotpilot_chapter_workflow import (
+--------------------------------------------------------------------------------
+27 | )
+   -
+   - from conftest import chain_ref, event_script, make_request, publication_result, story_bundle
+   -
+28 |
+   |
+
+F401 [*] `copy.deepcopy` imported but unused
+ --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:3:18
+  |
+1 | from __future__ import annotations
+2 |
+3 | from copy import deepcopy
+  |                  ^^^^^^^^
+4 | from hashlib import sha256
+5 | import json
+  |
+help: Remove unused import: `copy.deepcopy`
+  |
+2 |
+  - from copy import deepcopy
+3 | from hashlib import sha256
+  |
+
+UP035 [*] Import from `collections.abc` instead: `Mapping`
+  --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:8:1
+   |
+ 6 | from pathlib import Path
+ 7 | from threading import Barrier, Event, Lock, Thread
+ 8 | from typing import Any, Mapping
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 9 |
+10 | import pytest
+   |
+help: Import from `collections.abc`
+   |
+7  | from threading import Barrier, Event, Lock, Thread
+   - from typing import Any, Mapping
+8  + from typing import Any
+9  + from collections.abc import Mapping
+10 |
+   |
+
+BLE001 Do not catch blind exception: `BaseException`
+  --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:64:12
+   |
+62 |     try:
+63 |         output[key] = target()
+64 |     except BaseException as exc:  # test must surface thread failures
+   |            ^^^^^^^^^^^^^
+65 |         output[key] = exc
+   |
+
+RUF059 Unpacked variable `bundles` is never used
+  --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:91:29
+   |
+90 | def test_freeze_snapshots_mutable_inputs_and_start_revalidates_corruption(ports):
+91 |     workflow, core, broker, bundles, publication, story = ports
+   |                             ^^^^^^^
+92 |     base = make_request()
+93 |     sources = list(base.context_plan.sources)
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+  --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:91:38
+   |
+90 | def test_freeze_snapshots_mutable_inputs_and_start_revalidates_corruption(ports):
+91 |     workflow, core, broker, bundles, publication, story = ports
+   |                                      ^^^^^^^^^^^
+92 |     base = make_request()
+93 |     sources = list(base.context_plan.sources)
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+  --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:91:51
+   |
+90 | def test_freeze_snapshots_mutable_inputs_and_start_revalidates_corruption(ports):
+91 |     workflow, core, broker, bundles, publication, story = ports
+   |                                                   ^^^^^
+92 |     base = make_request()
+93 |     sources = list(base.context_plan.sources)
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:117:51
+    |
+115 | @pytest.mark.parametrize("output", [b"", b" \r\n\t"])
+116 | def test_blank_complete_output_converges_failed_without_candidate(ports, operation, output):
+117 |     workflow, core, broker, bundles, publication, story = ports
+    |                                                   ^^^^^
+118 |     current = workflow.start(make_request(operation))
+119 |     broker.poll_events[current.invocation_id] = event_script((output,) if output else ())
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:129:38
+    |
+128 | def test_complete_and_partial_truncated_utf8_never_stage_document_candidate(ports):
+129 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+130 |     current = workflow.start(make_request())
+131 |     broker.poll_events[current.invocation_id] = event_script((b"\xf0\x9f",))
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:129:51
+    |
+128 | def test_complete_and_partial_truncated_utf8_never_stage_document_candidate(ports):
+129 |     workflow, core, broker, bundles, publication, story = ports
+    |                                                   ^^^^^
+130 |     current = workflow.start(make_request())
+131 |     broker.poll_events[current.invocation_id] = event_script((b"\xf0\x9f",))
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication2` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:136:42
+    |
+134 |     assert not bundles.calls and not core.stage_calls
+135 |
+136 |     workflow2, core2, broker2, bundles2, publication2, story2 = _make_fresh_ports()
+    |                                          ^^^^^^^^^^^^
+137 |     current2 = workflow2.start(make_request(operation_key="write-partial-utf8"))
+138 |     broker2.control_events[("pause", current2.invocation_id)] = event_script((b"\xf0\x9f",), "paused")
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story2` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:136:56
+    |
+134 |     assert not bundles.calls and not core.stage_calls
+135 |
+136 |     workflow2, core2, broker2, bundles2, publication2, story2 = _make_fresh_ports()
+    |                                                        ^^^^^^
+137 |     current2 = workflow2.start(make_request(operation_key="write-partial-utf8"))
+138 |     broker2.control_events[("pause", current2.invocation_id)] = event_script((b"\xf0\x9f",), "paused")
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `core` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:145:15
+    |
+143 |     assert not bundles2.calls and not core2.stage_calls
+144 | def test_utf8_is_validated_after_full_ack_assembly(ports):
+145 |     workflow, core, broker, bundles, publication, story = ports
+    |               ^^^^
+146 |     current = workflow.start(make_request())
+147 |     broker.poll_events[current.invocation_id] = event_script((b"\xf0\x9f", b"\x99\x82"))
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `bundles` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:145:29
+    |
+143 |     assert not bundles2.calls and not core2.stage_calls
+144 | def test_utf8_is_validated_after_full_ack_assembly(ports):
+145 |     workflow, core, broker, bundles, publication, story = ports
+    |                             ^^^^^^^
+146 |     current = workflow.start(make_request())
+147 |     broker.poll_events[current.invocation_id] = event_script((b"\xf0\x9f", b"\x99\x82"))
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:145:38
+    |
+143 |     assert not bundles2.calls and not core2.stage_calls
+144 | def test_utf8_is_validated_after_full_ack_assembly(ports):
+145 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+146 |     current = workflow.start(make_request())
+147 |     broker.poll_events[current.invocation_id] = event_script((b"\xf0\x9f", b"\x99\x82"))
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:145:51
+    |
+143 |     assert not bundles2.calls and not core2.stage_calls
+144 | def test_utf8_is_validated_after_full_ack_assembly(ports):
+145 |     workflow, core, broker, bundles, publication, story = ports
+    |                                                   ^^^^^
+146 |     current = workflow.start(make_request())
+147 |     broker.poll_events[current.invocation_id] = event_script((b"\xf0\x9f", b"\x99\x82"))
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+UP012 [*] Unnecessary UTF-8 `encoding` argument to `encode`
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:150:43
+    |
+148 |     completed = workflow.poll(current.session_id)
+149 |     assert completed.state is SessionState.COMPLETED
+150 |     assert completed.candidate.content == "🙂".encode("utf-8")
+    |                                           ^^^^^^^^^^^^^^^^^^^^
+help: Remove unnecessary `encoding` argument
+    |
+149 |     assert completed.state is SessionState.COMPLETED
+    -     assert completed.candidate.content == "🙂".encode("utf-8")
+150 +     assert completed.candidate.content == "🙂".encode()
+151 |
+    |
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:154:38
+    |
+153 | def test_final_skill_blank_output_fails_instead_of_reusing_previous_phase(ports):
+154 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+155 |     current = workflow.start(make_request(skills=(SkillRef(1, "skill", "1" * 64, "2" * 64),)))
+156 |     broker.poll_events[current.invocation_id] = event_script((b"raw",))
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:154:51
+    |
+153 | def test_final_skill_blank_output_fails_instead_of_reusing_previous_phase(ports):
+154 |     workflow, core, broker, bundles, publication, story = ports
+    |                                                   ^^^^^
+155 |     current = workflow.start(make_request(skills=(SkillRef(1, "skill", "1" * 64, "2" * 64),)))
+156 |     broker.poll_events[current.invocation_id] = event_script((b"raw",))
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `bundles` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:165:29
+    |
+164 | def test_candidate_asset_failure_retries_without_repolling_broker(ports):
+165 |     workflow, core, broker, bundles, publication, story = ports
+    |                             ^^^^^^^
+166 |     current = workflow.start(make_request())
+167 |     original = core.create_asset
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:165:38
+    |
+164 | def test_candidate_asset_failure_retries_without_repolling_broker(ports):
+165 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+166 |     current = workflow.start(make_request())
+167 |     original = core.create_asset
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:165:51
+    |
+164 | def test_candidate_asset_failure_retries_without_repolling_broker(ports):
+165 |     workflow, core, broker, bundles, publication, story = ports
+    |                                                   ^^^^^
+166 |     current = workflow.start(make_request())
+167 |     original = core.create_asset
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:189:38
+    |
+188 | def test_candidate_persist_and_stage_failures_resume_confirmed_steps(ports):
+189 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+190 |     current = workflow.start(make_request())
+191 |     original_persist = bundles.persist_result_bundle
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:189:51
+    |
+188 | def test_candidate_persist_and_stage_failures_resume_confirmed_steps(ports):
+189 |     workflow, core, broker, bundles, publication, story = ports
+    |                                                   ^^^^^
+190 |     current = workflow.start(make_request())
+191 |     original_persist = bundles.persist_result_bundle
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication2` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:210:42
+    |
+208 |     assert len(core.assets) == asset_count and len(bundles.calls) == 1 and len(broker.poll_calls) == 1
+209 |
+210 |     workflow2, core2, broker2, bundles2, publication2, story2 = _make_fresh_ports()
+    |                                          ^^^^^^^^^^^^
+211 |     current2 = workflow2.start(make_request(operation_key="write-stage-retry"))
+212 |     original_stage = core2.stage_candidate
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story2` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:210:56
+    |
+208 |     assert len(core.assets) == asset_count and len(bundles.calls) == 1 and len(broker.poll_calls) == 1
+209 |
+210 |     workflow2, core2, broker2, bundles2, publication2, story2 = _make_fresh_ports()
+    |                                                        ^^^^^^
+211 |     current2 = workflow2.start(make_request(operation_key="write-stage-retry"))
+212 |     original_stage = core2.stage_candidate
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `bundles` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:236:29
+    |
+234 | @pytest.mark.parametrize(("action", "terminal", "state"), [("pause", "paused", SessionState.PAUSED), ("cancel", "cancelled", SessionS…
+235 | def test_control_finalization_retry_preserves_prefix_and_calls_broker_once(ports, action, terminal, state):
+236 |     workflow, core, broker, bundles, publication, story = ports
+    |                             ^^^^^^^
+237 |     current = workflow.start(make_request())
+238 |     original_stage = core.stage_candidate
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:236:38
+    |
+234 | @pytest.mark.parametrize(("action", "terminal", "state"), [("pause", "paused", SessionState.PAUSED), ("cancel", "cancelled", SessionS…
+235 | def test_control_finalization_retry_preserves_prefix_and_calls_broker_once(ports, action, terminal, state):
+236 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+237 |     current = workflow.start(make_request())
+238 |     original_stage = core.stage_candidate
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:236:51
+    |
+234 | @pytest.mark.parametrize(("action", "terminal", "state"), [("pause", "paused", SessionState.PAUSED), ("cancel", "cancelled", SessionS…
+235 | def test_control_finalization_retry_preserves_prefix_and_calls_broker_once(ports, action, terminal, state):
+236 |     workflow, core, broker, bundles, publication, story = ports
+    |                                                   ^^^^^
+237 |     current = workflow.start(make_request())
+238 |     original_stage = core.stage_candidate
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `bundles` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:260:29
+    |
+259 | def test_skill_start_failure_retries_same_invocation_without_early_phase_advance(ports):
+260 |     workflow, core, broker, bundles, publication, story = ports
+    |                             ^^^^^^^
+261 |     current = workflow.start(make_request(skills=(SkillRef(10, "skill", "1" * 64, "2" * 64),)))
+262 |     original_start = broker.start
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:260:38
+    |
+259 | def test_skill_start_failure_retries_same_invocation_without_early_phase_advance(ports):
+260 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+261 |     current = workflow.start(make_request(skills=(SkillRef(10, "skill", "1" * 64, "2" * 64),)))
+262 |     original_start = broker.start
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:260:51
+    |
+259 | def test_skill_start_failure_retries_same_invocation_without_early_phase_advance(ports):
+260 |     workflow, core, broker, bundles, publication, story = ports
+    |                                                   ^^^^^
+261 |     current = workflow.start(make_request(skills=(SkillRef(10, "skill", "1" * 64, "2" * 64),)))
+262 |     original_start = broker.start
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `bundles` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:289:29
+    |
+288 | def test_late_poll_after_cancel_is_fenced_by_transition_token(ports):
+289 |     workflow, core, broker, bundles, publication, story = ports
+    |                             ^^^^^^^
+290 |     current = workflow.start(make_request())
+291 |     entered, release = Event(), Event()
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:289:38
+    |
+288 | def test_late_poll_after_cancel_is_fenced_by_transition_token(ports):
+289 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+290 |     current = workflow.start(make_request())
+291 |     entered, release = Event(), Event()
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:289:51
+    |
+288 | def test_late_poll_after_cancel_is_fenced_by_transition_token(ports):
+289 |     workflow, core, broker, bundles, publication, story = ports
+    |                                                   ^^^^^
+290 |     current = workflow.start(make_request())
+291 |     entered, release = Event(), Event()
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:314:38
+    |
+313 | def test_concurrent_pause_cancel_commits_only_one_terminal_candidate(ports):
+314 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+315 |     current = workflow.start(make_request())
+316 |     barrier = Barrier(3)
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:314:51
+    |
+313 | def test_concurrent_pause_cancel_commits_only_one_terminal_candidate(ports):
+314 |     workflow, core, broker, bundles, publication, story = ports
+    |                                                   ^^^^^
+315 |     current = workflow.start(make_request())
+316 |     barrier = Barrier(3)
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `core` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:345:15
+    |
+344 | def test_late_old_skill_response_cannot_advance_or_append_evidence_twice(ports):
+345 |     workflow, core, broker, bundles, publication, story = ports
+    |               ^^^^
+346 |     skills = (
+347 |         SkillRef(10, "skill.one", "1" * 64, "2" * 64),
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:345:38
+    |
+344 | def test_late_old_skill_response_cannot_advance_or_append_evidence_twice(ports):
+345 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+346 |     skills = (
+347 |         SkillRef(10, "skill.one", "1" * 64, "2" * 64),
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:345:51
+    |
+344 | def test_late_old_skill_response_cannot_advance_or_append_evidence_twice(ports):
+345 |     workflow, core, broker, bundles, publication, story = ports
+    |                                                   ^^^^^
+346 |     skills = (
+347 |         SkillRef(10, "skill.one", "1" * 64, "2" * 64),
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `bundles` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:388:29
+    |
+387 | def test_synchronous_broker_reentry_fences_outer_poll_without_deadlock(ports):
+388 |     workflow, core, broker, bundles, publication, story = ports
+    |                             ^^^^^^^
+389 |     current = workflow.start(make_request())
+390 |     broker.control_events[("cancel", current.invocation_id)] = event_script((b"reentrant",), "cancelled")
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:388:38
+    |
+387 | def test_synchronous_broker_reentry_fences_outer_poll_without_deadlock(ports):
+388 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+389 |     current = workflow.start(make_request())
+390 |     broker.control_events[("cancel", current.invocation_id)] = event_script((b"reentrant",), "cancelled")
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:388:51
+    |
+387 | def test_synchronous_broker_reentry_fences_outer_poll_without_deadlock(ports):
+388 |     workflow, core, broker, bundles, publication, story = ports
+    |                                                   ^^^^^
+389 |     current = workflow.start(make_request())
+390 |     broker.control_events[("cancel", current.invocation_id)] = event_script((b"reentrant",), "cancelled")
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `bundles` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:404:29
+    |
+403 | def test_rewrite_receipt_binds_unicode_range_base_and_context_before_writes(ports):
+404 |     workflow, core, broker, bundles, publication, story = ports
+    |                             ^^^^^^^
+405 |     text = "🙂"
+406 |     request = _rewrite_request(RewriteSelection(1, 2, text, sha256(text.encode()).hexdigest()))
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:404:38
+    |
+403 | def test_rewrite_receipt_binds_unicode_range_base_and_context_before_writes(ports):
+404 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+405 |     text = "🙂"
+406 |     request = _rewrite_request(RewriteSelection(1, 2, text, sha256(text.encode()).hexdigest()))
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:404:51
+    |
+403 | def test_rewrite_receipt_binds_unicode_range_base_and_context_before_writes(ports):
+404 |     workflow, core, broker, bundles, publication, story = ports
+    |                                                   ^^^^^
+405 |     text = "🙂"
+406 |     request = _rewrite_request(RewriteSelection(1, 2, text, sha256(text.encode()).hexdigest()))
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `bundles` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:427:29
+    |
+425 | )
+426 | def test_rewrite_receipt_mismatch_or_out_of_range_fails_before_asset_and_broker(ports, mutate):
+427 |     workflow, core, broker, bundles, publication, story = ports
+    |                             ^^^^^^^
+428 |     request = make_request(ChapterOperation.REWRITE)
+429 |     core.selection_response = _selection_receipt(request)
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:427:38
+    |
+425 | )
+426 | def test_rewrite_receipt_mismatch_or_out_of_range_fails_before_asset_and_broker(ports, mutate):
+427 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+428 |     request = make_request(ChapterOperation.REWRITE)
+429 |     core.selection_response = _selection_receipt(request)
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:427:51
+    |
+425 | )
+426 | def test_rewrite_receipt_mismatch_or_out_of_range_fails_before_asset_and_broker(ports, mutate):
+427 |     workflow, core, broker, bundles, publication, story = ports
+    |                                                   ^^^^^
+428 |     request = make_request(ChapterOperation.REWRITE)
+429 |     core.selection_response = _selection_receipt(request)
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `core` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:438:15
+    |
+436 | def test_publication_command_is_immutable_and_result_binds_original_candidate(complete_session):
+437 |     completed, ports = complete_session
+438 |     workflow, core, broker, bundles, publication, story = ports
+    |               ^^^^
+439 |
+440 |     class MutatingPublisher:
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `broker` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:438:21
+    |
+436 | def test_publication_command_is_immutable_and_result_binds_original_candidate(complete_session):
+437 |     completed, ports = complete_session
+438 |     workflow, core, broker, bundles, publication, story = ports
+    |                     ^^^^^^
+439 |
+440 |     class MutatingPublisher:
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `bundles` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:438:29
+    |
+436 | def test_publication_command_is_immutable_and_result_binds_original_candidate(complete_session):
+437 |     completed, ports = complete_session
+438 |     workflow, core, broker, bundles, publication, story = ports
+    |                             ^^^^^^^
+439 |
+440 |     class MutatingPublisher:
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:438:38
+    |
+436 | def test_publication_command_is_immutable_and_result_binds_original_candidate(complete_session):
+437 |     completed, ports = complete_session
+438 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+439 |
+440 |     class MutatingPublisher:
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `broker` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:465:21
+    |
+463 | def test_story_settlement_preflights_every_bundle_before_persist_or_batch(complete_session):
+464 |     completed, ports = complete_session
+465 |     workflow, core, broker, bundles, publication, story = ports
+    |                     ^^^^^^
+466 |     receipt = workflow.accept(completed.session_id, accepted_by="author", publication_operation_key="publish-1")
+467 |     first = story_bundle(receipt, bundle_id="story-bundle-1")
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:465:38
+    |
+463 | def test_story_settlement_preflights_every_bundle_before_persist_or_batch(complete_session):
+464 |     completed, ports = complete_session
+465 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+466 |     receipt = workflow.accept(completed.session_id, accepted_by="author", publication_operation_key="publish-1")
+467 |     first = story_bundle(receipt, bundle_id="story-bundle-1")
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `broker` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:486:21
+    |
+484 | def test_story_settlement_persist_failure_retries_without_partial_candidate_or_reproposal(complete_session):
+485 |     completed, ports = complete_session
+486 |     workflow, core, broker, bundles, publication, story = ports
+    |                     ^^^^^^
+487 |     receipt = workflow.accept(completed.session_id, accepted_by="author", publication_operation_key="publish-1")
+488 |     story.bundles = [story_bundle(receipt, bundle_id="story-bundle-1"), story_bundle(receipt, bundle_id="story-bundle-2")]
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:486:38
+    |
+484 | def test_story_settlement_persist_failure_retries_without_partial_candidate_or_reproposal(complete_session):
+485 |     completed, ports = complete_session
+486 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+487 |     receipt = workflow.accept(completed.session_id, accepted_by="author", publication_operation_key="publish-1")
+488 |     story.bundles = [story_bundle(receipt, bundle_id="story-bundle-1"), story_bundle(receipt, bundle_id="story-bundle-2")]
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `broker` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:513:21
+    |
+511 | def test_atomic_settlement_batch_recovers_ambiguous_commit_by_durable_receipt(complete_session):
+512 |     completed, ports = complete_session
+513 |     workflow, core, broker, bundles, publication, story = ports
+    |                     ^^^^^^
+514 |     receipt = workflow.accept(completed.session_id, accepted_by="author", publication_operation_key="publish-1")
+515 |     story.bundles = [story_bundle(receipt)]
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:513:38
+    |
+511 | def test_atomic_settlement_batch_recovers_ambiguous_commit_by_durable_receipt(complete_session):
+512 |     completed, ports = complete_session
+513 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+514 |     receipt = workflow.accept(completed.session_id, accepted_by="author", publication_operation_key="publish-1")
+515 |     story.bundles = [story_bundle(receipt)]
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `broker` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:543:21
+    |
+541 | def test_story_bundle_persisted_identity_mismatch_never_reaches_atomic_stage(complete_session, mismatch_index):
+542 |     completed, ports = complete_session
+543 |     workflow, core, broker, bundles, publication, story = ports
+    |                     ^^^^^^
+544 |     receipt = workflow.accept(completed.session_id, accepted_by="author", publication_operation_key="publish-1")
+545 |     story.bundles = [story_bundle(receipt, bundle_id="story-bundle-1"), story_bundle(receipt, bundle_id="story-bundle-2")]
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:543:38
+    |
+541 | def test_story_bundle_persisted_identity_mismatch_never_reaches_atomic_stage(complete_session, mismatch_index):
+542 |     completed, ports = complete_session
+543 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+544 |     receipt = workflow.accept(completed.session_id, accepted_by="author", publication_operation_key="publish-1")
+545 |     story.bundles = [story_bundle(receipt, bundle_id="story-bundle-1"), story_bundle(receipt, bundle_id="story-bundle-2")]
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+I001 [*] Import block is un-sorted or un-formatted
+   --> tests\p6-writing\chapter-workflow\test_frozen_findings_remediation.py:589:5
+    |
+588 |   def _make_fresh_ports():
+589 | /     from conftest import FakeBroker, FakeBundles, FakeCore, FakePublication, FakeStoryState
+590 | |     from plotpilot_chapter_workflow import ChapterWorkflow
+    | |__________________________________________________________^
+591 |
+592 |       core, broker, bundles = FakeCore(), FakeBroker(), FakeBundles()
+    |
+help: Organize imports
+    |
+588 | def _make_fresh_ports():
+    -     from conftest import FakeBroker, FakeBundles, FakeCore, FakePublication, FakeStoryState
+589 +     from conftest import (
+590 +         FakeBroker,
+591 +         FakeBundles,
+592 +         FakeCore,
+593 +         FakePublication,
+594 +         FakeStoryState,
+595 +     )
+596 |     from plotpilot_chapter_workflow import ChapterWorkflow
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> tests\p6-writing\chapter-workflow\test_source_boundaries.py:1:1
+  |
+1 | / from __future__ import annotations
+2 | |
+3 | | import ast
+4 | | from pathlib import Path
+  | |________________________^
+help: Organize imports
+  |
+5 |
+  -
+6 | ROOT = Path(__file__).resolve().parents[3]
+  |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests\p6-writing\chapter-workflow\test_workflow.py:1:1
+   |
+ 1 | / from __future__ import annotations
+ 2 | |
+ 3 | | import json
+ 4 | | from hashlib import sha256
+ 5 | |
+ 6 | | import pytest
+ 7 | |
+ 8 | | from plotpilot_chapter_workflow import (
+ 9 | |     BrokerEvent,
+10 | |     ChapterOperation,
+11 | |     ChapterRequest,
+12 | |     RewriteSelection,
+13 | |     SessionState,
+14 | |     SkillRef,
+15 | |     WorkflowError,
+16 | | )
+17 | |
+18 | | from conftest import chain_ref, event_script, make_request
+   | |__________________________________________________________^
+help: Organize imports
+   |
+6  | import pytest
+   -
+7  + from conftest import chain_ref, event_script, make_request
+8  | from plotpilot_chapter_workflow import (
+--------------------------------------------------------------------------------
+16 | )
+   -
+   - from conftest import chain_ref, event_script, make_request
+17 |
+   |
+
+RUF059 Unpacked variable `bundles` is never used
+  --> tests\p6-writing\chapter-workflow\test_workflow.py:22:29
+   |
+21 | def test_start_assembles_canonical_exact_context_and_is_idempotent(ports):
+22 |     workflow, core, broker, bundles, publication, story = ports
+   |                             ^^^^^^^
+23 |     request = make_request()
+24 |     first = workflow.start(request)
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+  --> tests\p6-writing\chapter-workflow\test_workflow.py:22:38
+   |
+21 | def test_start_assembles_canonical_exact_context_and_is_idempotent(ports):
+22 |     workflow, core, broker, bundles, publication, story = ports
+   |                                      ^^^^^^^^^^^
+23 |     request = make_request()
+24 |     first = workflow.start(request)
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+  --> tests\p6-writing\chapter-workflow\test_workflow.py:22:51
+   |
+21 | def test_start_assembles_canonical_exact_context_and_is_idempotent(ports):
+22 |     workflow, core, broker, bundles, publication, story = ports
+   |                                                   ^^^^^
+23 |     request = make_request()
+24 |     first = workflow.start(request)
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+  --> tests\p6-writing\chapter-workflow\test_workflow.py:47:38
+   |
+46 | def test_generate_runs_raw_then_ordered_skills_and_stages_one_complete_candidate(ports):
+47 |     workflow, core, broker, bundles, publication, story = ports
+   |                                      ^^^^^^^^^^^
+48 |     skills = (
+49 |         SkillRef(10, "skill.character", "1" * 64, "2" * 64),
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+  --> tests\p6-writing\chapter-workflow\test_workflow.py:47:51
+   |
+46 | def test_generate_runs_raw_then_ordered_skills_and_stages_one_complete_candidate(ports):
+47 |     workflow, core, broker, bundles, publication, story = ports
+   |                                                   ^^^^^
+48 |     skills = (
+49 |         SkillRef(10, "skill.character", "1" * 64, "2" * 64),
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+  --> tests\p6-writing\chapter-workflow\test_workflow.py:84:38
+   |
+82 | )
+83 | def test_operation_profiles_are_typed_and_contract_legal(ports, operation, capability, mutation):
+84 |     workflow, core, broker, bundles, publication, story = ports
+   |                                      ^^^^^^^^^^^
+85 |     current = workflow.start(make_request(operation))
+86 |     invocation = broker.starts[0]
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+  --> tests\p6-writing\chapter-workflow\test_workflow.py:84:51
+   |
+82 | )
+83 | def test_operation_profiles_are_typed_and_contract_legal(ports, operation, capability, mutation):
+84 |     workflow, core, broker, bundles, publication, story = ports
+   |                                                   ^^^^^
+85 |     current = workflow.start(make_request(operation))
+86 |     invocation = broker.starts[0]
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `workflow` is never used
+   --> tests\p6-writing\chapter-workflow\test_workflow.py:99:5
+    |
+ 98 | def test_rewrite_selection_and_skill_release_fail_before_any_port_call(ports):
+ 99 |     workflow, core, broker, bundles, publication, story = ports
+    |     ^^^^^^^^
+100 |     base = make_request(ChapterOperation.REWRITE)
+101 |     with pytest.raises(WorkflowError, match="requires"):
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `bundles` is never used
+   --> tests\p6-writing\chapter-workflow\test_workflow.py:99:29
+    |
+ 98 | def test_rewrite_selection_and_skill_release_fail_before_any_port_call(ports):
+ 99 |     workflow, core, broker, bundles, publication, story = ports
+    |                             ^^^^^^^
+100 |     base = make_request(ChapterOperation.REWRITE)
+101 |     with pytest.raises(WorkflowError, match="requires"):
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_workflow.py:99:38
+    |
+ 98 | def test_rewrite_selection_and_skill_release_fail_before_any_port_call(ports):
+ 99 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+100 |     base = make_request(ChapterOperation.REWRITE)
+101 |     with pytest.raises(WorkflowError, match="requires"):
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+   --> tests\p6-writing\chapter-workflow\test_workflow.py:99:51
+    |
+ 98 | def test_rewrite_selection_and_skill_release_fail_before_any_port_call(ports):
+ 99 |     workflow, core, broker, bundles, publication, story = ports
+    |                                                   ^^^^^
+100 |     base = make_request(ChapterOperation.REWRITE)
+101 |     with pytest.raises(WorkflowError, match="requires"):
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_workflow.py:113:38
+    |
+111 | @pytest.mark.parametrize("action,terminal,state", [("pause", "paused", SessionState.PAUSED), ("cancel", "cancelled", SessionState.CAN…
+112 | def test_pause_and_cancel_stage_only_exact_ack_prefix_once(ports, action, terminal, state):
+113 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+114 |     current = workflow.start(make_request())
+115 |     chunks = ("你".encode(), b"\r\n", "🙂".encode())
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+   --> tests\p6-writing\chapter-workflow\test_workflow.py:113:51
+    |
+111 | @pytest.mark.parametrize("action,terminal,state", [("pause", "paused", SessionState.PAUSED), ("cancel", "cancelled", SessionState.CAN…
+112 | def test_pause_and_cancel_stage_only_exact_ack_prefix_once(ports, action, terminal, state):
+113 |     workflow, core, broker, bundles, publication, story = ports
+    |                                                   ^^^^^
+114 |     current = workflow.start(make_request())
+115 |     chunks = ("你".encode(), b"\r\n", "🙂".encode())
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `core` is never used
+   --> tests\p6-writing\chapter-workflow\test_workflow.py:133:15
+    |
+132 | def test_cancel_at_skill_boundary_uses_last_complete_phase_not_empty(ports):
+133 |     workflow, core, broker, bundles, publication, story = ports
+    |               ^^^^
+134 |     skill = SkillRef(1, "skill", "1" * 64, "2" * 64)
+135 |     current = workflow.start(make_request(skills=(skill,)))
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `bundles` is never used
+   --> tests\p6-writing\chapter-workflow\test_workflow.py:133:29
+    |
+132 | def test_cancel_at_skill_boundary_uses_last_complete_phase_not_empty(ports):
+133 |     workflow, core, broker, bundles, publication, story = ports
+    |                             ^^^^^^^
+134 |     skill = SkillRef(1, "skill", "1" * 64, "2" * 64)
+135 |     current = workflow.start(make_request(skills=(skill,)))
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_workflow.py:133:38
+    |
+132 | def test_cancel_at_skill_boundary_uses_last_complete_phase_not_empty(ports):
+133 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+134 |     skill = SkillRef(1, "skill", "1" * 64, "2" * 64)
+135 |     current = workflow.start(make_request(skills=(skill,)))
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+   --> tests\p6-writing\chapter-workflow\test_workflow.py:133:51
+    |
+132 | def test_cancel_at_skill_boundary_uses_last_complete_phase_not_empty(ports):
+133 |     workflow, core, broker, bundles, publication, story = ports
+    |                                                   ^^^^^
+134 |     skill = SkillRef(1, "skill", "1" * 64, "2" * 64)
+135 |     current = workflow.start(make_request(skills=(skill,)))
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `bundles` is never used
+   --> tests\p6-writing\chapter-workflow\test_workflow.py:145:29
+    |
+144 | def test_pause_cancel_race_has_first_terminal_winner(ports):
+145 |     workflow, core, broker, bundles, publication, story = ports
+    |                             ^^^^^^^
+146 |     current = workflow.start(make_request())
+147 |     broker.control_events[("pause", current.invocation_id)] = event_script((b"a",), "paused")
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_workflow.py:145:38
+    |
+144 | def test_pause_cancel_race_has_first_terminal_winner(ports):
+145 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+146 |     current = workflow.start(make_request())
+147 |     broker.control_events[("pause", current.invocation_id)] = event_script((b"a",), "paused")
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+   --> tests\p6-writing\chapter-workflow\test_workflow.py:145:51
+    |
+144 | def test_pause_cancel_race_has_first_terminal_winner(ports):
+145 |     workflow, core, broker, bundles, publication, story = ports
+    |                                                   ^^^^^
+146 |     current = workflow.start(make_request())
+147 |     broker.control_events[("pause", current.invocation_id)] = event_script((b"a",), "paused")
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_workflow.py:164:38
+    |
+162 | )
+163 | def test_malformed_broker_stream_fails_closed_without_candidate(ports, events, match):
+164 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+165 |     current = workflow.start(make_request())
+166 |     broker.poll_events[current.invocation_id] = events
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+   --> tests\p6-writing\chapter-workflow\test_workflow.py:164:51
+    |
+162 | )
+163 | def test_malformed_broker_stream_fails_closed_without_candidate(ports, events, match):
+164 |     workflow, core, broker, bundles, publication, story = ports
+    |                                                   ^^^^^
+165 |     current = workflow.start(make_request())
+166 |     broker.poll_events[current.invocation_id] = events
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_workflow.py:173:38
+    |
+172 | def test_skill_completion_requires_bundle_backed_chain_evidence(ports):
+173 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+174 |     current = workflow.start(make_request(skills=(SkillRef(1, "skill", "1" * 64, "2" * 64),)))
+175 |     broker.poll_events[current.invocation_id] = event_script((b"raw",))
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+   --> tests\p6-writing\chapter-workflow\test_workflow.py:173:51
+    |
+172 | def test_skill_completion_requires_bundle_backed_chain_evidence(ports):
+173 |     workflow, core, broker, bundles, publication, story = ports
+    |                                                   ^^^^^
+174 |     current = workflow.start(make_request(skills=(SkillRef(1, "skill", "1" * 64, "2" * 64),)))
+175 |     broker.poll_events[current.invocation_id] = event_script((b"raw",))
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `publication` is never used
+   --> tests\p6-writing\chapter-workflow\test_workflow.py:184:38
+    |
+183 | def test_broker_failure_is_terminal_without_candidate(ports):
+184 |     workflow, core, broker, bundles, publication, story = ports
+    |                                      ^^^^^^^^^^^
+185 |     current = workflow.start(make_request())
+186 |     broker.poll_events[current.invocation_id] = [BrokerEvent(1, "failed", prefix_hash=sha256(b"").hexdigest(), error="provider failed…
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `story` is never used
+   --> tests\p6-writing\chapter-workflow\test_workflow.py:184:51
+    |
+183 | def test_broker_failure_is_terminal_without_candidate(ports):
+184 |     workflow, core, broker, bundles, publication, story = ports
+    |                                                   ^^^^^
+185 |     current = workflow.start(make_request())
+186 |     broker.poll_events[current.invocation_id] = [BrokerEvent(1, "failed", prefix_hash=sha256(b"").hexdigest(), error="provider failed…
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> tests\p6-writing\test_dependency_free_domains.py:1:1
+  |
+1 | / from __future__ import annotations
+2 | |
+3 | | from hashlib import sha256
+4 | |
+5 | | import pytest
+6 | |
+7 | | from plotpilot_autopilot import Stage, StageOutcome, build_plan, decide_next_stage
+8 | | from plotpilot_chapter_workflow import ContextSource, SkillRef, freeze_context_plan
+9 | | from plotpilot_quality_suite import scan_language_style
+  | |_______________________________________________________^
+help: Organize imports
+  |
+5 | import pytest
+  -
+6 | from plotpilot_autopilot import Stage, StageOutcome, build_plan, decide_next_stage
+  |
+
+Found 152 errors.
+[*] 37 fixable with the `--fix` option (112 hidden fixes can be enabled with the `--unsafe-fixes` option).

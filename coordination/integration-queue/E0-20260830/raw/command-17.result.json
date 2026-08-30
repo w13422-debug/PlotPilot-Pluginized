@@ -1,0 +1,15 @@
+{
+  "index": 17,
+  "command": "if (@(git --no-optional-locks status --porcelain=v1 --untracked-files=all).Count -ne 0) { throw 'post-gate worktree is not clean' }",
+  "exit_code": 0,
+  "passed": true,
+  "started_at": "2026-08-30T16:18:17.8493139+08:00",
+  "finished_at": "2026-08-30T16:18:18.1455877+08:00",
+  "duration_ms": 296,
+  "stdout_file": "command-17.stdout.txt",
+  "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_bytes": 0,
+  "stderr_file": "command-17.stderr.txt",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr_bytes": 0
+}

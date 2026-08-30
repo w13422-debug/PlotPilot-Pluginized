@@ -1,0 +1,49 @@
+(node:37800) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/Administrator/Desktop/%E5%86%99%E4%BD%9C%E8%B5%84%E6%96%99%E6%B1%87%E6%80%BB/PlotPilot-Pluginized/tests/p4-webui/job-drawer/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\Administrator\Desktop\写作资料汇总\PlotPilot-Pluginized\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ refresh hydrates durable snapshots then attaches only backend-active jobs at projection cursors (3.0215ms)
+✔ continuous event refreshes an authoritative snapshot and terminal convergence detaches (0.9334ms)
+✔ disconnect reconnects from the projection cursor and fences synchronous late callbacks (0.5723ms)
+✔ gap recovery replaces the projection, closes the recovery handle and opens a live stream from the Snapshot cursor (2.3881ms)
+✔ recovery rejects inconsistent replay-floor/gap tuples before reading or applying a Snapshot (0.8476ms)
+✔ invalid recovery metadata never applies and enters bounded reconnect (0.3043ms)
+✔ a failed final-event read reconnects from projection and duplicate replay still hydrates terminal state (0.608ms)
+✔ event bursts serialize Snapshot reads until projection covers the latest observed cursor (0.8425ms)
+✔ a deferred read failure from an old subscription cannot close or reschedule its healthy replacement (0.5842ms)
+✔ an action barrier fences a pre-action recovery read and its late failure side effects (0.9386ms)
+✔ only the latest refresh ordinal may atomically replace jobs and reconcile connections (10.2072ms)
+✔ event reads and action responses reject cross-Job Snapshots before touching the store (1.5356ms)
+✔ action token preserves serialization across stop/start and clears only its own pending entry (0.447ms)
+✔ void action fences a pre-action read and forces a causally newer authoritative Snapshot read (0.4524ms)
+✔ resume, retry and cancel use injected intents and apply returned Snapshots (0.4261ms)
+✔ immediate connection flaps use capped exponential backoff until a valid signal proves stability (0.3941ms)
+✔ private recovery ingress is closed, plain-data-only and job-domain-only (0.3076ms)
+(node:39916) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/Administrator/Desktop/%E5%86%99%E4%BD%9C%E8%B5%84%E6%96%99%E6%B1%87%E6%80%BB/PlotPilot-Pluginized/tests/p4-webui/job-drawer/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\Administrator\Desktop\写作资料汇总\PlotPilot-Pluginized\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ presents all ten frozen Job states without folding partial or needs_attention into failed (0.8795ms)
+✔ presents every authoritative Step and Attempt state while preserving future-state fallback (0.939ms)
+✔ calculates progress for empty, mixed, partial and unknown Step states (0.2792ms)
+✔ enforces the ten-state action truth table and checkpoint-gated resume (0.8023ms)
+✔ TaskDrawer source presents Job, every Step and every Attempt with all three explicit intents (4.1101ms)
+✔ source-only Job core uses injected ports and contains no invented API route or shared shell binding (2.4166ms)
+(node:38152) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/Administrator/Desktop/%E5%86%99%E4%BD%9C%E8%B5%84%E6%96%99%E6%B1%87%E6%80%BB/PlotPilot-Pluginized/tests/p4-webui/job-drawer/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\Administrator\Desktop\写作资料汇总\PlotPilot-Pluginized\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ authoritative snapshots replace nested Step and Attempt collections instead of patching them (1.5918ms)
+✔ enforces monotonic cursor, duplicate idempotence and explicit gap detection (0.2377ms)
+✔ keeps observed and projection cursors separate while burst Snapshots advance incrementally (0.7929ms)
+✔ rejects identity conflicts and same-position hash conflicts (0.4001ms)
+✔ refresh listing is atomic, removes absent jobs and reattaches every backend-active state (0.3245ms)
+✔ workspace listing rejects same-position hash conflict atomically and preserves prior state (7.3197ms)
+ℹ tests 29
+ℹ suites 0
+ℹ pass 29
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 311.5817

@@ -1,0 +1,15 @@
+{
+  "index": 16,
+  "command": "git --no-optional-locks diff --check e5b29b23bc51209ef5bcffd40d0557a2bea2c489 HEAD --",
+  "exit_code": 0,
+  "passed": true,
+  "started_at": "2026-08-30T16:18:17.5893522+08:00",
+  "finished_at": "2026-08-30T16:18:17.8469781+08:00",
+  "duration_ms": 257,
+  "stdout_file": "command-16.stdout.txt",
+  "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_bytes": 0,
+  "stderr_file": "command-16.stderr.txt",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr_bytes": 0
+}

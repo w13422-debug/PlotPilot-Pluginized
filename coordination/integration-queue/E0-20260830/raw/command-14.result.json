@@ -1,0 +1,15 @@
+{
+  "index": 14,
+  "command": "frontend/node_modules/.bin/vue-tsc.cmd --noEmit -p frontend/tsconfig.app.json --incremental false",
+  "exit_code": 0,
+  "passed": true,
+  "started_at": "2026-08-30T16:18:01.5644088+08:00",
+  "finished_at": "2026-08-30T16:18:17.1518496+08:00",
+  "duration_ms": 15587,
+  "stdout_file": "command-14.stdout.txt",
+  "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_bytes": 0,
+  "stderr_file": "command-14.stderr.txt",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr_bytes": 0
+}

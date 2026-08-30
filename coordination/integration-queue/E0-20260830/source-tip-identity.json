@@ -1,0 +1,118 @@
+{
+  "schema": "plotpilot-e0-source-tip-identity/v1",
+  "branch": "codex/ppa-00-integration-candidate-r2",
+  "head": "6de42d026df84aa56ba40c9e5b5c6b66904a2d1c",
+  "tree": "2361230756e8e14f34a0a1046331685eafe76021",
+  "baseline": "e5b29b23bc51209ef5bcffd40d0557a2bea2c489",
+  "clean_after_gate": true,
+  "upstream": null,
+  "donor_push": "DISABLED",
+  "index_lock_present": false,
+  "ordered_merge_commits": [
+    {
+      "order": 1,
+      "merge_commit": "5dd869851a37fa6d1c32cc8b71b368be1e441dbf",
+      "actual_parents": [
+        "e5b29b23bc51209ef5bcffd40d0557a2bea2c489",
+        "29c3d6dc714f9781fd082997bab039d9bec15764"
+      ],
+      "expected_first_parent": "e5b29b23bc51209ef5bcffd40d0557a2bea2c489",
+      "expected_second_parent": "29c3d6dc714f9781fd082997bab039d9bec15764",
+      "two_parent_no_ff": true,
+      "parents_match": true
+    },
+    {
+      "order": 2,
+      "merge_commit": "b8895ff89929753a39f6dd6900703a84d5068dc7",
+      "actual_parents": [
+        "5dd869851a37fa6d1c32cc8b71b368be1e441dbf",
+        "ee4d39b20af2091404f836b9e9b75665ca6c2de2"
+      ],
+      "expected_first_parent": "5dd869851a37fa6d1c32cc8b71b368be1e441dbf",
+      "expected_second_parent": "ee4d39b20af2091404f836b9e9b75665ca6c2de2",
+      "two_parent_no_ff": true,
+      "parents_match": true
+    },
+    {
+      "order": 3,
+      "merge_commit": "c7defd0e46b1970a9d057f4fa8b2d87c33e07d26",
+      "actual_parents": [
+        "b8895ff89929753a39f6dd6900703a84d5068dc7",
+        "3e28b86477e16954ff10fdb01bac325c6d62b51f"
+      ],
+      "expected_first_parent": "b8895ff89929753a39f6dd6900703a84d5068dc7",
+      "expected_second_parent": "3e28b86477e16954ff10fdb01bac325c6d62b51f",
+      "two_parent_no_ff": true,
+      "parents_match": true
+    },
+    {
+      "order": 4,
+      "merge_commit": "4a2c0e984af8a82cf6c4172971279321d52dd508",
+      "actual_parents": [
+        "c7defd0e46b1970a9d057f4fa8b2d87c33e07d26",
+        "55897ee56fd460e469e70c196e9bc3a8730cccdb"
+      ],
+      "expected_first_parent": "c7defd0e46b1970a9d057f4fa8b2d87c33e07d26",
+      "expected_second_parent": "55897ee56fd460e469e70c196e9bc3a8730cccdb",
+      "two_parent_no_ff": true,
+      "parents_match": true
+    },
+    {
+      "order": 5,
+      "merge_commit": "f9d8a51cfb7f173000687410462a25281ecb7536",
+      "actual_parents": [
+        "4a2c0e984af8a82cf6c4172971279321d52dd508",
+        "7241d9846fb2e66e41871e452c0591faac58b045"
+      ],
+      "expected_first_parent": "4a2c0e984af8a82cf6c4172971279321d52dd508",
+      "expected_second_parent": "7241d9846fb2e66e41871e452c0591faac58b045",
+      "two_parent_no_ff": true,
+      "parents_match": true
+    },
+    {
+      "order": 6,
+      "merge_commit": "6de42d026df84aa56ba40c9e5b5c6b66904a2d1c",
+      "actual_parents": [
+        "f9d8a51cfb7f173000687410462a25281ecb7536",
+        "143a875bbbb3d5f4bd9a271a8aeda10b905f079c"
+      ],
+      "expected_first_parent": "f9d8a51cfb7f173000687410462a25281ecb7536",
+      "expected_second_parent": "143a875bbbb3d5f4bd9a271a8aeda10b905f079c",
+      "two_parent_no_ff": true,
+      "parents_match": true
+    }
+  ],
+  "all_six_parent_pairs_match": true,
+  "changed_path_union": {
+    "count": 98,
+    "list_file": "coordination/integration-queue/E0-20260830/source-changed-paths.txt",
+    "sha256": "976a18881f2802c41e471324525a27c90ab5b9fbfdb7ddbbee0edae5a4c124e5",
+    "encoding": "UTF-8",
+    "line_ending": "LF",
+    "final_newline": true
+  },
+  "rejected_heads": [
+    {
+      "head": "df43e9c1202305c117319559a6092fff1a2c58ca",
+      "ancestor_of_source_tip": false,
+      "git_exit_code": 1,
+      "expected_absent": true,
+      "preserved_for_any_direct_child_of_source_tip": true
+    },
+    {
+      "head": "da8f3c692af84806a6ea91d8a60a6caa865b30cd",
+      "ancestor_of_source_tip": false,
+      "git_exit_code": 1,
+      "expected_absent": true,
+      "preserved_for_any_direct_child_of_source_tip": true
+    },
+    {
+      "head": "ed76ebd84bb302784d3005194bc6956ea75cbc1f",
+      "ancestor_of_source_tip": false,
+      "git_exit_code": 1,
+      "expected_absent": true,
+      "preserved_for_any_direct_child_of_source_tip": true
+    }
+  ],
+  "clean_after_gate_evidence": "coordination/integration-queue/E0-20260830/raw/command-17.result.json"
+}

@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 189, in _run_module_as_main
+  File "<frozen runpy>", line 148, in _get_module_details
+  File "<frozen runpy>", line 112, in _get_module_details
+  File "C:\Users\Administrator\AppData\Roaming\Python\Python312\site-packages\pytest\__init__.py", line 8, in <module>
+    from _pytest._code import ExceptionInfo
+  File "C:\Users\Administrator\AppData\Roaming\Python\Python312\site-packages\_pytest\_code\__init__.py", line 5, in <module>
+    from .code import Code
+  File "C:\Users\Administrator\AppData\Roaming\Python\Python312\site-packages\_pytest\_code\code.py", line 37, in <module>
+    import pluggy
+ModuleNotFoundError: No module named 'pluggy'

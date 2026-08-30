@@ -1,0 +1,77 @@
+{
+  "schema": "plotpilot-e0-environment-identities/v1",
+  "recorded_at": "2026-08-30T16:21:57.1537768+08:00",
+  "os": {
+    "description": "Microsoft Windows 10.0.26200",
+    "architecture": "X64",
+    "process_architecture": "X64",
+    "machine": "MZ"
+  },
+  "shell": {
+    "ps_edition": "Core",
+    "ps_version": "7.6.4"
+  },
+  "executables": [
+    {
+      "name": "directed-gate-python",
+      "path": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+      "sha256": "d8e3f0adf246db00358c0c4ed349cf714898178f9558fb0e944f79f5c07f8eaa",
+      "bytes": 91648,
+      "file_version": "3.12.13",
+      "product_version": "3.12.13"
+    },
+    {
+      "name": "ruff",
+      "path": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\ruff.exe",
+      "sha256": "53babb992a013a4c690479e15d3647065ee2078f4994fbe17fef4caa7d9aeea7",
+      "bytes": 26395136,
+      "file_version": null,
+      "product_version": null
+    },
+    {
+      "name": "node",
+      "path": "C:\\Program Files\\nodejs\\node.exe",
+      "sha256": "9a4eb5f1c29c6a2e93852ead46b999e284a6a5ca8bab4d4e241d587d025a52de",
+      "bytes": 92534088,
+      "file_version": "24.18.0",
+      "product_version": "24.18.0"
+    },
+    {
+      "name": "git",
+      "path": "C:\\Program Files\\Git\\cmd\\git.exe",
+      "sha256": "81ef35ae005ca9318018d18e3327578ce939fb99feaad6b2d7c8ab15f3de8db5",
+      "bytes": 46480,
+      "file_version": "2.54.0.windows.1",
+      "product_version": "2.54.0.windows.1"
+    },
+    {
+      "name": "powershell-capture-host",
+      "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "sha256": "7600ffe12da441fe89d035b13801e8e91d064bc544a27b19a5cf49f6ab8b18f5",
+      "bytes": 454656,
+      "file_version": "10.0.26100.8875 (WinBuild.160101.0800)",
+      "product_version": "10.0.26100.8875"
+    },
+    {
+      "name": "vue-tsc-command",
+      "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\frontend\\node_modules\\.bin\\vue-tsc.cmd",
+      "sha256": "f71f386ca257815b052fdc690d84cd8d9a0518211ed75080abee9b25b91833ba",
+      "bytes": 1074,
+      "file_version": null,
+      "product_version": null
+    }
+  ],
+  "python_environment": {
+    "PYTHONHOME": null,
+    "PYTHONPATH": null,
+    "PYTHONNOUSERSITE": null
+  },
+  "git": {
+    "core_autocrlf": "true",
+    "branch": "codex/ppa-00-integration-candidate-r2",
+    "source_head": "6de42d026df84aa56ba40c9e5b5c6b66904a2d1c",
+    "source_tree": "2361230756e8e14f34a0a1046331685eafe76021",
+    "upstream": null,
+    "donor_push": "DISABLED"
+  }
+}

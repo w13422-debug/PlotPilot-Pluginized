@@ -1,0 +1,15 @@
+{
+  "index": 13,
+  "command": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\ruff.exe check --no-cache backend/plotpilot_core/api/v1/jobs/rpc backend/plotpilot_core/jobs/http_rpc backend/plotpilot_core/api/v1/jobs/sse backend/plotpilot_core/events first-party-plugins/project-planner/src/plotpilot_project_planner first-party-plugins/chapter-workflow/backend/src/plotpilot_chapter_workflow tests/p3-execution/job-rpc tests/p3-execution/event-sse tests/p5-planning/planner-runtime tests/p5-planning/test_planning_slice.py tests/p6-writing/chapter-workflow tests/p6-writing/test_dependency_free_domains.py",
+  "exit_code": 1,
+  "passed": false,
+  "started_at": "2026-08-30T16:18:01.2789998+08:00",
+  "finished_at": "2026-08-30T16:18:01.5603281+08:00",
+  "duration_ms": 281,
+  "stdout_file": "command-13.stdout.txt",
+  "stdout_sha256": "bbd6210d1aa0b54cfaa8dfb83b1ee92f1d83c411349dda417ff34c8a08cf13a8",
+  "stdout_bytes": 96655,
+  "stderr_file": "command-13.stderr.txt",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr_bytes": 0
+}
