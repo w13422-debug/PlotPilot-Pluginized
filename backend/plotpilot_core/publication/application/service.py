@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
 import hashlib
 import json
+from collections.abc import Mapping
 from typing import Any
 
 from backend.plotpilot_plugin_sdk import canonical_bytes

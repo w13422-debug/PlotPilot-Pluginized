@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from hashlib import sha256
 from typing import Any
 
 from plotpilot_plugin_sdk import hash_jcs
-from plotpilot_prompt_skill_runtime import ChainAnchor, SkillStep, run_skill_chain
+from plotpilot_prompt_skill_runtime import (
+    ChainAnchor,
+    build_chain_result,
+    build_receipt,
+)
 from plotpilot_story_state import (
     CandidateCommit,
     ExecutionLineage,
@@ -81,19 +86,50 @@ def proposal(
 
 
 def two_step_chain(*, bundle_id: str = "bundle-story-1", item_id: str = "item-story-1") -> SkillChainEvidence:
-    outputs = iter((b"H1-distinct", b"H2-distinct"))
-    execution = run_skill_chain(
+    h0 = sha256(b"H0-distinct").hexdigest()
+    h1 = sha256(b"H1-distinct").hexdigest()
+    h2 = sha256(b"H2-distinct").hexdigest()
+    anchor = ChainAnchor.bundle(bundle_id, item_id)
+    first = build_receipt(
+        receipt_id="chain-story-1:receipt:0",
+        chain_id="chain-story-1",
+        chain_index=0,
+        run_snapshot_hash=SNAPSHOT_HASH,
+        skill_id="skill.alpha",
+        release_id="1" * 64,
+        package_hash="2" * 64,
+        input_asset_id="asset-h0",
+        input_hash=h0,
+        output_asset_id="asset-h1",
+        output_hash=h1,
+        anchor=anchor,
+    )
+    second = build_receipt(
+        receipt_id="chain-story-1:receipt:1",
+        chain_id="chain-story-1",
+        chain_index=1,
+        run_snapshot_hash=SNAPSHOT_HASH,
+        skill_id="skill.beta",
+        release_id="3" * 64,
+        package_hash="4" * 64,
+        input_asset_id="asset-h1",
+        input_hash=h1,
+        output_asset_id="asset-h2",
+        output_hash=h2,
+        previous_receipt_hash=first["receipt_hash"],
+        anchor=anchor,
+    )
+    receipts = (first, second)
+    chain = build_chain_result(
         chain_id="chain-story-1",
         run_snapshot_hash=SNAPSHOT_HASH,
-        initial_input=b"H0-distinct",
-        steps=(
-            SkillStep("skill.alpha", "1" * 64, "2" * 64, 10),
-            SkillStep("skill.beta", "3" * 64, "4" * 64, 20),
-        ),
-        execute=lambda _step, _content: next(outputs),
-        anchor=ChainAnchor.bundle(bundle_id, item_id),
+        input_hash=h0,
+        receipts=receipts,
+        anchor=anchor,
+        final_output_asset_id="asset-h2",
+        final_output_hash=h2,
     )
-    return SkillChainEvidence(execution.chain, execution.receipts)
+    return SkillChainEvidence(chain, receipts)
 
 
 def request(

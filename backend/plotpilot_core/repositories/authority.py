@@ -1,18 +1,26 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
-from contextlib import contextmanager
-from dataclasses import replace
 import hashlib
 import json
-from pathlib import Path
 import sqlite3
-from threading import RLock
 import uuid
+from collections.abc import Mapping
+from contextlib import contextmanager
+from pathlib import Path
+from threading import RLock
 
 from backend.plotpilot_plugin_sdk import verify_snapshot
 
-from ..domain.entities import Document, Node, Page, Relation, Revision, TextPage, Workspace, utc_now
+from ..domain.entities import (
+    Document,
+    Node,
+    Page,
+    Relation,
+    Revision,
+    TextPage,
+    Workspace,
+    utc_now,
+)
 from .migrations import Migration, MigrationRunner
 
 
