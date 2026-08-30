@@ -1,0 +1,50 @@
+NW-P3-JOB-RPC-02 validation record
+Baseline: 8e3d3a7268e0d28559a7212790e3ab9f22c1453a
+Interpreter: Codex bundled Python 3.12.13
+Temporary dependencies: workspace-external pytest-deps; no project manifest/lock changes
+
+[required-owned]
+python -B -m pytest -p no:cacheprovider tests/p3-execution/job-rpc -q
+RESULT: 16 passed in 0.86s (final source state)
+
+[required-adjacent]
+python -B -m pytest -p no:cacheprovider tests/p3-execution/test_job_execution.py tests/p3-execution/provider-broker -q
+RESULT: 39 passed in 0.85s
+
+[required-static]
+python -B -m compileall -q backend/plotpilot_core/api/v1/jobs/rpc backend/plotpilot_core/jobs/http_rpc
+RESULT: exit 0 (final source state; generated __pycache__ removed afterward)
+python -B tools/integration/generate_contract_manifest.py --check
+RESULT: contract manifest is deterministic (141 files); exit 0
+git diff --cached --check
+RESULT: exit 0 on all 11 staged source/evidence paths
+
+[additional-seam-regression]
+python -B -m pytest -p no:cacheprovider tests/p1-core/execution-transaction/test_terminal_transaction.py tests/p1-core/execution-transaction/test_terminal_failure_windows.py tests/p2-plugin-platform/supervisor/test_rpc.py tests/p2-plugin-platform/supervisor/test_lifecycle.py -q
+RESULT: 107 passed, 1 failed in 5.31s
+FAILURE: tests/p2-plugin-platform/supervisor/test_lifecycle.py::test_stale_lease_and_release_callbacks_cannot_affect_replacement
+CAUSE EVIDENCE: fixture FakeInterpreterProbe is fixed at 3.12.10 while the test writes platform.python_version()=3.12.13 into its replacement venv marker; accepted validate_venv_identity rejects the mismatch with code 1001.
+REPRO: isolated rerun failed identically (1 failed in 0.54s). The failing test and supervisor sources are outside this node's write set; required P2-neutral Job/Provider gates passed.
+
+[limited-remediation-parent]
+27f3339afca0da0fa9b18b49eef893a6f80a3225
+Finding manifest SHA-256: ef81b0ad0508a033edf792b76dc80ec53e8f7746502b5e1cf6f4a35b366c382c
+Review result SHA-256: bfa9ce535f891d7afe6247bd3f3855f48e5616ce52113d470ffffc00c3d481e9
+
+[limited-remediation-owned]
+python -B -m pytest -p no:cacheprovider tests/p3-execution/job-rpc -q
+RESULT: 32 passed in 1.22s (final owned source state)
+COVERAGE: F-001 first/middle failure and retained tail; empty ID; F-002 zero-write identities; F-003 concurrent replay; F-004 cross-scope and checkpoint/stream validation; F-005 request-bound result mismatch; F-006 allocated binding plus epoch/secrets negatives.
+
+[limited-remediation-adjacent]
+python -B -m pytest -p no:cacheprovider tests/p3-execution/test_job_execution.py tests/p3-execution/provider-broker -q
+RESULT: 39 passed in 0.78s (final source state)
+
+[limited-remediation-static]
+python -B -m compileall -q backend/plotpilot_core/api/v1/jobs/rpc backend/plotpilot_core/jobs/http_rpc
+RESULT: exit 0
+python -B tools/integration/generate_contract_manifest.py --check
+RESULT: contract manifest is deterministic (141 files)
+JSON parse: composition Delta and remediation closure artifact OK
+git diff --check: exit 0
+git diff --cached --check: exit 0 on 12 owned paths; write_set_outside_count=0
