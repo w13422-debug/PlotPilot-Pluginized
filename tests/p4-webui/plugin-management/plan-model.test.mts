@@ -14,7 +14,11 @@ import {
   replacePlanDraft,
   updatePlanEditorDraft,
 } from '../../../frontend/src/core/plugins/model.ts'
-import type { PluginPlan, PluginPlanBinding } from '../../../frontend/src/core/plugins/types.ts'
+import type {
+  PluginPlan,
+  PluginPlanBinding,
+  PluginPlanDataBinding,
+} from '../../../frontend/src/core/plugins/types.ts'
 
 const fixture = (): PluginPlan => JSON.parse(readFileSync('contracts/examples/fixtures/plugin-plan.json', 'utf8'))
 const secondBinding = (overrides: Partial<PluginPlanBinding> = {}): PluginPlanBinding => ({
@@ -29,14 +33,54 @@ const secondBinding = (overrides: Partial<PluginPlanBinding> = {}): PluginPlanBi
   parameters_asset_id: 'parameters-2',
   ...overrides,
 })
+const dataBinding = (dataBindingId: string, order: number): PluginPlanDataBinding => ({
+  data_binding_id: dataBindingId,
+  data_plugin_id: `com.plotpilot.${dataBindingId}`,
+  release_requirement: '1.0.0',
+  format_id: 'style/v1',
+  interpreter_binding_id: 'binding-1',
+  order,
+  enabled: true,
+  parameters_asset_id: null,
+})
 
-test('field materialization densifies legal sparse order without mutating authority input', () => {
+test('plugin-mgmt-invalid-order-fail-closed', () => {
+  const cases: Array<{ plan: PluginPlan, code: string }> = []
+
+  const duplicateBindings = fixture()
+  duplicateBindings.bindings.push(secondBinding({ order: 10 }))
+  cases.push({ plan: duplicateBindings, code: 'plan_binding_order_invalid' })
+
+  const descendingBindings = fixture()
+  descendingBindings.bindings[0]!.order = 20
+  descendingBindings.bindings.push(secondBinding({ order: 10 }))
+  cases.push({ plan: descendingBindings, code: 'plan_binding_order_invalid' })
+
+  const duplicateDataBindings = fixture()
+  duplicateDataBindings.data_bindings = [dataBinding('data-1', 10), dataBinding('data-2', 10)]
+  cases.push({ plan: duplicateDataBindings, code: 'plan_data_binding_order_invalid' })
+
+  const descendingDataBindings = fixture()
+  descendingDataBindings.data_bindings = [dataBinding('data-1', 20), dataBinding('data-2', 10)]
+  cases.push({ plan: descendingDataBindings, code: 'plan_data_binding_order_invalid' })
+
+  for (const { plan, code } of cases) {
+    const before = JSON.stringify(plan)
+    assert.throws(() => materializePlan(plan), (error: unknown) =>
+      error instanceof PluginModelError && error.code === code)
+    assert.equal(JSON.stringify(plan), before)
+  }
+})
+
+test('plugin-mgmt-legal-sparse-order', () => {
   const source = fixture()
   source.bindings.push(secondBinding())
+  source.data_bindings = [dataBinding('data-1', 10), dataBinding('data-2', 20)]
   const before = JSON.stringify(source)
   const plain = materializePlan(source)
   assert.equal(JSON.stringify(source), before)
   assert.deepEqual(plain.bindings.map(item => item.order), [1, 2])
+  assert.deepEqual(plain.data_bindings.map(item => item.order), [1, 2])
   assert.deepEqual(
     { schema: plain.schema, plan_id: plain.plan_id, revision: plain.revision },
     { schema: source.schema, plan_id: source.plan_id, revision: source.revision },
@@ -44,6 +88,8 @@ test('field materialization densifies legal sparse order without mutating author
   assert.notEqual(plain, source)
   assert.notEqual(plain.bindings, source.bindings)
   assert.notEqual(plain.bindings[0], source.bindings[0])
+  assert.notEqual(plain.data_bindings, source.data_bindings)
+  assert.notEqual(plain.data_bindings[0], source.data_bindings[0])
 })
 
 test('append adds to normalized tail and leaves all non-order authority fields unchanged', () => {

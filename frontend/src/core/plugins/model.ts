@@ -138,6 +138,12 @@ function dense<T extends { order: number }>(items: T[]): T[] {
     .map(({ item }, index) => ({ ...item, order: index + 1 }))
 }
 
+function assertStrictlyAscendingOrder<T extends { order: number }>(items: readonly T[], code: string): void {
+  for (let index = 1; index < items.length; index += 1) {
+    if (items[index]!.order <= items[index - 1]!.order) fail(code)
+  }
+}
+
 function reindex<T extends { order: number }>(items: T[]): T[] {
   return items.map((item, index) => ({ ...item, order: index + 1 }))
 }
@@ -149,14 +155,18 @@ export function materializePlan(value: unknown): PluginPlan {
   if (item.schema !== 'plugin-plan/v1') fail('plan_schema_invalid')
   const mode = string(item.result_mode, 'plan_result_mode') as PluginPlanResultMode
   if (!['separate', 'compare', 'synthesize'].includes(mode)) fail('plan_result_mode_invalid')
+  const bindings = array(item.bindings, 'plan_bindings').map(materializeBinding)
+  assertStrictlyAscendingOrder(bindings, 'plan_binding_order_invalid')
+  const dataBindings = array(item.data_bindings, 'plan_data_bindings').map(materializeDataBinding)
+  assertStrictlyAscendingOrder(dataBindings, 'plan_data_binding_order_invalid')
   const plan: PluginPlan = {
     schema: 'plugin-plan/v1',
     plan_id: string(item.plan_id, 'plan_id', ID),
     revision: integer(item.revision, 'plan_revision', 1),
     name: string(item.name, 'plan_name'),
     description: string(item.description, 'plan_description'),
-    bindings: dense(array(item.bindings, 'plan_bindings').map(materializeBinding)),
-    data_bindings: dense(array(item.data_bindings, 'plan_data_bindings').map(materializeDataBinding)),
+    bindings: dense(bindings),
+    data_bindings: dense(dataBindings),
     skill_preset_revision_id: nullableId(item.skill_preset_revision_id, 'skill_preset_revision_id'),
     result_mode: mode,
     synthesizer: materializeSynthesizer(item.synthesizer),

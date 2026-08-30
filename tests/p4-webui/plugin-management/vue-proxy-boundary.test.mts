@@ -3,7 +3,7 @@ import { createRequire } from 'node:module'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import test from 'node:test'
+import { describe, test } from 'node:test'
 import {
   acceptPlanRevisionSave,
   appendPlanBinding,
@@ -46,6 +46,7 @@ function sourceFiles(root: string): string[] {
   return result
 }
 
+describe('plugin-mgmt-vue-proxy-regression', () => {
 test('real Vue ref load and save boundary materializes recursive plain values', async () => {
   const { isProxy, reactive, ref, shallowRef } = await loadRealVue()
   const source = reactive(fixture())
@@ -130,4 +131,5 @@ test('owned production sources contain no generic graph-clone call', () => {
       assert.equal(readFileSync(file, 'utf8').includes(forbidden), false, file)
     }
   }
+})
 })
