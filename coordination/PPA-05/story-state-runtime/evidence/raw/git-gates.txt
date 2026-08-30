@@ -1,0 +1,10 @@
+precommit_head=8e3d3a7268e0d28559a7212790e3ab9f22c1453a
+branch=codex/nw-p5-story-state-runtime-g3
+donor_fetch=C:\Users\Administrator\Desktop\写作资料汇总\PlotPilot-update-v4.6.0
+donor_push=DISABLED
+rejected_ancestor_df43e9c1202305c117319559a6092fff1a2c58ca=False
+rejected_ancestor_da8f3c692af84806a6ea91d8a60a6caa865b30cd=False
+rejected_ancestor_ed76ebd84bb302784d3005194bc6956ea75cbc1f=False
+upstream=<none>
+head_tag_count=0
+status_entry_count=24

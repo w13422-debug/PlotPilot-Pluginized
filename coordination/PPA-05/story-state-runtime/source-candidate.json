@@ -1,0 +1,75 @@
+{
+  "schema": "plotpilot-source-candidate/v1",
+  "node_id": "NW-P5-STORY-STATE-RUNTIME-G3",
+  "task_id": "WAVE-D-G3-NW-P5-SSR-SOURCE-01",
+  "branch": "codex/nw-p5-story-state-runtime-g3",
+  "exact_parent": "8e3d3a7268e0d28559a7212790e3ab9f22c1453a",
+  "structural_generation": true,
+  "rejected_sources_used": false,
+  "changed_path_count": 24,
+  "out_of_set_count": 0,
+  "changed_paths": [
+    "coordination/PPA-05/story-state-runtime/evidence/raw/compileall-story-state-long-path-failure.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/raw/compileall-story-state.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/raw/git-diff-check.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/raw/git-gates.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/raw/pytest-p5-planning.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/raw/pytest-required-parity-probes.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/raw/pytest-story-state-runtime.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/raw/ruff-story-state.txt",
+    "coordination/PPA-05/story-state-runtime/evidence/raw/write-set-check.txt",
+    "coordination/PPA-05/story-state-runtime/finding-closure-v1.json",
+    "coordination/PPA-05/story-state-runtime/runtime-integration-delta-v1.json",
+    "coordination/PPA-05/story-state-runtime/source-candidate.json",
+    "docs/deliveries/PPA-05/story-state-runtime/NW-P5-STORY-STATE-RUNTIME-G3.md",
+    "first-party-plugins/story-state/src/plotpilot_story_state/__init__.py",
+    "first-party-plugins/story-state/src/plotpilot_story_state/domain.py",
+    "first-party-plugins/story-state/src/plotpilot_story_state/payloads.py",
+    "first-party-plugins/story-state/src/plotpilot_story_state/ports.py",
+    "first-party-plugins/story-state/src/plotpilot_story_state/projection.py",
+    "first-party-plugins/story-state/src/plotpilot_story_state/runtime.py",
+    "tests/p5-planning/story-state-runtime/conftest.py",
+    "tests/p5-planning/story-state-runtime/support.py",
+    "tests/p5-planning/story-state-runtime/test_payload_and_retry.py",
+    "tests/p5-planning/story-state-runtime/test_projection.py",
+    "tests/p5-planning/story-state-runtime/test_runtime.py"
+  ],
+  "validations": {
+    "targeted_pytest": "23 passed in 0.60s; exit 0",
+    "full_p5_pytest": "42 passed in 0.88s; exit 0",
+    "required_parity_probes": "6 passed in 0.59s; exit 0",
+    "ruff": "All checks passed!; exit 0",
+    "compileall": "short PYTHONPYCACHEPREFIX rerun; exit 0",
+    "compileall_initial_environment": "long PYTHONPYCACHEPREFIX WinError 206; exit 1; source unchanged"
+  },
+  "raw_evidence": [
+    {
+      "path": "coordination/PPA-05/story-state-runtime/evidence/raw/pytest-story-state-runtime.txt",
+      "sha256": "52a083b895916d9ba165f12bdd611aee479bde62245be78dce75348d77be4a11"
+    },
+    {
+      "path": "coordination/PPA-05/story-state-runtime/evidence/raw/pytest-p5-planning.txt",
+      "sha256": "ede3cd092928d6c29d8bd88f0d55aa9f7b8d05062d55f976e50a7ed7d427c513"
+    },
+    {
+      "path": "coordination/PPA-05/story-state-runtime/evidence/raw/pytest-required-parity-probes.txt",
+      "sha256": "9f4614bba069f92a152b048d014c165102800066e0c3ee2498feb90ef84d130c"
+    },
+    {
+      "path": "coordination/PPA-05/story-state-runtime/evidence/raw/ruff-story-state.txt",
+      "sha256": "f2931df213da396d09ef3adbeaedc6c164700b0359a0b23341467549d1018940"
+    },
+    {
+      "path": "coordination/PPA-05/story-state-runtime/evidence/raw/compileall-story-state.txt",
+      "sha256": "a264a752ce08713c8d4a0cbb2a0eaa7527a036b635bb721d5d9cc4b01739b01d"
+    },
+    {
+      "path": "coordination/PPA-05/story-state-runtime/evidence/raw/compileall-story-state-long-path-failure.txt",
+      "sha256": "2dda89c58439de986440288ecea3660fa7531a77c97e7a77861f3c27df330f87"
+    }
+  ],
+  "public_contract_changes": [],
+  "production_executable": false,
+  "installable": false,
+  "merge_eligible": false
+}

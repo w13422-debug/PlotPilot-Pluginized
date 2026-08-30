@@ -1,0 +1,59 @@
+schema=write-set-proof/v1
+base=8e3d3a7268e0d28559a7212790e3ab9f22c1453a
+changed_path_count=24
+out_of_set_count=0
+allowed_prefixes:
+  first-party-plugins/story-state/
+  tests/p5-planning/story-state-runtime/
+  docs/deliveries/PPA-05/story-state-runtime/
+  coordination/PPA-05/story-state-runtime/
+changed_paths:
+  coordination/PPA-05/story-state-runtime/evidence/raw/compileall-story-state-long-path-failure.txt
+  coordination/PPA-05/story-state-runtime/evidence/raw/compileall-story-state.txt
+  coordination/PPA-05/story-state-runtime/evidence/raw/git-diff-check.txt
+  coordination/PPA-05/story-state-runtime/evidence/raw/git-gates.txt
+  coordination/PPA-05/story-state-runtime/evidence/raw/pytest-p5-planning.txt
+  coordination/PPA-05/story-state-runtime/evidence/raw/pytest-required-parity-probes.txt
+  coordination/PPA-05/story-state-runtime/evidence/raw/pytest-story-state-runtime.txt
+  coordination/PPA-05/story-state-runtime/evidence/raw/ruff-story-state.txt
+  coordination/PPA-05/story-state-runtime/evidence/raw/write-set-check.txt
+  coordination/PPA-05/story-state-runtime/finding-closure-v1.json
+  coordination/PPA-05/story-state-runtime/runtime-integration-delta-v1.json
+  coordination/PPA-05/story-state-runtime/source-candidate.json
+  docs/deliveries/PPA-05/story-state-runtime/NW-P5-STORY-STATE-RUNTIME-G3.md
+  first-party-plugins/story-state/src/plotpilot_story_state/__init__.py
+  first-party-plugins/story-state/src/plotpilot_story_state/domain.py
+  first-party-plugins/story-state/src/plotpilot_story_state/payloads.py
+  first-party-plugins/story-state/src/plotpilot_story_state/ports.py
+  first-party-plugins/story-state/src/plotpilot_story_state/projection.py
+  first-party-plugins/story-state/src/plotpilot_story_state/runtime.py
+  tests/p5-planning/story-state-runtime/conftest.py
+  tests/p5-planning/story-state-runtime/support.py
+  tests/p5-planning/story-state-runtime/test_payload_and_retry.py
+  tests/p5-planning/story-state-runtime/test_projection.py
+  tests/p5-planning/story-state-runtime/test_runtime.py
+status_porcelain:
+   M first-party-plugins/story-state/src/plotpilot_story_state/__init__.py
+   M first-party-plugins/story-state/src/plotpilot_story_state/domain.py
+  ?? coordination/PPA-05/story-state-runtime/evidence/raw/compileall-story-state-long-path-failure.txt
+  ?? coordination/PPA-05/story-state-runtime/evidence/raw/compileall-story-state.txt
+  ?? coordination/PPA-05/story-state-runtime/evidence/raw/git-diff-check.txt
+  ?? coordination/PPA-05/story-state-runtime/evidence/raw/git-gates.txt
+  ?? coordination/PPA-05/story-state-runtime/evidence/raw/pytest-p5-planning.txt
+  ?? coordination/PPA-05/story-state-runtime/evidence/raw/pytest-required-parity-probes.txt
+  ?? coordination/PPA-05/story-state-runtime/evidence/raw/pytest-story-state-runtime.txt
+  ?? coordination/PPA-05/story-state-runtime/evidence/raw/ruff-story-state.txt
+  ?? coordination/PPA-05/story-state-runtime/evidence/raw/write-set-check.txt
+  ?? coordination/PPA-05/story-state-runtime/finding-closure-v1.json
+  ?? coordination/PPA-05/story-state-runtime/runtime-integration-delta-v1.json
+  ?? coordination/PPA-05/story-state-runtime/source-candidate.json
+  ?? docs/deliveries/PPA-05/story-state-runtime/NW-P5-STORY-STATE-RUNTIME-G3.md
+  ?? first-party-plugins/story-state/src/plotpilot_story_state/payloads.py
+  ?? first-party-plugins/story-state/src/plotpilot_story_state/ports.py
+  ?? first-party-plugins/story-state/src/plotpilot_story_state/projection.py
+  ?? first-party-plugins/story-state/src/plotpilot_story_state/runtime.py
+  ?? tests/p5-planning/story-state-runtime/conftest.py
+  ?? tests/p5-planning/story-state-runtime/support.py
+  ?? tests/p5-planning/story-state-runtime/test_payload_and_retry.py
+  ?? tests/p5-planning/story-state-runtime/test_projection.py
+  ?? tests/p5-planning/story-state-runtime/test_runtime.py
