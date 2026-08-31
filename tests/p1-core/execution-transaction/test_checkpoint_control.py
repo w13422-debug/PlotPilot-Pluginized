@@ -1,11 +1,22 @@
 from __future__ import annotations
 
 import copy
+import json
+from pathlib import Path
 
 import pytest
 
 from backend.plotpilot_core.api.v1.jobs.rpc import JobCommandQueryAdapter
-from backend.plotpilot_plugin_sdk import ContractError, ErrorCode, canonical_bytes
+from backend.plotpilot_core.assets import AssetStore
+from backend.plotpilot_core.events.store import CoreEventStore, JobEventStore
+from backend.plotpilot_core.repositories.authority import CoreAuthorityRepository
+from backend.plotpilot_core.repositories.checkpoints import SQLiteExecutionControlPort
+from backend.plotpilot_plugin_sdk import (
+    ContractError,
+    ContractValidationError,
+    ErrorCode,
+    canonical_bytes,
+)
 from backend.plotpilot_plugin_sdk.verifier import hash_without_field
 
 
@@ -42,6 +53,28 @@ def _checkpoint_asset(
         provenance="test:p1-durable-authority",
     )
     return value, asset
+
+
+def _prompt_asset(stack, content: bytes = b"confirm"):
+    return stack["assets"].put(
+        content,
+        mime="text/plain",
+        logical_role="await_user_prompt",
+        provenance="test:p1-durable-authority",
+    )
+
+
+def _pause_kwargs(asset, *, operation_key: str = "pause-op-1"):
+    return {
+        "job_id": "job-1",
+        "step_id": "step-1",
+        "attempt_id": "attempt-1",
+        "lease_epoch": 1,
+        "operation_key": operation_key,
+        "worker_run_id": "worker-run-1",
+        "reason": "operator pause",
+        "checkpoint_asset_id": asset.asset_id,
+    }
 
 
 def test_checkpoint_and_matching_job_event_commit_atomically(execution_stack, monkeypatch):
@@ -157,6 +190,7 @@ def test_checkpoint_duplicate_operation_is_replayed_and_payload_drift_is_rejecte
         authority.checkpoint_store.commit_checkpoint(
             drift,
             operation_key="checkpoint-op-1",
+            checkpoint_asset_id=asset.asset_id,
             worker_run_id="worker-run-1",
         )
     assert caught.value.code == int(ErrorCode.DUPLICATE_REQUEST)
@@ -333,3 +367,233 @@ def test_resume_rejects_package_hash_drift_and_invalid_success_ids(execution_sta
             checkpoint_asset_id=asset.asset_id,
         )
     assert caught.value.code == int(ErrorCode.RESULT_CONTRACT_MISMATCH)
+
+
+def test_control_cas_event_revision_high_water_rollback_sse_and_restart_replay(
+    execution_stack, monkeypatch
+):
+    authority = execution_stack["authority"]
+    control = authority.control_port
+    _value, asset = _checkpoint_asset(
+        execution_stack,
+        checkpoint_id="checkpoint-control-1",
+        checkpoint_seq=1,
+        completed_units=1,
+    )
+    kwargs = _pause_kwargs(asset, operation_key="pause-atomic-1")
+    original_append = control.core_events.append
+
+    def append_then_fail(event_value, *, connection=None):
+        original_append(event_value, connection=connection)
+        raise RuntimeError("injected control Core Event failure")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(control.core_events, "append", append_then_fail)
+        with pytest.raises(RuntimeError, match="injected control Core Event failure"):
+            control.pause(**kwargs)
+
+    connection = execution_stack["repository"]._connection
+    assert connection.execute("SELECT count(*) FROM execution_checkpoint").fetchone()[0] == 0
+    assert connection.execute("SELECT count(*) FROM execution_control_operation").fetchone()[0] == 0
+    assert connection.execute("SELECT count(*) FROM execution_job_event").fetchone()[0] == 0
+    assert connection.execute("SELECT count(*) FROM execution_core_event").fetchone()[0] == 0
+    assert tuple(connection.execute(
+        "SELECT job_state,job_revision,job_event_high_water,core_event_high_water "
+        "FROM execution_job WHERE job_id='job-1'"
+    ).fetchone()) == ("running", 2, 0, 0)
+
+    first = control.pause(**kwargs)
+    assert first.accepted and not first.replayed
+    job_event = connection.execute(
+        "SELECT job_event_seq,event_json FROM execution_job_event "
+        "WHERE event_id LIKE 'job-event-%' ORDER BY job_event_seq DESC LIMIT 1"
+    ).fetchone()
+    core_event = connection.execute(
+        "SELECT core_event_seq,aggregate_revision,event_json FROM execution_core_event"
+    ).fetchone()
+    job = connection.execute(
+        "SELECT job_state,job_revision,job_event_high_water,core_event_high_water "
+        "FROM execution_job WHERE job_id='job-1'"
+    ).fetchone()
+    assert job[0] == "paused"
+    assert int(job[2]) == int(job_event[0])
+    assert int(job[3]) == int(core_event[0])
+    assert int(job[1]) == int(core_event[1])
+    assert '"event_type":"job.state.changed"' in core_event[2]
+
+    job_window = JobEventStore(execution_stack["repository"]).window("job-1", 0)
+    core_window = CoreEventStore(execution_stack["repository"]).window(
+        0, workspace_id="ws-1", event_types=("job.state.changed",)
+    )
+    assert job_window.durable_high_water_seq == int(job[2])
+    assert core_window.durable_high_water_seq == int(job[3])
+    assert any(item["event_type"].endswith(".job.pause") for item in job_window.events)
+    assert [item["event_type"] for item in core_window.events] == ["job.state.changed"]
+
+    replay = control.pause(**kwargs)
+    assert replay.replayed and replay.to_dict() == first.to_dict()
+    assert connection.execute("SELECT count(*) FROM execution_control_operation").fetchone()[0] == 1
+
+    reopened = CoreAuthorityRepository(execution_stack["database"])
+    try:
+        restarted = SQLiteExecutionControlPort(
+            reopened,
+            assets=AssetStore(execution_stack["asset_root"]),
+        )
+        restarted_replay = restarted.pause(**kwargs)
+        assert restarted_replay.replayed and restarted_replay.to_dict() == first.to_dict()
+    finally:
+        reopened.close()
+
+
+def test_durable_control_fences_attempt_owner_epoch_worker_and_method_before_replay(
+    execution_stack,
+):
+    authority = execution_stack["authority"]
+    control = authority.control_port
+    _value, asset = _checkpoint_asset(
+        execution_stack,
+        checkpoint_id="checkpoint-fence-1",
+        checkpoint_seq=1,
+        completed_units=1,
+    )
+    kwargs = _pause_kwargs(asset, operation_key="pause-fence-1")
+    control.pause(**kwargs)
+
+    with pytest.raises(ContractError) as caught:
+        control.pause(**{**kwargs, "worker_run_id": "worker-run-stale"})
+    assert caught.value.code == int(ErrorCode.STALE_LEASE)
+
+    with pytest.raises(ContractError) as caught:
+        control.pause(**{**kwargs, "lease_epoch": 2})
+    assert caught.value.code == int(ErrorCode.STALE_LEASE)
+
+    with pytest.raises(ContractError) as caught:
+        control.pause(**{**kwargs, "reason": "different request"})
+    assert caught.value.code == int(ErrorCode.DUPLICATE_REQUEST)
+
+    with pytest.raises(ContractError) as caught:
+        control.cancel(
+            job_id="job-1",
+            step_id="step-1",
+            attempt_id="attempt-1",
+            lease_epoch=1,
+            operation_key="pause-fence-1",
+            worker_run_id="worker-run-1",
+            reason="cross-method",
+        )
+    assert caught.value.code == int(ErrorCode.DUPLICATE_REQUEST)
+
+    connection = execution_stack["repository"]._connection
+    connection.execute(
+        "UPDATE execution_attempt SET release_id=? WHERE attempt_id='attempt-1'",
+        ("f" * 64,),
+    )
+    with pytest.raises(ContractError) as caught:
+        control.pause(**kwargs)
+    assert caught.value.code == int(ErrorCode.INCOMPATIBLE_GENERATION)
+
+
+def test_await_user_reason_prompt_asset_closure_and_restart_replay(execution_stack):
+    authority = execution_stack["authority"]
+    control = authority.control_port
+    _value, checkpoint_asset = _checkpoint_asset(
+        execution_stack,
+        checkpoint_id="checkpoint-await-1",
+        checkpoint_seq=1,
+        completed_units=1,
+    )
+    prompt = _prompt_asset(execution_stack)
+    kwargs = {
+        "job_id": "job-1",
+        "step_id": "step-1",
+        "attempt_id": "attempt-1",
+        "lease_epoch": 1,
+        "operation_key": "await-1",
+        "worker_run_id": "worker-run-1",
+        "reason": "user_input",
+        "checkpoint_asset_id": checkpoint_asset.asset_id,
+        "prompt_asset_id": prompt.asset_id,
+    }
+    first = control.await_user(**kwargs)
+    assert first.accepted
+    assert first.result == {
+        "accepted": True,
+        "attempt_state": "suspended",
+        "step_state": "waiting_user",
+        "job_state": "waiting_user",
+        "job_event_seq": 2,
+    }
+    stored_request = execution_stack["repository"]._connection.execute(
+        "SELECT request_json FROM execution_control_operation WHERE operation_key='await-1'"
+    ).fetchone()[0]
+    request = json.loads(stored_request)
+    assert request["reason"] == "user_input"
+    assert request["prompt_asset_id"] == prompt.asset_id
+    assert request["prompt_asset_hash"] == prompt.sha256
+
+    replay = control.await_user(**kwargs)
+    assert replay.replayed and replay.to_dict() == first.to_dict()
+
+    with pytest.raises(ContractValidationError):
+        control.await_user(**{**kwargs, "reason": "free-form operator text"})
+
+    reopened = CoreAuthorityRepository(execution_stack["database"])
+    try:
+        restarted = SQLiteExecutionControlPort(
+            reopened,
+            assets=AssetStore(execution_stack["asset_root"]),
+        )
+        restarted_replay = restarted.await_user(**kwargs)
+        assert restarted_replay.replayed and restarted_replay.to_dict() == first.to_dict()
+    finally:
+        reopened.close()
+
+    digest = prompt.asset_id.removeprefix("asset-sha256-")
+    Path(execution_stack["asset_root"], "objects", digest[:2], digest).unlink()
+    with pytest.raises(ContractError) as caught:
+        control.await_user(**kwargs)
+    assert caught.value.code == int(ErrorCode.ASSET_ERROR)
+
+
+def test_terminal_cancel_after_attempt_terminal_returns_terminal_known(execution_stack):
+    from support import complete_kwargs, make_candidate_bundle
+
+    bundle_asset, receipt, _ = make_candidate_bundle(execution_stack)
+    execution_stack["authority"].complete_attempt(**complete_kwargs(bundle_asset, receipt))
+    terminal_kwargs = {
+        "job_id": "job-1",
+        "step_id": "step-1",
+        "attempt_id": "attempt-1",
+        "lease_epoch": 1,
+        "operation_key": "cancel-after-attempt-terminal",
+        "worker_run_id": "worker-run-1",
+        "reason": "late cancellation",
+    }
+    attempt_terminal = execution_stack["authority"].control_port.cancel(**terminal_kwargs)
+    assert attempt_terminal.result == {
+        "accepted": True,
+        "terminal_known": True,
+        "attempt_state": "succeeded",
+    }
+
+
+def test_terminal_cancel_after_job_terminal_returns_terminal_known(execution_stack):
+    connection = execution_stack["repository"]._connection
+    connection.execute(
+        "UPDATE execution_job SET job_state='failed' WHERE job_id='job-1'"
+    )
+    job_terminal = execution_stack["authority"].control_port.cancel(
+        job_id="job-1",
+        step_id="step-1",
+        attempt_id="attempt-1",
+        lease_epoch=1,
+        operation_key="cancel-after-job-terminal",
+        worker_run_id="worker-run-1",
+        reason="late cancellation",
+    )
+    assert job_terminal.result == {
+        "accepted": True,
+        "terminal_known": True,
+        "attempt_state": "running",
+    }

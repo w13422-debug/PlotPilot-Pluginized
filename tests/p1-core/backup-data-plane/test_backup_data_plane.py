@@ -625,6 +625,153 @@ def _add_integrated_execution_closure(
     }
 
 
+def _add_durable_control_closure(
+    repository: CoreAuthorityRepository,
+    assets: AssetStore,
+    *,
+    workspace_id: str,
+    marker: str,
+) -> dict[str, str]:
+    """Materialize every P1 durable-control table for projection tests."""
+
+    document_id = f"doc-{marker}"
+    repository.create_document(
+        Document(document_id, workspace_id, "Durable control", created_at=NOW, updated_at=NOW)
+    )
+    base = repository.publish_revision(
+        document_id=document_id,
+        content="durable control base",
+        expected_revision_id=None,
+        created_by="user",
+        revision_id=f"revision-{marker}",
+    )
+    snapshot = json.loads(
+        Path("contracts/golden/run-snapshot/snapshot.json").read_text(encoding="utf-8")
+    )
+    snapshot.update(
+        snapshot_id=f"snapshot-{marker}",
+        run_intent_id=f"intent-{marker}",
+        workspace_id=workspace_id,
+        plugin_releases=[
+            {
+                "plugin_id": "com.plotpilot.demo",
+                "release_id": EXECUTION_RELEASE_ID,
+                "package_hash": EXECUTION_PACKAGE_HASH,
+                "data_generation_id": f"generation-{marker}",
+            }
+        ],
+        input_revisions=[
+            {
+                "document_id": document_id,
+                "revision_id": base.revision_id,
+                "content_hash": base.content_hash,
+            }
+        ],
+    )
+    snapshot["scope"] = {
+        "document_id": document_id,
+        "node_id": None,
+        "operation": "writing.chapter.draft/v1",
+    }
+    snapshot["request_key"] = request_key(snapshot)
+    snapshot["snapshot_hash"] = snapshot_hash(snapshot)
+
+    job_id = f"job-{marker}"
+    step_id = f"step-{marker}"
+    attempt_id = f"attempt-{marker}"
+    worker_run_id = f"worker-{marker}"
+    generation_id = f"generation-{marker}"
+    authority = ExecutionAuthority(repository, assets)
+    authority.create_from_verified_snapshot(job_id, snapshot)
+    authority.freeze_plan(
+        job_id,
+        [{"step_id": step_id, "depends_on": [], "result_contract": "candidate-batch/v1"}],
+        output_step_id=step_id,
+    )
+    authority.start_attempt(
+        job_id=job_id,
+        step_id=step_id,
+        attempt_id=attempt_id,
+        worker_run_id=worker_run_id,
+        plugin_id="com.plotpilot.demo",
+        release_id=EXECUTION_RELEASE_ID,
+        package_hash=EXECUTION_PACKAGE_HASH,
+        capability_id="writing.chapter.draft/v1",
+        generation_id=generation_id,
+        preallocated_receipt_id=f"receipt-{marker}",
+    )
+
+    checkpoint = {
+        "schema": "checkpoint/v1",
+        "checkpoint_id": f"checkpoint-{marker}",
+        "checkpoint_seq": 1,
+        "job_id": job_id,
+        "step_id": step_id,
+        "source_attempt_id": attempt_id,
+        "lease_epoch": 1,
+        "run_snapshot_hash": snapshot["snapshot_hash"],
+        "replay_policy": "checkpoint_resume",
+        "completed_units": 1,
+        "total_units": 2,
+        "unit_set_hash": "b" * 64,
+        "state_asset_id": None,
+        "created_at": NOW,
+    }
+    checkpoint["checkpoint_hash"] = hash_without_field(
+        checkpoint, "checkpoint_hash", "checkpoint/v1"
+    )
+    checkpoint_asset = assets.put(
+        canonical_bytes(checkpoint),
+        mime="application/json",
+        logical_role="checkpoint",
+        provenance=f"test:{workspace_id}",
+    )
+    prompt_asset = assets.put(
+        b"confirm durable control",
+        mime="text/plain",
+        logical_role="await_user_prompt",
+        provenance=f"test:{workspace_id}",
+    )
+    authority.orchestration_owners.acquire(
+        workspace_id,
+        f"orchestrator-{marker}",
+        owner_token=f"owner-token-{marker}",
+        lease_ttl_seconds=300,
+        now=NOW,
+    )
+    authority.control_port.await_user(
+        job_id=job_id,
+        step_id=step_id,
+        attempt_id=attempt_id,
+        lease_epoch=1,
+        operation_key=f"await-{marker}",
+        worker_run_id=worker_run_id,
+        reason="user_input",
+        checkpoint_asset_id=checkpoint_asset.asset_id,
+        prompt_asset_id=prompt_asset.asset_id,
+    )
+    resume_worker_run_id = f"worker-resume-{marker}"
+    resumed_attempt_id = f"attempt-resume-{marker}"
+    authority.control_port.resume(
+        job_id=job_id,
+        step_id=step_id,
+        operation_key=f"resume-{marker}",
+        resume_of_attempt_id=attempt_id,
+        worker_run_id=resume_worker_run_id,
+        new_attempt_id=resumed_attempt_id,
+        checkpoint_asset_id=checkpoint_asset.asset_id,
+    )
+    return {
+        "job_id": job_id,
+        "step_id": step_id,
+        "attempt_id": attempt_id,
+        "resumed_attempt_id": resumed_attempt_id,
+        "checkpoint_asset_id": checkpoint_asset.asset_id,
+        "prompt_asset_id": prompt_asset.asset_id,
+        "resume_worker_run_id": resume_worker_run_id,
+    }
+
+
 def _rewrite_receipt_parents(
     database: Path, receipt_id: str, parent_receipt_ids: list[str]
 ) -> tuple[str, str]:
@@ -1779,13 +1926,15 @@ def test_workspace_backup_projects_integrated_execution_and_broker_closure(
         ).fetchall() == [
             ("0001-core-authority",),
             ("0002-candidate-publication",),
-            ("p3-jobs-001",),
-            ("0003-execution-authority",),
-            ("0004-execution-remediation",),
-        ]
+                ("p3-jobs-001",),
+                ("0003-execution-authority",),
+                ("0004-execution-remediation",),
+                ("0005-durable-checkpoint-authority",),
+                ("0006-durable-authority-operation-closure",),
+            ]
         assert connection.execute(
             "SELECT count(*) FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%'"
-        ).fetchone()[0] == 30
+        ).fetchone()[0] == 36
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
         assert connection.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
         assert connection.execute(
@@ -1900,6 +2049,92 @@ def test_workspace_backup_projects_integrated_execution_and_broker_closure(
             "SELECT workspace_id FROM workspace ORDER BY workspace_id"
         ).fetchall() == [("ws-1",), ("ws-2",)]
         unscoped_db.close()
+
+
+def test_workspace_backup_projects_durable_authority_and_restores_checkpoint_closure(
+    tmp_path: Path,
+) -> None:
+    source, database, assets, _ws1_cover_id = _source(tmp_path)
+    repository = CoreAuthorityRepository(database)
+    closure = _add_durable_control_closure(
+        repository,
+        AssetStore(assets),
+        workspace_id="ws-1",
+        marker="durable-control",
+    )
+    repository.close()
+
+    plane = _plane(source, database, assets)
+    backup = plane.create_backup(
+        tmp_path / "durable-control-backup",
+        _request("durable-control-backup", workspace_ids=("ws-1",)),
+    )
+    projected = sqlite3.connect(backup.bundle_root / "core" / "core.db")
+    try:
+        assert projected.execute(
+            "SELECT count(*) FROM execution_checkpoint WHERE job_id=?",
+            (closure["job_id"],),
+        ).fetchone()[0] == 1
+        assert projected.execute(
+            "SELECT count(*) FROM execution_checkpoint_operation WHERE job_id=?",
+            (closure["job_id"],),
+        ).fetchone()[0] == 1
+        assert projected.execute(
+            "SELECT count(*) FROM execution_control_operation WHERE job_id=?",
+            (closure["job_id"],),
+        ).fetchone()[0] == 2
+        assert projected.execute(
+            "SELECT count(*) FROM execution_orchestration_owner WHERE workspace_id='ws-1'"
+        ).fetchone()[0] == 1
+        assert projected.execute(
+            "SELECT operation,method FROM execution_control_operation "
+            "WHERE job_id=? ORDER BY operation",
+            (closure["job_id"],),
+        ).fetchall() == [
+            ("await_user", "host.job.await_user/v1"),
+            ("resume", "job.resume"),
+        ]
+        state_asset_id = json.loads(
+            (backup.bundle_root / "core" / "snapshot.json").read_text(encoding="utf-8")
+        )["covered_aggregates"][0]["state_asset_id"]
+        state = json.loads(AssetStore(assets).read(state_asset_id))
+        assert {
+            "execution_checkpoint",
+            "execution_checkpoint_operation",
+            "execution_control_operation",
+            "execution_orchestration_owner",
+        }.issubset(state["tables"])
+    finally:
+        projected.close()
+
+    assert closure["checkpoint_asset_id"] in backup.receipt["asset_ids"]
+    assert closure["prompt_asset_id"] in backup.receipt["asset_ids"]
+
+    restored = plane.stage_restore(
+        backup.bundle_root,
+        tmp_path / "durable-control-restored",
+        _restore_request("restore-durable-control"),
+    )
+    restored_database = restored.target_root / "core" / "core.db"
+    reopened = CoreAuthorityRepository(restored_database)
+    try:
+        restored_assets = AssetStore(restored.target_root / "assets")
+        restored_authority = ExecutionAuthority(reopened, restored_assets)
+        latest = restored_authority.checkpoint_store.get_latest(closure["job_id"])
+        assert latest is not None
+        assert latest["checkpoint_id"] == f"checkpoint-durable-control"
+        replay = restored_authority.control_port.resume(
+            job_id=closure["job_id"],
+            step_id=closure["step_id"],
+            operation_key="resume-durable-control",
+            resume_of_attempt_id=closure["attempt_id"],
+            worker_run_id=closure["resume_worker_run_id"],
+            new_attempt_id=closure["resumed_attempt_id"],
+            checkpoint_asset_id=closure["checkpoint_asset_id"],
+        )
+        assert replay.replayed
+    finally:
+        reopened.close()
 
 
 def test_workspace_backup_preserves_same_workspace_parent_receipt_closure(

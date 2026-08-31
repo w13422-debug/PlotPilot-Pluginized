@@ -347,6 +347,15 @@ CREATE INDEX IF NOT EXISTS execution_checkpoint_event
     ON execution_checkpoint(job_id, job_event_seq);
 """,
     ),
+    Migration(
+        "0006-durable-authority-operation-closure",
+        """
+ALTER TABLE execution_checkpoint_operation ADD COLUMN method TEXT NOT NULL DEFAULT 'host.checkpoint.commit/v1';
+ALTER TABLE execution_checkpoint_operation ADD COLUMN request_json TEXT NOT NULL DEFAULT '{}';
+ALTER TABLE execution_control_operation ADD COLUMN method TEXT NOT NULL DEFAULT '';
+ALTER TABLE execution_control_operation ADD COLUMN request_json TEXT NOT NULL DEFAULT '{}';
+""",
+    ),
 )
 
 

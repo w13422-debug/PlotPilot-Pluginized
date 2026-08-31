@@ -22,6 +22,8 @@ from backend.plotpilot_plugin_sdk.framing import decode_frame
 from backend.plotpilot_plugin_sdk.verifier import (
     assert_valid,
     hash_without_field,
+    validate_rpc_result,
+    verify_checkpoint,
     verify_snapshot,
 )
 
@@ -46,6 +48,17 @@ from ..plugins.store import PackageStore
 from .models import BackupBarrier, BackupMode, CoreSnapshotCapture, PluginBackupFile
 
 
+def _json_canonical(value: Mapping[str, object]) -> str:
+    """Return the exact JSON text accepted for projected Core rows."""
+
+    return canonical_bytes(dict(value)).decode("utf-8")
+
+
+def _stable_id(prefix: str, *parts: object) -> str:
+    material = "\n".join(str(part) for part in parts).encode("utf-8")
+    return f"{prefix}-{hashlib.sha256(material).hexdigest()[:48]}"
+
+
 class CoreSnapshotAdapterError(RuntimeError):
     """The frozen Core authority cannot be represented as core-snapshot/v1."""
 
@@ -57,6 +70,7 @@ class WorkspaceProjectionError(CoreSnapshotAdapterError):
 _CORE_TABLE_ORDER = (
     "schema_migration",
     "workspace",
+    "execution_orchestration_owner",
     "document",
     "node",
     "revision",
@@ -69,6 +83,9 @@ _CORE_TABLE_ORDER = (
     "execution_receipt",
     "execution_job_event",
     "execution_core_event",
+    "execution_checkpoint",
+    "execution_checkpoint_operation",
+    "execution_control_operation",
     "execution_outcome",
     "execution_candidate_binding",
     "execution_publication_binding",
@@ -213,6 +230,11 @@ class SqliteWorkspaceDatabaseProjector:
             "schema_migration": _migration_rows(connection),
             "workspace": workspace,
         }
+        selected["execution_orchestration_owner"] = [
+            row
+            for row in _rows(connection, "execution_orchestration_owner")
+            if row.get("workspace_id") == workspace_id
+        ]
         for table in ("document", "node", "revision", "relation"):
             selected[table] = _rows(
                 connection,
@@ -254,6 +276,9 @@ class SqliteWorkspaceDatabaseProjector:
         for table in (
             "execution_receipt",
             "execution_job_event",
+            "execution_checkpoint",
+            "execution_checkpoint_operation",
+            "execution_control_operation",
             "execution_outcome",
             "execution_candidate_binding",
             "execution_publication_binding",
@@ -678,6 +703,102 @@ class SqliteWorkspaceDatabaseProjector:
                 raise WorkspaceProjectionError("execution attempt crosses Workspace")
             attempt_owner[attempt_id] = owner
 
+        owner_rows: dict[str, dict[str, object]] = {}
+        for row in _rows(connection, "execution_orchestration_owner"):
+            workspace_id = row.get("workspace_id")
+            require(workspace_owner, workspace_id, "orchestration owner Workspace")
+            if not isinstance(workspace_id, str) or workspace_id in owner_rows:
+                raise WorkspaceProjectionError("orchestration owner identity is ambiguous")
+            if (
+                not isinstance(row.get("owner_instance_id"), str)
+                or not isinstance(row.get("owner_token"), str)
+                or not isinstance(row.get("lease_epoch"), int)
+                or isinstance(row.get("lease_epoch"), bool)
+                or int(row["lease_epoch"]) < 1
+                or not isinstance(row.get("revision"), int)
+                or isinstance(row.get("revision"), bool)
+                or int(row["revision"]) < 1
+                or not isinstance(row.get("lease_expires_at"), str)
+            ):
+                raise WorkspaceProjectionError("orchestration owner authority is invalid")
+            owner_rows[workspace_id] = row
+
+        checkpoint_rows: dict[str, dict[str, object]] = {}
+        checkpoint_operation_keys: dict[tuple[str, str], dict[str, object]] = {}
+        checkpoint_chain_totals: dict[tuple[str, str], object] = {}
+        checkpoint_chain_sequences: dict[tuple[str, str], set[int]] = defaultdict(set)
+        for row in _rows(connection, "execution_checkpoint"):
+            checkpoint_id = row.get("checkpoint_id")
+            job_id = row.get("job_id")
+            step_id = row.get("step_id")
+            attempt_id = row.get("source_attempt_id")
+            owner = require(job_owner, job_id, "execution checkpoint job")
+            step = step_rows.get(str(step_id))
+            attempt = attempt_rows.get(str(attempt_id))
+            if (
+                not isinstance(checkpoint_id, str)
+                or checkpoint_id in checkpoint_rows
+                or step is None
+                or attempt is None
+                or step.get("job_id") != job_id
+                or attempt.get("job_id") != job_id
+                or attempt.get("step_id") != step_id
+                or require(step_owner, step_id, "execution checkpoint step") != owner
+                or require(attempt_owner, attempt_id, "execution checkpoint attempt") != owner
+                or int(row.get("lease_epoch", 0)) != int(attempt.get("lease_epoch", 0))
+                or row.get("run_snapshot_hash") != job_rows[str(job_id)].get("run_snapshot_hash")
+            ):
+                raise WorkspaceProjectionError("execution checkpoint crosses Workspace or Attempt")
+            value = SqliteWorkspaceDatabaseProjector._json_mapping(
+                row.get("checkpoint_json"), "execution checkpoint"
+            )
+            try:
+                verify_checkpoint(
+                    value,
+                    expected_snapshot_hash=str(row.get("run_snapshot_hash")),
+                )
+            except Exception as exc:
+                raise WorkspaceProjectionError("execution checkpoint contract is invalid") from exc
+            if (
+                _json_canonical(value) != row.get("checkpoint_json")
+                or any(
+                    value.get(field) != row.get(field)
+                    for field in (
+                        "checkpoint_id",
+                        "job_id",
+                        "step_id",
+                        "source_attempt_id",
+                        "checkpoint_seq",
+                        "lease_epoch",
+                        "run_snapshot_hash",
+                        "replay_policy",
+                        "completed_units",
+                        "total_units",
+                        "unit_set_hash",
+                        "state_asset_id",
+                        "checkpoint_hash",
+                    )
+                )
+                or not isinstance(row.get("operation_key"), str)
+                or not isinstance(row.get("payload_hash"), str)
+                or len(str(row.get("payload_hash"))) != 64
+            ):
+                raise WorkspaceProjectionError("execution checkpoint row identity is invalid")
+            chain = (str(job_id), str(step_id))
+            sequence = int(row["checkpoint_seq"])
+            if sequence in checkpoint_chain_sequences[chain]:
+                raise WorkspaceProjectionError("execution checkpoint sequence is ambiguous")
+            checkpoint_chain_sequences[chain].add(sequence)
+            if chain not in checkpoint_chain_totals:
+                checkpoint_chain_totals[chain] = row.get("total_units")
+            elif checkpoint_chain_totals[chain] != row.get("total_units"):
+                raise WorkspaceProjectionError("execution checkpoint total_units drifted")
+            operation_key = (str(job_id), str(row["operation_key"]))
+            if operation_key in checkpoint_operation_keys:
+                raise WorkspaceProjectionError("execution checkpoint operation identity is ambiguous")
+            checkpoint_rows[checkpoint_id] = row
+            checkpoint_operation_keys[operation_key] = row
+
         receipt_owner: dict[str, str] = {}
         receipt_rows: dict[str, dict[str, object]] = {}
         receipt_values: dict[str, dict[str, object]] = {}
@@ -780,6 +901,9 @@ class SqliteWorkspaceDatabaseProjector:
                 )
 
         job_event_keys: set[tuple[str, int]] = set()
+        job_event_rows: dict[tuple[str, int], dict[str, object]] = {}
+        job_event_values: dict[tuple[str, int], dict[str, object]] = {}
+        job_event_by_id: dict[str, dict[str, object]] = {}
         for row in _rows(connection, "execution_job_event"):
             owner = require(job_owner, row.get("job_id"), "execution Job Event job")
             attempt_id = row.get("attempt_id")
@@ -819,7 +943,301 @@ class SqliteWorkspaceDatabaseProjector:
             )
             if actual != expected:
                 raise WorkspaceProjectionError("execution Job Event identity is invalid")
-            job_event_keys.add((str(row["job_id"]), int(row["job_event_seq"])))
+            key = (str(row["job_id"]), int(row["job_event_seq"]))
+            if key in job_event_keys or str(row["event_id"]) in job_event_by_id:
+                raise WorkspaceProjectionError("execution Job Event identity is ambiguous")
+            if int(row["job_event_seq"]) > int(job_rows[str(row["job_id"])] ["job_event_high_water"]):
+                raise WorkspaceProjectionError("execution Job Event exceeds its durable high-water")
+            job_event_keys.add(key)
+            job_event_rows[key] = row
+            job_event_values[key] = event
+            job_event_by_id[str(row["event_id"])] = event
+
+        checkpoint_operation_rows: dict[tuple[str, str], dict[str, object]] = {}
+        for row in _rows(connection, "execution_checkpoint_operation"):
+            job_id = row.get("job_id")
+            operation_key = row.get("operation_key")
+            key = (str(job_id), str(operation_key))
+            checkpoint_row = checkpoint_operation_keys.get(key)
+            if (
+                checkpoint_row is None
+                or key in checkpoint_operation_rows
+                or require(job_owner, job_id, "checkpoint operation job")
+                != job_owner.get(str(checkpoint_row.get("job_id")))
+                or row.get("method") != "host.checkpoint.commit/v1"
+                or row.get("checkpoint_id") != checkpoint_row.get("checkpoint_id")
+                or int(row.get("job_event_seq", 0)) != int(checkpoint_row.get("job_event_seq", 0))
+                or row.get("payload_hash") != checkpoint_row.get("payload_hash")
+            ):
+                raise WorkspaceProjectionError("execution checkpoint operation is orphaned or inconsistent")
+            event_key = (str(job_id), int(row["job_event_seq"]))
+            event = job_event_values.get(event_key)
+            attempt = attempt_rows.get(str(checkpoint_row.get("source_attempt_id")))
+            if event is None or attempt is None:
+                raise WorkspaceProjectionError("execution checkpoint operation Event closure is missing")
+            if (
+                event.get("event_type") != f"plugin.{attempt.get('plugin_id')}.job.checkpoint"
+                or event.get("attempt_id") != checkpoint_row.get("source_attempt_id")
+                or event.get("step_id") != checkpoint_row.get("step_id")
+                or (event.get("payload_asset_id"), event.get("payload_hash"))
+                == (None, None)
+                or not isinstance(event.get("payload_asset_id"), str)
+                or not isinstance(event.get("payload_hash"), str)
+                or len(str(event.get("payload_hash"))) != 64
+                or any(char not in "0123456789abcdef" for char in str(event.get("payload_hash")))
+                or event.get("payload_asset_id") != "asset-sha256-" + str(event.get("payload_hash"))
+            ):
+                raise WorkspaceProjectionError("execution checkpoint Event Asset closure is invalid")
+            checkpoint_value = SqliteWorkspaceDatabaseProjector._json_mapping(
+                checkpoint_row.get("checkpoint_json"), "execution checkpoint"
+            )
+            request = SqliteWorkspaceDatabaseProjector._json_mapping(
+                row.get("request_json"), "execution checkpoint operation request"
+            )
+            response = SqliteWorkspaceDatabaseProjector._json_mapping(
+                row.get("response_json"), "execution checkpoint operation response"
+            )
+            expected_request = {
+                "method": "host.checkpoint.commit/v1",
+                "operation_key": operation_key,
+                "checkpoint": checkpoint_value,
+                "checkpoint_asset_id": event["payload_asset_id"],
+                "checkpoint_asset_hash": event["payload_hash"],
+                "local_seq": request.get("local_seq"),
+                "worker_run_id": attempt.get("worker_run_id"),
+            }
+            if request.get("local_seq") is not None and request.get("local_seq") != event.get("local_seq"):
+                raise WorkspaceProjectionError("execution checkpoint operation local sequence drifted")
+            if (
+                _json_canonical(request) != row.get("request_json")
+                or request != expected_request
+                or hashlib.sha256(canonical_bytes(request)).hexdigest() != row.get("payload_hash")
+                or response
+                != {
+                    "accepted": True,
+                    "checkpoint_id": checkpoint_row.get("checkpoint_id"),
+                    "completed_units": checkpoint_value.get("completed_units"),
+                    "total_units": checkpoint_value.get("total_units"),
+                    "job_event_seq": checkpoint_row.get("job_event_seq"),
+                }
+                or _json_canonical(response) != row.get("response_json")
+            ):
+                raise WorkspaceProjectionError("execution checkpoint operation closure is invalid")
+            checkpoint_operation_rows[key] = row
+
+        if set(checkpoint_operation_rows) != set(checkpoint_operation_keys):
+            raise WorkspaceProjectionError("execution checkpoint operation closure is incomplete")
+        checkpoint_by_job: dict[str, list[dict[str, object]]] = defaultdict(list)
+        for row in checkpoint_rows.values():
+            checkpoint_by_job[str(row["job_id"])].append(row)
+            event = job_event_values.get((str(row["job_id"]), int(row["job_event_seq"])))
+            if event is None:
+                raise WorkspaceProjectionError("execution checkpoint Job Event is missing")
+            if (
+                event.get("event_type") != f"plugin.{attempt_rows[str(row['source_attempt_id'])].get('plugin_id')}.job.checkpoint"
+                or event.get("attempt_id") != row.get("source_attempt_id")
+                or event.get("step_id") != row.get("step_id")
+            ):
+                raise WorkspaceProjectionError("execution checkpoint Job Event identity is invalid")
+        for job_id, rows in checkpoint_by_job.items():
+            latest = max(rows, key=lambda item: (int(item["job_event_seq"]), int(item["checkpoint_seq"]), str(item["checkpoint_id"])))
+            if job_rows[job_id].get("current_checkpoint_id") != latest.get("checkpoint_id"):
+                raise WorkspaceProjectionError("execution Job current checkpoint authority is inconsistent")
+
+        control_operation_rows: dict[tuple[str, str], dict[str, object]] = {}
+        control_methods = {
+            "pause": "job.pause",
+            "resume": "job.resume",
+            "cancel": "job.cancel",
+            "await_user": "host.job.await_user/v1",
+        }
+        control_request_fields = {
+            "pause": {"method", "operation", "job_id", "step_id", "attempt_id", "lease_epoch", "operation_key", "worker_run_id", "reason", "checkpoint", "checkpoint_asset_id", "checkpoint_asset_hash", "prompt_asset_id", "prompt_asset_hash"},
+            "await_user": {"method", "operation", "job_id", "step_id", "attempt_id", "lease_epoch", "operation_key", "worker_run_id", "reason", "checkpoint", "checkpoint_asset_id", "checkpoint_asset_hash", "prompt_asset_id", "prompt_asset_hash"},
+            "cancel": {"method", "operation", "job_id", "step_id", "attempt_id", "lease_epoch", "operation_key", "worker_run_id", "reason"},
+            "resume": {"method", "operation", "job_id", "step_id", "operation_key", "attempt_id", "resume_of_attempt_id", "source_attempt_id", "lease_epoch", "worker_run_id", "new_attempt_id", "plugin_id", "release_id", "package_hash", "capability_id", "generation_id", "preallocated_receipt_id", "lease_expires_at", "checkpoint", "checkpoint_asset_id", "checkpoint_asset_hash", "resume_reason"},
+        }
+        for row in _rows(connection, "execution_control_operation"):
+            job_id = row.get("job_id")
+            operation_key = row.get("operation_key")
+            key = (str(job_id), str(operation_key))
+            operation = row.get("operation")
+            if (
+                not isinstance(operation, str)
+                or operation not in control_methods
+                or key in control_operation_rows
+                or require(job_owner, job_id, "control operation job") is None
+                or row.get("method") != control_methods.get(operation)
+            ):
+                raise WorkspaceProjectionError("execution control operation identity is invalid")
+            request = SqliteWorkspaceDatabaseProjector._json_mapping(
+                row.get("request_json"), "execution control operation request"
+            )
+            result = SqliteWorkspaceDatabaseProjector._json_mapping(
+                row.get("response_json"), "execution control operation response"
+            )
+            if (
+                set(request) != control_request_fields[operation]
+                or request.get("method") != row.get("method")
+                or request.get("operation") != operation
+                or request.get("job_id") != job_id
+                or request.get("operation_key") != operation_key
+                or _json_canonical(request) != row.get("request_json")
+                or hashlib.sha256(canonical_bytes(request)).hexdigest() != row.get("payload_hash")
+                or _json_canonical(result) != row.get("response_json")
+            ):
+                raise WorkspaceProjectionError("execution control operation request closure is invalid")
+            request_attempt_id = request.get("source_attempt_id") if operation == "resume" else request.get("attempt_id")
+            request_attempt = attempt_rows.get(str(request_attempt_id))
+            step = step_rows.get(str(request.get("step_id")))
+            job = job_rows.get(str(job_id))
+            if (
+                request_attempt is None
+                or step is None
+                or job is None
+                or request_attempt.get("job_id") != job_id
+                or request_attempt.get("step_id") != request.get("step_id")
+            ):
+                raise WorkspaceProjectionError("execution control operation Attempt is orphaned")
+            target_attempt = request_attempt
+            if operation == "resume":
+                if (
+                    request.get("lease_epoch") is not None
+                    and request.get("lease_epoch") != request_attempt.get("lease_epoch")
+                ):
+                    raise WorkspaceProjectionError("execution resume source epoch is invalid")
+                target_attempt = attempt_rows.get(str(request.get("new_attempt_id")))
+            elif (
+                request.get("lease_epoch") != request_attempt.get("lease_epoch")
+                or request.get("worker_run_id") != request_attempt.get("worker_run_id")
+            ):
+                raise WorkspaceProjectionError("execution control Attempt fence is invalid")
+            if target_attempt is None:
+                raise WorkspaceProjectionError("execution control target Attempt is orphaned")
+            if (
+                row.get("attempt_id") != target_attempt.get("attempt_id")
+                or row.get("lease_epoch") is None
+                or int(row["lease_epoch"]) < 1
+                or row.get("lease_epoch") != target_attempt.get("lease_epoch")
+            ):
+                raise WorkspaceProjectionError("execution control operation fence is invalid")
+            if operation == "resume":
+                source_attempt = attempt_rows.get(str(request.get("source_attempt_id")))
+                checkpoint_value = request.get("checkpoint")
+                checkpoint_row = None if not isinstance(checkpoint_value, Mapping) else checkpoint_rows.get(str(checkpoint_value.get("checkpoint_id")))
+                if (
+                    target_attempt is None
+                    or source_attempt is None
+                    or checkpoint_row is None
+                    or target_attempt.get("job_id") != job_id
+                    or target_attempt.get("step_id") != request.get("step_id")
+                    or target_attempt.get("resume_of_attempt_id") != request.get("source_attempt_id")
+                    or target_attempt.get("resume_checkpoint_id") != checkpoint_row.get("checkpoint_id")
+                    or row.get("lease_epoch") != target_attempt.get("lease_epoch")
+                    or target_attempt.get("worker_run_id") != request.get("worker_run_id")
+                ):
+                    raise WorkspaceProjectionError("execution resume operation closure is invalid")
+                expected_result = {
+                    "accepted": True,
+                    "worker_run_id": target_attempt.get("worker_run_id"),
+                    "provenance_receipt_id": target_attempt.get("preallocated_receipt_id"),
+                    "output_streams": [],
+                }
+            elif operation in {"pause", "await_user"}:
+                checkpoint_value = request.get("checkpoint")
+                checkpoint_row = None if not isinstance(checkpoint_value, Mapping) else checkpoint_rows.get(str(checkpoint_value.get("checkpoint_id")))
+                if (
+                    checkpoint_row is None
+                    or checkpoint_row.get("operation_key") != operation_key
+                    or request.get("checkpoint_asset_id") is None
+                    or request.get("checkpoint_asset_hash") is None
+                ):
+                    raise WorkspaceProjectionError("execution control checkpoint closure is invalid")
+                if operation == "await_user":
+                    if request.get("reason") not in {"user_input", "external_confirmation"}:
+                        raise WorkspaceProjectionError("execution await_user reason is not frozen")
+                    if (
+                        not isinstance(request.get("prompt_asset_id"), str)
+                        or not isinstance(request.get("prompt_asset_hash"), str)
+                        or request.get("prompt_asset_id")
+                        != "asset-sha256-" + str(request.get("prompt_asset_hash"))
+                    ):
+                        raise WorkspaceProjectionError("execution await_user prompt Asset closure is invalid")
+                expected_result = (
+                    {"accepted": True, "checkpoint_asset_id": request.get("checkpoint_asset_id")}
+                    if operation == "pause"
+                    else {"accepted": True, "attempt_state": "suspended", "step_state": "waiting_user", "job_state": "waiting_user", "job_event_seq": None}
+                )
+                if operation == "await_user":
+                    event = job_event_values.get((str(checkpoint_row["job_id"]), int(checkpoint_row["job_event_seq"])))
+                    control_event = job_event_by_id.get(_stable_id("job-event", job_id, operation, operation_key))
+                    if not isinstance(control_event, Mapping):
+                        raise WorkspaceProjectionError("execution await_user Job Event closure is missing")
+                    expected_result["job_event_seq"] = control_event.get("job_event_seq")
+            else:
+                terminal_known = result.get("terminal_known") is True
+                if terminal_known:
+                    if result.get("accepted") is not True or not isinstance(result.get("attempt_state"), str):
+                        raise WorkspaceProjectionError("terminal cancel result is invalid")
+                    expected_result = result
+                else:
+                    expected_result = {"accepted": True, "terminal_known": False, "attempt_state": "cancelling"}
+            if operation != "cancel" or result.get("terminal_known") is not True:
+                if operation == "resume":
+                    checkpoint_value = request.get("checkpoint")
+                    checkpoint_row = checkpoint_rows.get(str(checkpoint_value.get("checkpoint_id"))) if isinstance(checkpoint_value, Mapping) else None
+                elif operation in {"pause", "await_user"}:
+                    checkpoint_value = request.get("checkpoint")
+                control_event = job_event_by_id.get(_stable_id("job-event", job_id, operation, operation_key))
+                if not isinstance(control_event, Mapping):
+                    raise WorkspaceProjectionError("execution control Job Event closure is missing")
+                control_event_key = (str(job_id), int(control_event.get("job_event_seq", 0)))
+                if (
+                    control_event_key not in job_event_rows
+                    or control_event.get("event_type") != f"plugin.{request_attempt.get('plugin_id')}.job.{operation}"
+                    or control_event.get("attempt_id") != (request.get("new_attempt_id") if operation == "resume" else request.get("attempt_id"))
+                    or int(control_event.get("job_event_seq", 0)) > int(job_rows[str(job_id)].get("job_event_high_water", 0))
+                ):
+                    raise WorkspaceProjectionError("execution control Job Event identity is invalid")
+                if checkpoint_value is not None:
+                    cp_event = job_event_values.get((str(job_id), int(checkpoint_row["job_event_seq"]))) if checkpoint_row is not None else None
+                    if cp_event is None or (
+                        control_event.get("payload_asset_id"), control_event.get("payload_hash")
+                    ) != (cp_event.get("payload_asset_id"), cp_event.get("payload_hash")):
+                        raise WorkspaceProjectionError("execution control checkpoint Event binding is invalid")
+                elif (control_event.get("payload_asset_id"), control_event.get("payload_hash")) != (None, None):
+                    raise WorkspaceProjectionError("execution control Job Event payload is invalid")
+                if isinstance(result, dict) and expected_result != result:
+                    raise WorkspaceProjectionError("execution control result closure is invalid")
+                if operation == "await_user" and isinstance(result.get("job_event_seq"), int) and result.get("job_event_seq") != control_event.get("job_event_seq"):
+                    raise WorkspaceProjectionError("execution await_user result cursor is invalid")
+                core_event = connection.execute(
+                    "SELECT core_event_seq,aggregate_revision,event_json "
+                    "FROM execution_core_event WHERE event_id=?",
+                    (_stable_id("core-event", job_id, operation_key, "job.state.changed"),),
+                ).fetchone()
+                if core_event is None:
+                    raise WorkspaceProjectionError("execution control Core Event closure is missing")
+                core_event = {
+                    "core_event_seq": core_event[0],
+                    "aggregate_revision": core_event[1],
+                    "event_json": core_event[2],
+                }
+                core_value = SqliteWorkspaceDatabaseProjector._json_mapping(
+                    core_event.get("event_json"), "execution control Core Event"
+                )
+                if (
+                    core_value.get("event_type") != "job.state.changed"
+                    or core_value.get("aggregate_id") != job_id
+                    or core_value.get("workspace_id") != job_rows[str(job_id)].get("workspace_id")
+                    or core_value.get("correlation_id") != operation_key
+                    or core_value.get("causation_id") != (request.get("new_attempt_id") if operation == "resume" else request.get("attempt_id"))
+                    or core_value.get("core_event_seq") != core_event.get("core_event_seq")
+                    or int(core_event.get("core_event_seq", 0)) > int(job_rows[str(job_id)].get("core_event_high_water", 0))
+                    or int(core_event.get("aggregate_revision", 0)) > int(job_rows[str(job_id)].get("job_revision", 0))
+                ):
+                    raise WorkspaceProjectionError("execution control Core Event identity is invalid")
+            control_operation_rows[key] = row
 
         core_event_seqs: set[int] = set()
         for row in _rows(connection, "execution_core_event"):

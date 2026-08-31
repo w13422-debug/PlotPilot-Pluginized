@@ -20,6 +20,7 @@ from backend.plotpilot_plugin_sdk import (
     ContractError,
     ContractValidationError,
     ErrorCode,
+    assert_valid,
     canonical_bytes,
     parse_json_bytes,
     sha256_hex,
@@ -28,14 +29,17 @@ from backend.plotpilot_plugin_sdk import (
 from backend.plotpilot_plugin_sdk.verifier import validate_rpc_result
 
 from ..domain.entities import utc_now
-from ..events.store import JobEventStore
+from ..events.store import CoreEventStore, JobEventStore
 from ..jobs.states import ATTEMPT_EDGES, JOB_EDGES, STEP_EDGES, can_transition
-from .authority import CoreAuthorityRepository
+from .authority import CoreAuthorityRepository, verify_attempt_snapshot_binding
 
 
 _ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$")
 _HASH = re.compile(r"^[0-9a-f]{64}$")
 _ACTIVE_ATTEMPT_STATES = frozenset({"running", "cancelling"})
+_TERMINAL_ATTEMPT_STATES = frozenset({"succeeded", "partial", "failed", "cancelled"})
+_AWAIT_USER_REASONS = frozenset({"user_input", "external_confirmation"})
+_CHECKPOINT_METHOD = "host.checkpoint.commit/v1"
 _CONTROL_METHODS = {
     "pause": "job.pause",
     "resume": "job.resume",
@@ -229,57 +233,182 @@ class SQLiteCheckpointStore:
         source: Mapping[str, Any] | str,
         *,
         checkpoint_asset_id: str | None = None,
+        allow_content_drift: bool = False,
     ) -> tuple[dict[str, Any], str | None, str | None]:
         asset_id: str | None = checkpoint_asset_id
+        if isinstance(source, str) and asset_id is None:
+            # The string form is the immutable Asset ID shorthand used by
+            # the internal control port.  It still resolves through the
+            # AssetStore below; it is not an inline checkpoint bypass.
+            asset_id = source
+        if asset_id is None:
+            raise ContractError(
+                ErrorCode.CHECKPOINT_INVALID,
+                "checkpoint commit requires an immutable checkpoint Asset",
+            )
+        _require_id(asset_id, "checkpoint_asset_id")
         if isinstance(source, Mapping):
             value = dict(source)
-            if asset_id is not None:
-                _require_id(asset_id, "checkpoint_asset_id")
-                if self.assets is None:
-                    raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint Asset authority is unavailable")
-                try:
-                    raw = self.assets.read(asset_id)
-                    loaded = parse_json_bytes(raw)
-                except ContractError:
-                    raise
-                except Exception as exc:
-                    raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint Asset is missing or invalid") from exc
-                if not isinstance(loaded, Mapping) or dict(loaded) != value:
-                    raise ContractError(ErrorCode.CHECKPOINT_INVALID, "checkpoint Asset content drifted")
         elif isinstance(source, str):
-            if asset_id is not None and asset_id != source:
+            if asset_id != source:
                 raise ContractValidationError("checkpoint source Asset IDs disagree")
-            asset_id = source
-            _require_id(asset_id, "checkpoint_asset_id")
-            if self.assets is None:
-                raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint Asset authority is unavailable")
-            try:
-                raw = self.assets.read(asset_id)
-                loaded = parse_json_bytes(raw)
-            except ContractError:
-                raise
-            except Exception as exc:
-                raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint Asset is missing or invalid") from exc
-            if not isinstance(loaded, Mapping):
-                raise ContractError(ErrorCode.CHECKPOINT_INVALID, "checkpoint Asset is not an object")
-            value = dict(loaded)
+            value = {}
         else:
             raise ContractValidationError("checkpoint must be an object or checkpoint Asset ID")
 
-        verify_checkpoint(value)
-        asset_hash: str | None = None
-        if asset_id is not None:
-            try:
-                if self.assets is None:
-                    raise OSError("Asset authority is unavailable")
-                asset_hash = self.assets.require(asset_id).sha256
-            except Exception as exc:
-                raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint Asset is missing or invalid") from exc
+        if self.assets is None:
+            raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint Asset authority is unavailable")
+        try:
+            raw = self.assets.read(asset_id)
+            loaded = parse_json_bytes(raw)
+            if not isinstance(loaded, Mapping):
+                raise ContractValidationError("checkpoint Asset is not an object")
+            loaded_value = dict(loaded)
+            if isinstance(source, Mapping) and loaded_value != value:
+                if not allow_content_drift:
+                    raise ContractError(ErrorCode.CHECKPOINT_INVALID, "checkpoint Asset content drifted")
+            verify_checkpoint(loaded_value)
+            if raw != canonical_bytes(loaded_value):
+                raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint Asset is not canonical JSON")
+            asset_hash = self.assets.require(asset_id).sha256
+            if asset_hash != sha256_hex(raw):
+                raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint Asset hash authority drifted")
+            if not (isinstance(source, Mapping) and loaded_value != value):
+                value = loaded_value
+            else:
+                # The caller's value remains the request identity when a
+                # retry supplies a mapping that differs from the immutable
+                # Asset.  The transaction path fences the Attempt first,
+                # then returns DUPLICATE_REQUEST for an existing key and
+                # rejects a new key without materializing the drift.
+                verify_checkpoint(value)
+        except ContractError:
+            raise
+        except Exception as exc:
+            raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint Asset is missing or invalid") from exc
         return value, asset_id, asset_hash
+
+    def asset_hash(self, asset_id: str, *, label: str = "Asset") -> str:
+        """Return the immutable hash for an Asset referenced by authority data."""
+
+        _require_id(asset_id, f"{label.lower()}_id")
+        if self.assets is None:
+            raise ContractError(ErrorCode.ASSET_ERROR, f"{label} authority is unavailable")
+        try:
+            return str(self.assets.require(asset_id).sha256)
+        except ContractError:
+            raise
+        except Exception as exc:
+            raise ContractError(ErrorCode.ASSET_ERROR, f"{label} is missing or invalid") from exc
 
     @staticmethod
     def _operation_hash(value: Mapping[str, Any]) -> str:
         return sha256_hex(canonical_bytes(dict(value)))
+
+    @staticmethod
+    def _checkpoint_request(
+        *,
+        operation_key: str,
+        checkpoint: Mapping[str, Any],
+        checkpoint_asset_id: str,
+        checkpoint_asset_hash: str,
+        local_seq: int | None,
+        worker_run_id: str,
+    ) -> dict[str, Any]:
+        """Return the closed, durable request identity for checkpoint commit.
+
+        The checkpoint row is the result of this request, not its idempotency
+        identity.  Keeping the method, caller, Asset binding, and every
+        caller-supplied field in one canonical value prevents a retry from
+        silently changing the operation while retaining its key.
+        """
+
+        return {
+            "method": _CHECKPOINT_METHOD,
+            "operation_key": operation_key,
+            "checkpoint": dict(checkpoint),
+            "checkpoint_asset_id": checkpoint_asset_id,
+            "checkpoint_asset_hash": checkpoint_asset_hash,
+            "local_seq": local_seq,
+            "worker_run_id": worker_run_id,
+        }
+
+    @staticmethod
+    def _validate_snapshot_attempt_binding(
+        job: sqlite3.Row,
+        attempt: sqlite3.Row,
+    ) -> None:
+        """Fence release/generation identity before an operation is replayed."""
+
+        package_hash = attempt["package_hash"]
+        if not isinstance(package_hash, str) or _HASH.fullmatch(package_hash) is None:
+            raise ContractError(ErrorCode.INCOMPATIBLE_GENERATION, "Attempt package identity is invalid")
+        if not isinstance(attempt["release_id"], str) or _HASH.fullmatch(attempt["release_id"]) is None:
+            raise ContractError(ErrorCode.INCOMPATIBLE_GENERATION, "Attempt release identity is invalid")
+        if not isinstance(attempt["generation_id"], str) or not attempt["generation_id"]:
+            raise ContractError(ErrorCode.INCOMPATIBLE_GENERATION, "Attempt generation identity is invalid")
+        try:
+            snapshot = json.loads(str(job["run_snapshot_json"]))
+        except (TypeError, json.JSONDecodeError) as exc:
+            raise ContractError(ErrorCode.ASSET_ERROR, "Attempt RunSnapshot authority is invalid") from exc
+        if not isinstance(snapshot, Mapping):
+            raise ContractError(ErrorCode.ASSET_ERROR, "Attempt RunSnapshot authority is invalid")
+        if snapshot.get("snapshot_hash") is not None and snapshot.get("snapshot_hash") != job["run_snapshot_hash"]:
+            raise ContractError(ErrorCode.ASSET_ERROR, "Attempt RunSnapshot hash authority drifted")
+        if snapshot.get("schema") == "run-snapshot/v1":
+            try:
+                verify_attempt_snapshot_binding(snapshot, attempt)
+            except Exception as exc:
+                raise ContractError(
+                    ErrorCode.INCOMPATIBLE_GENERATION,
+                    "Attempt release/generation is not bound to its RunSnapshot",
+                ) from exc
+        elif snapshot.get("schema") != "broker-child-snapshot-binding/v1":
+            raise ContractError(ErrorCode.ASSET_ERROR, "Attempt Snapshot profile is unsupported")
+
+    def _fence_attempt(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        job_id: str,
+        step_id: str,
+        attempt_id: str,
+        lease_epoch: int,
+        worker_run_id: str,
+        now: str,
+        require_active: bool = False,
+        expected_snapshot_hash: str | None = None,
+    ) -> tuple[sqlite3.Row, sqlite3.Row, sqlite3.Row]:
+        job = connection.execute(
+            "SELECT * FROM execution_job WHERE job_id=?", (job_id,)
+        ).fetchone()
+        step = connection.execute(
+            "SELECT * FROM execution_step WHERE job_id=? AND step_id=?",
+            (job_id, step_id),
+        ).fetchone()
+        attempt = connection.execute(
+            "SELECT * FROM execution_attempt WHERE attempt_id=? AND job_id=? AND step_id=?",
+            (attempt_id, job_id, step_id),
+        ).fetchone()
+        if job is None or step is None or attempt is None:
+            raise ContractError(ErrorCode.STALE_LEASE, "Attempt lineage is stale")
+        if int(attempt["lease_epoch"]) != lease_epoch or step["active_attempt_id"] != attempt_id:
+            raise ContractError(ErrorCode.STALE_LEASE, "Attempt lease epoch is stale")
+        if attempt["worker_run_id"] != worker_run_id:
+            raise ContractError(ErrorCode.STALE_LEASE, "worker run is not authoritative")
+        if attempt["owner_instance_id"] is None or attempt["owner_instance_id"] != attempt["worker_run_id"]:
+            raise ContractError(ErrorCode.STALE_LEASE, "Attempt owner authority drifted")
+        if attempt["lease_expires_at"] is not None and _is_expired(str(attempt["lease_expires_at"]), now):
+            raise ContractError(ErrorCode.STALE_LEASE, "Attempt lease has expired")
+        if expected_snapshot_hash is not None and job["run_snapshot_hash"] != expected_snapshot_hash:
+            raise _checkpoint_error("Attempt belongs to another RunSnapshot")
+        self._validate_snapshot_attempt_binding(job, attempt)
+        if require_active:
+            if attempt["state"] not in _ACTIVE_ATTEMPT_STATES or step["state"] != "running":
+                raise ContractError(ErrorCode.STALE_LEASE, "Attempt is no longer active")
+            if job["job_state"] in {"succeeded", "partial", "failed", "cancelled"}:
+                raise ContractError(ErrorCode.INVALID_TRANSITION, "terminal Job cannot accept a checkpoint")
+        return job, step, attempt
 
     @staticmethod
     def _row_value(row: sqlite3.Row) -> dict[str, Any]:
@@ -289,6 +418,8 @@ class SQLiteCheckpointStore:
             raise ContractError(ErrorCode.ASSET_ERROR, "stored checkpoint is not valid JSON") from exc
         if not isinstance(value, dict):
             raise ContractError(ErrorCode.ASSET_ERROR, "stored checkpoint is not an object")
+        if str(row["checkpoint_json"]) != _json(value):
+            raise ContractError(ErrorCode.ASSET_ERROR, "stored checkpoint is not canonical JSON")
         return value
 
     @staticmethod
@@ -316,7 +447,8 @@ class SQLiteCheckpointStore:
         expected_workspace_id: str | None = None,
     ) -> DurableCheckpoint:
         job = connection.execute(
-            "SELECT workspace_id,run_snapshot_hash FROM execution_job WHERE job_id=?",
+            "SELECT workspace_id,run_snapshot_hash,job_event_high_water,current_checkpoint_id "
+            "FROM execution_job WHERE job_id=?",
             (row["job_id"],),
         ).fetchone()
         if job is None or (expected_workspace_id is not None and job["workspace_id"] != expected_workspace_id):
@@ -340,14 +472,100 @@ class SQLiteCheckpointStore:
             event_value = json.loads(str(event["event_json"]))
         except (TypeError, json.JSONDecodeError) as exc:
             raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint Job Event is not valid JSON") from exc
+        attempt = connection.execute(
+            "SELECT attempt_id,job_id,step_id,lease_epoch,plugin_id,release_id,package_hash,"
+            "generation_id,owner_instance_id,worker_run_id "
+            "FROM execution_attempt WHERE attempt_id=? AND job_id=? AND step_id=?",
+            (row["source_attempt_id"], row["job_id"], row["step_id"]),
+        ).fetchone()
+        if attempt is None:
+            raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint Attempt authority is missing")
+        try:
+            assert_valid("plugin-job-event/v1", event_value)
+        except Exception as exc:
+            raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint Job Event is invalid") from exc
         if (
             not isinstance(event_value, dict)
             or event_value.get("job_id") != row["job_id"]
             or event_value.get("job_event_seq") != row["job_event_seq"]
             or event_value.get("step_id") != row["step_id"]
             or event_value.get("attempt_id") != row["source_attempt_id"]
+            or event_value.get("event_id") != _stable_id(
+                "job-event", row["job_id"], row["operation_key"]
+            )
+            or event_value.get("event_type")
+            != f"plugin.{attempt['plugin_id']}.job.checkpoint"
+            or event_value.get("release_id") != attempt["release_id"]
+            or int(attempt["lease_epoch"]) != int(value["lease_epoch"])
+            or attempt["owner_instance_id"] != attempt["worker_run_id"]
+            or event_value.get("payload_asset_id") is None
+            or event_value.get("payload_hash") is None
+            or int(row["job_event_seq"]) > int(job["job_event_high_water"])
         ):
             raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint Job Event identity drifted")
+        if self.assets is None:
+            raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint Asset authority is unavailable")
+        try:
+            asset_id = str(event_value["payload_asset_id"])
+            asset_hash = str(event_value["payload_hash"])
+            asset_raw = self.assets.read(asset_id)
+            self.assets.require(asset_id, sha256=asset_hash)
+            asset_value = parse_json_bytes(asset_raw)
+        except ContractError:
+            raise
+        except Exception as exc:
+            raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint Asset closure is missing") from exc
+        if (
+            not isinstance(asset_value, Mapping)
+            or dict(asset_value) != value
+            or asset_raw != canonical_bytes(value)
+            or sha256_hex(asset_raw) != asset_hash
+        ):
+            raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint Asset closure drifted")
+        operation = connection.execute(
+            "SELECT * FROM execution_checkpoint_operation WHERE job_id=? AND operation_key=?",
+            (row["job_id"], row["operation_key"]),
+        ).fetchone()
+        if operation is None:
+            raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint operation authority is missing")
+        if (
+            operation["checkpoint_id"] != row["checkpoint_id"]
+            or int(operation["job_event_seq"]) != int(row["job_event_seq"])
+            or operation["payload_hash"] != row["payload_hash"]
+            or operation["method"] != _CHECKPOINT_METHOD
+        ):
+            raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint operation identity drifted")
+        try:
+            response = json.loads(str(operation["response_json"]))
+            request = json.loads(str(operation["request_json"]))
+        except (TypeError, json.JSONDecodeError) as exc:
+            raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint operation closure is invalid") from exc
+        expected_response = {
+            "accepted": True,
+            "checkpoint_id": row["checkpoint_id"],
+            "completed_units": value["completed_units"],
+            "total_units": value["total_units"],
+            "job_event_seq": row["job_event_seq"],
+        }
+        if not isinstance(response, dict) or response != expected_response:
+            raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint operation response is inconsistent")
+        if not isinstance(request, dict) or request.get("method") != _CHECKPOINT_METHOD:
+            raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint operation method is invalid")
+        if sha256_hex(canonical_bytes(request)) != row["payload_hash"]:
+            raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint operation request hash drifted")
+        expected_request = {
+            "method": _CHECKPOINT_METHOD,
+            "operation_key": row["operation_key"],
+            "checkpoint": value,
+            "checkpoint_asset_id": event_value["payload_asset_id"],
+            "checkpoint_asset_hash": event_value["payload_hash"],
+            "local_seq": None,
+            "worker_run_id": attempt["worker_run_id"],
+        }
+        if request.get("local_seq") is not None:
+            expected_request["local_seq"] = event_value["local_seq"]
+        if request != expected_request:
+            raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint operation request binding drifted")
         return DurableCheckpoint(
             value,
             str(job["workspace_id"]),
@@ -431,8 +649,8 @@ class SQLiteCheckpointStore:
         if completed < int(previous["completed_units"]):
             raise _checkpoint_error("completed_units moved backwards")
         previous_total = previous["total_units"]
-        if previous_total is not None and (total is None or int(total) < int(previous_total)):
-            raise _checkpoint_error("total_units moved backwards")
+        if total != previous_total:
+            raise _checkpoint_error("total_units changed within a checkpoint chain")
         previous_unit_set = previous["unit_set_hash"]
         if previous_unit_set is not None and value["unit_set_hash"] != previous_unit_set:
             raise _checkpoint_error("unit_set_hash changed within a checkpoint chain")
@@ -446,38 +664,21 @@ class SQLiteCheckpointStore:
         *,
         now: str,
         worker_run_id: str | None = None,
+        require_active: bool = False,
     ) -> tuple[sqlite3.Row, sqlite3.Row]:
-        job = connection.execute("SELECT * FROM execution_job WHERE job_id=?", (value["job_id"],)).fetchone()
-        if job is None:
-            raise ContractError(ErrorCode.INVALID_TRANSITION, "unknown Job")
-        step = connection.execute(
-            "SELECT * FROM execution_step WHERE job_id=? AND step_id=?",
-            (value["job_id"], value["step_id"]),
-        ).fetchone()
-        if step is None:
-            raise _checkpoint_error("checkpoint Step is outside the Job")
-        attempt = connection.execute(
-            "SELECT * FROM execution_attempt WHERE attempt_id=? AND job_id=? AND step_id=?",
-            (value["source_attempt_id"], value["job_id"], value["step_id"]),
-        ).fetchone()
-        if attempt is None:
-            raise _checkpoint_error("checkpoint Attempt is outside the Job/Step")
-        if attempt["lease_epoch"] != value["lease_epoch"]:
-            raise ContractError(ErrorCode.STALE_LEASE, "checkpoint lease epoch is stale")
-        if step["active_attempt_id"] != attempt["attempt_id"]:
-            raise ContractError(ErrorCode.STALE_LEASE, "checkpoint Attempt is no longer active")
-        if attempt["state"] not in _ACTIVE_ATTEMPT_STATES:
-            raise ContractError(ErrorCode.STALE_LEASE, "checkpoint Attempt is no longer active")
-        if attempt["owner_instance_id"] is None or attempt["owner_instance_id"] != attempt["worker_run_id"]:
-            raise ContractError(ErrorCode.STALE_LEASE, "checkpoint Attempt owner authority drifted")
-        if worker_run_id is not None and attempt["worker_run_id"] != worker_run_id:
-            raise ContractError(ErrorCode.STALE_LEASE, "checkpoint worker run is not authoritative")
-        if attempt["lease_expires_at"] is not None and _is_expired(str(attempt["lease_expires_at"]), now):
-            raise ContractError(ErrorCode.STALE_LEASE, "checkpoint Attempt lease has expired")
-        if job["job_state"] in {"succeeded", "partial", "failed", "cancelled"}:
-            raise ContractError(ErrorCode.INVALID_TRANSITION, "terminal Job cannot accept a checkpoint")
-        if str(job["run_snapshot_hash"]) != str(value["run_snapshot_hash"]):
-            raise _checkpoint_error("checkpoint belongs to another RunSnapshot")
+        if worker_run_id is None:
+            raise ContractValidationError("checkpoint requires a worker_run_id")
+        job, step, attempt = self._fence_attempt(
+            connection,
+            job_id=str(value["job_id"]),
+            step_id=str(value["step_id"]),
+            attempt_id=str(value["source_attempt_id"]),
+            lease_epoch=int(value["lease_epoch"]),
+            worker_run_id=worker_run_id,
+            now=now,
+            require_active=require_active,
+            expected_snapshot_hash=str(value["run_snapshot_hash"]),
+        )
         return job, attempt
 
     def _commit_in_transaction(
@@ -489,10 +690,43 @@ class SQLiteCheckpointStore:
         payload_hash: str,
         checkpoint_asset_id: str | None,
         checkpoint_asset_hash: str | None,
+        request_json: str,
         local_seq: int | None = None,
         worker_run_id: str | None = None,
         now: str,
     ) -> CheckpointCommit:
+        if connection.execute(
+            "SELECT 1 FROM execution_control_operation WHERE job_id=? AND operation_key=?",
+            (value["job_id"], operation_key),
+        ).fetchone() is not None:
+            raise ContractError(
+                ErrorCode.DUPLICATE_REQUEST,
+                "operation key is already bound to a control method",
+            )
+        if checkpoint_asset_id is None or checkpoint_asset_hash is None:
+            raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint operation Asset binding is incomplete")
+        try:
+            request = json.loads(request_json)
+        except (TypeError, json.JSONDecodeError) as exc:
+            raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint operation request is invalid") from exc
+        expected_request = self._checkpoint_request(
+            operation_key=operation_key,
+            checkpoint=value,
+            checkpoint_asset_id=checkpoint_asset_id,
+            checkpoint_asset_hash=checkpoint_asset_hash,
+            local_seq=local_seq,
+            worker_run_id=str(worker_run_id),
+        )
+        if (
+            not isinstance(request, dict)
+            or request != expected_request
+            or _json(request) != request_json
+            or sha256_hex(canonical_bytes(request)) != payload_hash
+        ):
+            raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint operation request closure is invalid")
+        job, attempt = self._validate_attempt_binding(
+            connection, value, now=now, worker_run_id=worker_run_id
+        )
         existing = connection.execute(
             "SELECT * FROM execution_checkpoint_operation WHERE job_id=? AND operation_key=?",
             (value["job_id"], operation_key),
@@ -500,6 +734,8 @@ class SQLiteCheckpointStore:
         if existing is not None:
             if existing["payload_hash"] != payload_hash:
                 raise ContractError(ErrorCode.DUPLICATE_REQUEST, "checkpoint operation key was reused with a different payload")
+            if existing["method"] != _CHECKPOINT_METHOD or existing["request_json"] != request_json:
+                raise ContractError(ErrorCode.DUPLICATE_REQUEST, "checkpoint operation method or request drifted")
             row = connection.execute(
                 "SELECT * FROM execution_checkpoint WHERE job_id=? AND checkpoint_id=?",
                 (value["job_id"], existing["checkpoint_id"]),
@@ -518,8 +754,28 @@ class SQLiteCheckpointStore:
                 raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint operation response is inconsistent")
             return CheckpointCommit(result, True)
 
-        job, attempt = self._validate_attempt_binding(
-            connection, value, now=now, worker_run_id=worker_run_id
+        try:
+            asset_raw = self.assets.read(str(checkpoint_asset_id))
+            asset_value = parse_json_bytes(asset_raw)
+            if (
+                not isinstance(asset_value, Mapping)
+                or dict(asset_value) != dict(value)
+                or asset_raw != canonical_bytes(value)
+                or sha256_hex(asset_raw) != checkpoint_asset_hash
+            ):
+                raise _checkpoint_error("checkpoint Asset content drifted")
+            self.assets.require(str(checkpoint_asset_id), sha256=checkpoint_asset_hash)
+        except ContractError:
+            raise
+        except Exception as exc:
+            raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint Asset closure is invalid") from exc
+
+        self._validate_attempt_binding(
+            connection,
+            value,
+            now=now,
+            worker_run_id=worker_run_id,
+            require_active=True,
         )
         previous_row = self._latest_row(connection, str(value["job_id"]), str(value["step_id"]))
         previous = None if previous_row is None else self._row_value(previous_row)
@@ -610,8 +866,12 @@ class SQLiteCheckpointStore:
         }
         validate_rpc_result("host.checkpoint.commit/v1", result)
         connection.execute(
-            "INSERT INTO execution_checkpoint_operation(job_id,operation_key,payload_hash,checkpoint_id,job_event_seq,response_json,created_at) VALUES(?,?,?,?,?,?,?)",
-            (value["job_id"], operation_key, payload_hash, value["checkpoint_id"], stored_event["job_event_seq"], _json(result), now),
+            "INSERT INTO execution_checkpoint_operation(job_id,operation_key,payload_hash,checkpoint_id,job_event_seq,response_json,created_at,method,request_json) VALUES(?,?,?,?,?,?,?,?,?)",
+            (
+                value["job_id"], operation_key, payload_hash, value["checkpoint_id"],
+                stored_event["job_event_seq"], _json(result), now, _CHECKPOINT_METHOD,
+                request_json,
+            ),
         )
         return CheckpointCommit(result, False)
 
@@ -625,12 +885,26 @@ class SQLiteCheckpointStore:
         worker_run_id: str | None = None,
     ) -> CheckpointCommit:
         value, asset_id, asset_hash = self._load_source(
-            checkpoint, checkpoint_asset_id=checkpoint_asset_id
+            checkpoint,
+            checkpoint_asset_id=checkpoint_asset_id,
+            allow_content_drift=True,
         )
         key = operation_key or str(value["checkpoint_id"])
         _require_id(key, "operation_key")
+        if worker_run_id is None:
+            raise ContractValidationError("checkpoint requires a worker_run_id")
+        _require_id(worker_run_id, "worker_run_id")
+        request = self._checkpoint_request(
+            operation_key=key,
+            checkpoint=value,
+            checkpoint_asset_id=str(asset_id),
+            checkpoint_asset_hash=str(asset_hash),
+            local_seq=local_seq,
+            worker_run_id=worker_run_id,
+        )
+        request_json = _json(request)
         now = _clock_value(self.clock)
-        payload_hash = self._operation_hash(value)
+        payload_hash = self._operation_hash(request)
         with self.repository.transaction() as connection:
             return self._commit_in_transaction(
                 connection,
@@ -639,6 +913,7 @@ class SQLiteCheckpointStore:
                 payload_hash=payload_hash,
                 checkpoint_asset_id=asset_id,
                 checkpoint_asset_hash=asset_hash,
+                request_json=request_json,
                 local_seq=local_seq,
                 worker_run_id=worker_run_id,
                 now=now,
@@ -668,17 +943,32 @@ class SQLiteCheckpointStore:
         *,
         operation_key: str,
         worker_run_id: str | None,
+        checkpoint_asset_id: str | None = None,
         now: str,
         local_seq: int | None = None,
     ) -> tuple[CheckpointCommit, dict[str, Any], str | None]:
-        value, asset_id, asset_hash = self._load_source(source)
+        value, asset_id, asset_hash = self._load_source(
+            source, checkpoint_asset_id=checkpoint_asset_id
+        )
+        if worker_run_id is None:
+            raise ContractValidationError("checkpoint requires a worker_run_id")
+        _require_id(worker_run_id, "worker_run_id")
+        request = self._checkpoint_request(
+            operation_key=operation_key,
+            checkpoint=value,
+            checkpoint_asset_id=str(asset_id),
+            checkpoint_asset_hash=str(asset_hash),
+            local_seq=local_seq,
+            worker_run_id=worker_run_id,
+        )
         result = self._commit_in_transaction(
             connection,
             value,
             operation_key=operation_key,
-            payload_hash=self._operation_hash(value),
+            payload_hash=self._operation_hash(request),
             checkpoint_asset_id=asset_id,
             checkpoint_asset_hash=asset_hash,
+            request_json=_json(request),
             local_seq=local_seq,
             worker_run_id=worker_run_id,
             now=now,
@@ -756,6 +1046,7 @@ class SQLiteOrchestrationOwnerStore:
         owner_instance_id: str,
         *,
         owner_token: str | None = None,
+        lease_epoch: int | None = None,
         lease_expires_at: str | None = None,
         lease_ttl_seconds: int | None = None,
         now: str | None = None,
@@ -764,6 +1055,10 @@ class SQLiteOrchestrationOwnerStore:
         _require_id(owner_instance_id, "owner_instance_id")
         if owner_token is not None and not owner_token:
             raise ContractValidationError("owner_token cannot be empty")
+        if owner_token is not None:
+            _require_id(owner_token, "owner_token")
+        if lease_epoch is not None:
+            _require_positive_int(lease_epoch, "lease_epoch")
         current_now = _clock_value(self.clock, now)
         expiry = self._expiry(current_now, lease_expires_at, lease_ttl_seconds)
         token = owner_token or _stable_id("owner-token", workspace_id, owner_instance_id, current_now)
@@ -775,6 +1070,8 @@ class SQLiteOrchestrationOwnerStore:
                 "SELECT * FROM execution_orchestration_owner WHERE workspace_id=?", (workspace_id,)
             ).fetchone()
             if row is None:
+                if lease_epoch not in {None, 1}:
+                    raise ContractError(ErrorCode.STALE_LEASE, "initial owner lease epoch is not one")
                 connection.execute(
                     "INSERT INTO execution_orchestration_owner(workspace_id,owner_instance_id,owner_token,lease_epoch,lease_expires_at,revision,created_at,updated_at) VALUES(?,?,?,1,?,1,?,?)",
                     (workspace_id, owner_instance_id, token, expiry, current_now, current_now),
@@ -783,11 +1080,29 @@ class SQLiteOrchestrationOwnerStore:
             same_owner = row["owner_instance_id"] == owner_instance_id
             stale = _is_expired(str(row["lease_expires_at"]), current_now)
             if same_owner and not stale:
-                if owner_token is not None and owner_token != row["owner_token"]:
+                # A tokenless acquire is a claim/takeover operation, never a
+                # renewal.  A live row must be renewed with both halves of
+                # its current fence so a stale caller cannot extend it.
+                if owner_token is None or lease_epoch is None:
+                    raise ContractError(
+                        ErrorCode.STALE_LEASE,
+                        "live owner renewal requires owner_token and lease_epoch",
+                    )
+                if owner_token != row["owner_token"] or lease_epoch != int(row["lease_epoch"]):
                     raise ContractError(ErrorCode.STALE_LEASE, "owner token is not authoritative")
                 connection.execute(
-                    "UPDATE execution_orchestration_owner SET lease_expires_at=?,revision=revision+1,updated_at=? WHERE workspace_id=? AND owner_instance_id=? AND owner_token=? AND lease_epoch=?",
-                    (expiry, current_now, workspace_id, row["owner_instance_id"], row["owner_token"], row["lease_epoch"]),
+                    "UPDATE execution_orchestration_owner SET lease_expires_at=?,revision=revision+1,updated_at=? "
+                    "WHERE workspace_id=? AND owner_instance_id=? AND owner_token=? AND lease_epoch=? "
+                    "AND lease_expires_at=?",
+                    (
+                        expiry,
+                        current_now,
+                        workspace_id,
+                        row["owner_instance_id"],
+                        row["owner_token"],
+                        row["lease_epoch"],
+                        row["lease_expires_at"],
+                    ),
                 )
                 updated = connection.execute(
                     "SELECT * FROM execution_orchestration_owner WHERE workspace_id=?", (workspace_id,)
@@ -795,6 +1110,8 @@ class SQLiteOrchestrationOwnerStore:
                 return self._decode(updated)  # type: ignore[return-value]
             if not stale:
                 raise ContractError(ErrorCode.STALE_LEASE, "Workspace already has a live orchestration owner")
+            if lease_epoch is not None and lease_epoch != int(row["lease_epoch"]):
+                raise ContractError(ErrorCode.STALE_LEASE, "expired owner lease epoch is stale")
             next_epoch = int(row["lease_epoch"]) + 1
             updated = connection.execute(
                 "UPDATE execution_orchestration_owner SET owner_instance_id=?,owner_token=?,lease_epoch=?,lease_expires_at=?,revision=revision+1,updated_at=? WHERE workspace_id=? AND lease_epoch=? AND owner_token=? AND lease_expires_at=?",
@@ -913,10 +1230,234 @@ class SQLiteExecutionControlPort:
             self.checkpoints = SQLiteCheckpointStore(repository, assets if assets is not None else checkpoints, clock=clock)
         self.clock = clock
         self.events = JobEventStore(repository)
+        self.core_events = CoreEventStore(repository)
 
     @staticmethod
     def _payload(operation: str, values: Mapping[str, Any]) -> dict[str, Any]:
-        return {"operation": operation, **dict(values)}
+        return {
+            "method": _CONTROL_METHODS[operation],
+            "operation": operation,
+            **dict(values),
+        }
+
+    @staticmethod
+    def _method(operation: str) -> str:
+        try:
+            return _CONTROL_METHODS[operation]
+        except KeyError as exc:
+            raise ContractValidationError(f"unsupported execution control operation: {operation}") from exc
+
+    def _request(self, operation: str, values: Mapping[str, Any]) -> dict[str, Any]:
+        return self._payload(operation, values)
+
+    def _validate_prompt_asset(self, prompt_asset_id: Any, expected_hash: Any = None) -> str:
+        if not isinstance(prompt_asset_id, str):
+            raise ContractValidationError("await_user requires a prompt_asset_id")
+        actual_hash = self.checkpoints.asset_hash(prompt_asset_id, label="prompt Asset")
+        if expected_hash is not None and expected_hash != actual_hash:
+            raise ContractError(ErrorCode.ASSET_ERROR, "prompt Asset hash authority drifted")
+        return actual_hash
+
+    def _validate_checkpoint_request_asset(self, request: Mapping[str, Any]) -> None:
+        asset_id = request.get("checkpoint_asset_id")
+        if not isinstance(asset_id, str):
+            raise ContractError(ErrorCode.ASSET_ERROR, "control checkpoint Asset binding is missing")
+        source = request.get("checkpoint")
+        if isinstance(source, Mapping):
+            value, loaded_id, loaded_hash = self.checkpoints._load_source(
+                source,
+                checkpoint_asset_id=asset_id,
+            )
+        else:
+            value, loaded_id, loaded_hash = self.checkpoints._load_source(str(asset_id))
+        if (
+            value != request.get("checkpoint")
+            or loaded_id != asset_id
+            or loaded_hash != request.get("checkpoint_asset_hash")
+        ):
+            raise ContractError(ErrorCode.ASSET_ERROR, "control checkpoint Asset closure drifted")
+
+    def _validate_control_request_closure(
+        self,
+        connection: sqlite3.Connection,
+        operation: str,
+        request: Mapping[str, Any],
+        result: Mapping[str, Any],
+    ) -> None:
+        if request.get("method") != self._method(operation) or request.get("operation") != operation:
+            raise ContractError(ErrorCode.ASSET_ERROR, "control operation method identity drifted")
+        if operation in {"pause", "await_user", "resume"}:
+            self._validate_checkpoint_request_asset(request)
+        if operation == "await_user":
+            reason = request.get("reason")
+            if reason not in _AWAIT_USER_REASONS:
+                raise ContractValidationError("await_user reason is not in the frozen enum")
+            self._validate_prompt_asset(
+                request.get("prompt_asset_id"), request.get("prompt_asset_hash")
+            )
+
+        checkpoint_value = request.get("checkpoint")
+        if operation in {"pause", "await_user", "resume"}:
+            if not isinstance(checkpoint_value, Mapping):
+                raise ContractError(ErrorCode.ASSET_ERROR, "control checkpoint closure is not an object")
+            checkpoint_row = connection.execute(
+                "SELECT * FROM execution_checkpoint WHERE job_id=? AND checkpoint_id=?",
+                (request.get("job_id"), checkpoint_value.get("checkpoint_id")),
+            ).fetchone()
+            if checkpoint_row is None:
+                raise ContractError(ErrorCode.ASSET_ERROR, "control checkpoint row is missing")
+            stored = self.checkpoints._decode_row(connection, checkpoint_row)
+            if stored.checkpoint != dict(checkpoint_value):
+                raise ContractError(ErrorCode.ASSET_ERROR, "control checkpoint row drifted")
+            if operation in {"pause", "await_user"} and checkpoint_row["operation_key"] != request.get("operation_key"):
+                raise ContractError(ErrorCode.ASSET_ERROR, "control checkpoint operation is not bound")
+
+        self._validate_control_state_closure(
+            connection,
+            operation=operation,
+            operation_key=str(request.get("operation_key")),
+            request=request,
+            result=result,
+            checkpoint_row=checkpoint_row if operation in {"pause", "await_user", "resume"} else None,
+        )
+
+    def _validate_control_state_closure(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        operation: str,
+        operation_key: str,
+        request: Mapping[str, Any],
+        result: Mapping[str, Any],
+        checkpoint_row: sqlite3.Row | None,
+    ) -> None:
+        """Verify the durable Job/Core Event pair behind a replayed control."""
+
+        job = connection.execute(
+            "SELECT * FROM execution_job WHERE job_id=?", (request.get("job_id"),)
+        ).fetchone()
+        if job is None:
+            raise ContractError(ErrorCode.ASSET_ERROR, "control Job authority is missing")
+        attempt_id = request.get("attempt_id")
+        if operation == "resume":
+            attempt_id = request.get("new_attempt_id")
+        attempt = connection.execute(
+            "SELECT * FROM execution_attempt WHERE attempt_id=? AND job_id=? AND step_id=?",
+            (attempt_id, request.get("job_id"), request.get("step_id")),
+        ).fetchone()
+        if attempt is None:
+            raise ContractError(ErrorCode.ASSET_ERROR, "control Attempt authority is missing")
+        if operation == "resume":
+            if (
+                attempt["resume_of_attempt_id"] != request.get("source_attempt_id")
+                or attempt["resume_checkpoint_id"] != request["checkpoint"]["checkpoint_id"]
+                or attempt["worker_run_id"] != request.get("worker_run_id")
+            ):
+                raise ContractError(ErrorCode.ASSET_ERROR, "resume Attempt closure drifted")
+        elif attempt_id != request.get("attempt_id"):
+            raise ContractError(ErrorCode.ASSET_ERROR, "control Attempt identity drifted")
+
+        if operation == "cancel" and result.get("terminal_known") is True:
+            if (
+                result.get("attempt_state") != attempt["state"]
+                or (
+                    attempt["state"] not in _TERMINAL_ATTEMPT_STATES
+                    and job["job_state"] not in {"succeeded", "partial", "failed", "cancelled"}
+                )
+            ):
+                raise ContractError(ErrorCode.ASSET_ERROR, "terminal cancel closure drifted")
+            return
+
+        control_event_id = _stable_id("job-event", request["job_id"], operation, operation_key)
+        control_event_row = connection.execute(
+            "SELECT * FROM execution_job_event WHERE event_id=?", (control_event_id,)
+        ).fetchone()
+        if control_event_row is None:
+            raise ContractError(ErrorCode.ASSET_ERROR, "control Job Event authority is missing")
+        try:
+            control_event = json.loads(str(control_event_row["event_json"]))
+            assert_valid("plugin-job-event/v1", control_event)
+        except Exception as exc:
+            raise ContractError(ErrorCode.ASSET_ERROR, "control Job Event is invalid") from exc
+        expected_payload = (None, None)
+        if checkpoint_row is not None:
+            checkpoint_event = connection.execute(
+                "SELECT event_json FROM execution_job_event WHERE job_id=? AND job_event_seq=?",
+                (checkpoint_row["job_id"], checkpoint_row["job_event_seq"]),
+            ).fetchone()
+            if checkpoint_event is None:
+                raise ContractError(ErrorCode.ASSET_ERROR, "control checkpoint Event is missing")
+            checkpoint_event_value = json.loads(str(checkpoint_event["event_json"]))
+            expected_payload = (
+                checkpoint_event_value.get("payload_asset_id"),
+                checkpoint_event_value.get("payload_hash"),
+            )
+        if (
+            control_event.get("event_id") != control_event_row["event_id"]
+            or control_event.get("job_id") != request["job_id"]
+            or control_event.get("step_id") != request["step_id"]
+            or control_event.get("attempt_id") != attempt_id
+            or control_event.get("job_event_seq") != control_event_row["job_event_seq"]
+            or control_event.get("local_seq") != control_event_row["local_seq"]
+            or control_event.get("event_type") != f"plugin.{attempt['plugin_id']}.job.{operation}"
+            or control_event.get("plugin_id") != attempt["plugin_id"]
+            or control_event.get("release_id") != attempt["release_id"]
+            or (
+                control_event.get("payload_asset_id"),
+                control_event.get("payload_hash"),
+            )
+            != expected_payload
+            or int(control_event_row["job_event_seq"]) > int(job["job_event_high_water"])
+        ):
+            raise ContractError(ErrorCode.ASSET_ERROR, "control Job Event identity drifted")
+
+        core_event_id = _stable_id(
+            "core-event", request["job_id"], operation_key, "job.state.changed"
+        )
+        core_event_row = connection.execute(
+            "SELECT * FROM execution_core_event WHERE event_id=?", (core_event_id,)
+        ).fetchone()
+        if core_event_row is None:
+            raise ContractError(ErrorCode.ASSET_ERROR, "control Core Event authority is missing")
+        try:
+            core_event = json.loads(str(core_event_row["event_json"]))
+            assert_valid("core-event/v1", core_event)
+        except Exception as exc:
+            raise ContractError(ErrorCode.ASSET_ERROR, "control Core Event is invalid") from exc
+        if (
+            core_event.get("event_id") != core_event_row["event_id"]
+            or core_event.get("core_event_seq") != core_event_row["core_event_seq"]
+            or core_event.get("workspace_id") != job["workspace_id"]
+            or core_event.get("aggregate_id") != request["job_id"]
+            or core_event.get("aggregate_revision") != core_event_row["aggregate_revision"]
+            or core_event.get("event_type") != "job.state.changed"
+            or core_event.get("correlation_id") != operation_key
+            or core_event.get("causation_id") != attempt_id
+            or (
+                core_event.get("payload_asset_id"),
+                core_event.get("payload_hash"),
+            )
+            != expected_payload
+            or int(core_event_row["core_event_seq"]) > int(job["core_event_high_water"])
+            or int(core_event_row["aggregate_revision"]) > int(job["job_revision"])
+        ):
+            raise ContractError(ErrorCode.ASSET_ERROR, "control Core Event identity drifted")
+
+    @staticmethod
+    def _validate_resume_result(result: Mapping[str, Any]) -> None:
+        """Validate the frozen, but schema-ambiguous, ``job.resume`` result."""
+
+        if (
+            set(result)
+            != {"accepted", "worker_run_id", "provenance_receipt_id", "output_streams"}
+            or not isinstance(result["accepted"], bool)
+            or not isinstance(result["worker_run_id"], str)
+            or not isinstance(result["provenance_receipt_id"], str)
+            or not isinstance(result["output_streams"], list)
+        ):
+            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "invalid job.resume result")
+        _require_id(result["worker_run_id"], "worker_run_id")
+        _require_id(result["provenance_receipt_id"], "provenance_receipt_id")
 
     def _existing(
         self,
@@ -925,6 +1466,7 @@ class SQLiteExecutionControlPort:
         operation_key: str,
         operation: str,
         payload_hash: str,
+        request_json: str,
     ) -> ControlDecision | None:
         row = connection.execute(
             "SELECT * FROM execution_control_operation WHERE job_id=? AND operation_key=?",
@@ -932,18 +1474,35 @@ class SQLiteExecutionControlPort:
         ).fetchone()
         if row is None:
             return None
-        if row["operation"] != operation or row["payload_hash"] != payload_hash:
+        method = self._method(operation)
+        if (
+            row["operation"] != operation
+            or row["method"] != method
+            or row["payload_hash"] != payload_hash
+            or row["request_json"] != request_json
+        ):
             raise ContractError(ErrorCode.DUPLICATE_REQUEST, "control operation key was reused with a different payload")
         try:
             result = json.loads(str(row["response_json"]))
+            request = json.loads(str(row["request_json"]))
         except (TypeError, json.JSONDecodeError) as exc:
             raise ContractError(ErrorCode.ASSET_ERROR, "control operation response is invalid") from exc
-        if not isinstance(result, dict):
+        if not isinstance(result, dict) or not isinstance(request, dict):
             raise ContractError(ErrorCode.ASSET_ERROR, "control operation response is not an object")
+        if _json(request) != request_json or sha256_hex(canonical_bytes(request)) != payload_hash:
+            raise ContractError(ErrorCode.ASSET_ERROR, "control operation request closure is invalid")
+        self._validate_control_request_closure(connection, operation, request, result)
+        try:
+            if method == "job.resume":
+                self._validate_resume_result(result)
+            else:
+                validate_rpc_result(method, result)
+        except Exception as exc:
+            raise ContractError(ErrorCode.ASSET_ERROR, "control operation response drifted") from exc
         return ControlDecision(result, operation, True)
 
-    @staticmethod
     def _caller(
+        self,
         connection: sqlite3.Connection,
         *,
         job_id: str,
@@ -953,20 +1512,20 @@ class SQLiteExecutionControlPort:
         worker_run_id: str | None,
         now: str,
     ) -> tuple[sqlite3.Row, sqlite3.Row, sqlite3.Row]:
-        job = connection.execute("SELECT * FROM execution_job WHERE job_id=?", (job_id,)).fetchone()
-        step = connection.execute("SELECT * FROM execution_step WHERE job_id=? AND step_id=?", (job_id, step_id)).fetchone()
-        attempt = connection.execute("SELECT * FROM execution_attempt WHERE attempt_id=? AND job_id=? AND step_id=?", (attempt_id, job_id, step_id)).fetchone()
-        if job is None or step is None or attempt is None:
-            raise ContractError(ErrorCode.STALE_LEASE, "control Attempt lineage is stale")
-        if step["active_attempt_id"] != attempt_id or int(attempt["lease_epoch"]) != lease_epoch:
-            raise ContractError(ErrorCode.STALE_LEASE, "control Attempt lease is stale")
-        if worker_run_id is not None and attempt["worker_run_id"] != worker_run_id:
-            raise ContractError(ErrorCode.STALE_LEASE, "control worker run is not authoritative")
-        if attempt["owner_instance_id"] != attempt["worker_run_id"] or attempt["owner_instance_id"] is None:
-            raise ContractError(ErrorCode.STALE_LEASE, "control Attempt owner authority drifted")
-        if attempt["lease_expires_at"] is not None and _is_expired(str(attempt["lease_expires_at"]), now):
-            raise ContractError(ErrorCode.STALE_LEASE, "control Attempt lease has expired")
-        return job, step, attempt
+        if worker_run_id is None:
+            raise ContractValidationError("control operation requires a worker_run_id")
+        _require_id(worker_run_id, "worker_run_id")
+        _require_positive_int(lease_epoch, "lease_epoch")
+        return self.checkpoints._fence_attempt(
+            connection,
+            job_id=job_id,
+            step_id=step_id,
+            attempt_id=attempt_id,
+            lease_epoch=lease_epoch,
+            worker_run_id=worker_run_id,
+            now=now,
+            require_active=False,
+        )
 
     @staticmethod
     def _next_local_seq(connection: sqlite3.Connection, attempt_id: str) -> int:
@@ -990,6 +1549,8 @@ class SQLiteExecutionControlPort:
     ) -> dict[str, Any]:
         if (payload_asset_id is None) != (payload_hash is None):
             raise ContractError(ErrorCode.ASSET_ERROR, "control event Asset ID/hash must be paired")
+        if local_seq is not None:
+            _require_positive_int(local_seq, "local_seq")
         high_water_row = connection.execute(
             "SELECT job_event_high_water FROM execution_job WHERE job_id=?",
             (job["job_id"],),
@@ -1013,6 +1574,71 @@ class SQLiteExecutionControlPort:
         }
         return self.events.append(event, connection=connection)
 
+    def _append_state_core_event(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        job: sqlite3.Row,
+        attempt: sqlite3.Row,
+        operation_key: str,
+        now: str,
+        payload_asset_id: str | None = None,
+        payload_hash: str | None = None,
+    ) -> dict[str, Any]:
+        """Append the authoritative Job state Core Event in this transaction."""
+
+        if (payload_asset_id is None) != (payload_hash is None):
+            raise ContractError(ErrorCode.ASSET_ERROR, "Core state event Asset ID/hash must be paired")
+        aggregate_revision = int(job["job_revision"]) + 1
+        event = {
+            "schema": "core-event/v1",
+            "event_id": _stable_id("core-event", job["job_id"], operation_key, "job.state.changed"),
+            "workspace_id": job["workspace_id"],
+            "aggregate_id": job["job_id"],
+            "aggregate_revision": aggregate_revision,
+            "event_type": "job.state.changed",
+            "producer": {
+                "producer_type": "core",
+                "producer_id": "execution-control",
+                "release_id": None,
+            },
+            "correlation_id": operation_key,
+            "causation_id": attempt["attempt_id"],
+            "payload_asset_id": payload_asset_id,
+            "payload_hash": payload_hash,
+            "occurred_at": now,
+        }
+        return self.core_events.append(event, connection=connection)
+
+    @staticmethod
+    def _commit_job_state(
+        connection: sqlite3.Connection,
+        *,
+        job: sqlite3.Row,
+        target_state: str,
+        core_event: Mapping[str, Any],
+        now: str,
+    ) -> None:
+        aggregate_revision = int(job["job_revision"]) + 1
+        if int(core_event["aggregate_revision"]) != aggregate_revision:
+            raise ContractError(ErrorCode.ASSET_ERROR, "Core state Event aggregate revision drifted")
+        updated = connection.execute(
+            "UPDATE execution_job SET job_state=?,job_revision=?,core_event_high_water=?,updated_at=? "
+            "WHERE job_id=? AND job_state=? AND job_revision=? AND core_event_high_water=?",
+            (
+                target_state,
+                aggregate_revision,
+                int(core_event["core_event_seq"]),
+                now,
+                job["job_id"],
+                job["job_state"],
+                int(job["job_revision"]),
+                int(job["core_event_high_water"]),
+            ),
+        )
+        if updated.rowcount != 1:
+            raise ContractError(ErrorCode.INVALID_TRANSITION, "Job state CAS lost")
+
     def _store_operation(
         self,
         connection: sqlite3.Connection,
@@ -1023,12 +1649,38 @@ class SQLiteExecutionControlPort:
         payload_hash: str,
         attempt_id: str,
         lease_epoch: int,
+        request_json: str,
         result: Mapping[str, Any],
         now: str,
     ) -> ControlDecision:
+        method = self._method(operation)
+        if sha256_hex(canonical_bytes(json.loads(request_json))) != payload_hash:
+            raise ContractError(ErrorCode.ASSET_ERROR, "control operation request hash is invalid")
+        if method == "job.resume":
+            # The frozen success schema contains identical ``job.start`` and
+            # ``job.resume`` branches.  Its oneOf rejects this otherwise
+            # valid method result as ambiguous, so retain the closed,
+            # method-specific validation locally rather than weakening the
+            # public schema or changing the verifier.
+            self._validate_resume_result(result)
+        else:
+            validate_rpc_result(method, result)
         connection.execute(
-            "INSERT INTO execution_control_operation(job_id,operation_key,operation,payload_hash,attempt_id,lease_epoch,response_json,created_at) VALUES(?,?,?,?,?,?,?,?)",
-            (job_id, operation_key, operation, payload_hash, attempt_id, lease_epoch, _json(result), now),
+            "INSERT INTO execution_control_operation("
+            "job_id,operation_key,operation,payload_hash,attempt_id,lease_epoch,response_json,created_at,method,request_json) "
+            "VALUES(?,?,?,?,?,?,?,?,?,?)",
+            (
+                job_id,
+                operation_key,
+                operation,
+                payload_hash,
+                attempt_id,
+                lease_epoch,
+                _json(result),
+                now,
+                method,
+                request_json,
+            ),
         )
         return ControlDecision(dict(result), operation, False)
 
@@ -1044,16 +1696,73 @@ class SQLiteExecutionControlPort:
         reason: str,
     ) -> ControlDecision:
         _require_id(operation_key, "operation_key")
+        _require_id(job_id, "job_id")
+        _require_id(step_id, "step_id")
+        _require_id(attempt_id, "attempt_id")
+        if worker_run_id is None:
+            raise ContractValidationError("cancel requires a worker_run_id")
+        _require_id(worker_run_id, "worker_run_id")
+        _require_positive_int(lease_epoch, "lease_epoch")
         if not isinstance(reason, str) or not reason:
             raise ContractValidationError("reason must be non-empty")
-        payload = self._payload("cancel", {"job_id": job_id, "step_id": step_id, "attempt_id": attempt_id, "lease_epoch": lease_epoch, "worker_run_id": worker_run_id, "reason": reason})
-        payload_hash = sha256_hex(canonical_bytes(payload))
+        request = self._request(
+            "cancel",
+            {
+                "job_id": job_id,
+                "step_id": step_id,
+                "attempt_id": attempt_id,
+                "lease_epoch": lease_epoch,
+                "operation_key": operation_key,
+                "worker_run_id": worker_run_id,
+                "reason": reason,
+            },
+        )
+        request_json = _json(request)
+        payload_hash = sha256_hex(canonical_bytes(request))
         now = _clock_value(self.clock)
         with self.repository.transaction() as connection:
-            replay = self._existing(connection, job_id, operation_key, "cancel", payload_hash)
+            job, step, attempt = self._caller(
+                connection,
+                job_id=job_id,
+                step_id=step_id,
+                attempt_id=attempt_id,
+                lease_epoch=lease_epoch,
+                worker_run_id=worker_run_id,
+                now=now,
+            )
+            replay = self._existing(
+                connection, job_id, operation_key, "cancel", payload_hash, request_json
+            )
             if replay is not None:
                 return replay
-            job, step, attempt = self._caller(connection, job_id=job_id, step_id=step_id, attempt_id=attempt_id, lease_epoch=lease_epoch, worker_run_id=worker_run_id, now=now)
+            if connection.execute(
+                "SELECT 1 FROM execution_checkpoint_operation WHERE job_id=? AND operation_key=?",
+                (job_id, operation_key),
+            ).fetchone() is not None:
+                raise ContractError(ErrorCode.DUPLICATE_REQUEST, "operation key is already bound to a checkpoint")
+            if attempt["state"] in _TERMINAL_ATTEMPT_STATES or job["job_state"] in {
+                "succeeded",
+                "partial",
+                "failed",
+                "cancelled",
+            }:
+                result = {
+                    "accepted": True,
+                    "terminal_known": True,
+                    "attempt_state": attempt["state"],
+                }
+                return self._store_operation(
+                    connection,
+                    job_id=job_id,
+                    operation_key=operation_key,
+                    operation="cancel",
+                    payload_hash=payload_hash,
+                    attempt_id=attempt_id,
+                    lease_epoch=lease_epoch,
+                    request_json=request_json,
+                    result=result,
+                    now=now,
+                )
             if attempt["state"] != "running" or job["job_state"] != "running":
                 raise ContractError(ErrorCode.INVALID_TRANSITION, "cancel race lost to an earlier state decision")
             if not can_transition(ATTEMPT_EDGES, attempt["state"], "cancelling") or not can_transition(JOB_EDGES, job["job_state"], "cancelling"):
@@ -1062,16 +1771,37 @@ class SQLiteExecutionControlPort:
                 "UPDATE execution_attempt SET state='cancelling',revision=revision+1,updated_at=? WHERE attempt_id=? AND state='running' AND lease_epoch=?",
                 (now, attempt_id, lease_epoch),
             )
-            updated_job = connection.execute(
-                "UPDATE execution_job SET job_state='cancelling',job_revision=job_revision+1,updated_at=? WHERE job_id=? AND job_state='running'",
-                (now, job_id),
-            )
-            if updated_attempt.rowcount != 1 or updated_job.rowcount != 1:
+            if updated_attempt.rowcount != 1:
                 raise ContractError(ErrorCode.INVALID_TRANSITION, "cancel CAS lost")
             self._append_event(connection, job=job, step_id=step_id, attempt=attempt, operation="cancel", operation_key=operation_key, now=now)
+            core_event = self._append_state_core_event(
+                connection,
+                job=job,
+                attempt=attempt,
+                operation_key=operation_key,
+                now=now,
+            )
+            self._commit_job_state(
+                connection,
+                job=job,
+                target_state="cancelling",
+                core_event=core_event,
+                now=now,
+            )
             result = {"accepted": True, "terminal_known": False, "attempt_state": "cancelling"}
             validate_rpc_result("job.cancel", result)
-            return self._store_operation(connection, job_id=job_id, operation_key=operation_key, operation="cancel", payload_hash=payload_hash, attempt_id=attempt_id, lease_epoch=lease_epoch, result=result, now=now)
+            return self._store_operation(
+                connection,
+                job_id=job_id,
+                operation_key=operation_key,
+                operation="cancel",
+                payload_hash=payload_hash,
+                attempt_id=attempt_id,
+                lease_epoch=lease_epoch,
+                request_json=request_json,
+                result=result,
+                now=now,
+            )
 
     def _suspend(
         self,
@@ -1091,45 +1821,149 @@ class SQLiteExecutionControlPort:
         prompt_asset_id: str | None = None,
     ) -> ControlDecision:
         _require_id(operation_key, "operation_key")
+        _require_id(job_id, "job_id")
+        _require_id(step_id, "step_id")
+        _require_id(attempt_id, "attempt_id")
+        if worker_run_id is None:
+            raise ContractValidationError(f"{operation} requires a worker_run_id")
+        _require_id(worker_run_id, "worker_run_id")
+        _require_positive_int(lease_epoch, "lease_epoch")
         if not isinstance(reason, str) or not reason:
             raise ContractValidationError("reason must be non-empty")
+        if operation == "await_user" and reason not in _AWAIT_USER_REASONS:
+            raise ContractValidationError("await_user reason is not in the frozen enum")
         if checkpoint is None and checkpoint_asset_id is None:
             raise ContractError(ErrorCode.CHECKPOINT_INVALID, "suspension requires a checkpoint Asset")
-        payload = self._payload(operation, {"job_id": job_id, "step_id": step_id, "attempt_id": attempt_id, "lease_epoch": lease_epoch, "worker_run_id": worker_run_id, "reason": reason, "checkpoint": None if checkpoint is None else (dict(checkpoint) if isinstance(checkpoint, Mapping) else checkpoint), "checkpoint_asset_id": checkpoint_asset_id, "prompt_asset_id": prompt_asset_id})
-        payload_hash = sha256_hex(canonical_bytes(payload))
+        checkpoint_source: Mapping[str, Any] | str = (
+            checkpoint if checkpoint is not None else str(checkpoint_asset_id)
+        )
+        checkpoint_value, source_asset_id, source_asset_hash = self.checkpoints._load_source(
+            checkpoint_source,
+            checkpoint_asset_id=checkpoint_asset_id if isinstance(checkpoint_source, Mapping) else None,
+        )
+        prompt_asset_hash = None
+        if operation == "await_user":
+            prompt_asset_hash = self._validate_prompt_asset(prompt_asset_id)
+        elif prompt_asset_id is not None:
+            prompt_asset_hash = self._validate_prompt_asset(prompt_asset_id)
+        request = self._request(
+            operation,
+            {
+                "job_id": job_id,
+                "step_id": step_id,
+                "attempt_id": attempt_id,
+                "lease_epoch": lease_epoch,
+                "operation_key": operation_key,
+                "worker_run_id": worker_run_id,
+                "reason": reason,
+                "checkpoint": checkpoint_value,
+                "checkpoint_asset_id": source_asset_id,
+                "checkpoint_asset_hash": source_asset_hash,
+                "prompt_asset_id": prompt_asset_id,
+                "prompt_asset_hash": prompt_asset_hash,
+            },
+        )
+        request_json = _json(request)
+        payload_hash = sha256_hex(canonical_bytes(request))
         now = _clock_value(self.clock)
         with self.repository.transaction() as connection:
-            replay = self._existing(connection, job_id, operation_key, operation, payload_hash)
+            job, step, attempt = self._caller(
+                connection,
+                job_id=job_id,
+                step_id=step_id,
+                attempt_id=attempt_id,
+                lease_epoch=lease_epoch,
+                worker_run_id=worker_run_id,
+                now=now,
+            )
+            replay = self._existing(
+                connection, job_id, operation_key, operation, payload_hash, request_json
+            )
             if replay is not None:
                 return replay
-            job, step, attempt = self._caller(connection, job_id=job_id, step_id=step_id, attempt_id=attempt_id, lease_epoch=lease_epoch, worker_run_id=worker_run_id, now=now)
+            if connection.execute(
+                "SELECT 1 FROM execution_checkpoint_operation WHERE job_id=? AND operation_key=?",
+                (job_id, operation_key),
+            ).fetchone() is not None:
+                raise ContractError(ErrorCode.DUPLICATE_REQUEST, "operation key is already bound to a checkpoint")
             if attempt["state"] != "running" or job["job_state"] != "running" or step["state"] != "running":
                 raise ContractError(ErrorCode.INVALID_TRANSITION, "suspension race lost to an earlier state decision")
             if not can_transition(ATTEMPT_EDGES, "running", "suspended") or not can_transition(STEP_EDGES, "running", target_state) or not can_transition(JOB_EDGES, "running", target_state):
                 raise ContractError(ErrorCode.INVALID_TRANSITION, "invalid suspension transition")
             checkpoint_result, checkpoint_value, source_asset_id = self.checkpoints._commit_source_in_transaction(
                 connection,
-                checkpoint if checkpoint is not None else str(checkpoint_asset_id),
+                checkpoint_value,
                 operation_key=operation_key,
                 worker_run_id=worker_run_id,
+                checkpoint_asset_id=source_asset_id,
                 now=now,
             )
             asset_id = source_asset_id or checkpoint_value.get("state_asset_id")
             if not isinstance(asset_id, str):
                 raise ContractError(ErrorCode.CHECKPOINT_INVALID, "accepted suspension requires a checkpoint Asset")
-            asset_hash = None
-            if source_asset_id is not None:
-                asset_hash = self.checkpoints.assets.require(source_asset_id).sha256 if self.checkpoints.assets is not None else None
-            connection.execute("UPDATE execution_attempt SET state='suspended',revision=revision+1,updated_at=? WHERE attempt_id=? AND state='running' AND lease_epoch=?", (now, attempt_id, lease_epoch))
-            connection.execute("UPDATE execution_step SET state=?,revision=revision+1,updated_at=? WHERE step_id=? AND state='running'", (target_state, now, step_id))
-            connection.execute("UPDATE execution_job SET job_state=?,job_revision=job_revision+1,updated_at=? WHERE job_id=? AND job_state='running'", (target_state, now, job_id))
-            self._append_event(connection, job=job, step_id=step_id, attempt=attempt, operation=operation, operation_key=operation_key, now=now, payload_asset_id=source_asset_id or asset_id, payload_hash=asset_hash)
+            asset_hash = source_asset_hash
+            updated_attempt = connection.execute(
+                "UPDATE execution_attempt SET state='suspended',revision=revision+1,updated_at=? "
+                "WHERE attempt_id=? AND state='running' AND lease_epoch=? AND worker_run_id=?",
+                (now, attempt_id, lease_epoch, worker_run_id),
+            )
+            updated_step = connection.execute(
+                "UPDATE execution_step SET state=?,revision=revision+1,updated_at=? "
+                "WHERE job_id=? AND step_id=? AND state='running' AND active_attempt_id=?",
+                (target_state, now, job_id, step_id, attempt_id),
+            )
+            if updated_attempt.rowcount != 1 or updated_step.rowcount != 1:
+                raise ContractError(ErrorCode.INVALID_TRANSITION, "suspension CAS lost")
+            control_event = self._append_event(
+                connection,
+                job=job,
+                step_id=step_id,
+                attempt=attempt,
+                operation=operation,
+                operation_key=operation_key,
+                now=now,
+                payload_asset_id=source_asset_id or asset_id,
+                payload_hash=asset_hash,
+            )
+            core_event = self._append_state_core_event(
+                connection,
+                job=job,
+                attempt=attempt,
+                operation_key=operation_key,
+                now=now,
+                payload_asset_id=source_asset_id or asset_id,
+                payload_hash=asset_hash,
+            )
+            self._commit_job_state(
+                connection,
+                job=job,
+                target_state=target_state,
+                core_event=core_event,
+                now=now,
+            )
             if operation == "pause":
                 result = {"accepted": True, "checkpoint_asset_id": asset_id}
             else:
-                result = {"accepted": True, "attempt_state": "suspended", "step_state": target_state, "job_state": target_state, "job_event_seq": int(job["job_event_high_water"]) + 2}
+                result = {
+                    "accepted": True,
+                    "attempt_state": "suspended",
+                    "step_state": target_state,
+                    "job_state": target_state,
+                    "job_event_seq": int(control_event["job_event_seq"]),
+                }
             validate_rpc_result(host_method, result)
-            return self._store_operation(connection, job_id=job_id, operation_key=operation_key, operation=operation, payload_hash=payload_hash, attempt_id=attempt_id, lease_epoch=lease_epoch, result=result, now=now)
+            return self._store_operation(
+                connection,
+                job_id=job_id,
+                operation_key=operation_key,
+                operation=operation,
+                payload_hash=payload_hash,
+                attempt_id=attempt_id,
+                lease_epoch=lease_epoch,
+                request_json=request_json,
+                result=result,
+                now=now,
+            )
 
     def pause(self, **kwargs: Any) -> ControlDecision:
         return self._suspend(operation="pause", target_state="paused", host_method="job.pause", **kwargs)
@@ -1160,37 +1994,120 @@ class SQLiteExecutionControlPort:
         resume_reason: str = "resume",
     ) -> ControlDecision:
         source_attempt_id = resume_of_attempt_id or attempt_id
+        _require_id(job_id, "job_id")
+        _require_id(step_id, "step_id")
         _require_id(operation_key, "operation_key")
         if source_attempt_id is None:
             raise ContractValidationError("resume requires resume_of_attempt_id")
+        _require_id(source_attempt_id, "resume_of_attempt_id")
         if checkpoint is None and checkpoint_asset_id is None:
             raise ContractError(ErrorCode.CHECKPOINT_INVALID, "resume requires a checkpoint Asset")
         if worker_run_id is None:
             raise ContractValidationError("resume requires a new worker_run_id")
         _require_id(worker_run_id, "worker_run_id")
+        if lease_epoch is not None:
+            _require_positive_int(lease_epoch, "lease_epoch")
         if not isinstance(resume_reason, str) or not resume_reason:
             raise ContractValidationError("resume_reason must be non-empty")
-        payload = self._payload("resume", {"job_id": job_id, "step_id": step_id, "source_attempt_id": source_attempt_id, "lease_epoch": lease_epoch, "worker_run_id": worker_run_id, "new_attempt_id": new_attempt_id, "plugin_id": plugin_id, "release_id": release_id, "package_hash": package_hash, "capability_id": capability_id, "generation_id": generation_id, "checkpoint": None if checkpoint is None else (dict(checkpoint) if isinstance(checkpoint, Mapping) else checkpoint), "checkpoint_asset_id": checkpoint_asset_id, "resume_reason": resume_reason})
-        payload_hash = sha256_hex(canonical_bytes(payload))
+        checkpoint_source: Mapping[str, Any] | str = (
+            checkpoint if checkpoint is not None else str(checkpoint_asset_id)
+        )
+        checkpoint_value, source_asset_id, source_asset_hash = self.checkpoints._load_source(
+            checkpoint_source,
+            checkpoint_asset_id=checkpoint_asset_id if isinstance(checkpoint_source, Mapping) else None,
+        )
+        request = self._request(
+            "resume",
+            {
+                "job_id": job_id,
+                "step_id": step_id,
+                "operation_key": operation_key,
+                "attempt_id": attempt_id,
+                "resume_of_attempt_id": resume_of_attempt_id,
+                "source_attempt_id": source_attempt_id,
+                "lease_epoch": lease_epoch,
+                "worker_run_id": worker_run_id,
+                "new_attempt_id": new_attempt_id,
+                "plugin_id": plugin_id,
+                "release_id": release_id,
+                "package_hash": package_hash,
+                "capability_id": capability_id,
+                "generation_id": generation_id,
+                "preallocated_receipt_id": preallocated_receipt_id,
+                "lease_expires_at": lease_expires_at,
+                "checkpoint": checkpoint_value,
+                "checkpoint_asset_id": source_asset_id,
+                "checkpoint_asset_hash": source_asset_hash,
+                "resume_reason": resume_reason,
+            },
+        )
+        request_json = _json(request)
+        payload_hash = sha256_hex(canonical_bytes(request))
         now = _clock_value(self.clock)
         with self.repository.transaction() as connection:
-            replay = self._existing(connection, job_id, operation_key, "resume", payload_hash)
-            if replay is not None:
-                return replay
             job = connection.execute("SELECT * FROM execution_job WHERE job_id=?", (job_id,)).fetchone()
             step = connection.execute("SELECT * FROM execution_step WHERE job_id=? AND step_id=?", (job_id, step_id)).fetchone()
             old = connection.execute("SELECT * FROM execution_attempt WHERE attempt_id=? AND job_id=? AND step_id=?", (source_attempt_id, job_id, step_id)).fetchone()
             if job is None or step is None or old is None:
                 raise ContractError(ErrorCode.STALE_LEASE, "resume Attempt lineage is stale")
-            if job["job_state"] not in {"paused", "waiting_user", "needs_attention"} or step["state"] not in {"paused", "waiting_user", "needs_attention"} or old["state"] != "suspended":
-                raise ContractError(ErrorCode.INVALID_TRANSITION, "terminal or non-suspended Attempt cannot be resumed")
+            if old["owner_instance_id"] is None or old["owner_instance_id"] != old["worker_run_id"]:
+                raise ContractError(ErrorCode.STALE_LEASE, "resume source Attempt owner authority drifted")
             if lease_epoch is not None and int(old["lease_epoch"]) != lease_epoch:
                 raise ContractError(ErrorCode.STALE_LEASE, "resume Attempt lease is stale")
-            if checkpoint is None:
-                checkpoint_source: Mapping[str, Any] | str = str(checkpoint_asset_id)
-            else:
-                checkpoint_source = checkpoint
-            value, source_asset_id, source_asset_hash = self.checkpoints._load_source(checkpoint_source, checkpoint_asset_id=checkpoint_asset_id if isinstance(checkpoint_source, Mapping) else None)
+            self.checkpoints._validate_snapshot_attempt_binding(job, old)
+            stored_operation = connection.execute(
+                "SELECT attempt_id,lease_epoch FROM execution_control_operation "
+                "WHERE job_id=? AND operation_key=?",
+                (job_id, operation_key),
+            ).fetchone()
+            if stored_operation is not None:
+                if stored_operation["attempt_id"] is None or stored_operation["lease_epoch"] is None:
+                    raise ContractError(ErrorCode.ASSET_ERROR, "resume operation fence is incomplete")
+                self.checkpoints._fence_attempt(
+                    connection,
+                    job_id=job_id,
+                    step_id=step_id,
+                    attempt_id=str(stored_operation["attempt_id"]),
+                    lease_epoch=int(stored_operation["lease_epoch"]),
+                    worker_run_id=worker_run_id,
+                    now=now,
+                    require_active=False,
+                )
+            elif new_attempt_id is not None:
+                candidate = connection.execute(
+                    "SELECT lease_epoch FROM execution_attempt WHERE attempt_id=? "
+                    "AND job_id=? AND step_id=?",
+                    (new_attempt_id, job_id, step_id),
+                ).fetchone()
+                if candidate is not None:
+                    self.checkpoints._fence_attempt(
+                        connection,
+                        job_id=job_id,
+                        step_id=step_id,
+                        attempt_id=new_attempt_id,
+                        lease_epoch=int(candidate["lease_epoch"]),
+                        worker_run_id=worker_run_id,
+                        now=now,
+                        require_active=False,
+                    )
+            replay = self._existing(
+                connection, job_id, operation_key, "resume", payload_hash, request_json
+            )
+            if replay is not None:
+                return replay
+            if connection.execute(
+                "SELECT 1 FROM execution_checkpoint_operation WHERE job_id=? AND operation_key=?",
+                (job_id, operation_key),
+            ).fetchone() is not None:
+                raise ContractError(ErrorCode.DUPLICATE_REQUEST, "operation key is already bound to a checkpoint")
+            if job["job_state"] not in {"paused", "waiting_user", "needs_attention"} or step["state"] not in {"paused", "waiting_user", "needs_attention"} or old["state"] != "suspended":
+                raise ContractError(ErrorCode.INVALID_TRANSITION, "terminal or non-suspended Attempt cannot be resumed")
+            value, loaded_asset_id, loaded_asset_hash = self.checkpoints._load_source(
+                checkpoint_value,
+                checkpoint_asset_id=source_asset_id,
+            )
+            if loaded_asset_id != source_asset_id or loaded_asset_hash != source_asset_hash:
+                raise ContractError(ErrorCode.ASSET_ERROR, "resume checkpoint Asset closure drifted")
             try:
                 verify_checkpoint(value, expected_snapshot_hash=str(job["run_snapshot_hash"]))
             except ContractError:
@@ -1216,7 +2133,11 @@ class SQLiteExecutionControlPort:
             for name in ("plugin_id", "release_id", "package_hash", "capability_id", "generation_id"):
                 if selected[name] != old[name]:
                     raise ContractError(ErrorCode.INCOMPATIBLE_GENERATION, f"resume {name} drifted from the suspended Attempt")
+            _require_id(selected["plugin_id"], "plugin_id")
+            _require_hash(selected["release_id"], "release_id")
             _require_hash(selected["package_hash"], "package_hash")
+            _require_id(selected["capability_id"], "capability_id")
+            _require_id(selected["generation_id"], "generation_id")
             epoch = int(step["next_lease_epoch"])
             expiry = lease_expires_at or "9999-12-31T23:59:59Z"
             if _is_expired(expiry, now):
@@ -1238,9 +2159,46 @@ class SQLiteExecutionControlPort:
                     step["expected_result_contract"], source_attempt_id, value["checkpoint_id"],
                 ),
             )
-            connection.execute("UPDATE execution_step SET state='running',active_attempt_id=?,next_lease_epoch=?,revision=revision+1,updated_at=? WHERE job_id=? AND step_id=? AND state=?", (new_id, epoch + 1, now, job_id, step_id, step["state"]))
-            connection.execute("UPDATE execution_job SET job_state='running',job_revision=job_revision+1,updated_at=? WHERE job_id=? AND job_state=?", (now, job_id, job["job_state"]))
-            event = self._append_event(connection, job=job, step_id=step_id, attempt=connection.execute("SELECT * FROM execution_attempt WHERE attempt_id=?", (new_id,)).fetchone(), operation="resume", operation_key=operation_key, now=now, payload_asset_id=source_asset_id, payload_hash=source_asset_hash, local_seq=1)
+            updated_step = connection.execute(
+                "UPDATE execution_step SET state='running',active_attempt_id=?,next_lease_epoch=?,revision=revision+1,updated_at=? "
+                "WHERE job_id=? AND step_id=? AND state=? AND active_attempt_id=?",
+                (new_id, epoch + 1, now, job_id, step_id, step["state"], source_attempt_id),
+            )
+            if updated_step.rowcount != 1:
+                raise ContractError(ErrorCode.INVALID_TRANSITION, "resume Step CAS lost")
+            new_attempt = connection.execute(
+                "SELECT * FROM execution_attempt WHERE attempt_id=?", (new_id,)
+            ).fetchone()
+            if new_attempt is None:
+                raise ContractError(ErrorCode.ASSET_ERROR, "resume Attempt allocation disappeared")
+            event = self._append_event(
+                connection,
+                job=job,
+                step_id=step_id,
+                attempt=new_attempt,
+                operation="resume",
+                operation_key=operation_key,
+                now=now,
+                payload_asset_id=source_asset_id,
+                payload_hash=source_asset_hash,
+                local_seq=1,
+            )
+            core_event = self._append_state_core_event(
+                connection,
+                job=job,
+                attempt=new_attempt,
+                operation_key=operation_key,
+                now=now,
+                payload_asset_id=source_asset_id,
+                payload_hash=source_asset_hash,
+            )
+            self._commit_job_state(
+                connection,
+                job=job,
+                target_state="running",
+                core_event=core_event,
+                now=now,
+            )
             result = {"accepted": True, "worker_run_id": worker_run_id, "provenance_receipt_id": receipt_id, "output_streams": []}
             # The frozen v1 result schema has identical ``job.start`` and
             # ``job.resume`` branches.  Its oneOf therefore rejects this
@@ -1257,7 +2215,18 @@ class SQLiteExecutionControlPort:
                 raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "invalid job.resume result")
             _require_id(result["worker_run_id"], "worker_run_id")
             _require_id(result["provenance_receipt_id"], "provenance_receipt_id")
-            return self._store_operation(connection, job_id=job_id, operation_key=operation_key, operation="resume", payload_hash=payload_hash, attempt_id=new_id, lease_epoch=epoch, result=result, now=now)
+            return self._store_operation(
+                connection,
+                job_id=job_id,
+                operation_key=operation_key,
+                operation="resume",
+                payload_hash=payload_hash,
+                attempt_id=new_id,
+                lease_epoch=epoch,
+                request_json=request_json,
+                result=result,
+                now=now,
+            )
 
     def apply(self, operation: str, **kwargs: Any) -> ControlDecision:
         if operation == "cancel":

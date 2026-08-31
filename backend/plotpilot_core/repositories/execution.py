@@ -663,7 +663,10 @@ class ExecutionAuthority:
             try:
                 verify_attempt_snapshot_binding(snapshot, attempt)
             except Exception as exc:
-                raise ContractError(ErrorCode.ASSET_ERROR, "committed Attempt release binding drifted") from exc
+                raise ContractError(
+                    ErrorCode.INCOMPATIBLE_GENERATION,
+                    "committed Attempt release binding drifted",
+                ) from exc
             if attempt["run_snapshot_asset_id"] is not None:
                 try:
                     self.assets.require(attempt["run_snapshot_asset_id"], sha256=attempt["run_snapshot_hash"])
@@ -1178,6 +1181,11 @@ class ExecutionAuthority:
         if outcome not in {"succeeded", "partial", "failed", "cancelled"}:
             raise ContractValidationError("unsupported terminal outcome")
         payload = {
+            "method": _COMPLETE,
+            "job_id": job_id,
+            "step_id": step_id,
+            "attempt_id": attempt_id,
+            "lease_epoch": lease_epoch,
             "operation_key": operation_key,
             "worker_run_id": worker_run_id,
             "outcome": outcome,
@@ -1185,6 +1193,9 @@ class ExecutionAuthority:
             "candidate_stage_operation_key": candidate_stage_operation_key,
             "terminal_detail_asset_id": terminal_detail_asset_id,
             "local_seq": local_seq,
+            "provenance_receipt": None if provenance_receipt is None else dict(provenance_receipt),
+            "operation_meta": dict(operation_meta),
+            "rpc_id": rpc_id,
         }
         payload_hash = sha256_hex(canonical_bytes(payload))
         now = utc_now()
@@ -1202,6 +1213,27 @@ class ExecutionAuthority:
             if any(operation_meta.get(name) != value for name, value in expected_meta.items()):
                 code = ErrorCode.STALE_LEASE if operation_meta.get("lease_epoch") != lease_epoch else ErrorCode.INCOMPATIBLE_GENERATION
                 raise ContractError(code, "RPC operation meta is not authoritative for this Attempt")
+            # The same durable Attempt fence is required even when the outcome
+            # ledger already contains a response.  In particular, a different
+            # worker, release, generation, or RunSnapshot must not turn a
+            # stale completion into a successful replay.
+            try:
+                self._verify_replay_snapshot_profile(connection, attempt)
+            except ContractError as exc:
+                # Before the first terminal decision, a release/generation
+                # mismatch is an incompatible caller identity.  Once an
+                # outcome is already durable, the same mutation is persisted
+                # authority drift and must fail closed as an Asset error,
+                # preserving the replay boundary's error contract.
+                if (
+                    exc.code == int(ErrorCode.INCOMPATIBLE_GENERATION)
+                    and attempt["state"] in TERMINAL_STATES
+                ):
+                    raise ContractError(
+                        ErrorCode.ASSET_ERROR,
+                        "committed Attempt release binding drifted",
+                    ) from exc
+                raise
             context_identity = derive_operation_context_identity(
                 operation_meta, expected_lease_epoch=attempt["lease_epoch"]
             )
@@ -1220,14 +1252,7 @@ class ExecutionAuthority:
                 plan_frozen=attempt["plan_frozen"],
                 output_step_id=attempt["output_step_id"],
             )
-            snapshot = _load(attempt["run_snapshot_json"])
-            if snapshot.get("schema") == "run-snapshot/v1":
-                try:
-                    verify_attempt_snapshot_binding(snapshot, attempt)
-                except Exception as exc:
-                    raise ContractError(
-                        ErrorCode.INCOMPATIBLE_GENERATION, "Attempt is not bound to its RunSnapshot release"
-                    ) from exc
+            snapshot = self._verify_replay_snapshot_profile(connection, attempt)
             if (
                 attempt["state"] == "cancelling" or attempt["job_state"] == "cancelling"
             ) and outcome in {"succeeded", "partial"}:
