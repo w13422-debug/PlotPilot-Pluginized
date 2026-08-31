@@ -215,7 +215,23 @@
           "base_revision_id": "rev-1",
           "content_hash": "2222222222222222222222222222222222222222222222222222222222222222",
           "revision_id": "rev-2",
-          "revision_number": 2
+          "revision_number": 2,
+          "write_set": [
+            {
+              "content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "entity_id": "doc-a",
+              "entity_kind": "document",
+              "revision_id": "rev-1",
+              "workspace_id": "ws-1"
+            },
+            {
+              "content_hash": "7777777777777777777777777777777777777777777777777777777777777777",
+              "entity_id": "doc-b",
+              "entity_kind": "document",
+              "revision_id": "rev-b",
+              "workspace_id": "ws-1"
+            }
+          ]
         },
         "content_hash": "2222222222222222222222222222222222222222222222222222222222222222",
         "entity_id": "doc-a",

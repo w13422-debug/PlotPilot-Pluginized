@@ -26,7 +26,7 @@ export interface CandidateV2 {
   mutation: { mode: string; payload_schema: string; payload_hash: string }
   payload_asset_id: string
   base: { revision_id: string; content_hash: string }
-  write_set: Array<V2Target & { revision_id: string; content_hash: string }>
+  write_set: V2WriteSetEntry[]
   parent_candidate_ids: string[]
   source_refs: JsonRecord[]
   status: V2Status
@@ -35,12 +35,15 @@ export interface CandidateV2 {
   source_job_id: string | null
 }
 
+export type V2WriteSetEntry = V2Target & { revision_id: string; content_hash: string }
+
 export interface V2CasResult {
   base_revision_id: string
   base_content_hash: string
   revision_id: string
   revision_number: number
   content_hash: string
+  write_set: V2WriteSetEntry[]
 }
 
 export interface PublicationCommandV2 {
@@ -229,10 +232,7 @@ export function validateCandidateV2(value: unknown, expectedWorkspaceId?: string
   if (expectedWorkspaceId !== undefined && candidate.workspace_id !== expectedWorkspaceId) fail('Candidate crosses Workspace')
   if (candidate.target.workspace_id !== candidate.workspace_id) fail('Candidate target crosses Workspace')
   if (candidate.write_set.some(item => item.workspace_id !== candidate.workspace_id)) fail('Candidate write_set crosses Workspace')
-  const identities = candidate.write_set.map(item => `${item.workspace_id}\0${item.entity_kind}\0${item.entity_id}`)
-  if (new Set(identities).size !== identities.length) fail('Candidate write_set contains a duplicate entity identity')
-  const sortedIdentities = [...identities].sort()
-  if (identities.some((identity, index) => identity !== sortedIdentities[index])) fail('Candidate write_set is not in stable entity identity order')
+  assertWriteSetOrder(candidate.write_set, 'Candidate write_set')
   const target = `${candidate.target.entity_kind}\0${candidate.target.entity_id}`
   const matching = candidate.write_set.filter(item => `${item.entity_kind}\0${item.entity_id}` === target)
   if (matching.length !== 1) fail('Candidate target must occur exactly once in write_set')
@@ -252,6 +252,13 @@ export function validateCandidateV2(value: unknown, expectedWorkspaceId?: string
   }
   if (candidate.status !== 'complete' && candidate.status !== 'partial') fail('failed/skipped staging outcome cannot cross the Candidate query/review surface')
   if (parentRecords !== undefined) validateParentClosure(candidate, parentRecords)
+}
+
+function assertWriteSetOrder(writeSet: V2WriteSetEntry[], label: string): void {
+  const identities = writeSet.map(item => `${item.workspace_id}\0${item.entity_kind}\0${item.entity_id}`)
+  if (new Set(identities).size !== identities.length) fail(`${label} contains a duplicate entity identity`)
+  const sortedIdentities = [...identities].sort()
+  if (identities.some((identity, index) => identity !== sortedIdentities[index])) fail(`${label} is not in stable entity identity order`)
 }
 
 function validateParentClosure(candidate: CandidateV2, parentRecords: Readonly<Record<string, JsonRecord>>): void {
@@ -312,6 +319,7 @@ export function validatePublicationV2(commandValue: unknown, resultValue: unknow
   if (command.publication_operation_key !== result.publication_operation_key || command.candidate_id !== result.candidate_id || command.workspace_id !== result.workspace_id) fail('Publication result does not match its command')
   if (expectedWorkspaceId !== undefined && command.workspace_id !== expectedWorkspaceId) fail('Publication crosses Workspace')
   if (result.cas.revision_id !== result.revision_id || result.cas.revision_number !== result.revision_number || result.cas.content_hash !== result.content_hash) fail('Publication result is not bound to the Core CAS Revision')
+  assertWriteSetOrder(result.cas.write_set, 'Publication CAS write_set')
   if (candidateValue !== undefined) {
     const candidate = parseCandidateV2(candidateValue, command.workspace_id)
     if (candidate.candidate_id !== result.candidate_id || candidate.target.entity_kind !== result.entity_kind || candidate.target.entity_id !== result.entity_id) fail('Publication result is not bound to Candidate target')
@@ -319,6 +327,10 @@ export function validatePublicationV2(commandValue: unknown, resultValue: unknow
     if (candidate.status === 'partial' && candidate.item_kind !== 'incomplete_stream') fail('normal partial Candidate is review-only')
     const targetWrite = candidate.write_set.find(item => item.entity_kind === candidate.target.entity_kind && item.entity_id === candidate.target.entity_id)
     if (!targetWrite || result.cas.base_revision_id !== targetWrite.revision_id || result.cas.base_content_hash !== targetWrite.content_hash) fail('Publication result CAS base is not bound to Candidate write_set')
+    if (result.cas.write_set.length !== candidate.write_set.length || result.cas.write_set.some((entry, index) => {
+      const expected = candidate.write_set[index]
+      return entry.workspace_id !== expected.workspace_id || entry.entity_kind !== expected.entity_kind || entry.entity_id !== expected.entity_id || entry.revision_id !== expected.revision_id || entry.content_hash !== expected.content_hash
+    })) fail('Publication result CAS write_set is not bound to Candidate write_set')
     // The mutation payload Asset/hash is independently validated on Candidate;
     // the result hash is the final Revision hash computed by Core and may differ.
   }

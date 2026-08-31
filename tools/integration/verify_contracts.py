@@ -1066,6 +1066,13 @@ def verify_v2_public_surface() -> dict[str, Any]:
                     action = lambda value=value: validate_publication_v2(value, publication_doc["result_complete"], candidate=candidate, expected_workspace_id="ws-1")
                 else:
                     action = lambda value=value: validate_publication_v2(publication_doc["command_complete"], value, candidate=candidate, expected_workspace_id="ws-1")
+            elif kind == "publication_write_set":
+                action = lambda value=value: validate_publication_v2(
+                    publication_doc["command_complete"],
+                    publication_doc["result_complete"],
+                    candidate=value,
+                    expected_workspace_id="ws-1",
+                )
             elif kind == "projection_semantics":
                 action = lambda value=value: validate_story_state_projection_v2(value)
             elif kind == "job_cursor":

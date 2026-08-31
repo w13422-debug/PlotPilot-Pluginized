@@ -8,7 +8,7 @@
     "m4-m5-v2-04-job-sse",
     "m4-m5-v2-05-plugin-lifecycle"
   ],
-  "negative_case_count": 60,
+  "negative_case_count": 62,
   "schema": "m4-m5-public-surface-corpus-manifest/v2",
   "semantic_assertions": [
     "closed_schema_rejection",

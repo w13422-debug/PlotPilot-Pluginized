@@ -1246,8 +1246,11 @@ def v2_core_authority_schemas() -> dict[str, dict[str, Any]]:
             "revision_id": ID,
             "revision_number": POS_INT,
             "content_hash": HASH,
+            # Bind the complete ordered Candidate write_set, not only the
+            # Publication target, to this single CAS result.
+            "write_set": array(v2_write_set_entry(), min_items=1, unique=True),
         },
-        ("base_revision_id", "base_content_hash", "revision_id", "revision_number", "content_hash"),
+        ("base_revision_id", "base_content_hash", "revision_id", "revision_number", "content_hash", "write_set"),
     )
     publication_result = obj(
         {

@@ -43,6 +43,7 @@ class V2CasResult(TypedDict):
     revision_id: str
     revision_number: int
     content_hash: str
+    write_set: list[V2WriteSetEntry]
 
 
 class CandidateV2(TypedDict):
@@ -254,14 +255,7 @@ def validate_candidate_v2(
     write_set = candidate["write_set"]
     if any(item["workspace_id"] != workspace_id for item in write_set):
         _fail("Candidate write_set crosses Workspace", path="/write_set")
-    identities = [
-        (item["workspace_id"], item["entity_kind"], item["entity_id"])
-        for item in write_set
-    ]
-    if len(identities) != len(set(identities)):
-        _fail("Candidate write_set contains a duplicate entity identity", path="/write_set")
-    if identities != sorted(identities):
-        _fail("Candidate write_set is not in stable entity identity order", path="/write_set")
+    _assert_write_set_order(write_set, label="Candidate write_set")
     target_key = (target["entity_kind"], target["entity_id"])
     target_entries = [item for item in write_set if (item["entity_kind"], item["entity_id"]) == target_key]
     if len(target_entries) != 1:
@@ -326,6 +320,17 @@ def _assert_parent_closure(candidate: Mapping[str, Any], parent_records: Mapping
         visited.add(candidate_id)
 
     visit(candidate["candidate_id"])
+
+
+def _assert_write_set_order(write_set: Sequence[Mapping[str, Any]], *, label: str) -> None:
+    identities = [
+        (item["workspace_id"], item["entity_kind"], item["entity_id"])
+        for item in write_set
+    ]
+    if len(identities) != len(set(identities)):
+        _fail(f"{label} contains a duplicate entity identity", path="/write_set")
+    if identities != sorted(identities):
+        _fail(f"{label} is not in stable entity identity order", path="/write_set")
 
 
 def parse_core_authority_v2(value: Mapping[str, Any]) -> dict[str, Any]:
@@ -650,6 +655,7 @@ def validate_publication_v2(
         parsed_result["content_hash"],
     ):
         _fail("Publication result is not bound to the Core CAS Revision")
+    _assert_write_set_order(cas["write_set"], label="Publication CAS write_set")
     if candidate is not None:
         parsed_candidate = parse_candidate_v2(candidate, expected_workspace_id=parsed_command["workspace_id"])
         if parsed_candidate["candidate_id"] != parsed_result["candidate_id"]:
@@ -674,6 +680,8 @@ def validate_publication_v2(
             target_entry["content_hash"],
         ):
             _fail("Publication result CAS base is not bound to Candidate write_set")
+        if cas["write_set"] != parsed_candidate["write_set"]:
+            _fail("Publication result CAS write_set is not bound to Candidate write_set")
         # The Candidate mutation remains independently bound to its payload
         # Asset/hash.  ``parsed_result.content_hash`` is the final Revision
         # hash computed by Core and is intentionally allowed to differ.

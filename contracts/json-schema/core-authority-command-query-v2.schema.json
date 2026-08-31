@@ -186,6 +186,47 @@
             "revision_number": {
               "minimum": 1,
               "type": "integer"
+            },
+            "write_set": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "content_hash": {
+                    "pattern": "^[0-9a-f]{64}$",
+                    "type": "string"
+                  },
+                  "entity_id": {
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                    "type": "string"
+                  },
+                  "entity_kind": {
+                    "enum": [
+                      "document",
+                      "node_structure",
+                      "relation_set"
+                    ]
+                  },
+                  "revision_id": {
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                    "type": "string"
+                  },
+                  "workspace_id": {
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "workspace_id",
+                  "entity_kind",
+                  "entity_id",
+                  "revision_id",
+                  "content_hash"
+                ],
+                "type": "object"
+              },
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": true
             }
           },
           "required": [
@@ -193,7 +234,8 @@
             "base_content_hash",
             "revision_id",
             "revision_number",
-            "content_hash"
+            "content_hash",
+            "write_set"
           ],
           "type": "object"
         },

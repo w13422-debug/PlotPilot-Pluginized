@@ -36,8 +36,8 @@ def test_v2_public_surface_gate_is_complete() -> None:
         "corpus_groups": 5,
         "cursor_domains": ["candidate", "core", "job"],
         "golden_files": 7,
-        "negative_case_digest": "15c06b8e6b7cb49c4ac9926220970216d09359715b3e633a5c44894c1f351ccc",
-        "negative_cases": 60,
+        "negative_case_digest": "d343766f706bfa13bbd507c212165c3ad3ccf87e1c41c88d6068a04f61e59926",
+        "negative_cases": 62,
         "http_exchanges": 19,
         "publication_path": "publication.accept",
         "routes": 19,
@@ -77,6 +77,29 @@ def test_candidate_workspace_write_set_base_and_partial_rules_are_fail_closed() 
             candidate=partial,
             expected_workspace_id="ws-1",
         )
+
+
+def test_publication_binds_every_ordered_write_set_entry() -> None:
+    candidate_doc = read("candidate.json")
+    publication = read("publication.json")
+    candidate = candidate_doc["candidate"]
+    target = (candidate["target"]["entity_kind"], candidate["target"]["entity_id"])
+    non_target_index = next(
+        index
+        for index, entry in enumerate(candidate["write_set"])
+        if (entry["entity_kind"], entry["entity_id"]) != target
+    )
+
+    for field, value in (("revision_id", "rev-non-target-stale"), ("content_hash", "f" * 64)):
+        bad_candidate = copy.deepcopy(candidate)
+        bad_candidate["write_set"][non_target_index][field] = value
+        with pytest.raises(ContractError):
+            validate_publication_v2(
+                publication["command_complete"],
+                publication["result_complete"],
+                candidate=bad_candidate,
+                expected_workspace_id="ws-1",
+            )
 
 
 def test_candidate_preview_binds_exact_returned_bytes_and_payload_hash() -> None:

@@ -45,9 +45,9 @@
       "sha256": "2e78b86709b75349cfcda9706d3421c0cf2881290fffff6594fc8401c4248bbc"
     },
     {
-      "bytes": 4191,
+      "bytes": 4994,
       "path": "contracts/corpus/m4-m5-public-surface-v2/02-review-publication.json",
-      "sha256": "cdf4ab7149e573d226839fcd99f6d0f335e2d930dfdc4e2263d80017c4c8046b"
+      "sha256": "4a48dbaae3a7068fc9360cbcc0dd7122c5dd80b0e5f33be499bd8445453db171"
     },
     {
       "bytes": 3370,
@@ -67,7 +67,7 @@
     {
       "bytes": 1458,
       "path": "contracts/corpus/m4-m5-public-surface-v2/manifest.json",
-      "sha256": "12866cd86ccd7b0f511ad65d1b90887b35a29d893813774bb98f1c6b458e46fb"
+      "sha256": "e60a16dcf49422cbd3000a84c76449e52053ef4bc8dab85789ee0f52e65c0e29"
     },
     {
       "bytes": 575,
@@ -397,12 +397,12 @@
     {
       "bytes": 1314,
       "path": "contracts/golden/m4-m5-public-surface-v2/expected.json",
-      "sha256": "50b0f263678b98214535cb650939322b645741c75db78792d66019f474c86e3d"
+      "sha256": "ed72bb6ef86a6f74b699e2ce0755356c104adc50da53ba94512ecdad0b6e4114"
     },
     {
-      "bytes": 23198,
+      "bytes": 23793,
       "path": "contracts/golden/m4-m5-public-surface-v2/http.json",
-      "sha256": "877a84012f9d1e1e00e9f73b3b30c371313891a22875ffd00e57f73b40e997d5"
+      "sha256": "eb4754f157ea1cc0f029c877fec3d936faef444cac54a4127db1b825dc3187ee"
     },
     {
       "bytes": 8337,
@@ -415,9 +415,9 @@
       "sha256": "4f98b5ab5ea9e74580cbe649b5f89c5d913c048c44f509dad7b406559b6dc24d"
     },
     {
-      "bytes": 6236,
+      "bytes": 8187,
       "path": "contracts/golden/m4-m5-public-surface-v2/publication.json",
-      "sha256": "51cad4aa46dc777192fa4ba34de777ae8add52819a30d4ac63ee6f6c8bcda2d6"
+      "sha256": "d15e71f1c8a9557212dc5a855166de28b4e3a7799f3e59d016cffee32e0db484"
     },
     {
       "bytes": 797,
@@ -570,9 +570,9 @@
       "sha256": "5b60a3edf630aa55c7313172c5ee20636969866e0c60cbd89adb075f0306153f"
     },
     {
-      "bytes": 7739,
+      "bytes": 9138,
       "path": "contracts/json-schema/core-authority-command-query-v2.schema.json",
-      "sha256": "d1ef8107d463b7230220a8ee6844242a6cad82f0b4e250ea8e2c13a0e3c3c206"
+      "sha256": "bb8dfa542c7936b3ab07a479f581c4dd784473b3e8b2b51e35c81d3264318e12"
     },
     {
       "bytes": 3110,
@@ -940,10 +940,10 @@
       ],
       "fixture_files": {
         "candidate.json": "ba4aaad8cd1de6e5b038761092191e1fae03f73a2375063b22a4f8858f103f9d",
-        "http.json": "877a84012f9d1e1e00e9f73b3b30c371313891a22875ffd00e57f73b40e997d5",
+        "http.json": "eb4754f157ea1cc0f029c877fec3d936faef444cac54a4127db1b825dc3187ee",
         "job.json": "73867e609724e10bc23a4cab209d7c6dbfe86df0b252b1cf5c2a04720dabef1b",
         "plugin.json": "4f98b5ab5ea9e74580cbe649b5f89c5d913c048c44f509dad7b406559b6dc24d",
-        "publication.json": "51cad4aa46dc777192fa4ba34de777ae8add52819a30d4ac63ee6f6c8bcda2d6",
+        "publication.json": "d15e71f1c8a9557212dc5a855166de28b4e3a7799f3e59d016cffee32e0db484",
         "review.json": "3f65b9a5c92f61bd334c3fcfb64fa9fa29e01271c3d780474941a43edfc8860a",
         "story-state.json": "63eb937f08e9fdd7fec4f7049780df1b5d900757ead5d1dbedf99d440efcfe84"
       },
@@ -964,7 +964,7 @@
   },
   "inventory": {
     "file_count_excluding_manifest": 162,
-    "negative_case_count_v2": 60,
+    "negative_case_count_v2": 62,
     "negative_group_count_v1": 14,
     "negative_group_count_v2": 5,
     "schema_count": 61,
@@ -1152,7 +1152,7 @@
       },
       {
         "group_id": "m4-m5-v2-02-review-publication",
-        "negative_case_count": 10,
+        "negative_case_count": 12,
         "path": "contracts/corpus/m4-m5-public-surface-v2/02-review-publication.json",
         "positive_fixture_ids": [
           "review.query",
@@ -1169,7 +1169,7 @@
           "publication.command.incomplete_stream",
           "publication.result.incomplete_stream"
         ],
-        "sha256": "cdf4ab7149e573d226839fcd99f6d0f335e2d930dfdc4e2263d80017c4c8046b"
+        "sha256": "4a48dbaae3a7068fc9360cbcc0dd7122c5dd80b0e5f33be499bd8445453db171"
       },
       {
         "group_id": "m4-m5-v2-03-story-state",
@@ -1308,11 +1308,11 @@
       "sha256": "5b60a3edf630aa55c7313172c5ee20636969866e0c60cbd89adb075f0306153f"
     },
     {
-      "bytes": 7739,
+      "bytes": 9138,
       "contract_id": "core-authority-command-query-v2",
       "path": "contracts/json-schema/core-authority-command-query-v2.schema.json",
       "schema_id": "https://plotpilot.local/contracts/core-authority-command-query-v2",
-      "sha256": "d1ef8107d463b7230220a8ee6844242a6cad82f0b4e250ea8e2c13a0e3c3c206"
+      "sha256": "bb8dfa542c7936b3ab07a479f581c4dd784473b3e8b2b51e35c81d3264318e12"
     },
     {
       "bytes": 3110,

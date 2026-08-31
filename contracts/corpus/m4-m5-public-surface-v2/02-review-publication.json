@@ -121,6 +121,36 @@
       }
     },
     {
+      "case_id": "v2-publication-cas-non-target-revision-binding",
+      "expected": "cas_write_set_binding",
+      "fixture": "candidate.record",
+      "kind": "publication_write_set",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "write_set",
+          1,
+          "revision_id"
+        ],
+        "value": "rev-non-target-stale"
+      }
+    },
+    {
+      "case_id": "v2-publication-cas-non-target-content-hash-binding",
+      "expected": "cas_write_set_binding",
+      "fixture": "candidate.record",
+      "kind": "publication_write_set",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "write_set",
+          1,
+          "content_hash"
+        ],
+        "value": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      }
+    },
+    {
       "case_id": "v2-publication-ledger-response-drift",
       "expected": "duplicate_operation",
       "fixture": "http.publication.accept",
