@@ -5,5 +5,5 @@
   "group_ids": [
     "prompt-skill-rpc-v2-execute"
   ],
-  "negative_case_count": 8
+  "negative_case_count": 43
 }

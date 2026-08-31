@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
-from pathlib import Path
+from importlib.resources import files as resource_files
 from typing import Mapping
 
 from .canonical import sha256_hex
@@ -15,7 +15,8 @@ _HEX64 = re.compile(r"^[0-9a-f]{64}$")
 _DRIVE = re.compile(r"^[A-Za-z]:")
 _RESERVED = {"con", "prn", "aux", "nul", "clock$", *(f"com{i}" for i in range(1, 10)), *(f"lpt{i}" for i in range(1, 10))}
 _FORBIDDEN_CHARS = set('<>"|?*:\x00')
-_CASEFOLD_TABLE_PATH = Path(__file__).resolve().parents[2] / "contracts" / "unicode-casefold-v1.json"
+_RESOURCE_PACKAGE = "plotpilot_plugin_sdk"
+_CASEFOLD_TABLE_NAME = "unicode-casefold-v1.json"
 _HANGUL_PROFILE = {
     "s_base": 0xAC00,
     "l_base": 0x1100,
@@ -28,7 +29,14 @@ _HANGUL_PROFILE = {
 
 
 def _load_unicode_contract() -> tuple[dict[str, str], dict[int, tuple[int, ...]], dict[int, int], dict[tuple[int, int], int]]:
-    payload = json.loads(_CASEFOLD_TABLE_PATH.read_text(encoding="utf-8"))
+    try:
+        payload = json.loads(
+            resource_files(_RESOURCE_PACKAGE)
+            .joinpath("resources", _CASEFOLD_TABLE_NAME)
+            .read_text(encoding="utf-8")
+        )
+    except (FileNotFoundError, OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise RuntimeError("packaged Unicode casefold contract is unavailable") from exc
     if (
         payload.get("schema") != "unicode-casefold/v1"
         or payload.get("unicode_data_version") != "15.0.0"

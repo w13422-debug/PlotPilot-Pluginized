@@ -124,6 +124,25 @@ def v2_negative_records() -> list[dict[str, Any]]:
     return records
 
 
+def prompt_skill_negative_records() -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    root = CONTRACTS / "corpus" / "prompt-skill-rpc-v2"
+    for path in sorted(root.glob("*.json")):
+        if path.name == "manifest.json":
+            continue
+        value = json.loads(path.read_text(encoding="utf-8"))
+        records.append(
+            {
+                "group_id": value["group_id"],
+                "path": relative(path),
+                "sha256": sha256(path),
+                "negative_case_count": len(value["negative"]),
+                "positive_fixture_ids": value["positive"],
+            }
+        )
+    return records
+
+
 def golden_vectors() -> dict[str, Any]:
     values: dict[str, Any] = {}
     for name in ("package", "skill", "run-snapshot", "backup", "contract-publication-v1", "core-http-request-failure-v1"):
@@ -138,6 +157,13 @@ def golden_vectors() -> dict[str, Any]:
 
 def v2_golden_vectors() -> dict[str, Any]:
     expected_path = CONTRACTS / "golden" / "m4-m5-public-surface-v2" / "expected.json"
+    if not expected_path.exists():
+        return {}
+    return json.loads(expected_path.read_text(encoding="utf-8"))
+
+
+def prompt_skill_golden_vectors() -> dict[str, Any]:
+    expected_path = CONTRACTS / "golden" / "prompt-skill-rpc-v2" / "expected.json"
     if not expected_path.exists():
         return {}
     return json.loads(expected_path.read_text(encoding="utf-8"))
@@ -181,6 +207,8 @@ def render_v2() -> dict[str, Any]:
     schemas = schema_records(include_v2=True)
     files = file_records(include_v2=True)
     v2_groups = v2_negative_records()
+    prompt_skill_groups = prompt_skill_negative_records()
+    prompt_skill_expected = prompt_skill_golden_vectors()
     v1_manifest_bytes = OUTPUT.read_bytes() if OUTPUT.exists() else (json.dumps(v1, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
     return {
         "schema": "plotpilot-contract-manifest/v2",
@@ -209,6 +237,9 @@ def render_v2() -> dict[str, Any]:
             "negative_group_count_v1": len(negative_records()),
             "negative_group_count_v2": len(v2_groups),
             "negative_case_count_v2": sum(item["negative_case_count"] for item in v2_groups),
+            "prompt_skill_schema_count": 3,
+            "prompt_skill_negative_group_count_v2": len(prompt_skill_groups),
+            "prompt_skill_negative_case_count_v2": sum(item["negative_case_count"] for item in prompt_skill_groups),
         },
         "contract_families": [
             "candidate/v2",
@@ -219,8 +250,15 @@ def render_v2() -> dict[str, Any]:
             "plugin-lifecycle/v2",
         ],
         "schemas": schemas,
-        "golden_vectors": {"v1": golden_vectors(), "v2": v2_golden_vectors()},
-        "negative_groups": {"v1": negative_records(), "v2": v2_groups},
+        "golden_vectors": {"v1": golden_vectors(), "v2": v2_golden_vectors(), "prompt_skill_v2": prompt_skill_expected},
+        "negative_groups": {"v1": negative_records(), "v2": v2_groups, "prompt_skill_v2": prompt_skill_groups},
+        "prompt_skill_v2": {
+            "schema_count": 3,
+            "golden": prompt_skill_expected,
+            "negative_groups": prompt_skill_groups,
+            "negative_group_count": len(prompt_skill_groups),
+            "negative_case_count": sum(item["negative_case_count"] for item in prompt_skill_groups),
+        },
         "files": files,
     }
 

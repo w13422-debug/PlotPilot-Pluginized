@@ -11,6 +11,8 @@ const SCHEMAS = join(CONTRACTS, 'json-schema')
 const GOLDEN = join(CONTRACTS, 'golden')
 const V2_GOLDEN = join(GOLDEN, 'm4-m5-public-surface-v2')
 const V2_CORPUS = join(CONTRACTS, 'corpus', 'm4-m5-public-surface-v2')
+const PROMPT_GOLDEN = join(GOLDEN, 'prompt-skill-rpc-v2')
+const PROMPT_CORPUS = join(CONTRACTS, 'corpus', 'prompt-skill-rpc-v2')
 const text = (path) => readFileSync(path, 'utf8')
 const bytes = (path) => readFileSync(path)
 const sha256 = (value) => createHash('sha256').update(value).digest('hex')
@@ -324,6 +326,132 @@ async function verifyV2() {
   return { routes: matrix.routes.length, schemas: 6, golden_files: Object.keys(expected.fixture_files).length, corpus_groups: groups.length, negative_cases: negativeCases, negative_case_digest: negativeCaseDigest, http_exchanges: http.exchanges.length, publication_path: matrix.publication_path, cursor_domains: Object.keys(matrix.cursor_domains).sort() }
 }
 
+async function verifyPromptSkill() {
+  const matrix = readJson(join(SCHEMAS, 'rpc-method-matrix.v2.json'))
+  if (matrix.schema !== 'rpc-method-matrix/v2' || matrix.authority !== 'core' || matrix.plugin_authority_allowed !== false) throw new Error('Prompt-Skill matrix authority drift')
+  if (matrix.protocol?.jsonrpc !== '2.0' || matrix.protocol?.version !== '1' || matrix.envelope?.exactly_one !== true) throw new Error('Prompt-Skill matrix protocol drift')
+  if (JSON.stringify(matrix.envelope?.members) !== JSON.stringify(['request', 'success', 'error'])) throw new Error('Prompt-Skill envelope member drift')
+  if (!Array.isArray(matrix.methods) || matrix.methods.length !== 1) throw new Error('Prompt-Skill method inventory drift')
+  const method = matrix.methods[0]
+  for (const [key, expected] of Object.entries({ method: 'prompt.skill.execute/v2', authority: 'core', consumer: 'P2', direction: 'host-to-worker', endpoint: 'worker', protocol_version: '1', framing: 'content-length-crlf', meta_profile: 'attempt', lease_fenced: true, operation_key_required: true, request_schema: 'prompt-skill-execute-request/v2', result_contract: 'artifact-bundle/v1', result_schema: 'prompt-skill-execute-result/v2', success_schema: 'rpc-method-success/v2', error_schema: 'rpc-error-v1', error_code_registry: 'rpc-method-matrix/v1#error_codes' })) if (method[key] !== expected) throw new Error(`Prompt-Skill method field drift: ${key}`)
+  if (canonicalJson(method.secrets) !== canonicalJson({ location: 'params', mode: 'one-shot', response_forbidden: true })) throw new Error('Prompt-Skill secret policy drift')
+  if (method.job_mapping?.start?.method !== 'job.start' || method.job_mapping?.resume?.method !== 'job.resume') throw new Error('Prompt-Skill job mapping drift')
+
+  const rpc = await import(pathToFileURL(join(ROOT, 'frontend', 'src', 'contracts', 'prompt-skill-rpc-v2.ts')).href)
+  const golden = readJson(join(PROMPT_GOLDEN, 'execute.json'))
+  const expected = readJson(join(PROMPT_GOLDEN, 'expected.json'))
+  for (const [name, digest] of Object.entries(expected.fixture_files)) if (sha256(bytes(join(PROMPT_GOLDEN, name))) !== digest) throw new Error(`Prompt-Skill golden hash drift ${name}`)
+  const request = rpc.parsePromptSkillExecuteRequestV2(golden.request)
+  const result = rpc.parsePromptSkillExecuteResultV2(golden.result)
+  if (rpc.validateRpcMethodSuccessV2(golden.success, golden.request).result?.operation_key !== result.operation_key) throw new Error('Prompt-Skill success binding drift')
+  if (rpc.parsePromptSkillRpcEnvelopeV2(golden.request).params.operation_key !== request.params.operation_key) throw new Error('Prompt-Skill request envelope drift')
+  if (rpc.parsePromptSkillRpcEnvelopeV2(golden.success, golden.request).result.operation_key !== result.operation_key) throw new Error('Prompt-Skill success envelope drift')
+  if (rpc.parsePromptSkillRpcEnvelopeV2(golden.error, golden.request).error.code !== golden.error.error.code) throw new Error('Prompt-Skill error envelope drift')
+  for (const status of ['failed', 'cancelled', 'uncertain']) if (rpc.parsePromptSkillExecuteResultV2(golden[status]).status !== status) throw new Error(`Prompt-Skill terminal fixture drift: ${status}`)
+  const operationDigest = await rpc.promptSkillOperationKeyV2(golden.request)
+  if (operationDigest !== golden.operation_digest || operationDigest !== expected.operation_digest) throw new Error('Prompt-Skill operation digest drift')
+  const operationBytesHex = Buffer.from(canonicalJson(golden.request.params), 'utf8').toString('hex')
+  if (operationBytesHex !== golden.operation_canonical_bytes_hex || operationBytesHex !== expected.operation_canonical_bytes_hex) throw new Error('Prompt-Skill canonical operation bytes drift')
+  const permuted = structuredClone(golden.request)
+  permuted.params.skill_releases.reverse()
+  const permutedBytesHex = Buffer.from(canonicalJson(permuted.params), 'utf8').toString('hex')
+  const permutedDigest = await rpc.promptSkillOperationKeyV2(permuted)
+  if (permutedBytesHex === operationBytesHex || permutedDigest === operationDigest) throw new Error('Prompt-Skill Skill array permutation did not change canonical identity')
+
+  const authority = (value) => Object.fromEntries(['workspace_id', 'generation_id', 'plugin_id', 'plugin_release_id', 'job_id', 'step_id', 'attempt_id', 'lease_epoch', 'operation_key'].map((field) => [field, value.params[field]]))
+  const ledger = new rpc.PromptSkillOperationLedgerV2()
+  const first = ledger.record(golden.request, golden.result, authority(golden.request))
+  if (first.replayed || first.result.operation_key !== result.operation_key) throw new Error('Prompt-Skill ledger record drift')
+  if (ledger.replay(golden.request, authority(golden.request)).operation_key !== result.operation_key) throw new Error('Prompt-Skill ledger replay drift')
+  const groups = readdirSync(PROMPT_CORPUS).filter((name) => name.endsWith('.json') && name !== 'manifest.json').map((name) => readJson(join(PROMPT_CORPUS, name)))
+  const manifest = readJson(join(PROMPT_CORPUS, 'manifest.json'))
+  const negativeCases = groups.reduce((total, group) => total + group.negative.length, 0)
+  if (groups.length !== 1 || manifest.group_count !== 1 || manifest.negative_case_count !== negativeCases || negativeCases <= 25) throw new Error('Prompt-Skill corpus inventory drift')
+  const fixtures = { 'execute.request': golden.request, 'execute.result': golden.result, 'execute.success': golden.success, 'execute.failed': golden.failed, 'execute.cancelled': golden.cancelled, 'execute.uncertain': golden.uncertain, 'execute.error': golden.error, 'execute.envelope': golden.request }
+  const setPath = (value, path, replacement) => { let target = value; for (const part of path.slice(0, -1)) target = target[part]; target[path.at(-1)] = structuredClone(replacement); return value }
+  const rejected = async (action) => { try { await action(); return false } catch (_) { return true } }
+  const observed = new Set()
+  for (const group of groups) {
+    if (group.schema !== 'prompt-skill-rpc-corpus/v2') throw new Error('Prompt-Skill corpus schema drift')
+    for (const fixtureId of group.positive) {
+      if (fixtureId === 'execute.request') rpc.parsePromptSkillExecuteRequestV2(fixtures[fixtureId])
+      else if (['execute.result', 'execute.failed', 'execute.cancelled', 'execute.uncertain'].includes(fixtureId)) rpc.parsePromptSkillExecuteResultV2(fixtures[fixtureId])
+      else if (fixtureId === 'execute.success') rpc.validateRpcMethodSuccessV2(fixtures[fixtureId], golden.request)
+      else if (fixtureId === 'execute.error') rpc.parsePromptSkillErrorV2(fixtures[fixtureId])
+      else throw new Error(`unknown Prompt-Skill positive fixture ${fixtureId}`)
+    }
+    for (const item of group.negative) {
+      if (observed.has(item.case_id)) throw new Error(`duplicate Prompt-Skill case ${item.case_id}`)
+      observed.add(item.case_id)
+      let action
+      if (item.fixture === 'execute.ledger') {
+        action = () => {
+          if (item.mutation.op === 'no-authority') return new rpc.PromptSkillOperationLedgerV2().replay(golden.request)
+          if (item.mutation.op === 'stale-replay') { const staleLedger = new rpc.PromptSkillOperationLedgerV2(); const auth = authority(golden.request); staleLedger.record(golden.request, golden.result, auth); return staleLedger.replay(golden.request, { ...auth, attempt_id: 'attempt-other' }) }
+          if (item.mutation.op === 'future-poison' || item.mutation.op === 'future-epoch-rejected-before-mutation') { const futureRequest = setPath(setPath(structuredClone(golden.request), ['params', 'lease_epoch'], 99), ['meta', 'lease_epoch'], 99); const futureResult = setPath(structuredClone(golden.result), ['lease_epoch'], 99); const futureLedger = new rpc.PromptSkillOperationLedgerV2(); return futureLedger.record(futureRequest, futureResult, authority(golden.request)) }
+          if (item.mutation.op === 'authority-missing') { const context = authority(golden.request); delete context[item.mutation.field]; return new rpc.PromptSkillOperationLedgerV2().record(golden.request, golden.result, context) }
+          if (item.mutation.op === 'authority-additional') { const context = authority(golden.request); context[item.mutation.field] = structuredClone(item.mutation.value); return new rpc.PromptSkillOperationLedgerV2().record(golden.request, golden.result, context) }
+          if (item.mutation.op === 'authority-partial') return new rpc.PromptSkillOperationLedgerV2().record(golden.request, golden.result, { lease_epoch: golden.request.params.lease_epoch })
+          throw new Error('unknown Prompt-Skill ledger operation')
+        }
+      } else {
+        const value = setPath(structuredClone(fixtures[item.fixture]), item.mutation.path, item.mutation.value)
+        if (item.fixture === 'execute.request') action = () => rpc.parsePromptSkillExecuteRequestV2(value)
+        else if (item.fixture === 'execute.result') action = () => rpc.validatePromptSkillExecuteV2(golden.request, value)
+        else if (['execute.failed', 'execute.cancelled', 'execute.uncertain'].includes(item.fixture)) action = () => rpc.parsePromptSkillExecuteResultV2(value)
+        else if (item.fixture === 'execute.success') action = () => rpc.validatePromptSkillExecuteV2(golden.request, value)
+        else if (item.fixture === 'execute.error') action = () => rpc.parsePromptSkillErrorV2(value, golden.request)
+        else if (item.fixture === 'execute.envelope') action = () => rpc.parsePromptSkillRpcEnvelopeV2(value)
+        else throw new Error(`unknown Prompt-Skill fixture ${item.fixture}`)
+      }
+      if (!(await rejected(action))) throw new Error(`Prompt-Skill corpus false-accepted: ${item.case_id}`)
+    }
+  }
+  if (observed.size !== negativeCases) throw new Error('Prompt-Skill corpus execution count drift')
+  const authorityContext = authority(golden.request)
+  for (const field of Object.keys(authorityContext)) {
+    const ledgerProbe = new rpc.PromptSkillOperationLedgerV2()
+    const missing = { ...authorityContext }
+    delete missing[field]
+    if (!(await rejected(() => ledgerProbe.record(golden.request, golden.result, missing)))) throw new Error(`missing authority accepted: ${field}`)
+    if (ledgerProbe.record(golden.request, golden.result, authorityContext).replayed) throw new Error(`missing authority mutated ledger: ${field}`)
+  }
+  const additionalProbe = new rpc.PromptSkillOperationLedgerV2()
+  if (!(await rejected(() => additionalProbe.record(golden.request, golden.result, { ...authorityContext, unexpected_authority: true })))) throw new Error('additional authority accepted')
+  if (additionalProbe.record(golden.request, golden.result, authorityContext).replayed) throw new Error('additional authority mutated ledger')
+  const partialProbe = new rpc.PromptSkillOperationLedgerV2()
+  if (!(await rejected(() => partialProbe.record(golden.request, golden.result, { lease_epoch: authorityContext.lease_epoch })))) throw new Error('partial authority accepted')
+  if (partialProbe.record(golden.request, golden.result, authorityContext).replayed) throw new Error('partial authority mutated ledger')
+  const futureProbeRequest = setPath(setPath(structuredClone(golden.request), ['params', 'lease_epoch'], authorityContext.lease_epoch + 1), ['meta', 'lease_epoch'], authorityContext.lease_epoch + 1)
+  const futureProbeResult = setPath(structuredClone(golden.result), ['lease_epoch'], authorityContext.lease_epoch + 1)
+  const futureProbe = new rpc.PromptSkillOperationLedgerV2()
+  if (!(await rejected(() => futureProbe.record(futureProbeRequest, futureProbeResult, authorityContext)))) throw new Error('future lease epoch accepted')
+  if (futureProbe.record(golden.request, golden.result, authorityContext).replayed) throw new Error('future epoch mutated ledger')
+
+  const validRequest = structuredClone(golden.request)
+  validRequest.params.secrets[0].value = 'astral-😀'
+  if (await rejected(() => rpc.parsePromptSkillExecuteRequestV2(validRequest))) throw new Error('valid request astral scalar rejected')
+  const validResult = structuredClone(golden.result)
+  validResult.warnings = [{ code: 'prompt-skill.warning', message: 'astral-😀' }]
+  if (await rejected(() => rpc.parsePromptSkillExecuteResultV2(validResult))) throw new Error('valid result astral scalar rejected')
+  const validSuccess = structuredClone(golden.success)
+  validSuccess.result.warnings = [{ code: 'prompt-skill.warning', message: 'astral-😀' }]
+  if (await rejected(() => rpc.validateRpcMethodSuccessV2(validSuccess, golden.request))) throw new Error('valid success astral scalar rejected')
+  const invalidRequest = structuredClone(golden.request)
+  invalidRequest.params.secrets[0].value = 'lone-\ud800'
+  const invalidResult = structuredClone(golden.result)
+  invalidResult.warnings = [{ code: 'prompt-skill.warning', message: 'lone-\ud800' }]
+  const invalidSuccess = structuredClone(golden.success)
+  invalidSuccess.result.warnings = [{ code: 'prompt-skill.warning', message: 'lone-\ud800' }]
+  const invalidError = structuredClone(golden.error)
+  invalidError.error.message = 'lone-\ud800'
+  if (!(await rejected(() => rpc.parsePromptSkillExecuteRequestV2(invalidRequest)))) throw new Error('lone surrogate request accepted')
+  if (!(await rejected(() => rpc.parsePromptSkillExecuteResultV2(invalidResult)))) throw new Error('lone surrogate result accepted')
+  if (!(await rejected(() => rpc.validateRpcMethodSuccessV2(invalidSuccess, golden.request)))) throw new Error('lone surrogate success accepted')
+  if (!(await rejected(() => rpc.parsePromptSkillErrorV2(invalidError)))) throw new Error('lone surrogate RPC error accepted')
+  return { schemas: 3, golden_files: Object.keys(expected.fixture_files).length, corpus_groups: groups.length, negative_cases: negativeCases, operation_digest: operationDigest, operation_bytes_hex: operationBytesHex, package_resources: 7 }
+}
+
 function utf8Compare(a, b) {
   const left = utf8(a)
   const right = utf8(b)
@@ -413,7 +541,7 @@ function verifyInventory() {
 }
 
 if (process.argv.includes('--all')) {
-  const result = { inventory: verifyInventory(), v2: await verifyV2(), package: verifyPackage(), skill: verifySkill(), snapshot: verifySnapshot(), backup: verifyBackup() }
+  const result = { inventory: verifyInventory(), v2: await verifyV2(), prompt_skill: await verifyPromptSkill(), package: verifyPackage(), skill: verifySkill(), snapshot: verifySnapshot(), backup: verifyBackup() }
   console.log(JSON.stringify(result, null, 2))
 } else {
   console.error('pass --all')

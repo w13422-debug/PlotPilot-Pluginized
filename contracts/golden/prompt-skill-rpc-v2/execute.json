@@ -16,7 +16,6 @@
       "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "skill_releases": [
         {
-          "order": 0,
           "skill_id": "skill.prompt",
           "release_id": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
           "package_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
@@ -24,7 +23,6 @@
           "parameters_content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
         },
         {
-          "order": 1,
           "skill_id": "skill.style",
           "release_id": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
           "package_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -51,7 +49,27 @@
         "result_item_id": "item-1",
         "stream_id": null,
         "acked_prefix_hash": null
-      }
+      },
+      "chain_asset_id": "asset-chain-1",
+      "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "secrets": [
+        {
+          "secret_id": "secret-api",
+          "value": "one-shot-secret"
+        }
+      ]
+    },
+    "meta": {
+      "protocol_version": "1",
+      "generation_id": "generation-1",
+      "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "deadline_at": "2026-08-31T00:00:00Z",
+      "context": "attempt",
+      "operation_id": "execute-op-1",
+      "job_id": "job-1",
+      "step_id": "step-1",
+      "attempt_id": "attempt-1",
+      "lease_epoch": 1
     }
   },
   "result": {
@@ -66,7 +84,6 @@
     "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     "skill_releases": [
       {
-        "order": 0,
         "skill_id": "skill.prompt",
         "release_id": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
         "package_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
@@ -74,7 +91,6 @@
         "parameters_content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
       },
       {
-        "order": 1,
         "skill_id": "skill.style",
         "release_id": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "package_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -116,7 +132,21 @@
       "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "model_profile_revision_id": "model-profile-rev-1",
       "input_asset_id": "asset-input-1",
-      "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "workspace_id": "ws-1",
+      "plugin_id": "com.plotpilot.prompt-skill",
+      "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "generation_id": "generation-1",
+      "job_id": "job-1",
+      "step_id": "step-1",
+      "attempt_id": "attempt-1",
+      "lease_epoch": 1,
+      "chain_id": "chain-1",
+      "chain_asset_id": "asset-chain-1",
+      "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "run_snapshot_id": "snapshot-1",
+      "run_snapshot_asset_id": "asset-snapshot-1"
     },
     "result_bundle": {
       "contract_id": "artifact-bundle/v1",
@@ -126,10 +156,28 @@
       "result_item_id": "item-1",
       "workspace_id": "ws-1",
       "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "operation_key": "execute-op-1"
+      "operation_key": "execute-op-1",
+      "plugin_id": "com.plotpilot.prompt-skill",
+      "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "generation_id": "generation-1",
+      "job_id": "job-1",
+      "step_id": "step-1",
+      "attempt_id": "attempt-1",
+      "lease_epoch": 1,
+      "chain_id": "chain-1",
+      "chain_asset_id": "asset-chain-1",
+      "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "run_snapshot_id": "snapshot-1",
+      "run_snapshot_asset_id": "asset-snapshot-1",
+      "model_profile_revision_id": "model-profile-rev-1",
+      "input_asset_id": "asset-input-1",
+      "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
     },
     "idempotent": false,
-    "warnings": []
+    "warnings": [],
+    "chain_asset_id": "asset-chain-1",
+    "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111"
   },
   "success": {
     "jsonrpc": "2.0",
@@ -146,7 +194,6 @@
       "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "skill_releases": [
         {
-          "order": 0,
           "skill_id": "skill.prompt",
           "release_id": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
           "package_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
@@ -154,7 +201,6 @@
           "parameters_content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
         },
         {
-          "order": 1,
           "skill_id": "skill.style",
           "release_id": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
           "package_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -196,7 +242,21 @@
         "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
         "model_profile_revision_id": "model-profile-rev-1",
         "input_asset_id": "asset-input-1",
-        "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "workspace_id": "ws-1",
+        "plugin_id": "com.plotpilot.prompt-skill",
+        "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "generation_id": "generation-1",
+        "job_id": "job-1",
+        "step_id": "step-1",
+        "attempt_id": "attempt-1",
+        "lease_epoch": 1,
+        "chain_id": "chain-1",
+        "chain_asset_id": "asset-chain-1",
+        "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+        "run_snapshot_id": "snapshot-1",
+        "run_snapshot_asset_id": "asset-snapshot-1"
       },
       "result_bundle": {
         "contract_id": "artifact-bundle/v1",
@@ -206,10 +266,223 @@
         "result_item_id": "item-1",
         "workspace_id": "ws-1",
         "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-        "operation_key": "execute-op-1"
+        "operation_key": "execute-op-1",
+        "plugin_id": "com.plotpilot.prompt-skill",
+        "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "generation_id": "generation-1",
+        "job_id": "job-1",
+        "step_id": "step-1",
+        "attempt_id": "attempt-1",
+        "lease_epoch": 1,
+        "chain_id": "chain-1",
+        "chain_asset_id": "asset-chain-1",
+        "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+        "run_snapshot_id": "snapshot-1",
+        "run_snapshot_asset_id": "asset-snapshot-1",
+        "model_profile_revision_id": "model-profile-rev-1",
+        "input_asset_id": "asset-input-1",
+        "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "idempotent": false,
-      "warnings": []
+      "warnings": [],
+      "chain_asset_id": "asset-chain-1",
+      "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111"
     }
-  }
+  },
+  "failed": {
+    "schema": "prompt-skill-execute-result/v2",
+    "authority": "core",
+    "capability_id": "prompt.skill.execute/v2",
+    "result_contract": "artifact-bundle/v1",
+    "operation_key": "execute-op-1",
+    "workspace_id": "ws-1",
+    "plugin_id": "com.plotpilot.prompt-skill",
+    "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "skill_releases": [
+      {
+        "skill_id": "skill.prompt",
+        "release_id": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "package_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "parameters_asset_id": "asset-skill-params",
+        "parameters_content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      },
+      {
+        "skill_id": "skill.style",
+        "release_id": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "package_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "parameters_asset_id": null,
+        "parameters_content_hash": null
+      }
+    ],
+    "run_snapshot_id": "snapshot-1",
+    "run_snapshot_asset_id": "asset-snapshot-1",
+    "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "generation_id": "generation-1",
+    "job_id": "job-1",
+    "step_id": "step-1",
+    "attempt_id": "attempt-1",
+    "lease_epoch": 1,
+    "chain_id": "chain-1",
+    "input_asset_id": "asset-input-1",
+    "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "parameters_asset_id": null,
+    "parameters_content_hash": null,
+    "model_profile_revision_id": "model-profile-rev-1",
+    "anchor": {
+      "result_bundle_id": null,
+      "result_item_id": null,
+      "stream_id": null,
+      "acked_prefix_hash": null
+    },
+    "status": "failed",
+    "output": null,
+    "model_receipt": null,
+    "result_bundle": null,
+    "idempotent": true,
+    "warnings": [
+      {
+        "code": "prompt-skill.failed",
+        "message": "provider rejected the attempt"
+      }
+    ],
+    "chain_asset_id": "asset-chain-1",
+    "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "cancelled": {
+    "schema": "prompt-skill-execute-result/v2",
+    "authority": "core",
+    "capability_id": "prompt.skill.execute/v2",
+    "result_contract": "artifact-bundle/v1",
+    "operation_key": "execute-op-1",
+    "workspace_id": "ws-1",
+    "plugin_id": "com.plotpilot.prompt-skill",
+    "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "skill_releases": [
+      {
+        "skill_id": "skill.prompt",
+        "release_id": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "package_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "parameters_asset_id": "asset-skill-params",
+        "parameters_content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      },
+      {
+        "skill_id": "skill.style",
+        "release_id": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "package_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "parameters_asset_id": null,
+        "parameters_content_hash": null
+      }
+    ],
+    "run_snapshot_id": "snapshot-1",
+    "run_snapshot_asset_id": "asset-snapshot-1",
+    "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "generation_id": "generation-1",
+    "job_id": "job-1",
+    "step_id": "step-1",
+    "attempt_id": "attempt-1",
+    "lease_epoch": 1,
+    "chain_id": "chain-1",
+    "input_asset_id": "asset-input-1",
+    "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "parameters_asset_id": null,
+    "parameters_content_hash": null,
+    "model_profile_revision_id": "model-profile-rev-1",
+    "anchor": {
+      "result_bundle_id": null,
+      "result_item_id": null,
+      "stream_id": null,
+      "acked_prefix_hash": null
+    },
+    "status": "cancelled",
+    "output": null,
+    "model_receipt": null,
+    "result_bundle": null,
+    "idempotent": true,
+    "warnings": [
+      {
+        "code": "prompt-skill.cancelled",
+        "message": "attempt cancelled before external effect"
+      }
+    ],
+    "chain_asset_id": "asset-chain-1",
+    "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "uncertain": {
+    "schema": "prompt-skill-execute-result/v2",
+    "authority": "core",
+    "capability_id": "prompt.skill.execute/v2",
+    "result_contract": "artifact-bundle/v1",
+    "operation_key": "execute-op-1",
+    "workspace_id": "ws-1",
+    "plugin_id": "com.plotpilot.prompt-skill",
+    "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "skill_releases": [
+      {
+        "skill_id": "skill.prompt",
+        "release_id": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "package_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "parameters_asset_id": "asset-skill-params",
+        "parameters_content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      },
+      {
+        "skill_id": "skill.style",
+        "release_id": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "package_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "parameters_asset_id": null,
+        "parameters_content_hash": null
+      }
+    ],
+    "run_snapshot_id": "snapshot-1",
+    "run_snapshot_asset_id": "asset-snapshot-1",
+    "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "generation_id": "generation-1",
+    "job_id": "job-1",
+    "step_id": "step-1",
+    "attempt_id": "attempt-1",
+    "lease_epoch": 1,
+    "chain_id": "chain-1",
+    "input_asset_id": "asset-input-1",
+    "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "parameters_asset_id": null,
+    "parameters_content_hash": null,
+    "model_profile_revision_id": "model-profile-rev-1",
+    "anchor": {
+      "result_bundle_id": null,
+      "result_item_id": null,
+      "stream_id": null,
+      "acked_prefix_hash": null
+    },
+    "status": "uncertain",
+    "output": null,
+    "model_receipt": null,
+    "result_bundle": null,
+    "idempotent": true,
+    "warnings": [
+      {
+        "code": "prompt-skill.uncertain",
+        "message": "external effect could not be confirmed"
+      }
+    ],
+    "chain_asset_id": "asset-chain-1",
+    "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "error": {
+    "jsonrpc": "2.0",
+    "id": "1f1f1f1f-1111-4111-8111-111111111111",
+    "error": {
+      "code": 1011,
+      "message": "Prompt/Skill result contract mismatch",
+      "data": {
+        "error_id": "prompt-skill-error-1",
+        "retryable": false,
+        "details_asset_id": null
+      }
+    }
+  },
+  "operation_digest": "35a5e33168f93d36766ddbfd4397846b803800ae755ca6328010f3163288bcf9",
+  "operation_canonical_bytes_hex": "7b22616e63686f72223a7b2261636b65645f7072656669785f68617368223a6e756c6c2c22726573756c745f62756e646c655f6964223a2262756e646c652d31222c22726573756c745f6974656d5f6964223a226974656d2d31222c2273747265616d5f6964223a6e756c6c7d2c22617474656d70745f6964223a22617474656d70742d31222c22617574686f72697479223a22636f7265222c226361706162696c6974795f6964223a2270726f6d70742e736b696c6c2e657865637574652f7632222c22636861696e5f61737365745f6964223a2261737365742d636861696e2d31222c22636861696e5f636f6e74656e745f68617368223a2231313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131222c22636861696e5f6964223a22636861696e2d31222c2267656e65726174696f6e5f6964223a2267656e65726174696f6e2d31222c22696e7075745f61737365745f6964223a2261737365742d696e7075742d31222c22696e7075745f636f6e74656e745f68617368223a2263636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363222c226a6f625f6964223a226a6f622d31222c226c656173655f65706f6368223a312c226d6f64656c5f70726f66696c655f7265766973696f6e5f6964223a226d6f64656c2d70726f66696c652d7265762d31222c226f7065726174696f6e5f6b6579223a22657865637574652d6f702d31222c22706172616d65746572735f61737365745f6964223a6e756c6c2c22706172616d65746572735f636f6e74656e745f68617368223a6e756c6c2c22706c7567696e5f6964223a22636f6d2e706c6f7470696c6f742e70726f6d70742d736b696c6c222c22706c7567696e5f7061636b6167655f68617368223a2262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262222c22706c7567696e5f72656c656173655f6964223a2261616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161222c22726573756c745f636f6e7472616374223a2261727469666163742d62756e646c652f7631222c2272756e5f736e617073686f745f61737365745f6964223a2261737365742d736e617073686f742d31222c2272756e5f736e617073686f745f68617368223a2262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262222c2272756e5f736e617073686f745f6964223a22736e617073686f742d31222c22736368656d61223a2270726f6d70742d736b696c6c2d657865637574652d726571756573742f7632222c2273656372657473223a5b7b227365637265745f6964223a227365637265742d617069222c2276616c7565223a226f6e652d73686f742d736563726574227d5d2c22736b696c6c5f72656c6561736573223a5b7b227061636b6167655f68617368223a2264646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464222c22706172616d65746572735f61737365745f6964223a2261737365742d736b696c6c2d706172616d73222c22706172616d65746572735f636f6e74656e745f68617368223a2265656565656565656565656565656565656565656565656565656565656565656565656565656565656565656565656565656565656565656565656565656565222c2272656c656173655f6964223a2263636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363222c22736b696c6c5f6964223a22736b696c6c2e70726f6d7074227d2c7b227061636b6167655f68617368223a2261616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161222c22706172616d65746572735f61737365745f6964223a6e756c6c2c22706172616d65746572735f636f6e74656e745f68617368223a6e756c6c2c2272656c656173655f6964223a2266666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666222c22736b696c6c5f6964223a22736b696c6c2e7374796c65227d5d2c22737465705f6964223a22737465702d31222c22776f726b73706163655f6964223a2277732d31227d"
 }

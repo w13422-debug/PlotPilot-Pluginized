@@ -26,7 +26,7 @@ if str(BACKEND) not in sys.path:
 
 from jsonschema import Draft202012Validator  # noqa: E402
 
-from plotpilot_plugin_sdk.canonical import canonical_bytes, sha256_hex  # noqa: E402
+from plotpilot_plugin_sdk.canonical import canonical_bytes, hash_jcs, sha256_hex  # noqa: E402
 from plotpilot_plugin_sdk.errors import ContractError, ContractValidationError, ErrorCode  # noqa: E402
 from plotpilot_plugin_sdk.fake_provider import FakeProvider  # noqa: E402
 from plotpilot_plugin_sdk.fixtures import PluginUIHostFixture  # noqa: E402
@@ -67,6 +67,16 @@ from plotpilot_plugin_sdk.m4_m5_http_v2 import (  # noqa: E402
     validate_http_exchange,
 )
 from plotpilot_plugin_sdk.package import build_files_sha256, normalize_relative_path, package_hash  # noqa: E402
+from plotpilot_plugin_sdk.prompt_skill_rpc_v2 import (  # noqa: E402
+    PromptSkillOperationLedgerV2,
+    parse_prompt_skill_execute_request_v2,
+    parse_prompt_skill_execute_result_v2,
+    parse_prompt_skill_rpc_envelope_v2,
+    parse_rpc_error_v2,
+    prompt_skill_operation_key,
+    validate_prompt_skill_execute_v2,
+    validate_rpc_success_v2,
+)
 from plotpilot_plugin_sdk.rpc import (  # noqa: E402
     ChunkUploadLedger,
     OperationLedger,
@@ -111,7 +121,8 @@ from plotpilot_plugin_sdk.verifier import (  # noqa: E402
     snapshot_hash,
 )
 
-SCHEMA_DIR = ROOT / "contracts" / "json-schema"
+CONTRACTS = ROOT / "contracts"
+SCHEMA_DIR = CONTRACTS / "json-schema"
 EXAMPLES_DIR = ROOT / "contracts" / "examples"
 FIXTURES_DIR = EXAMPLES_DIR / "fixtures"
 GOLDEN_DIR = ROOT / "contracts" / "golden"
@@ -712,8 +723,19 @@ def verify_contract_manifest() -> dict[str, Any]:
         raise AssertionError("v2 contract manifest schema drift")
     if v2_manifest.get("v1_immutable", {}).get("manifest_sha256") != hashlib.sha256(manifest_path.read_bytes()).hexdigest():
         raise AssertionError("v2 manifest does not retain the v1 manifest identity")
-    if v2_manifest.get("inventory", {}).get("v2_schema_count") != 9 or v2_manifest.get("inventory", {}).get("negative_group_count_v2") != 5:
+    v2_inventory = v2_manifest.get("inventory", {})
+    if v2_inventory.get("v2_schema_count") != 9 or v2_inventory.get("negative_group_count_v2") != 5:
         raise AssertionError("v2 manifest inventory does not cover the additive surface")
+    if (
+        v2_inventory.get("schema_count") != 64
+        or v2_inventory.get("v1_schema_count") != 55
+        or v2_inventory.get("file_count_excluding_manifest") != 170
+        or v2_inventory.get("v1_file_count") != 141
+        or v2_inventory.get("v2_file_count") != 29
+        or v2_inventory.get("prompt_skill_schema_count") != 3
+        or v2_inventory.get("prompt_skill_negative_group_count_v2") != 1
+    ):
+        raise AssertionError("Prompt-Skill or additive manifest inventory drift")
     v2_records = v2_manifest.get("files")
     if not isinstance(v2_records, list):
         raise AssertionError("v2 manifest has no file inventory")
@@ -721,7 +743,15 @@ def verify_contract_manifest() -> dict[str, Any]:
         path = ROOT / record["path"]
         if not path.is_file() or path.stat().st_size != record["bytes"] or hashlib.sha256(path.read_bytes()).hexdigest() != record["sha256"]:
             raise AssertionError(f"v2 contract manifest hash drift: {record['path']}")
-    return {"files": len(records), "schemas": manifest["inventory"]["schema_count"], "negative_groups": manifest["inventory"]["negative_group_count"], "v2_files": len(v2_records), "v2_schemas": v2_manifest["inventory"]["v2_schema_count"], "generator_check": check.stdout.strip()}
+    return {
+        "files": len(records),
+        "schemas": manifest["inventory"]["schema_count"],
+        "negative_groups": manifest["inventory"]["negative_group_count"],
+        "v2_files": len(v2_records),
+        "v2_schemas": v2_manifest["inventory"]["v2_schema_count"],
+        "prompt_skill_negative_cases": v2_inventory.get("prompt_skill_negative_case_count_v2"),
+        "generator_check": check.stdout.strip(),
+    }
 
 
 def verify_goldens() -> dict[str, Any]:
@@ -1133,6 +1163,324 @@ def verify_v2_public_surface() -> dict[str, Any]:
         "http_exchanges": len(http_exchanges),
         "publication_path": matrix["publication_path"],
         "cursor_domains": sorted(matrix["cursor_domains"]),
+    }
+
+
+def verify_prompt_skill_rpc_v2() -> dict[str, Any]:
+    """Verify the additive Prompt/Skill RPC without changing the M4/M5 gate."""
+
+    matrix = load_strict_json(SCHEMA_DIR / "rpc-method-matrix.v2.json")
+    if matrix.get("schema") != "rpc-method-matrix/v2" or matrix.get("authority") != "core" or matrix.get("plugin_authority_allowed") is not False:
+        raise AssertionError("Prompt-Skill method matrix authority drift")
+    if matrix.get("protocol", {}).get("jsonrpc") != "2.0" or matrix.get("protocol", {}).get("version") != "1":
+        raise AssertionError("Prompt-Skill method matrix protocol drift")
+    if matrix.get("envelope") != {"exactly_one": True, "members": ["request", "success", "error"]}:
+        raise AssertionError("Prompt-Skill envelope composition drift")
+    methods = matrix.get("methods")
+    if not isinstance(methods, list) or len(methods) != 1:
+        raise AssertionError("Prompt-Skill method inventory drift")
+    method = methods[0]
+    expected_method_fields = {
+        "method": "prompt.skill.execute/v2",
+        "authority": "core",
+        "consumer": "P2",
+        "direction": "host-to-worker",
+        "endpoint": "worker",
+        "protocol_version": "1",
+        "framing": "content-length-crlf",
+        "meta_profile": "attempt",
+        "lease_fenced": True,
+        "operation_key_required": True,
+        "request_schema": "prompt-skill-execute-request/v2",
+        "result_contract": "artifact-bundle/v1",
+        "result_schema": "prompt-skill-execute-result/v2",
+        "success_schema": "rpc-method-success/v2",
+        "error_schema": "rpc-error-v1",
+        "error_code_registry": "rpc-method-matrix/v1#error_codes",
+    }
+    if any(method.get(key) != value for key, value in expected_method_fields.items()):
+        raise AssertionError("Prompt-Skill method matrix dispatch fields drift")
+    if method.get("secrets") != {"location": "params", "mode": "one-shot", "response_forbidden": True}:
+        raise AssertionError("Prompt-Skill secret policy drift")
+    if method.get("job_mapping", {}).get("start", {}).get("method") != "job.start" or method.get("job_mapping", {}).get("resume", {}).get("method") != "job.resume":
+        raise AssertionError("Prompt-Skill job mapping drift")
+
+    resource_sources = {
+        "unicode-casefold-v1.json": CONTRACTS / "unicode-casefold-v1.json",
+        "rpc-method-matrix.v1.json": SCHEMA_DIR / "rpc-method-matrix.v1.json",
+        "rpc-method-matrix.v2.json": SCHEMA_DIR / "rpc-method-matrix.v2.json",
+        "rpc-error-v1.schema.json": SCHEMA_DIR / "rpc-error-v1.schema.json",
+        "prompt-skill-execute-request-v2.schema.json": SCHEMA_DIR / "prompt-skill-execute-request-v2.schema.json",
+        "prompt-skill-execute-result-v2.schema.json": SCHEMA_DIR / "prompt-skill-execute-result-v2.schema.json",
+        "rpc-method-success-v2.schema.json": SCHEMA_DIR / "rpc-method-success-v2.schema.json",
+    }
+    resource_dir = BACKEND / "plotpilot_plugin_sdk" / "resources"
+    if (resource_dir / "__init__.py").exists():
+        raise AssertionError("Prompt-Skill resources must not contain __init__.py")
+    for name, source in resource_sources.items():
+        target = resource_dir / name
+        if not target.is_file() or target.read_bytes() != source.read_bytes():
+            raise AssertionError(f"Prompt-Skill packaged resource drift: {name}")
+
+    golden_root = GOLDEN_DIR / "prompt-skill-rpc-v2"
+    golden = load_strict_json(golden_root / "execute.json")
+    expected = load_strict_json(golden_root / "expected.json")
+    for name, digest in expected.get("fixture_files", {}).items():
+        path = golden_root / name
+        if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != digest:
+            raise AssertionError(f"Prompt-Skill golden hash drift: {name}")
+    request = parse_prompt_skill_execute_request_v2(golden["request"])
+    result = parse_prompt_skill_execute_result_v2(golden["result"])
+    if validate_rpc_success_v2(golden["success"], request=request) != result:
+        raise AssertionError("Prompt-Skill success envelope result drift")
+    if parse_prompt_skill_rpc_envelope_v2(golden["request"]) != request:
+        raise AssertionError("Prompt-Skill request envelope dispatch drift")
+    if parse_prompt_skill_rpc_envelope_v2(golden["success"], request=request) != result:
+        raise AssertionError("Prompt-Skill success envelope dispatch drift")
+    if parse_prompt_skill_rpc_envelope_v2(golden["error"], request=request) != golden["error"]:
+        raise AssertionError("Prompt-Skill error envelope dispatch drift")
+    for status in ("failed", "cancelled", "uncertain"):
+        parsed_terminal = parse_prompt_skill_execute_result_v2(golden[status])
+        if parsed_terminal["status"] != status:
+            raise AssertionError(f"Prompt-Skill terminal fixture drift: {status}")
+    if validate_prompt_skill_execute_v2(request, golden["success"]) != result:
+        raise AssertionError("Prompt-Skill request/result binding drift")
+    operation_digest = prompt_skill_operation_key(request)
+    if operation_digest != expected.get("operation_digest") or operation_digest != golden.get("operation_digest"):
+        raise AssertionError("Prompt-Skill canonical operation digest drift")
+    operation_bytes = canonical_bytes(request["params"])
+    operation_bytes_hex = operation_bytes.hex()
+    if operation_bytes_hex != expected.get("operation_canonical_bytes_hex") or operation_bytes_hex != golden.get("operation_canonical_bytes_hex"):
+        raise AssertionError("Prompt-Skill canonical operation bytes drift")
+    if hash_jcs("prompt-skill-execute/v2", request["params"]) != operation_digest:
+        raise AssertionError("Prompt-Skill canonical operation hash binding drift")
+    permuted_request = copy.deepcopy(request)
+    permuted_request["params"]["skill_releases"] = list(reversed(permuted_request["params"]["skill_releases"]))
+    if canonical_bytes(permuted_request["params"]) == operation_bytes or prompt_skill_operation_key(permuted_request) == operation_digest:
+        raise AssertionError("Prompt-Skill Skill array permutation did not change canonical identity")
+
+    authority = {field: request["params"][field] for field in ("workspace_id", "generation_id", "plugin_id", "plugin_release_id", "job_id", "step_id", "attempt_id", "lease_epoch", "operation_key")}
+    ledger = PromptSkillOperationLedgerV2()
+    recorded, replayed = ledger.record(request, result, authoritative_context=authority)
+    if recorded != result or replayed:
+        raise AssertionError("Prompt-Skill ledger first record drift")
+    if ledger.replay(request, authoritative_context=authority) != result:
+        raise AssertionError("Prompt-Skill ledger authoritative replay drift")
+
+    corpus_root = CORPUS_DIR / "prompt-skill-rpc-v2"
+    corpus_manifest = load_strict_json(corpus_root / "manifest.json")
+    group_paths = sorted(path for path in corpus_root.glob("*.json") if path.name != "manifest.json")
+    if corpus_manifest.get("group_count") != 1 or len(group_paths) != 1:
+        raise AssertionError("Prompt-Skill corpus group inventory drift")
+    groups = [load_strict_json(path) for path in group_paths]
+    if any(group.get("schema") != "prompt-skill-rpc-corpus/v2" for group in groups):
+        raise AssertionError("Prompt-Skill corpus schema drift")
+    fixtures: dict[str, Any] = {
+        "execute.request": golden["request"],
+        "execute.result": golden["result"],
+        "execute.success": golden["success"],
+        "execute.failed": golden["failed"],
+        "execute.cancelled": golden["cancelled"],
+        "execute.uncertain": golden["uncertain"],
+        "execute.error": golden["error"],
+        "execute.envelope": golden["request"],
+        "execute.ledger": golden["request"],
+    }
+    seen_cases: set[str] = set()
+    total_cases = 0
+
+    def expect_rejected(action: Callable[[], Any], case_id: str) -> None:
+        try:
+            action()
+        except (ContractError, ContractValidationError, AssertionError, ValueError, KeyError, TypeError):
+            return
+        raise AssertionError(f"Prompt-Skill corpus false-accepted: {case_id}")
+
+    for group in groups:
+        if not isinstance(group.get("positive"), list) or not isinstance(group.get("negative"), list):
+            raise AssertionError("Prompt-Skill corpus positive/negative inventory drift")
+        for fixture_id in group["positive"]:
+            if fixture_id not in fixtures:
+                raise AssertionError(f"Prompt-Skill corpus has no positive fixture: {fixture_id}")
+            if fixture_id == "execute.request":
+                parse_prompt_skill_execute_request_v2(fixtures[fixture_id])
+            elif fixture_id in {"execute.result", "execute.failed", "execute.cancelled", "execute.uncertain"}:
+                parse_prompt_skill_execute_result_v2(fixtures[fixture_id])
+            elif fixture_id == "execute.success":
+                validate_rpc_success_v2(fixtures[fixture_id], request=request)
+            elif fixture_id == "execute.error":
+                parse_rpc_error_v2(fixtures[fixture_id])
+
+        for case in group["negative"]:
+            case_id = case.get("case_id")
+            if not isinstance(case_id, str) or case_id in seen_cases:
+                raise AssertionError(f"Prompt-Skill corpus case ID is missing or duplicated: {case_id!r}")
+            seen_cases.add(case_id)
+            total_cases += 1
+            fixture_id = case["fixture"]
+            mutation = case["mutation"]
+            if fixture_id == "execute.ledger":
+                action_name = mutation.get("op")
+
+                def ledger_action(action_name: str = action_name) -> Any:
+                    if action_name == "no-authority":
+                        return PromptSkillOperationLedgerV2().replay(request)
+                    if action_name == "stale-replay":
+                        stale_ledger = PromptSkillOperationLedgerV2()
+                        stale_ledger.record(request, result, authoritative_context=authority)
+                        stale_authority = dict(authority)
+                        stale_authority["attempt_id"] = "attempt-other"
+                        return stale_ledger.replay(request, authoritative_context=stale_authority)
+                    if action_name in {"future-poison", "future-epoch-rejected-before-mutation"}:
+                        future_request = _v2_mutate(request, {"op": "set", "path": ["params", "lease_epoch"], "value": 99})
+                        future_request = _v2_mutate(future_request, {"op": "set", "path": ["meta", "lease_epoch"], "value": 99})
+                        future_result = _v2_mutate(result, {"op": "set", "path": ["lease_epoch"], "value": 99})
+                        future_ledger = PromptSkillOperationLedgerV2()
+                        return future_ledger.record(future_request, future_result, authoritative_context=authority)
+                    if action_name == "authority-missing":
+                        missing_authority = dict(authority)
+                        del missing_authority[mutation["field"]]
+                        return PromptSkillOperationLedgerV2().record(request, result, authoritative_context=missing_authority)
+                    if action_name == "authority-additional":
+                        additional_authority = dict(authority)
+                        additional_authority[mutation["field"]] = copy.deepcopy(mutation["value"])
+                        return PromptSkillOperationLedgerV2().record(request, result, authoritative_context=additional_authority)
+                    if action_name == "authority-partial":
+                        return PromptSkillOperationLedgerV2().record(request, result, authoritative_context={"lease_epoch": request["params"]["lease_epoch"]})
+                    raise AssertionError(f"unknown Prompt-Skill ledger mutation: {action_name}")
+
+                expect_rejected(ledger_action, case_id)
+                continue
+
+            value = _v2_mutate(fixtures[fixture_id], mutation)
+            if fixture_id == "execute.request":
+                action = lambda value=value: parse_prompt_skill_execute_request_v2(value)
+            elif fixture_id == "execute.result":
+                action = lambda value=value: validate_prompt_skill_execute_v2(request, value)
+            elif fixture_id in {"execute.failed", "execute.cancelled", "execute.uncertain"}:
+                action = lambda value=value: parse_prompt_skill_execute_result_v2(value)
+            elif fixture_id == "execute.success":
+                action = lambda value=value: validate_prompt_skill_execute_v2(request, value)
+            elif fixture_id == "execute.error":
+                action = lambda value=value: parse_rpc_error_v2(value, request=request)
+            elif fixture_id == "execute.envelope":
+                action = lambda value=value: parse_prompt_skill_rpc_envelope_v2(value)
+            else:
+                raise AssertionError(f"unknown Prompt-Skill fixture: {fixture_id}")
+            expect_rejected(action, case_id)
+
+    if total_cases != corpus_manifest.get("negative_case_count") or total_cases <= 25:
+        raise AssertionError("Prompt-Skill negative corpus count drift")
+    if len(seen_cases) != total_cases:
+        raise AssertionError("Prompt-Skill negative corpus IDs are not unique")
+    for field in authority:
+        authority_probe = PromptSkillOperationLedgerV2()
+        missing_authority = dict(authority)
+        del missing_authority[field]
+        try:
+            authority_probe.record(request, result, authoritative_context=missing_authority)
+        except (ContractError, ContractValidationError, KeyError, TypeError, ValueError):
+            pass
+        else:
+            raise AssertionError(f"Prompt-Skill missing authority field was accepted: {field}")
+        _, authority_replayed = authority_probe.record(request, result, authoritative_context=authority)
+        if authority_replayed:
+            raise AssertionError(f"Prompt-Skill authority rejection mutated the ledger: {field}")
+
+    additional_probe = PromptSkillOperationLedgerV2()
+    additional_authority = dict(authority)
+    additional_authority["unexpected_authority"] = True
+    try:
+        additional_probe.record(request, result, authoritative_context=additional_authority)
+    except (ContractError, ContractValidationError, KeyError, TypeError, ValueError):
+        pass
+    else:
+        raise AssertionError("Prompt-Skill additional authority field was accepted")
+    _, additional_replayed = additional_probe.record(request, result, authoritative_context=authority)
+    if additional_replayed:
+        raise AssertionError("Prompt-Skill additional-authority rejection mutated the ledger")
+
+    partial_probe = PromptSkillOperationLedgerV2()
+    try:
+        partial_probe.record(request, result, authoritative_context={"lease_epoch": authority["lease_epoch"]})
+    except (ContractError, ContractValidationError, KeyError, TypeError, ValueError):
+        pass
+    else:
+        raise AssertionError("Prompt-Skill partial authority context was accepted")
+    _, partial_replayed = partial_probe.record(request, result, authoritative_context=authority)
+    if partial_replayed:
+        raise AssertionError("Prompt-Skill partial-authority rejection mutated the ledger")
+
+    future_request = _v2_mutate(request, {"op": "set", "path": ["params", "lease_epoch"], "value": authority["lease_epoch"] + 1})
+    future_request = _v2_mutate(future_request, {"op": "set", "path": ["meta", "lease_epoch"], "value": authority["lease_epoch"] + 1})
+    future_result = _v2_mutate(result, {"op": "set", "path": ["lease_epoch"], "value": authority["lease_epoch"] + 1})
+    future_probe = PromptSkillOperationLedgerV2()
+    try:
+        future_probe.record(future_request, future_result, authoritative_context=authority)
+    except (ContractError, ContractValidationError, KeyError, TypeError, ValueError):
+        pass
+    else:
+        raise AssertionError("Prompt-Skill future lease epoch was accepted")
+    _, future_replayed = future_probe.record(request, result, authoritative_context=authority)
+    if future_replayed:
+        raise AssertionError("Prompt-Skill future-epoch rejection mutated the ledger")
+
+    request_schema = load_strict_json(SCHEMA_DIR / "prompt-skill-execute-request-v2.schema.json")
+    result_schema = load_strict_json(SCHEMA_DIR / "prompt-skill-execute-result-v2.schema.json")
+    success_schema = load_strict_json(SCHEMA_DIR / "rpc-method-success-v2.schema.json")
+    request_validator = Draft202012Validator(request_schema)
+    result_validator = Draft202012Validator(result_schema)
+    success_validator = Draft202012Validator(success_schema)
+    valid_request = copy.deepcopy(golden["request"])
+    valid_request["params"]["secrets"][0]["value"] = "astral-😀"
+    if not request_validator.is_valid(valid_request):
+        raise AssertionError("Prompt-Skill Draft request Unicode scalar probe rejected a valid astral scalar")
+    parse_prompt_skill_execute_request_v2(valid_request)
+    valid_result = copy.deepcopy(golden["result"])
+    valid_result["warnings"] = [{"code": "prompt-skill.warning", "message": "astral-😀"}]
+    if not result_validator.is_valid(valid_result):
+        raise AssertionError("Prompt-Skill Draft result Unicode scalar probe rejected a valid astral scalar")
+    parse_prompt_skill_execute_result_v2(valid_result)
+    valid_success = copy.deepcopy(golden["success"])
+    valid_success["result"]["warnings"] = [{"code": "prompt-skill.warning", "message": "astral-😀"}]
+    if not success_validator.is_valid(valid_success):
+        raise AssertionError("Prompt-Skill Draft success Unicode scalar probe rejected a valid astral scalar")
+    validate_rpc_success_v2(valid_success, request=request)
+    invalid_request = copy.deepcopy(golden["request"])
+    invalid_request["params"]["secrets"][0]["value"] = "lone-\ud800"
+    invalid_result = copy.deepcopy(golden["result"])
+    invalid_result["warnings"] = [{"code": "prompt-skill.warning", "message": "lone-\ud800"}]
+    invalid_success = copy.deepcopy(golden["success"])
+    invalid_success["result"]["warnings"] = [{"code": "prompt-skill.warning", "message": "lone-\ud800"}]
+    if request_validator.is_valid(invalid_request) or result_validator.is_valid(invalid_result) or success_validator.is_valid(invalid_success):
+        raise AssertionError("Prompt-Skill Draft Unicode scalar probe accepted a lone surrogate")
+    for action in (
+        lambda: parse_prompt_skill_execute_request_v2(invalid_request),
+        lambda: parse_prompt_skill_execute_result_v2(invalid_result),
+        lambda: validate_rpc_success_v2(invalid_success, request=request),
+    ):
+        try:
+            action()
+        except (ContractError, ContractValidationError, KeyError, TypeError, ValueError, UnicodeError):
+            continue
+        raise AssertionError("Prompt-Skill Python Unicode scalar probe accepted a lone surrogate")
+    invalid_error = copy.deepcopy(golden["error"])
+    invalid_error["error"]["message"] = "lone-\ud800"
+    try:
+        parse_rpc_error_v2(invalid_error)
+    except (ContractError, ContractValidationError, KeyError, TypeError, ValueError, UnicodeError):
+        pass
+    else:
+        raise AssertionError("Prompt-Skill Python RPC error ingress accepted a lone surrogate")
+    if expected.get("terminal_statuses") != ["succeeded", "failed", "cancelled", "uncertain"]:
+        raise AssertionError("Prompt-Skill terminal status inventory drift")
+    return {
+        "schema_count": 3,
+        "golden_files": len(expected.get("fixture_files", {})),
+        "corpus_groups": len(groups),
+        "negative_cases": total_cases,
+        "operation_digest": operation_digest,
+        "package_resources": len(resource_sources),
     }
 
 
@@ -3337,6 +3685,7 @@ def verify_all() -> dict[str, Any]:
     result = {
         "manifest": verify_contract_manifest(),
         "schemas": verify_schemas(),
+        "prompt_skill_rpc_v2": verify_prompt_skill_rpc_v2(),
         "v2_public_surface": verify_v2_public_surface(),
         "goldens": verify_goldens(),
         "positive": verify_positive_fixtures(),

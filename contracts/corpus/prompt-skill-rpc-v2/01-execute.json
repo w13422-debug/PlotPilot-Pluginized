@@ -4,38 +4,152 @@
   "positive": [
     "execute.request",
     "execute.result",
-    "execute.success"
+    "execute.success",
+    "execute.failed",
+    "execute.cancelled",
+    "execute.uncertain",
+    "execute.error"
   ],
   "negative": [
     {
-      "case_id": "prompt-skill-v2-identity-drift-workspace",
-      "expected": "identity_projection",
-      "fixture": "execute.success",
+      "case_id": "prompt-skill-v2-method-mismatch",
+      "expected": "method_envelope",
+      "fixture": "execute.request",
+      "kind": "request",
       "mutation": {
         "op": "set",
         "path": [
-          "result",
-          "workspace_id"
+          "method"
         ],
-        "value": "ws-other"
+        "value": "job.start"
       }
     },
     {
-      "case_id": "prompt-skill-v2-identity-drift-plugin-release",
-      "expected": "identity_projection",
-      "fixture": "execute.result",
+      "case_id": "prompt-skill-v2-meta-operation-drift",
+      "expected": "attempt_meta_binding",
+      "fixture": "execute.request",
+      "kind": "request",
       "mutation": {
         "op": "set",
         "path": [
-          "plugin_release_id"
+          "meta",
+          "operation_id"
+        ],
+        "value": "other-operation"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-duplicate-secret-id",
+      "expected": "secrets_fail_closed",
+      "fixture": "execute.request",
+      "kind": "request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "params",
+          "secrets"
+        ],
+        "value": [
+          {
+            "secret_id": "secret-api",
+            "value": "one-shot-secret"
+          },
+          {
+            "secret_id": "secret-api",
+            "value": "different"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-receipt-job-substitution",
+      "expected": "receipt_identity",
+      "fixture": "execute.result",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt",
+          "job_id"
+        ],
+        "value": "job-other"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-receipt-attempt-substitution",
+      "expected": "receipt_identity",
+      "fixture": "execute.result",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt",
+          "attempt_id"
+        ],
+        "value": "attempt-other"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-receipt-chain-hash-substitution",
+      "expected": "receipt_identity",
+      "fixture": "execute.result",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt",
+          "chain_content_hash"
         ],
         "value": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
       }
     },
     {
-      "case_id": "prompt-skill-v2-missing-model-receipt",
-      "expected": "missing_model_receipt",
+      "case_id": "prompt-skill-v2-bundle-lease-substitution",
+      "expected": "bundle_identity",
       "fixture": "execute.result",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "result_bundle",
+          "lease_epoch"
+        ],
+        "value": 2
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-bundle-plugin-substitution",
+      "expected": "bundle_identity",
+      "fixture": "execute.result",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "result_bundle",
+          "plugin_id"
+        ],
+        "value": "com.plotpilot.other"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-bundle-chain-asset-substitution",
+      "expected": "bundle_identity",
+      "fixture": "execute.result",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "result_bundle",
+          "chain_asset_id"
+        ],
+        "value": "asset-chain-other"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-succeeded-without-receipt",
+      "expected": "terminal_status",
+      "fixture": "execute.result",
+      "kind": "result",
       "mutation": {
         "op": "set",
         "path": [
@@ -45,39 +159,41 @@
       }
     },
     {
-      "case_id": "prompt-skill-v2-stale-lease",
-      "expected": "stale_lease",
-      "fixture": "execute.exchange",
-      "mutation": {
-        "op": "set-both",
-        "request_path": [
-          "params",
-          "lease_epoch"
-        ],
-        "result_path": [
-          "lease_epoch"
-        ],
-        "value": 2,
-        "expected_lease_epoch": 1
-      }
-    },
-    {
-      "case_id": "prompt-skill-v2-mismatched-result-bundle",
-      "expected": "result_bundle_binding",
+      "case_id": "prompt-skill-v2-failed-with-success-output",
+      "expected": "terminal_status",
       "fixture": "execute.result",
+      "kind": "result",
       "mutation": {
         "op": "set",
         "path": [
-          "result_bundle",
-          "bundle_id"
+          "status"
         ],
-        "value": "bundle-other"
+        "value": "failed"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-terminal-anchor-leak",
+      "expected": "terminal_status",
+      "fixture": "execute.failed",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "anchor"
+        ],
+        "value": {
+          "result_bundle_id": "bundle-1",
+          "result_item_id": "item-1",
+          "stream_id": null,
+          "acked_prefix_hash": null
+        }
       }
     },
     {
       "case_id": "prompt-skill-v2-extra-request-field",
       "expected": "closed_schema",
       "fixture": "execute.request",
+      "kind": "request",
       "mutation": {
         "op": "set",
         "path": [
@@ -91,6 +207,7 @@
       "case_id": "prompt-skill-v2-extra-result-field",
       "expected": "closed_schema",
       "fixture": "execute.result",
+      "kind": "result",
       "mutation": {
         "op": "set",
         "path": [
@@ -100,16 +217,331 @@
       }
     },
     {
-      "case_id": "prompt-skill-v2-model-receipt-binding-drift",
-      "expected": "model_receipt_binding",
-      "fixture": "execute.result",
+      "case_id": "prompt-skill-v2-mixed-envelope-members",
+      "expected": "envelope_exactly_one",
+      "fixture": "execute.envelope",
+      "kind": "envelope",
       "mutation": {
         "op": "set",
         "path": [
-          "model_receipt",
-          "operation_key"
+          "error"
         ],
-        "value": "other-operation"
+        "value": {
+          "code": 1011,
+          "message": "Prompt/Skill result contract mismatch",
+          "data": {
+            "error_id": "prompt-skill-error-1",
+            "retryable": false,
+            "details_asset_id": null
+          }
+        }
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-error-id-not-uuid",
+      "expected": "error_schema",
+      "fixture": "execute.error",
+      "kind": "error",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "id"
+        ],
+        "value": "not-a-uuid"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-error-id-mismatch",
+      "expected": "request_id_binding",
+      "fixture": "execute.error",
+      "kind": "error",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "id"
+        ],
+        "value": "2f2f2f2f-2222-4222-8222-222222222222"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-lease-over-safe-integer",
+      "expected": "safe_integer",
+      "fixture": "execute.request",
+      "kind": "request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "params",
+          "lease_epoch"
+        ],
+        "value": 9007199254740992
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-lease-bool-not-int",
+      "expected": "safe_integer",
+      "fixture": "execute.request",
+      "kind": "request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "params",
+          "lease_epoch"
+        ],
+        "value": true
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-skill-order-gap",
+      "expected": "contiguous_order",
+      "fixture": "execute.request",
+      "kind": "request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "params",
+          "skill_releases",
+          1,
+          "order"
+        ],
+        "value": 2
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-skill-identity-duplicate",
+      "expected": "contiguous_order",
+      "fixture": "execute.request",
+      "kind": "request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "params",
+          "skill_releases",
+          1,
+          "skill_id"
+        ],
+        "value": "skill.prompt"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-lone-surrogate",
+      "expected": "unicode_scalar",
+      "fixture": "execute.result",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "warnings"
+        ],
+        "value": [
+          {
+            "code": "prompt-skill.warning",
+            "message": "\ud800"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-ledger-requires-authority",
+      "expected": "authority_before_replay",
+      "fixture": "execute.ledger",
+      "kind": "ledger",
+      "mutation": {
+        "op": "no-authority"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-ledger-stale-attempt",
+      "expected": "authority_before_replay",
+      "fixture": "execute.ledger",
+      "kind": "ledger",
+      "mutation": {
+        "op": "stale-replay"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-ledger-future-poisoning",
+      "expected": "authority_before_replay",
+      "fixture": "execute.ledger",
+      "kind": "ledger",
+      "mutation": {
+        "op": "future-poison"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-unknown-error-code",
+      "fixture": "execute.error",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "error",
+          "code"
+        ],
+        "value": 1999
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-error-code-below-registry",
+      "fixture": "execute.error",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "error",
+          "code"
+        ],
+        "value": 1000
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-error-code-above-registry",
+      "fixture": "execute.error",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "error",
+          "code"
+        ],
+        "value": 1015
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-authority-missing-workspace_id",
+      "fixture": "execute.ledger",
+      "mutation": {
+        "op": "authority-missing",
+        "field": "workspace_id"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-authority-missing-generation_id",
+      "fixture": "execute.ledger",
+      "mutation": {
+        "op": "authority-missing",
+        "field": "generation_id"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-authority-missing-plugin_id",
+      "fixture": "execute.ledger",
+      "mutation": {
+        "op": "authority-missing",
+        "field": "plugin_id"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-authority-missing-plugin_release_id",
+      "fixture": "execute.ledger",
+      "mutation": {
+        "op": "authority-missing",
+        "field": "plugin_release_id"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-authority-missing-job_id",
+      "fixture": "execute.ledger",
+      "mutation": {
+        "op": "authority-missing",
+        "field": "job_id"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-authority-missing-step_id",
+      "fixture": "execute.ledger",
+      "mutation": {
+        "op": "authority-missing",
+        "field": "step_id"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-authority-missing-attempt_id",
+      "fixture": "execute.ledger",
+      "mutation": {
+        "op": "authority-missing",
+        "field": "attempt_id"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-authority-missing-lease_epoch",
+      "fixture": "execute.ledger",
+      "mutation": {
+        "op": "authority-missing",
+        "field": "lease_epoch"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-authority-missing-operation_key",
+      "fixture": "execute.ledger",
+      "mutation": {
+        "op": "authority-missing",
+        "field": "operation_key"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-authority-additional-field",
+      "fixture": "execute.ledger",
+      "mutation": {
+        "op": "authority-additional",
+        "field": "unexpected_authority",
+        "value": true
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-authority-partial-context",
+      "fixture": "execute.ledger",
+      "mutation": {
+        "op": "authority-partial"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-future-epoch-rejected-before-mutation",
+      "fixture": "execute.ledger",
+      "mutation": {
+        "op": "future-epoch-rejected-before-mutation"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-legacy-order-field",
+      "fixture": "execute.request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "params",
+          "skill_releases",
+          0,
+          "order"
+        ],
+        "value": 0
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-secret-lone-surrogate",
+      "fixture": "execute.request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "params",
+          "secrets",
+          0,
+          "value"
+        ],
+        "value": "\ud800"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-success-warning-lone-surrogate",
+      "fixture": "execute.success",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "result",
+          "warnings"
+        ],
+        "value": [
+          {
+            "code": "prompt-skill.warning",
+            "message": "\ud800"
+          }
+        ]
       }
     }
   ]

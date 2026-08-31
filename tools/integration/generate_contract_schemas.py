@@ -17,6 +17,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_DIR = ROOT / "contracts" / "json-schema"
+PACKAGE_RESOURCE_DIR = ROOT / "backend" / "plotpilot_plugin_sdk" / "resources"
 EXTERNAL_AUTHORED_ARTIFACTS = frozenset(
     {
         "prompt-skill-execute-request-v2.schema.json",
@@ -25,6 +26,15 @@ EXTERNAL_AUTHORED_ARTIFACTS = frozenset(
         "rpc-method-success-v2.schema.json",
     }
 )
+PACKAGE_RESOURCE_SOURCES = {
+    "unicode-casefold-v1.json": ROOT / "contracts" / "unicode-casefold-v1.json",
+    "rpc-method-matrix.v1.json": SCHEMA_DIR / "rpc-method-matrix.v1.json",
+    "rpc-method-matrix.v2.json": SCHEMA_DIR / "rpc-method-matrix.v2.json",
+    "rpc-error-v1.schema.json": SCHEMA_DIR / "rpc-error-v1.schema.json",
+    "prompt-skill-execute-request-v2.schema.json": SCHEMA_DIR / "prompt-skill-execute-request-v2.schema.json",
+    "prompt-skill-execute-result-v2.schema.json": SCHEMA_DIR / "prompt-skill-execute-result-v2.schema.json",
+    "rpc-method-success-v2.schema.json": SCHEMA_DIR / "rpc-method-success-v2.schema.json",
+}
 
 
 def const(value: Any) -> dict[str, Any]:
@@ -1489,7 +1499,10 @@ def write() -> None:
     rendered = render()
     for relative, data in rendered.items():
         (SCHEMA_DIR / relative).write_bytes(data)
-    print(f"generated {len(rendered)} schema/matrix artifacts")
+    PACKAGE_RESOURCE_DIR.mkdir(parents=True, exist_ok=True)
+    for name, source in PACKAGE_RESOURCE_SOURCES.items():
+        (PACKAGE_RESOURCE_DIR / name).write_bytes(source.read_bytes())
+    print(f"generated {len(rendered)} schema/matrix artifacts and {len(PACKAGE_RESOURCE_SOURCES)} package resources")
 
 
 def check() -> int:
@@ -1519,6 +1532,21 @@ def check() -> int:
     )
     if extras:
         print("unexpected generated-schema files:", ", ".join(extras))
+        return 1
+    missing_resources = sorted(name for name, source in PACKAGE_RESOURCE_SOURCES.items() if not (PACKAGE_RESOURCE_DIR / name).is_file() or not source.is_file())
+    changed_resources = sorted(name for name, source in PACKAGE_RESOURCE_SOURCES.items() if (PACKAGE_RESOURCE_DIR / name).is_file() and source.is_file() and (PACKAGE_RESOURCE_DIR / name).read_bytes() != source.read_bytes())
+    resource_extras = sorted(
+        path.relative_to(PACKAGE_RESOURCE_DIR).as_posix()
+        for path in PACKAGE_RESOURCE_DIR.rglob("*")
+        if path.is_file() and path.relative_to(PACKAGE_RESOURCE_DIR).as_posix() not in PACKAGE_RESOURCE_SOURCES
+    ) if PACKAGE_RESOURCE_DIR.is_dir() else []
+    if missing_resources or changed_resources or resource_extras:
+        if missing_resources:
+            print("missing package resources:", ", ".join(missing_resources))
+        if changed_resources:
+            print("changed package resources:", ", ".join(changed_resources))
+        if resource_extras:
+            print("unexpected package resources:", ", ".join(resource_extras))
         return 1
     print(f"generated artifacts are deterministic ({len(rendered)} files)")
     return 0
