@@ -1,0 +1,233 @@
+{
+  "$id": "https://plotpilot.local/contracts/prompt-skill-execute-request-v2",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+      "type": "string"
+    },
+    "jsonrpc": {
+      "const": "2.0"
+    },
+    "method": {
+      "const": "prompt.skill.execute/v2"
+    },
+    "params": {
+      "$ref": "#/$defs/execute-params"
+    }
+  },
+  "$defs": {
+    "hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+      "type": "string"
+    },
+    "nullable-hash": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/hash"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "nullable-id": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/id"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "anchor": {
+      "additionalProperties": false,
+      "properties": {
+        "acked_prefix_hash": {
+          "$ref": "#/$defs/nullable-hash"
+        },
+        "result_bundle_id": {
+          "$ref": "#/$defs/nullable-id"
+        },
+        "result_item_id": {
+          "$ref": "#/$defs/nullable-id"
+        },
+        "stream_id": {
+          "$ref": "#/$defs/nullable-id"
+        }
+      },
+      "required": [
+        "result_bundle_id",
+        "result_item_id",
+        "stream_id",
+        "acked_prefix_hash"
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "skill-release": {
+      "additionalProperties": false,
+      "properties": {
+        "order": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "package_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "parameters_asset_id": {
+          "$ref": "#/$defs/nullable-id"
+        },
+        "parameters_content_hash": {
+          "$ref": "#/$defs/nullable-hash"
+        },
+        "release_id": {
+          "$ref": "#/$defs/hash"
+        },
+        "skill_id": {
+          "$ref": "#/$defs/id"
+        }
+      },
+      "required": [
+        "order",
+        "skill_id",
+        "release_id",
+        "package_hash",
+        "parameters_asset_id",
+        "parameters_content_hash"
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "execute-params": {
+      "additionalProperties": false,
+      "properties": {
+        "anchor": {
+          "$ref": "#/$defs/anchor"
+        },
+        "attempt_id": {
+          "$ref": "#/$defs/id"
+        },
+        "authority": {
+          "const": "core"
+        },
+        "capability_id": {
+          "const": "prompt.skill.execute/v2"
+        },
+        "chain_id": {
+          "$ref": "#/$defs/id"
+        },
+        "generation_id": {
+          "$ref": "#/$defs/id"
+        },
+        "input_asset_id": {
+          "$ref": "#/$defs/id"
+        },
+        "input_content_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "job_id": {
+          "$ref": "#/$defs/id"
+        },
+        "lease_epoch": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "model_profile_revision_id": {
+          "$ref": "#/$defs/nullable-id"
+        },
+        "operation_key": {
+          "$ref": "#/$defs/id"
+        },
+        "parameters_asset_id": {
+          "$ref": "#/$defs/nullable-id"
+        },
+        "parameters_content_hash": {
+          "$ref": "#/$defs/nullable-hash"
+        },
+        "plugin_id": {
+          "$ref": "#/$defs/id"
+        },
+        "plugin_package_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "plugin_release_id": {
+          "$ref": "#/$defs/hash"
+        },
+        "result_contract": {
+          "const": "artifact-bundle/v1"
+        },
+        "run_snapshot_asset_id": {
+          "$ref": "#/$defs/id"
+        },
+        "run_snapshot_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "run_snapshot_id": {
+          "$ref": "#/$defs/id"
+        },
+        "schema": {
+          "const": "prompt-skill-execute-request/v2"
+        },
+        "skill_releases": {
+          "items": {
+            "$ref": "#/$defs/skill-release"
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "step_id": {
+          "$ref": "#/$defs/id"
+        },
+        "workspace_id": {
+          "$ref": "#/$defs/id"
+        }
+      },
+      "required": [
+        "schema",
+        "authority",
+        "capability_id",
+        "result_contract",
+        "operation_key",
+        "workspace_id",
+        "plugin_id",
+        "plugin_release_id",
+        "plugin_package_hash",
+        "skill_releases",
+        "run_snapshot_id",
+        "run_snapshot_asset_id",
+        "run_snapshot_hash",
+        "generation_id",
+        "job_id",
+        "step_id",
+        "attempt_id",
+        "lease_epoch",
+        "chain_id",
+        "input_asset_id",
+        "input_content_hash",
+        "parameters_asset_id",
+        "parameters_content_hash",
+        "model_profile_revision_id",
+        "anchor"
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    }
+  },
+  "required": [
+    "jsonrpc",
+    "id",
+    "method",
+    "params"
+  ],
+  "title": "PlotPilot Prompt/Skill execute request v2",
+  "type": "object",
+  "unevaluatedProperties": false
+}

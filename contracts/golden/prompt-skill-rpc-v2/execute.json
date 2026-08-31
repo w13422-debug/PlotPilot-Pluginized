@@ -1,0 +1,215 @@
+{
+  "schema": "prompt-skill-rpc-golden/v2",
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "1f1f1f1f-1111-4111-8111-111111111111",
+    "method": "prompt.skill.execute/v2",
+    "params": {
+      "schema": "prompt-skill-execute-request/v2",
+      "authority": "core",
+      "capability_id": "prompt.skill.execute/v2",
+      "result_contract": "artifact-bundle/v1",
+      "operation_key": "execute-op-1",
+      "workspace_id": "ws-1",
+      "plugin_id": "com.plotpilot.prompt-skill",
+      "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "skill_releases": [
+        {
+          "order": 0,
+          "skill_id": "skill.prompt",
+          "release_id": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "package_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "parameters_asset_id": "asset-skill-params",
+          "parameters_content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        {
+          "order": 1,
+          "skill_id": "skill.style",
+          "release_id": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "package_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "parameters_asset_id": null,
+          "parameters_content_hash": null
+        }
+      ],
+      "run_snapshot_id": "snapshot-1",
+      "run_snapshot_asset_id": "asset-snapshot-1",
+      "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "generation_id": "generation-1",
+      "job_id": "job-1",
+      "step_id": "step-1",
+      "attempt_id": "attempt-1",
+      "lease_epoch": 1,
+      "chain_id": "chain-1",
+      "input_asset_id": "asset-input-1",
+      "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "parameters_asset_id": null,
+      "parameters_content_hash": null,
+      "model_profile_revision_id": "model-profile-rev-1",
+      "anchor": {
+        "result_bundle_id": "bundle-1",
+        "result_item_id": "item-1",
+        "stream_id": null,
+        "acked_prefix_hash": null
+      }
+    }
+  },
+  "result": {
+    "schema": "prompt-skill-execute-result/v2",
+    "authority": "core",
+    "capability_id": "prompt.skill.execute/v2",
+    "result_contract": "artifact-bundle/v1",
+    "operation_key": "execute-op-1",
+    "workspace_id": "ws-1",
+    "plugin_id": "com.plotpilot.prompt-skill",
+    "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "skill_releases": [
+      {
+        "order": 0,
+        "skill_id": "skill.prompt",
+        "release_id": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "package_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "parameters_asset_id": "asset-skill-params",
+        "parameters_content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      },
+      {
+        "order": 1,
+        "skill_id": "skill.style",
+        "release_id": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "package_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "parameters_asset_id": null,
+        "parameters_content_hash": null
+      }
+    ],
+    "run_snapshot_id": "snapshot-1",
+    "run_snapshot_asset_id": "asset-snapshot-1",
+    "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "generation_id": "generation-1",
+    "job_id": "job-1",
+    "step_id": "step-1",
+    "attempt_id": "attempt-1",
+    "lease_epoch": 1,
+    "chain_id": "chain-1",
+    "input_asset_id": "asset-input-1",
+    "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "parameters_asset_id": null,
+    "parameters_content_hash": null,
+    "model_profile_revision_id": "model-profile-rev-1",
+    "anchor": {
+      "result_bundle_id": "bundle-1",
+      "result_item_id": "item-1",
+      "stream_id": null,
+      "acked_prefix_hash": null
+    },
+    "status": "succeeded",
+    "output": {
+      "asset_id": "asset-output-1",
+      "content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "model_receipt": {
+      "receipt_id": "model-receipt-1",
+      "asset_id": "asset-model-receipt-1",
+      "content_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "receipt_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "operation_key": "execute-op-1",
+      "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "model_profile_revision_id": "model-profile-rev-1",
+      "input_asset_id": "asset-input-1",
+      "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    "result_bundle": {
+      "contract_id": "artifact-bundle/v1",
+      "bundle_id": "bundle-1",
+      "asset_id": "asset-bundle-1",
+      "content_hash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "result_item_id": "item-1",
+      "workspace_id": "ws-1",
+      "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "operation_key": "execute-op-1"
+    },
+    "idempotent": false,
+    "warnings": []
+  },
+  "success": {
+    "jsonrpc": "2.0",
+    "id": "1f1f1f1f-1111-4111-8111-111111111111",
+    "result": {
+      "schema": "prompt-skill-execute-result/v2",
+      "authority": "core",
+      "capability_id": "prompt.skill.execute/v2",
+      "result_contract": "artifact-bundle/v1",
+      "operation_key": "execute-op-1",
+      "workspace_id": "ws-1",
+      "plugin_id": "com.plotpilot.prompt-skill",
+      "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "skill_releases": [
+        {
+          "order": 0,
+          "skill_id": "skill.prompt",
+          "release_id": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "package_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "parameters_asset_id": "asset-skill-params",
+          "parameters_content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        {
+          "order": 1,
+          "skill_id": "skill.style",
+          "release_id": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "package_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "parameters_asset_id": null,
+          "parameters_content_hash": null
+        }
+      ],
+      "run_snapshot_id": "snapshot-1",
+      "run_snapshot_asset_id": "asset-snapshot-1",
+      "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "generation_id": "generation-1",
+      "job_id": "job-1",
+      "step_id": "step-1",
+      "attempt_id": "attempt-1",
+      "lease_epoch": 1,
+      "chain_id": "chain-1",
+      "input_asset_id": "asset-input-1",
+      "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "parameters_asset_id": null,
+      "parameters_content_hash": null,
+      "model_profile_revision_id": "model-profile-rev-1",
+      "anchor": {
+        "result_bundle_id": "bundle-1",
+        "result_item_id": "item-1",
+        "stream_id": null,
+        "acked_prefix_hash": null
+      },
+      "status": "succeeded",
+      "output": {
+        "asset_id": "asset-output-1",
+        "content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "model_receipt": {
+        "receipt_id": "model-receipt-1",
+        "asset_id": "asset-model-receipt-1",
+        "content_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "receipt_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "operation_key": "execute-op-1",
+        "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "model_profile_revision_id": "model-profile-rev-1",
+        "input_asset_id": "asset-input-1",
+        "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "result_bundle": {
+        "contract_id": "artifact-bundle/v1",
+        "bundle_id": "bundle-1",
+        "asset_id": "asset-bundle-1",
+        "content_hash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "result_item_id": "item-1",
+        "workspace_id": "ws-1",
+        "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "operation_key": "execute-op-1"
+      },
+      "idempotent": false,
+      "warnings": []
+    }
+  }
+}

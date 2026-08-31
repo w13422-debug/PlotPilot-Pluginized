@@ -1,0 +1,9 @@
+{
+  "schema": "prompt-skill-rpc-corpus-manifest/v2",
+  "golden_root": "contracts/golden/prompt-skill-rpc-v2",
+  "group_count": 1,
+  "group_ids": [
+    "prompt-skill-rpc-v2-execute"
+  ],
+  "negative_case_count": 8
+}

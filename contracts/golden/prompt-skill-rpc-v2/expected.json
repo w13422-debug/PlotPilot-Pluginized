@@ -1,0 +1,6 @@
+{
+  "schema": "prompt-skill-rpc-golden-index/v2",
+  "fixture_files": {
+    "execute.json": "7128b638bf78f9cacce2d177272e0606c86cd01ec7a8230d36e90001d821b50e"
+  }
+}

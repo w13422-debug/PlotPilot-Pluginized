@@ -1,0 +1,116 @@
+{
+  "schema": "prompt-skill-rpc-corpus/v2",
+  "group_id": "prompt-skill-rpc-v2-execute",
+  "positive": [
+    "execute.request",
+    "execute.result",
+    "execute.success"
+  ],
+  "negative": [
+    {
+      "case_id": "prompt-skill-v2-identity-drift-workspace",
+      "expected": "identity_projection",
+      "fixture": "execute.success",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "result",
+          "workspace_id"
+        ],
+        "value": "ws-other"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-identity-drift-plugin-release",
+      "expected": "identity_projection",
+      "fixture": "execute.result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "plugin_release_id"
+        ],
+        "value": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-missing-model-receipt",
+      "expected": "missing_model_receipt",
+      "fixture": "execute.result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt"
+        ],
+        "value": null
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-stale-lease",
+      "expected": "stale_lease",
+      "fixture": "execute.exchange",
+      "mutation": {
+        "op": "set-both",
+        "request_path": [
+          "params",
+          "lease_epoch"
+        ],
+        "result_path": [
+          "lease_epoch"
+        ],
+        "value": 2,
+        "expected_lease_epoch": 1
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-mismatched-result-bundle",
+      "expected": "result_bundle_binding",
+      "fixture": "execute.result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "result_bundle",
+          "bundle_id"
+        ],
+        "value": "bundle-other"
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-extra-request-field",
+      "expected": "closed_schema",
+      "fixture": "execute.request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "params",
+          "unexpected"
+        ],
+        "value": true
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-extra-result-field",
+      "expected": "closed_schema",
+      "fixture": "execute.result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "unexpected"
+        ],
+        "value": true
+      }
+    },
+    {
+      "case_id": "prompt-skill-v2-model-receipt-binding-drift",
+      "expected": "model_receipt_binding",
+      "fixture": "execute.result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt",
+          "operation_key"
+        ],
+        "value": "other-operation"
+      }
+    }
+  ]
+}
