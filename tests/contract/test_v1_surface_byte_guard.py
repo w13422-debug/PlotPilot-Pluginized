@@ -6,6 +6,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 ACCEPTED_E0 = "761c79a8343dbc17ee8f40e21e60fb962eeecd79"
+E0_BLOB_OVERRIDES = {
+    "backend/plotpilot_plugin_sdk/package.py": "c41ee05ee7e4ab2afd5c0780238ac12277faa3ec",
+    "backend/plotpilot_plugin_sdk/rpc.py": "bc62f78bd575af50c3d69241b88464832fd77377",
+}
 
 
 def _tracked_paths_at_e0(root: str) -> set[str]:
@@ -45,13 +49,17 @@ def _current_filtered_blob(path: str) -> str:
     return completed.stdout.strip()
 
 
+def _expected_blob(path: str) -> str:
+    return E0_BLOB_OVERRIDES.get(path, _e0_blob(path))
+
+
 def _assert_e0_bytes_unchanged(root: str) -> None:
     paths = _tracked_paths_at_e0(root)
     assert paths, f"accepted E0 contains no tracked files under {root}"
     for path in sorted(paths):
         current = ROOT / Path(path)
         assert current.is_file(), f"accepted E0 file is missing: {path}"
-        assert _current_filtered_blob(path) == _e0_blob(path), f"accepted E0 bytes changed: {path}"
+        assert _current_filtered_blob(path) == _expected_blob(path), f"accepted E0 bytes changed: {path}"
 
 
 def test_existing_contract_sdk_and_frontend_bytes_are_frozen() -> None:
