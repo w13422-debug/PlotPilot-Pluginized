@@ -42,6 +42,7 @@ from backend.plotpilot_core.plugins.store import PackageStore
 from backend.plotpilot_core.publication import PublicationService
 from backend.plotpilot_core.repositories import CoreAuthorityRepository
 from backend.plotpilot_core.repositories.execution import ExecutionAuthority
+from backend.plotpilot_plugin_sdk import ContractError, ErrorCode
 from backend.plotpilot_plugin_sdk.canonical import canonical_bytes, hash_jcs
 from backend.plotpilot_plugin_sdk.package import build_files_sha256
 from backend.plotpilot_plugin_sdk.verifier import (
@@ -2133,6 +2134,73 @@ def test_workspace_backup_projects_durable_authority_and_restores_checkpoint_clo
             checkpoint_asset_id=closure["checkpoint_asset_id"],
         )
         assert replay.replayed
+    finally:
+        reopened.close()
+
+
+@pytest.mark.parametrize(
+    "corruption",
+    [
+        "event_asset_id_missing",
+        "event_payload_hash_tampered",
+        "asset_content_missing",
+        "asset_content_tampered",
+    ],
+)
+def test_restart_read_rejects_checkpoint_job_event_asset_closure(
+    tmp_path: Path, corruption: str
+) -> None:
+    _source_root, database, assets, _ws1_cover_id = _source(tmp_path)
+    repository = CoreAuthorityRepository(database)
+    try:
+        closure = _add_durable_control_closure(
+            repository,
+            AssetStore(assets),
+            workspace_id="ws-1",
+            marker=f"restart-{corruption}",
+        )
+    finally:
+        repository.close()
+
+    if corruption.startswith("event_"):
+        connection = sqlite3.connect(database)
+        try:
+            row = connection.execute(
+                "SELECT event_json FROM execution_job_event "
+                "WHERE job_id=? AND job_event_seq=1",
+                (closure["job_id"],),
+            ).fetchone()
+            assert row is not None
+            event = json.loads(row[0])
+            if corruption == "event_asset_id_missing":
+                event["payload_asset_id"] = None
+            else:
+                event["payload_hash"] = "0" * 64
+            connection.execute(
+                "UPDATE execution_job_event SET event_json=? "
+                "WHERE job_id=? AND job_event_seq=1",
+                (
+                    canonical_bytes(event).decode("utf-8"),
+                    closure["job_id"],
+                ),
+            )
+            connection.commit()
+        finally:
+            connection.close()
+    else:
+        digest = closure["checkpoint_asset_id"].removeprefix("asset-sha256-")
+        object_path = assets / "objects" / digest[:2] / digest
+        if corruption == "asset_content_missing":
+            object_path.unlink()
+        else:
+            object_path.write_bytes(b"tampered checkpoint content")
+
+    reopened = CoreAuthorityRepository(database)
+    try:
+        authority = ExecutionAuthority(reopened, AssetStore(assets))
+        with pytest.raises(ContractError) as caught:
+            authority.checkpoint_store.get_latest(closure["job_id"])
+        assert caught.value.code == int(ErrorCode.ASSET_ERROR)
     finally:
         reopened.close()
 

@@ -26,6 +26,7 @@ def _checkpoint_asset(
     checkpoint_id: str,
     checkpoint_seq: int,
     completed_units: int,
+    total_units: int = 2,
     source_attempt_id: str = "attempt-1",
     lease_epoch: int = 1,
 ):
@@ -40,7 +41,7 @@ def _checkpoint_asset(
         "run_snapshot_hash": stack["snapshot"]["snapshot_hash"],
         "replay_policy": "checkpoint_resume",
         "completed_units": completed_units,
-        "total_units": 2,
+        "total_units": total_units,
         "unit_set_hash": "b" * 64,
         "state_asset_id": None,
         "created_at": "2026-08-30T00:00:00Z",
@@ -74,6 +75,34 @@ def _pause_kwargs(asset, *, operation_key: str = "pause-op-1"):
         "worker_run_id": "worker-run-1",
         "reason": "operator pause",
         "checkpoint_asset_id": asset.asset_id,
+    }
+
+
+def _authority_state(repository):
+    connection = repository._connection
+    tables = (
+        "execution_job",
+        "execution_step",
+        "execution_attempt",
+        "execution_checkpoint",
+        "execution_checkpoint_operation",
+        "execution_control_operation",
+        "execution_job_event",
+        "execution_core_event",
+    )
+    return {
+        "tables": {
+            table: [tuple(row) for row in connection.execute(
+                f"SELECT * FROM {table} ORDER BY rowid"
+            ).fetchall()]
+            for table in tables
+        },
+        "sequences": [tuple(row) for row in connection.execute(
+            "SELECT name,seq FROM sqlite_sequence WHERE name IN "
+            "('execution_checkpoint','execution_checkpoint_operation',"
+            "'execution_control_operation','execution_job_event','execution_core_event') "
+            "ORDER BY name"
+        ).fetchall()],
     }
 
 
@@ -597,3 +626,134 @@ def test_terminal_cancel_after_job_terminal_returns_terminal_known(execution_sta
         "terminal_known": True,
         "attempt_state": "running",
     }
+
+
+def test_checkpoint_chain_rejects_total_units_drift_without_partial_state(execution_stack):
+    repository = execution_stack["repository"]
+    store = execution_stack["authority"].checkpoint_store
+    first_value, first_asset = _checkpoint_asset(
+        execution_stack,
+        checkpoint_id="checkpoint-chain-1",
+        checkpoint_seq=1,
+        completed_units=1,
+    )
+    first = store.commit_checkpoint(
+        first_value,
+        checkpoint_asset_id=first_asset.asset_id,
+        operation_key="checkpoint-chain-op-1",
+        local_seq=1,
+        worker_run_id="worker-run-1",
+    )
+    assert first.accepted
+    before = _authority_state(repository)
+
+    drift_value, drift_asset = _checkpoint_asset(
+        execution_stack,
+        checkpoint_id="checkpoint-chain-2",
+        checkpoint_seq=2,
+        completed_units=2,
+        total_units=3,
+    )
+    with pytest.raises(ContractError) as caught:
+        store.commit_checkpoint(
+            drift_value,
+            checkpoint_asset_id=drift_asset.asset_id,
+            operation_key="checkpoint-chain-op-2",
+            local_seq=2,
+            worker_run_id="worker-run-1",
+        )
+    assert caught.value.code == int(ErrorCode.CHECKPOINT_INVALID)
+    assert "total_units" in str(caught.value)
+    assert _authority_state(repository) == before
+    assert store.get_latest("job-1") == first_value
+
+
+def test_direct_checkpoint_replay_fences_worker_epoch_and_cross_attempt_before_replay(
+    execution_stack,
+):
+    repository = execution_stack["repository"]
+    authority = execution_stack["authority"]
+    store = authority.checkpoint_store
+    control = authority.control_port
+    value, asset = _checkpoint_asset(
+        execution_stack,
+        checkpoint_id="checkpoint-replay-fence-1",
+        checkpoint_seq=1,
+        completed_units=1,
+    )
+    operation_key = "checkpoint-replay-fence-op"
+    first = store.commit_checkpoint(
+        value,
+        checkpoint_asset_id=asset.asset_id,
+        operation_key=operation_key,
+        local_seq=1,
+        worker_run_id="worker-run-1",
+    )
+    assert first.accepted and not first.replayed
+    before = _authority_state(repository)
+
+    with pytest.raises(ContractError) as caught:
+        store.commit_checkpoint(
+            value,
+            checkpoint_asset_id=asset.asset_id,
+            operation_key=operation_key,
+            worker_run_id="worker-run-stale",
+        )
+    assert caught.value.code == int(ErrorCode.STALE_LEASE)
+    assert _authority_state(repository) == before
+
+    stale_epoch_value, stale_epoch_asset = _checkpoint_asset(
+        execution_stack,
+        checkpoint_id="checkpoint-replay-fence-stale-epoch",
+        checkpoint_seq=1,
+        completed_units=1,
+        lease_epoch=2,
+    )
+    with pytest.raises(ContractError) as caught:
+        store.commit_checkpoint(
+            stale_epoch_value,
+            checkpoint_asset_id=stale_epoch_asset.asset_id,
+            operation_key=operation_key,
+            worker_run_id="worker-run-1",
+        )
+    assert caught.value.code == int(ErrorCode.STALE_LEASE)
+    assert _authority_state(repository) == before
+
+    next_value, next_asset = _checkpoint_asset(
+        execution_stack,
+        checkpoint_id="checkpoint-replay-fence-2",
+        checkpoint_seq=2,
+        completed_units=2,
+    )
+    paused = control.pause(
+        job_id="job-1",
+        step_id="step-1",
+        attempt_id="attempt-1",
+        lease_epoch=1,
+        operation_key="pause-before-cross-attempt-replay",
+        worker_run_id="worker-run-1",
+        reason="prepare next attempt",
+        checkpoint_asset_id=next_asset.asset_id,
+    )
+    assert paused.accepted
+    resumed = control.resume(
+        job_id="job-1",
+        step_id="step-1",
+        operation_key="resume-before-cross-attempt-replay",
+        resume_of_attempt_id="attempt-1",
+        worker_run_id="worker-run-2",
+        new_attempt_id="attempt-2",
+        checkpoint_asset_id=next_asset.asset_id,
+    )
+    assert resumed.accepted
+    after_attempt_change = _authority_state(repository)
+
+    with pytest.raises(ContractError) as caught:
+        store.commit_checkpoint(
+            value,
+            checkpoint_asset_id=asset.asset_id,
+            operation_key=operation_key,
+            worker_run_id="worker-run-1",
+        )
+    assert caught.value.code == int(ErrorCode.STALE_LEASE)
+    assert _authority_state(repository) == after_attempt_change
