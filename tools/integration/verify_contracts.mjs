@@ -402,7 +402,7 @@ function verifyInventory() {
   const schemaFiles = readdirSync(SCHEMAS).filter((name) => name.endsWith('.schema.json')).sort()
   const v1Schemas = schemaFiles.filter((name) => !name.endsWith('-v2.schema.json'))
   const v2Schemas = schemaFiles.filter((name) => name.endsWith('-v2.schema.json'))
-  if (v1Schemas.length !== 55 || v2Schemas.length !== 6) throw new Error(`expected 55 v1 + 6 v2 schemas, got ${v1Schemas.length} + ${v2Schemas.length}`)
+  if (v1Schemas.length !== 55 || v2Schemas.length !== 9) throw new Error(`expected 55 v1 + 9 v2 schemas, got ${v1Schemas.length} + ${v2Schemas.length}`)
   for (const name of schemaFiles) {
     const schema = readJson(join(SCHEMAS, name))
     if (schema.$schema !== 'https://json-schema.org/draft/2020-12/schema') throw new Error(`schema dialect drift: ${name}`)

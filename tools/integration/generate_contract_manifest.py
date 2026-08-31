@@ -50,12 +50,12 @@ def relative(path: Path) -> str:
 
 
 def _is_v2_path(path: Path) -> bool:
-    relative_path = relative(path)
+    components = relative(path).split("/")
+    leaf = components[-1]
     return (
-        relative_path.startswith("contracts/corpus/m4-m5-public-surface-v2/")
-        or relative_path.startswith("contracts/golden/m4-m5-public-surface-v2/")
-        or relative_path.endswith("-v2.schema.json")
-        or relative_path.endswith(".v2.json")
+        any(component.endswith("-v2") for component in components[:-1])
+        or leaf.endswith("-v2.schema.json")
+        or leaf.endswith(".v2.json")
     )
 
 

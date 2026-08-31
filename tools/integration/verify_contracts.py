@@ -650,8 +650,8 @@ def verify_schemas() -> dict[str, Any]:
     paths = sorted(SCHEMA_DIR.glob("*.schema.json"))
     v1_paths = [path for path in paths if not path.name.endswith("-v2.schema.json")]
     v2_paths = [path for path in paths if path.name.endswith("-v2.schema.json")]
-    if len(v1_paths) != 55 or len(v2_paths) != 6:
-        raise AssertionError(f"expected 55 v1 + 6 v2 Draft 2020-12 schemas, found {len(v1_paths)} + {len(v2_paths)}")
+    if len(v1_paths) != 55 or len(v2_paths) != 9:
+        raise AssertionError(f"expected 55 v1 + 9 v2 Draft 2020-12 schemas, found {len(v1_paths)} + {len(v2_paths)}")
     for path in paths:
         schema = load_strict_json(path)
         Draft202012Validator.check_schema(schema)
@@ -712,7 +712,7 @@ def verify_contract_manifest() -> dict[str, Any]:
         raise AssertionError("v2 contract manifest schema drift")
     if v2_manifest.get("v1_immutable", {}).get("manifest_sha256") != hashlib.sha256(manifest_path.read_bytes()).hexdigest():
         raise AssertionError("v2 manifest does not retain the v1 manifest identity")
-    if v2_manifest.get("inventory", {}).get("v2_schema_count") != 6 or v2_manifest.get("inventory", {}).get("negative_group_count_v2") != 5:
+    if v2_manifest.get("inventory", {}).get("v2_schema_count") != 9 or v2_manifest.get("inventory", {}).get("negative_group_count_v2") != 5:
         raise AssertionError("v2 manifest inventory does not cover the additive surface")
     v2_records = v2_manifest.get("files")
     if not isinstance(v2_records, list):

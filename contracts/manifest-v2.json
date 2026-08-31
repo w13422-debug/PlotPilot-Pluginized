@@ -150,6 +150,16 @@
       "sha256": "972dcd43a54b45602735d3ab2374f6fc23c4ba56fa775a39f50de2a0f7b403e0"
     },
     {
+      "bytes": 2678,
+      "path": "contracts/corpus/prompt-skill-rpc-v2/01-execute.json",
+      "sha256": "40ea001be03f7e7dc88b1fcb83fbf50ad32e1de751449b464a14b399e30dbd1b"
+    },
+    {
+      "bytes": 215,
+      "path": "contracts/corpus/prompt-skill-rpc-v2/manifest.json",
+      "sha256": "bd81c4bb5137ffc1df3e2b740d3892847fd26d94b93b13306416ef1c1332e6ce"
+    },
+    {
       "bytes": 877,
       "path": "contracts/examples/candidate-item.json",
       "sha256": "cf2da818896f3ad51e6fce57a8aef95df07c45dcfae45dbb38212959cd1139eb"
@@ -450,6 +460,16 @@
       "sha256": "5e3188bf60c1e12c38e25f6e39ca11376bd82d3dee285e99cdb981b8e7b4186c"
     },
     {
+      "bytes": 9085,
+      "path": "contracts/golden/prompt-skill-rpc-v2/execute.json",
+      "sha256": "7128b638bf78f9cacce2d177272e0606c86cd01ec7a8230d36e90001d821b50e"
+    },
+    {
+      "bytes": 164,
+      "path": "contracts/golden/prompt-skill-rpc-v2/expected.json",
+      "sha256": "6599077fca610f2fd200d62abed2159e0b63ca39fc8abdafe563231adae5eb7b"
+    },
+    {
       "bytes": 383,
       "path": "contracts/golden/run-snapshot/expected.json",
       "sha256": "e57b3adb578951a6ba4c4f796124752c4df17694dbaa7aa146913eb629c92d6d"
@@ -700,6 +720,16 @@
       "sha256": "9dcd17fe33adb0786d0baf0677ce583c29b8e9c5edb55fae6d4458a8f652afb7"
     },
     {
+      "bytes": 5395,
+      "path": "contracts/json-schema/prompt-skill-execute-request-v2.schema.json",
+      "sha256": "1662c4a0c6f9d9c34fed0fb98a3fc401456075b4b2b556a9b0afa988fffa4a08"
+    },
+    {
+      "bytes": 8211,
+      "path": "contracts/json-schema/prompt-skill-execute-result-v2.schema.json",
+      "sha256": "1bfdacb2d300300bb5b812d9092de770acfbca6595076296214320b27603d914"
+    },
+    {
       "bytes": 5263,
       "path": "contracts/json-schema/provenance-receipt-v1.schema.json",
       "sha256": "7881ed77bdc687757f656405572ecf4d28355ca5d2a77709245e1bbd81625152"
@@ -743,6 +773,16 @@
       "bytes": 20235,
       "path": "contracts/json-schema/rpc-method-matrix.v1.json",
       "sha256": "7f2ef272ad8f0637b82800bb1e11856800cbc5bf799c38b095105da9382e5400"
+    },
+    {
+      "bytes": 767,
+      "path": "contracts/json-schema/rpc-method-matrix.v2.json",
+      "sha256": "d1f13bcf51ce7fee89b616088fc3b5670593e68e20c2887d8066d2502536de3c"
+    },
+    {
+      "bytes": 9288,
+      "path": "contracts/json-schema/rpc-method-success-v2.schema.json",
+      "sha256": "642a7d36933c1496b058133a1722c1aec58e4910baf50cab64e49fd614684b53"
     },
     {
       "bytes": 2604,
@@ -963,15 +1003,15 @@
     }
   },
   "inventory": {
-    "file_count_excluding_manifest": 162,
+    "file_count_excluding_manifest": 170,
     "negative_case_count_v2": 62,
     "negative_group_count_v1": 14,
     "negative_group_count_v2": 5,
-    "schema_count": 61,
+    "schema_count": 64,
     "v1_file_count": 141,
     "v1_schema_count": 55,
-    "v2_file_count": 21,
-    "v2_schema_count": 6
+    "v2_file_count": 29,
+    "v2_schema_count": 9
   },
   "negative_groups": {
     "v1": [
@@ -1490,6 +1530,20 @@
       "sha256": "9dcd17fe33adb0786d0baf0677ce583c29b8e9c5edb55fae6d4458a8f652afb7"
     },
     {
+      "bytes": 5395,
+      "contract_id": "prompt-skill-execute-request-v2",
+      "path": "contracts/json-schema/prompt-skill-execute-request-v2.schema.json",
+      "schema_id": "https://plotpilot.local/contracts/prompt-skill-execute-request-v2",
+      "sha256": "1662c4a0c6f9d9c34fed0fb98a3fc401456075b4b2b556a9b0afa988fffa4a08"
+    },
+    {
+      "bytes": 8211,
+      "contract_id": "prompt-skill-execute-result-v2",
+      "path": "contracts/json-schema/prompt-skill-execute-result-v2.schema.json",
+      "schema_id": "https://plotpilot.local/contracts/prompt-skill-execute-result-v2",
+      "sha256": "1bfdacb2d300300bb5b812d9092de770acfbca6595076296214320b27603d914"
+    },
+    {
       "bytes": 5263,
       "contract_id": "provenance-receipt-v1",
       "path": "contracts/json-schema/provenance-receipt-v1.schema.json",
@@ -1544,6 +1598,13 @@
       "path": "contracts/json-schema/rpc-error-v1.schema.json",
       "schema_id": "https://plotpilot.local/contracts/rpc-error-v1",
       "sha256": "3e42dd53362d953a8f2e3f94d49aa59478acfa3403683c9fa69b7bed6c3f008f"
+    },
+    {
+      "bytes": 9288,
+      "contract_id": "rpc-method-success-v2",
+      "path": "contracts/json-schema/rpc-method-success-v2.schema.json",
+      "schema_id": "https://plotpilot.local/contracts/rpc-method-success-v2",
+      "sha256": "642a7d36933c1496b058133a1722c1aec58e4910baf50cab64e49fd614684b53"
     },
     {
       "bytes": 2604,

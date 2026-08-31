@@ -17,6 +17,14 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_DIR = ROOT / "contracts" / "json-schema"
+EXTERNAL_AUTHORED_ARTIFACTS = frozenset(
+    {
+        "prompt-skill-execute-request-v2.schema.json",
+        "prompt-skill-execute-result-v2.schema.json",
+        "rpc-method-matrix.v2.json",
+        "rpc-method-success-v2.schema.json",
+    }
+)
 
 
 def const(value: Any) -> dict[str, Any]:
@@ -1500,7 +1508,15 @@ def check() -> int:
         if changed:
             print("changed:", ", ".join(changed))
         return 1
-    extras = sorted(p.name for p in SCHEMA_DIR.iterdir() if p.is_file() and p.name not in rendered)
+    missing_external = sorted(name for name in EXTERNAL_AUTHORED_ARTIFACTS if not (SCHEMA_DIR / name).is_file())
+    if missing_external:
+        print("missing external authored schema files:", ", ".join(missing_external))
+        return 1
+    extras = sorted(
+        p.name
+        for p in SCHEMA_DIR.iterdir()
+        if p.is_file() and p.name not in rendered and p.name not in EXTERNAL_AUTHORED_ARTIFACTS
+    )
     if extras:
         print("unexpected generated-schema files:", ", ".join(extras))
         return 1
