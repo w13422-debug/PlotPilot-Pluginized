@@ -26,6 +26,7 @@ from plotpilot_prompt_skill_runtime.host_adapter import (
     HostAssetReader,
     HostAssetWriter,
     PromptSkillHostAdapter,
+    _verify_bundle_asset,
     _verify_bundle_chain_refs,
     _verify_chain_asset,
     _verify_receipt_context,
@@ -341,6 +342,17 @@ def test_chain_asset_rejects_empty_partial_foreign_duplicate_reordered_and_fabri
         _verify_chain_asset(HostAssetReader(Host(fabricated_raw)), fabricated_params, execution)
 
 
+def test_chain_foreign_input_accepted_bypass_is_closed() -> None:
+    """Regression for CHAIN_FOREIGN_INPUT_ACCEPTED."""
+
+    execute_input_hash = _two_receipt_execution().chain["input_hash"]
+    foreign_execution = _two_receipt_execution(input_hash="f" * 64)
+    params, content = _chain_params(dict(foreign_execution.chain), asset_id="asset-chain-foreign-input")
+    params["input_content_hash"] = execute_input_hash
+    with pytest.raises(ContractError, match="execute input_content_hash"):
+        _verify_chain_asset(HostAssetReader(Host(content)), params, foreign_execution)
+
+
 def test_bundle_chain_refs_reject_empty_partial_foreign_duplicate_and_reordered_projections() -> None:
     execution = _two_receipt_execution()
     chain = dict(execution.chain)
@@ -372,36 +384,83 @@ def test_bundle_chain_refs_reject_empty_partial_foreign_duplicate_and_reordered_
             _verify_bundle_chain_refs({"skill_chain_result_refs": refs}, result, execution)
 
 
+def _receipt_context(
+    result: dict[str, object], *, index: int, release: dict[str, object]
+) -> dict[str, object]:
+    return {
+        "job_id": result["job_id"],
+        "step_id": result["step_id"],
+        "attempt_id": result["attempt_id"],
+        "lease_epoch": result["lease_epoch"],
+        "run_snapshot_hash": result["run_snapshot_hash"],
+        "generation_id": result["generation_id"],
+        "chain_id": result["chain_id"],
+        "chain_index": index,
+        "skill_id": release["skill_id"],
+        "release_id": release["release_id"],
+        "package_hash": release["package_hash"],
+        "parameters_asset_id": release["parameters_asset_id"],
+        "parameters_hash": release["parameters_content_hash"],
+        "input_asset_id": result["input_asset_id"],
+        "input_hash": result["input_content_hash"],
+    }
+
+
 def test_model_receipt_chain_index_is_bounded_and_positionally_bound() -> None:
     result = _golden()["result"]
     assert isinstance(result, dict)
     releases = result["skill_releases"]
     assert isinstance(releases, list) and len(releases) >= 2
 
-    def context_for(index: int, release: dict[str, object]) -> dict[str, object]:
-        return {
-            "job_id": result["job_id"],
-            "step_id": result["step_id"],
-            "run_snapshot_hash": result["run_snapshot_hash"],
-            "generation_id": result["generation_id"],
-            "chain_id": result["chain_id"],
-            "chain_index": index,
-            "skill_id": release["skill_id"],
-            "release_id": release["release_id"],
-            "package_hash": release["package_hash"],
-            "parameters_asset_id": release["parameters_asset_id"],
-            "parameters_hash": release["parameters_content_hash"],
-            "input_asset_id": result["input_asset_id"],
-            "input_hash": result["input_content_hash"],
-        }
-
-    _verify_receipt_context({"input_context": context_for(1, releases[1])}, result)
+    _verify_receipt_context({"input_context": _receipt_context(result, index=1, release=releases[1])}, result)
     with pytest.raises(ContractError, match="outside the frozen chain"):
-        _verify_receipt_context({"input_context": context_for(len(releases), releases[1])}, result)
-    misaligned = context_for(1, releases[1])
+        _verify_receipt_context(
+            {"input_context": _receipt_context(result, index=len(releases), release=releases[1])}, result
+        )
+    misaligned = _receipt_context(result, index=1, release=releases[1])
     misaligned["skill_id"] = releases[0]["skill_id"]
     with pytest.raises(ContractError, match="release/index"):
         _verify_receipt_context({"input_context": misaligned}, result)
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement"),
+    (
+        pytest.param("attempt_id", None, id="MODEL_RECEIPT_MISSING_ATTEMPT"),
+        pytest.param("attempt_id", "foreign-attempt", id="MODEL_RECEIPT_FOREIGN_ATTEMPT"),
+        pytest.param("lease_epoch", None, id="MODEL_RECEIPT_MISSING_LEASE"),
+        pytest.param("lease_epoch", 0, id="MODEL_RECEIPT_STALE_LEASE"),
+        pytest.param("lease_epoch", 2, id="MODEL_RECEIPT_FUTURE_LEASE"),
+    ),
+)
+def test_model_receipt_attempt_and_lease_must_match_execute_identity(
+    field: str, replacement: object | None
+) -> None:
+    result = _golden()["result"]
+    assert isinstance(result, dict)
+    releases = result["skill_releases"]
+    assert isinstance(releases, list) and isinstance(releases[0], dict)
+    context = _receipt_context(result, index=0, release=releases[0])
+    if replacement is None:
+        context.pop(field)
+    else:
+        context[field] = replacement
+    with pytest.raises(ContractError):
+        _verify_receipt_context({"input_context": context}, result)
+
+
+def test_model_receipt_foreign_lease_accepted_bypass_is_closed() -> None:
+    """Regression for MODEL_RECEIPT_FOREIGN_LEASE_ACCEPTED: omitted attempt plus lease 99."""
+
+    result = _golden()["result"]
+    assert isinstance(result, dict)
+    releases = result["skill_releases"]
+    assert isinstance(releases, list) and isinstance(releases[0], dict)
+    context = _receipt_context(result, index=0, release=releases[0])
+    context.pop("attempt_id")
+    context["lease_epoch"] = 99
+    with pytest.raises(ContractError):
+        _verify_receipt_context({"input_context": context}, result)
 
 
 def _golden_chain() -> dict[str, object]:
@@ -419,6 +478,7 @@ def _chain_params(chain: dict[str, object], *, asset_id: str = "asset-chain-1") 
         "chain_content_hash": hashlib.sha256(content).hexdigest(),
         "chain_id": chain["chain_id"],
         "run_snapshot_hash": chain["run_snapshot_hash"],
+        "input_content_hash": chain["input_hash"],
     }, content
 
 
@@ -432,13 +492,15 @@ def _rehashed_receipt(receipt: dict[str, object], **changes: object) -> dict[str
     return value
 
 
-def _two_receipt_execution() -> ChainExecution:
+def _two_receipt_execution(*, input_hash: str | None = None) -> ChainExecution:
+    first_fixture = _golden_receipt()
     first = _rehashed_receipt(
-        _golden_receipt(),
+        first_fixture,
         chain_id="skill-chain-provenance",
         receipt_id="skill-chain-provenance:receipt-0",
         chain_index=0,
         previous_receipt_hash=None,
+        input_hash=first_fixture["input_hash"] if input_hash is None else input_hash,
     )
     second = _rehashed_receipt(
         _golden_receipt(),
@@ -461,6 +523,147 @@ def _two_receipt_execution() -> ChainExecution:
         final_output_hash=second["output_hash"],
     )
     return ChainExecution(chain, (first, second))
+
+
+_EXPECTED_BUNDLE_PRODUCER = {
+    "plugin_id": "com.plotpilot.prompt-skill",
+    "release_id": "a" * 64,
+    "capability_id": CAPABILITY_ID,
+    "job_id": "job-1",
+    "step_id": "step-1",
+    "attempt_id": "attempt-1",
+    "lease_epoch": 1,
+}
+
+
+def _bundle_verification_case(
+    producer: dict[str, object] | None = None,
+) -> tuple[HostAssetReader, dict[str, object], dict[str, object], ChainExecution]:
+    execution = _two_receipt_execution()
+    chain = execution.chain
+    chain_content_hash = sha256_hex(canonical_bytes(dict(chain)))
+    result: dict[str, object] = {
+        "capability_id": CAPABILITY_ID,
+        "plugin_id": _EXPECTED_BUNDLE_PRODUCER["plugin_id"],
+        "plugin_release_id": _EXPECTED_BUNDLE_PRODUCER["release_id"],
+        "job_id": _EXPECTED_BUNDLE_PRODUCER["job_id"],
+        "step_id": _EXPECTED_BUNDLE_PRODUCER["step_id"],
+        "attempt_id": _EXPECTED_BUNDLE_PRODUCER["attempt_id"],
+        "lease_epoch": _EXPECTED_BUNDLE_PRODUCER["lease_epoch"],
+        "chain_asset_id": "asset-chain-provenance",
+        "chain_content_hash": chain_content_hash,
+        "result_bundle": {
+            "bundle_id": chain["result_bundle_id"],
+            "result_item_id": chain["result_item_id"],
+            "asset_id": "asset-result-bundle",
+            "content_hash": "0" * 64,
+            "run_snapshot_hash": chain["run_snapshot_hash"],
+        },
+    }
+    bundle = {
+        "schema": "result-bundle/v1",
+        "contract_id": "artifact-bundle/v1",
+        "bundle_id": chain["result_bundle_id"],
+        "bundle_type": "artifact",
+        "producer": copy.deepcopy(_EXPECTED_BUNDLE_PRODUCER if producer is None else producer),
+        "input_snapshot_hash": chain["run_snapshot_hash"],
+        "items": [
+            {
+                "schema": "artifact-item/v1",
+                "item_id": chain["result_item_id"],
+                "artifact_kind": "prompt-output",
+                "payload_asset_id": "asset-output-provenance",
+                "payload_hash": "c" * 64,
+                "mime": "text/plain",
+                "source_refs": [],
+                "status": "complete",
+            }
+        ],
+        "warnings": [],
+        "partial": False,
+        "provenance_receipt_id": "model-receipt-1",
+        "skill_chain_result_refs": [
+            {
+                "schema": "skill-chain-ref/v1",
+                "chain_result_id": chain["chain_id"],
+                "asset_id": result["chain_asset_id"],
+                "asset_hash": result["chain_content_hash"],
+                "result_bundle_id": chain["result_bundle_id"],
+                "result_item_id": chain["result_item_id"],
+                "stream_id": chain["stream_id"],
+                "acked_prefix_hash": chain["acked_prefix_hash"],
+            }
+        ],
+    }
+    content = canonical_bytes(bundle)
+    identity = result["result_bundle"]
+    assert isinstance(identity, dict)
+    identity["content_hash"] = sha256_hex(content)
+    snapshot = {"workspace_id": "ws-1", "snapshot_hash": chain["run_snapshot_hash"]}
+    return HostAssetReader(Host(content)), result, snapshot, execution
+
+
+def test_bundle_producer_exactly_binds_the_execute_identity() -> None:
+    _verify_bundle_asset(*_bundle_verification_case())
+
+
+def test_bundle_foreign_producer_accepted_bypass_is_closed() -> None:
+    """Regression for BUNDLE_FOREIGN_PRODUCER_ACCEPTED."""
+
+    foreign = {
+        **_EXPECTED_BUNDLE_PRODUCER,
+        "job_id": "foreign-job",
+        "attempt_id": "foreign-attempt",
+        "lease_epoch": 999,
+    }
+    with pytest.raises(ContractError, match="exactly bound"):
+        _verify_bundle_asset(*_bundle_verification_case(foreign))
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement"),
+    (
+        pytest.param("plugin_id", "com.plotpilot.foreign", id="foreign-plugin"),
+        pytest.param("release_id", "b" * 64, id="foreign-release"),
+        pytest.param("capability_id", "prompt.skill.foreign/v2", id="foreign-capability"),
+        pytest.param("job_id", "foreign-job", id="foreign-job"),
+        pytest.param("step_id", "foreign-step", id="foreign-step"),
+        pytest.param("attempt_id", "foreign-attempt", id="foreign-attempt"),
+        pytest.param("lease_epoch", 999, id="foreign-lease"),
+    ),
+)
+def test_bundle_rejects_each_foreign_producer_identity(field: str, replacement: object) -> None:
+    producer = {**_EXPECTED_BUNDLE_PRODUCER, field: replacement}
+    with pytest.raises(ContractError, match="exactly bound"):
+        _verify_bundle_asset(*_bundle_verification_case(producer))
+
+
+@pytest.mark.parametrize(
+    "producer",
+    (
+        pytest.param(
+            {key: value for key, value in _EXPECTED_BUNDLE_PRODUCER.items() if key != "attempt_id"},
+            id="missing-producer-identity",
+        ),
+        pytest.param(
+            {"plugin_id": _EXPECTED_BUNDLE_PRODUCER["plugin_id"]},
+            id="partial-producer-identity",
+        ),
+        pytest.param(
+            {**_EXPECTED_BUNDLE_PRODUCER, "package_hash": "b" * 64},
+            id="incompatible-package-identity",
+        ),
+        pytest.param(
+            {**_EXPECTED_BUNDLE_PRODUCER, "generation_id": "foreign-generation"},
+            id="incompatible-generation-identity",
+        ),
+    ),
+)
+def test_bundle_rejects_missing_partial_or_incompatible_producer_identity(
+    producer: dict[str, object],
+) -> None:
+    with pytest.raises(ContractError):
+        _verify_bundle_asset(*_bundle_verification_case(producer))
 
 
 def test_worker_replay_survives_restart_without_future_or_replacement_poisoning(tmp_path: Path) -> None:

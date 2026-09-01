@@ -359,6 +359,8 @@ def _verify_chain_asset(
         raise _invalid("Skill chain Asset is not the authoritative ChainExecution", code=1005)
     if value["chain_id"] != params["chain_id"] or value["run_snapshot_hash"] != params["run_snapshot_hash"]:
         raise _invalid("Skill chain identity does not match the execute identity")
+    if value["input_hash"] != params["input_content_hash"]:
+        raise _invalid("Skill chain input_hash is not bound to the execute input_content_hash", code=1005)
     receipt_ids = value["receipt_ids"]
     receipt_hashes = value["receipt_hashes"]
     if (
@@ -411,6 +413,23 @@ def _verify_bundle_chain_refs(
         raise _invalid("result Bundle skill_chain_result_refs do not exactly bind the authoritative ChainExecution", code=1005)
 
 
+_BUNDLE_PRODUCER_BINDINGS = (
+    ("plugin_id", "plugin_id"),
+    ("release_id", "plugin_release_id"),
+    ("capability_id", "capability_id"),
+    ("job_id", "job_id"),
+    ("step_id", "step_id"),
+    ("attempt_id", "attempt_id"),
+    ("lease_epoch", "lease_epoch"),
+)
+
+
+def _verify_bundle_producer(bundle: Mapping[str, Any], result: Mapping[str, Any]) -> None:
+    expected = {producer_field: result[result_field] for producer_field, result_field in _BUNDLE_PRODUCER_BINDINGS}
+    if bundle.get("producer") != expected:
+        raise _invalid("result Bundle producer is not exactly bound to the execute identity", code=1005)
+
+
 def _verify_bundle_asset(
     reader: HostAssetReader,
     result: Mapping[str, Any],
@@ -423,6 +442,7 @@ def _verify_bundle_asset(
     if not isinstance(bundle, Mapping):
         raise _invalid("result Bundle Asset must contain an object", code=1005)
     verify_result_bundle(bundle, snapshot_workspace_id=snapshot["workspace_id"], snapshot_hash_value=snapshot["snapshot_hash"])
+    _verify_bundle_producer(bundle, result)
     if bundle.get("contract_id") != RESULT_CONTRACT or bundle.get("bundle_id") != identity["bundle_id"]:
         raise _invalid("result Bundle Asset does not match its Core identity")
     if bundle.get("input_snapshot_hash") != identity["run_snapshot_hash"]:
@@ -439,6 +459,8 @@ def _verify_bundle_asset(
 _RECEIPT_CONTEXT_FIELDS = (
     "job_id",
     "step_id",
+    "attempt_id",
+    "lease_epoch",
     "run_snapshot_hash",
     "generation_id",
     "chain_id",
@@ -463,6 +485,8 @@ def _verify_receipt_context(receipt: Mapping[str, Any], result: Mapping[str, Any
     expected = {
         "job_id": result["job_id"],
         "step_id": result["step_id"],
+        "attempt_id": result["attempt_id"],
+        "lease_epoch": result["lease_epoch"],
         "run_snapshot_hash": result["run_snapshot_hash"],
         "generation_id": result["generation_id"],
         "chain_id": result["chain_id"],
@@ -472,7 +496,7 @@ def _verify_receipt_context(receipt: Mapping[str, Any], result: Mapping[str, Any
         "input_hash": result["input_content_hash"],
     }
     for field, value in expected.items():
-        if context[field] != value:
+        if type(context[field]) is not type(value) or context[field] != value:
             raise _invalid(f"ModelReceipt input_context {field} is not bound to the execute identity", code=1005)
     if type(context["chain_index"]) is not int or context["chain_index"] < 0:
         raise _invalid("ModelReceipt input_context chain_index is invalid", code=1005)
@@ -500,7 +524,6 @@ def _verify_receipt_context(receipt: Mapping[str, Any], result: Mapping[str, Any
         "plugin_id": result["plugin_id"],
         "plugin_release_id": result["plugin_release_id"],
         "plugin_package_hash": result["plugin_package_hash"],
-        "attempt_id": result["attempt_id"],
         "operation_key": result["operation_key"],
         "run_snapshot_id": result["run_snapshot_id"],
         "run_snapshot_asset_id": result["run_snapshot_asset_id"],
