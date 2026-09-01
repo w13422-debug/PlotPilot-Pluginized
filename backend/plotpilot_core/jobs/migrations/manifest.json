@@ -6,7 +6,7 @@
     {
       "id": "p3-jobs-001",
       "path": "001_host_operation_ledger.sql",
-      "sha256": "c764efce36fadbce08453251ebfc468426ab5d6b0f9a77bb400cf9a1d9bf8498",
+      "sha256": "fab0d9b596e9e0108e13b751cdc714028cd282aa1fca3ac0bda13d8ab0e331fa",
       "transactional": true
     }
   ]

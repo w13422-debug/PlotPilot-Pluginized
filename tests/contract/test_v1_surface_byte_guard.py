@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[2]
 ACCEPTED_E0 = "761c79a8343dbc17ee8f40e21e60fb962eeecd79"
 E0_BLOB_OVERRIDES = {
     "backend/plotpilot_plugin_sdk/package.py": "c41ee05ee7e4ab2afd5c0780238ac12277faa3ec",
+    "contracts/manifest-v1.json": "bb0421c52fdace39ddc3e2d5e397bc0cc2ccf335",
     "backend/plotpilot_plugin_sdk/rpc.py": "bc62f78bd575af50c3d69241b88464832fd77377",
 }
 
