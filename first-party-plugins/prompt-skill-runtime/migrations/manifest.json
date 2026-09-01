@@ -1,0 +1,16 @@
+{
+  "schema": "p3-module-migrations/v1",
+  "module": "plotpilot_prompt_skill_runtime",
+  "runner_owner": "P2",
+  "from_schema": "077a6bead43788697d47c3c4b8d564b3d472b7ced4a4aad6828c85264c401759",
+  "to_schema": "94d9b79878ab7ad28d2a141ae12a906eef6d647272c3f08a5cb72c15ca02de72",
+  "steps": [
+    {
+      "step_id": "p2-prompt-skill-runtime-001",
+      "file": "plotpilot_prompt_skill_runtime/migrations/001_prompt_skill_runtime.sql",
+      "sha256": "7fce3f8a4c4c7b90abb12f3197751d34d943fdd1b8d80f03f5b633caad5095ef",
+      "from_schema": "077a6bead43788697d47c3c4b8d564b3d472b7ced4a4aad6828c85264c401759",
+      "to_schema": "94d9b79878ab7ad28d2a141ae12a906eef6d647272c3f08a5cb72c15ca02de72"
+    }
+  ]
+}

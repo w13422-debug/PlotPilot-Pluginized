@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "plotpilot-prompt-skill-runtime"
+version = "1.0.0"
+description = "Installable PlotPilot Prompt/Skill Host"
+requires-python = ">=3.12,<3.13"
+dependencies = ["plotpilot-plugin-sdk==0.1.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+plotpilot_prompt_skill_runtime = ["migrations/*.json", "migrations/*.sql"]
+
+[tool.setuptools.data-files]
+"migrations" = ["migrations/manifest.json"]
+
+# The install-time migration manifest is deliberately read from the immutable
+# package root by the worker.  The source-tree copy under ``src`` belongs to
+# the runtime's private SQLite migration implementation and is not an install
+# manifest.
