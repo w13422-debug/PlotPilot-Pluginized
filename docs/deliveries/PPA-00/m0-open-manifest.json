@@ -3,7 +3,7 @@
     "contract_golden_manifest": {
       "bytes": 50799,
       "path": "docs/deliveries/PPA-00/contract-golden-manifest.json",
-      "sha256": "0a9afd65228ec298177fee76f9b310133f8cbabaaea32ab6c528f81421fd2b0b"
+      "sha256": "38cf19437aa5b6715180ab52c8626ff47c6b887260a0a0b2c30f6070a1124235"
     },
     "dependency_delta": {
       "bytes": 1815,
@@ -160,7 +160,7 @@
     ],
     "contract_golden_delivery": {
       "path": "docs/deliveries/PPA-00/contract-golden-manifest.json",
-      "sha256": "0a9afd65228ec298177fee76f9b310133f8cbabaaea32ab6c528f81421fd2b0b"
+      "sha256": "38cf19437aa5b6715180ab52c8626ff47c6b887260a0a0b2c30f6070a1124235"
     },
     "contract_manifest": {
       "path": "contracts/manifest-v1.json",

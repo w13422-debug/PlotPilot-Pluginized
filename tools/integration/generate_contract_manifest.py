@@ -12,12 +12,14 @@ if __package__:
         contract_schema_paths,
         is_v2_contract_path,
         v1_contract_inventory,
+        v1_negative_group_paths,
     )
 else:
     from contract_inventory import (
         contract_schema_paths,
         is_v2_contract_path,
         v1_contract_inventory,
+        v1_negative_group_paths,
     )
 
 
@@ -100,7 +102,7 @@ def schema_records(*, include_v2: bool = False) -> list[dict[str, Any]]:
 
 def negative_records() -> list[dict[str, Any]]:
     records = []
-    for path in sorted((CONTRACTS / "corpus" / "negative" / "84.13").glob("*.json")):
+    for path in v1_negative_group_paths():
         value = json.loads(path.read_text(encoding="utf-8"))
         records.append(
             {

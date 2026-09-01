@@ -86,18 +86,53 @@ def test_v1_inventory_filters_future_v2_fixture_and_example_paths(
     (contracts / "examples" / "combination.json").write_text("{}", encoding="utf-8")
     (contracts / "examples" / "combination.v2.json").write_text("{}", encoding="utf-8")
     (negatives / "01.json").write_text(
-        json.dumps({"group_id": "84.13-01", "negative": []}), encoding="utf-8"
+        json.dumps({"group_id": "84.13-01", "negative": [], "positive": []}), encoding="utf-8"
     )
+    (negatives / "future.v2.json").write_text(
+        json.dumps({"group_id": "84.13-future-v2", "negative": [], "positive": []}),
+        encoding="utf-8",
+    )
+    for name in ("package", "skill", "run-snapshot", "backup"):
+        expected = contracts / "golden" / name / "expected.json"
+        expected.parent.mkdir(parents=True, exist_ok=True)
+        expected.write_text("{}", encoding="utf-8")
+    closure = tmp_path / "docs" / "contracts" / "finding-closure-v1.json"
+    closure.parent.mkdir(parents=True, exist_ok=True)
+    closure.write_text(json.dumps({"findings": []}), encoding="utf-8")
 
     monkeypatch.setattr(projection, "ROOT", tmp_path)
     monkeypatch.setattr(projection, "CONTRACTS", contracts)
     monkeypatch.setattr(projection, "SCHEMAS", schemas)
     monkeypatch.setattr(projection, "V1_NEGATIVE", negatives)
+    monkeypatch.setattr(generate_contract_manifest, "ROOT", tmp_path)
+    monkeypatch.setattr(generate_contract_manifest, "CONTRACTS", contracts)
+    monkeypatch.setattr(generate_contract_manifest, "FINDING_CLOSURE", closure)
+    monkeypatch.setattr(generate_m0_delivery, "ROOT", tmp_path)
+    monkeypatch.setattr(generate_m0_delivery, "CONTRACTS", contracts)
 
     inventory = projection.v1_contract_inventory()
     assert inventory["schema_count"] == 1
     assert inventory["positive_fixture_count"] == 1
     assert inventory["combination_example_count"] == 1
+    assert inventory["negative_group_count"] == 1
+    assert inventory["negative_case_count"] == 0
+
+    rendered_manifest = generate_contract_manifest.render()
+    future_negative_path = "contracts/corpus/negative/84.13/future.v2.json"
+    assert [group["group_id"] for group in rendered_manifest["negative_groups"]] == ["84.13-01"]
+    manifest_files = [record["path"] for record in rendered_manifest["files"]]
+    assert "contracts/corpus/negative/84.13/01.json" in manifest_files
+    assert future_negative_path not in manifest_files
+    (contracts / "manifest-v1.json").write_bytes(
+        generate_contract_manifest.manifest_bytes(rendered_manifest)
+    )
+
+    contract_golden = generate_m0_delivery.build_contract_golden_manifest()
+    assert contract_golden["inventory"] == inventory
+    assert [group["group_id"] for group in contract_golden["negative_groups"]] == ["84.13-01"]
+    assert future_negative_path not in [
+        record["path"] for record in contract_golden["artifacts"]["contract_files"]
+    ]
 
 
 def test_v2_manifest_binds_v1_rendered_in_the_same_invocation() -> None:

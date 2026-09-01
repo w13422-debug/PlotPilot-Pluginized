@@ -523,7 +523,7 @@ def build_contract_golden_manifest() -> dict[str, Any]:
         if path.suffix in {".py", ".mjs"} and "__pycache__" not in path.parts
     ]
     negative = []
-    for path in sorted((CONTRACTS / "corpus" / "negative" / "84.13").glob("*.json")):
+    for path in v1_negative_group_paths():
         value = read_json(path)
         negative.append(
             {

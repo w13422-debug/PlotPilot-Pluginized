@@ -963,9 +963,9 @@
         "sha256": "ff1e61b300833c97922b17fb2c315ef09755bad9a3a4ec1aaf4abf875cb40c33"
       },
       {
-        "bytes": 12802,
+        "bytes": 12825,
         "path": "tools/integration/generate_contract_manifest.py",
-        "sha256": "0e503ce4e08298239235921e9eef765c841126496f5d23a205fb1595b98849b3"
+        "sha256": "96cd8044f1abe163f4ed83b94bd057e596f56687e3c5b8298625d1a3fbcaa67c"
       },
       {
         "bytes": 126243,
@@ -993,9 +993,9 @@
         "sha256": "2dc8729302fcf8dfc9054fbea1e59c267994e7fb5434a83f44848d6fc6af452a"
       },
       {
-        "bytes": 51086,
+        "bytes": 51043,
         "path": "tools/integration/generate_m0_delivery.py",
-        "sha256": "1e040034f4d9a8e0b7c3a658477b858462055df40f5e91c7a04727a2aa33d20d"
+        "sha256": "4b0a107d86f6c58f57a1b54890de79d0be29278b8342ca351ea63ac4f1d52ebb"
       },
       {
         "bytes": 6518,
