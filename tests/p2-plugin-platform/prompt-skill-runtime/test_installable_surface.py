@@ -293,6 +293,42 @@ def test_source_package_is_isolated_and_migration_manifest_is_content_addressed(
     assert step["sha256"] == hashlib.sha256(sql.read_bytes()).hexdigest()
 
 
+def test_sdk_wheel_text_members_are_explicitly_lf_bound() -> None:
+    sdk_root = ROOT / "backend" / "plotpilot_plugin_sdk"
+    attribute_lines = (sdk_root / ".gitattributes").read_text(encoding="utf-8").splitlines()
+    assert "*.py text eol=lf" in attribute_lines
+    assert "pyproject.toml text eol=lf" in attribute_lines
+
+    wheel_text_members = [
+        sdk_root / ".gitattributes",
+        sdk_root / "pyproject.toml",
+        *sorted(sdk_root.glob("*.py")),
+        *sorted((sdk_root / "resources").glob("*.json")),
+    ]
+    assert wheel_text_members
+    relative_members = [member.relative_to(ROOT).as_posix() for member in wheel_text_members]
+
+    checked = subprocess.run(
+        ["git", "check-attr", "text", "eol", "--", *relative_members],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    expected_attributes = {
+        f"{relative}: {attribute}: {value}"
+        for relative in relative_members
+        for attribute, value in (("text", "set"), ("eol", "lf"))
+    }
+    assert set(checked.stdout.splitlines()) == expected_attributes
+
+    carriage_return_members = [
+        member.relative_to(ROOT).as_posix()
+        for member in wheel_text_members
+        if b"\r" in member.read_bytes()
+    ]
+    assert carriage_return_members == []
+
 def test_offline_lock_is_complete_exact_and_hash_pinned() -> None:
     lines = [
         line.strip()
