@@ -406,6 +406,33 @@ class CoreAuthorityRepository:
         with self.transaction() as connection:
             connection.execute(AUTHORITY_APPLICATION_SCHEMA)
 
+    def ensure_chapter_authority_schema(self) -> None:
+        """Fail closed unless the chapter Candidate/fence migrations are live.
+
+        The migration runner applies this schema at repository creation.  The
+        explicit guard is used by the v2 application composition so an old or
+        externally modified database cannot silently degrade the writer fence
+        into an in-memory convention.
+        """
+        required = {
+            "candidate_review",
+            "candidate_batch_operation",
+            "chapter_candidate_authority",
+            "chapter_writer_fence",
+        }
+        with self.read_connection() as connection:
+            actual = {
+                row[0]
+                for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' "
+                    "AND name IN (?,?,?,?)",
+                    tuple(sorted(required)),
+                ).fetchall()
+            }
+        if actual != required:
+            missing = ",".join(sorted(required - actual))
+            raise RuntimeError(f"chapter authority schema is unavailable: {missing}")
+
     @contextmanager
     def read_connection(self):
         """Serialize shared-connection readers behind the writer lock.

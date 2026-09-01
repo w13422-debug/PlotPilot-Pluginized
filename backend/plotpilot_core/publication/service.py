@@ -121,7 +121,19 @@ class PublicationService:
                 root_workspace[0] = workspace_id
             if workspace_id != root_workspace[0]:
                 raise CrossWorkspaceError("Candidate parent graph crosses workspace")
-            payload = self._verify_candidate_authority(connection, item, root=root, row_status=status)
+            review = connection.execute(
+                "SELECT review_status FROM candidate_review WHERE candidate_id=?",
+                (current_id,),
+            ).fetchone()
+            if review is not None and review["review_status"] == "rejected":
+                raise IncompletePublicationError("Candidate review rejected publication")
+            payload = self._verify_candidate_authority(
+                connection,
+                current_id,
+                item,
+                root=root,
+                row_status=status,
+            )
             fingerprint = CandidateFingerprint(
                 current_id, row["item_id"], row["item_hash"], row["item_json"], status
             )
@@ -364,6 +376,7 @@ class PublicationService:
     def _verify_candidate_authority(
         self,
         connection: sqlite3.Connection,
+        candidate_id: str,
         item: dict[str, Any],
         *,
         root: bool,
@@ -371,16 +384,38 @@ class PublicationService:
     ) -> bytes:
         try:
             target, base = item["target"], item["base"]
-            if item["item_kind"] != "document" or target["entity_kind"] != "document":
+            incomplete_stream = item["item_kind"] == "incomplete_stream"
+            if (
+                item["item_kind"] not in {"document", "incomplete_stream"}
+                or target["entity_kind"] != "document"
+            ):
                 raise ValueError("stopped publication kind")
             # Every Candidate in a publication closure must be a complete,
             # document-scoped result.  ``staged`` parents remain valid (the
             # F012 compatibility contract), but partial/failed/skipped items
             # are never promoted as publication authority.
-            if item["status"] != "complete" or row_status not in self._VISIBLE_PARENT_STATES:
+            if (
+                (
+                    not incomplete_stream
+                    and item["status"] != "complete"
+                )
+                or (
+                    incomplete_stream
+                    and (
+                        item["status"] != "partial"
+                        or item["mutation"]["payload_schema"]
+                        != "core/document-text/v1"
+                    )
+                )
+                or row_status not in self._VISIBLE_PARENT_STATES
+            ):
                 raise ValueError("Candidate is not publication eligible")
-            if item["mutation"]["mode"] not in {"replace", "append_text"}:
+            if item["mutation"]["mode"] not in (
+                {"replace"} if incomplete_stream else {"replace", "append_text"}
+            ):
                 raise ValueError("unsupported document mutation")
+            if incomplete_stream:
+                self._verify_incomplete_stream_fence(connection, candidate_id, target)
             expected_write = {
                 "workspace_id": target["workspace_id"],
                 "entity_kind": "document",
@@ -422,6 +457,34 @@ class PublicationService:
             raise
         except Exception as exc:
             raise IncompletePublicationError("durable Candidate authority is incomplete") from exc
+
+    @staticmethod
+    def _verify_incomplete_stream_fence(
+        connection: sqlite3.Connection,
+        candidate_id: str,
+        target: dict[str, Any],
+    ) -> None:
+        fence = connection.execute(
+            "SELECT candidate_id,job_id,attempt_id,writer_epoch,operation_key "
+            "FROM chapter_writer_fence "
+            "WHERE workspace_id=? AND entity_kind=? AND entity_id=?",
+            (target["workspace_id"], target["entity_kind"], target["entity_id"]),
+        ).fetchone()
+        origin = connection.execute(
+            "SELECT source_job_id,source_attempt_id,writer_epoch,operation_key "
+            "FROM chapter_candidate_authority WHERE candidate_id=?",
+            (candidate_id,),
+        ).fetchone()
+        if (
+            fence is None
+            or origin is None
+            or fence["candidate_id"] != candidate_id
+            or fence["job_id"] != origin["source_job_id"]
+            or fence["attempt_id"] != origin["source_attempt_id"]
+            or fence["writer_epoch"] != origin["writer_epoch"]
+            or fence["operation_key"] != origin["operation_key"]
+        ):
+            raise StaleCasError("incomplete stream Candidate writer fence changed")
 
     @staticmethod
     def _verify_source_refs(connection: sqlite3.Connection, source_refs: list[dict[str, Any]]) -> None:
