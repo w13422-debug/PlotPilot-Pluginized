@@ -18,6 +18,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+if __package__:
+    from .contract_inventory import v1_contract_inventory
+else:
+    from contract_inventory import v1_contract_inventory
+
 
 ROOT = Path(__file__).resolve().parents[2]
 DELIVERY = ROOT / "docs" / "deliveries" / "PPA-00"
@@ -224,13 +229,7 @@ def main() -> int:
         failures.append("M0 gate set drift")
     if any(value.get("status") != "passed" for value in m0.get("gates", {}).values()):
         failures.append("M0 gate not passed")
-    if contract.get("inventory") != {
-        "combination_example_count": 4,
-        "negative_case_count": 105,
-        "negative_group_count": 14,
-        "positive_fixture_count": 35,
-        "schema_count": 48,
-    }:
+    if contract.get("inventory") != v1_contract_inventory():
         failures.append("contract inventory drift")
     if len(parity.get("main_flows", [])) != 10 or len(parity.get("features", [])) != 27:
         failures.append("parity inventory drift")

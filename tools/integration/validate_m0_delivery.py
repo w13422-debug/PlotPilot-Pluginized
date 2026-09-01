@@ -16,10 +16,12 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-try:
-    import validate_merge_gate as merge_gate
-except ModuleNotFoundError:  # pragma: no cover - package-style imports
+if __package__:
     from . import validate_merge_gate as merge_gate
+    from .contract_inventory import v1_contract_inventory
+else:
+    import validate_merge_gate as merge_gate
+    from contract_inventory import v1_contract_inventory
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -110,17 +112,9 @@ def content_addressed_records(value: Any) -> list[dict[str, Any]]:
 
 
 def contract_inventory() -> dict[str, int]:
-    negative = [
-        read_json(path)
-        for path in sorted((CONTRACTS / "corpus" / "negative" / "84.13").glob("*.json"))
-    ]
-    return {
-        "schema_count": len(list((CONTRACTS / "json-schema").glob("*.schema.json"))),
-        "positive_fixture_count": len(list((CONTRACTS / "examples" / "fixtures").glob("*.json"))),
-        "combination_example_count": len(list((CONTRACTS / "examples").glob("*.json"))),
-        "negative_group_count": len(negative),
-        "negative_case_count": sum(len(item.get("negative", [])) for item in negative),
-    }
+    """Compatibility entry point backed by the single v1 projection."""
+
+    return v1_contract_inventory()
 
 
 def flow_id(flow: dict[str, Any]) -> str:
@@ -471,7 +465,7 @@ def validate() -> dict[str, Any]:
     return {
         "schema": "p0-m0-delivery-validation/v1",
         "passed": True,
-        "contract_schemas": 48,
+        "contract_schemas": expected_inventory["schema_count"],
         "negative_groups": expected_inventory["negative_group_count"],
         "negative_cases": expected_inventory["negative_case_count"],
         "parity_main_flows": 10,
