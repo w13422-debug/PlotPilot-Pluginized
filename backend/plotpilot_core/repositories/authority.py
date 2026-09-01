@@ -279,6 +279,81 @@ INSERT INTO p3_broker_operation SELECT * FROM p3_broker_operation_0003;
 DROP TABLE p3_broker_operation_0003;
 CREATE INDEX execution_step_plan ON execution_step(job_id,step_ordinal,step_id);
 CREATE INDEX execution_candidate_job ON execution_candidate_binding(job_id,attempt_id,item_id);
+        """,
+    ),
+    Migration(
+        "0005-durable-checkpoint-authority",
+        """
+ALTER TABLE execution_job ADD COLUMN current_checkpoint_id TEXT;
+ALTER TABLE execution_attempt ADD COLUMN resume_of_attempt_id TEXT;
+ALTER TABLE execution_attempt ADD COLUMN resume_checkpoint_id TEXT;
+CREATE TABLE IF NOT EXISTS execution_checkpoint(
+    checkpoint_id TEXT PRIMARY KEY,
+    job_id TEXT NOT NULL REFERENCES execution_job(job_id),
+    step_id TEXT NOT NULL,
+    source_attempt_id TEXT NOT NULL REFERENCES execution_attempt(attempt_id),
+    checkpoint_seq INTEGER NOT NULL CHECK(checkpoint_seq >= 1),
+    lease_epoch INTEGER NOT NULL CHECK(lease_epoch >= 1),
+    run_snapshot_hash TEXT NOT NULL CHECK(length(run_snapshot_hash) = 64),
+    replay_policy TEXT NOT NULL,
+    completed_units INTEGER NOT NULL CHECK(completed_units >= 0),
+    total_units INTEGER CHECK(total_units IS NULL OR total_units >= 0),
+    unit_set_hash TEXT,
+    state_asset_id TEXT,
+    checkpoint_hash TEXT NOT NULL CHECK(length(checkpoint_hash) = 64),
+    checkpoint_json TEXT NOT NULL,
+    job_event_seq INTEGER NOT NULL CHECK(job_event_seq >= 1),
+    operation_key TEXT NOT NULL,
+    payload_hash TEXT NOT NULL CHECK(length(payload_hash) = 64),
+    created_at TEXT NOT NULL,
+    UNIQUE(job_id, step_id, checkpoint_seq),
+    UNIQUE(job_id, operation_key),
+    FOREIGN KEY(job_id, step_id) REFERENCES execution_step(job_id, step_id)
+);
+CREATE INDEX IF NOT EXISTS execution_checkpoint_latest
+    ON execution_checkpoint(job_id, step_id, checkpoint_seq DESC);
+CREATE TABLE IF NOT EXISTS execution_checkpoint_operation(
+    job_id TEXT NOT NULL REFERENCES execution_job(job_id),
+    operation_key TEXT NOT NULL,
+    payload_hash TEXT NOT NULL CHECK(length(payload_hash) = 64),
+    checkpoint_id TEXT NOT NULL REFERENCES execution_checkpoint(checkpoint_id),
+    job_event_seq INTEGER NOT NULL CHECK(job_event_seq >= 1),
+    response_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY(job_id, operation_key)
+);
+CREATE TABLE IF NOT EXISTS execution_control_operation(
+    job_id TEXT NOT NULL REFERENCES execution_job(job_id),
+    operation_key TEXT NOT NULL,
+    operation TEXT NOT NULL,
+    payload_hash TEXT NOT NULL CHECK(length(payload_hash) = 64),
+    attempt_id TEXT,
+    lease_epoch INTEGER,
+    response_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY(job_id, operation_key)
+);
+CREATE TABLE IF NOT EXISTS execution_orchestration_owner(
+    workspace_id TEXT PRIMARY KEY REFERENCES workspace(workspace_id),
+    owner_instance_id TEXT NOT NULL,
+    owner_token TEXT NOT NULL,
+    lease_epoch INTEGER NOT NULL CHECK(lease_epoch >= 1),
+    lease_expires_at TEXT NOT NULL,
+    revision INTEGER NOT NULL CHECK(revision >= 1),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS execution_checkpoint_event
+    ON execution_checkpoint(job_id, job_event_seq);
+""",
+    ),
+    Migration(
+        "0006-durable-authority-operation-closure",
+        """
+ALTER TABLE execution_checkpoint_operation ADD COLUMN method TEXT NOT NULL DEFAULT 'host.checkpoint.commit/v1';
+ALTER TABLE execution_checkpoint_operation ADD COLUMN request_json TEXT NOT NULL DEFAULT '{}';
+ALTER TABLE execution_control_operation ADD COLUMN method TEXT NOT NULL DEFAULT '';
+ALTER TABLE execution_control_operation ADD COLUMN request_json TEXT NOT NULL DEFAULT '{}';
 """,
     ),
 )
