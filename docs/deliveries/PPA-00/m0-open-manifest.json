@@ -1,9 +1,9 @@
 {
   "artifacts": {
     "contract_golden_manifest": {
-      "bytes": 42035,
+      "bytes": 50799,
       "path": "docs/deliveries/PPA-00/contract-golden-manifest.json",
-      "sha256": "460c0da7c597ab4daec529b535ca05ede71d4761ae96d78829edf313194a2abf"
+      "sha256": "38cf19437aa5b6715180ab52c8626ff47c6b887260a0a0b2c30f6070a1124235"
     },
     "dependency_delta": {
       "bytes": 1815,
@@ -56,7 +56,7 @@
     "M0.1": {
       "assertion": "external donor manifest, three file hashes, donor HEAD/status and product bootstrap identity match",
       "evidence": [
-        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\m0.1-donor-protection.json",
+        "docs/deliveries/PPA-00/m0.1-donor-protection.json",
         "C:\\Users\\Administrator\\Desktop\\PlotPilot-Pluginized-preconstruction-backup-20260826\\donor-backup-manifest.json",
         "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p0-monorepo-bootstrap.json"
       ],
@@ -65,10 +65,10 @@
     "M0.2": {
       "assertion": "baseline, exact runtime lock, browser-only scripts, source/data-root separation, license record and dependency delta",
       "evidence": [
-        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\m0.2-identity-runtime.json",
-        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\runtime-toolchain-lock.json",
-        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\license-ledger.json",
-        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\coordination\\integration-queue\\dependency-delta-naive-ui-2.44.1.json"
+        "docs/deliveries/PPA-00/evidence/m0.2-identity-runtime.json",
+        "docs/deliveries/PPA-00/runtime-toolchain-lock.json",
+        "docs/deliveries/PPA-00/license-ledger.json",
+        "coordination/integration-queue/dependency-delta-naive-ui-2.44.1.json"
       ],
       "status": "passed"
     },
@@ -83,7 +83,7 @@
       "status": "passed"
     },
     "M0.4": {
-      "assertion": "48 closed schemas, §13.4/§20/§84 surface, four goldens and all 14 negative groups (105 executable cases)",
+      "assertion": "55 closed schemas, §13.4/§20/§84 surface, four goldens and all 14 negative groups (105 executable cases)",
       "evidence": [
         "contracts/manifest-v1.json",
         "docs/contracts/README.md",
@@ -106,9 +106,9 @@
     "M0.6": {
       "assertion": "ten formal flow records cite real UI actions, expected/actual assertions, API trace, execution/recovery evidence and screenshots; deterministic fake Provider is isolated from live network",
       "evidence": [
-        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity-ledger.json",
-        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\evidence\\browser-smoke.json",
-        "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity\\screenshots"
+        "docs/deliveries/PPA-00/parity-ledger.json",
+        "docs/deliveries/PPA-00/evidence/browser-smoke.json",
+        "docs/deliveries/PPA-00/parity/screenshots"
       ],
       "status": "passed"
     },
@@ -130,7 +130,7 @@
     "formal_design_version": "v1.2",
     "project_id": "P0",
     "project_name": "PPA-00-Integration",
-    "worktree": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized"
+    "worktree": "."
   },
   "limitations": [
     "M0 browser smoke uses the existing UI-to-API execution chain with deterministic fake Provider; no live/paid provider or external network is used.",
@@ -142,7 +142,7 @@
   "self_hash_excluded": true,
   "source_inputs": {
     "bootstrap_evidence": "C:\\Users\\Administrator\\Desktop\\Novel-Agent- (2)\\novel-agent\\cases\\plotpilot-pluginized-seven-project-construction-20260826\\evidence\\p0-monorepo-bootstrap.json",
-    "dependency_delta": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\coordination\\integration-queue\\dependency-delta-naive-ui-2.44.1.json",
+    "dependency_delta": "coordination/integration-queue/dependency-delta-naive-ui-2.44.1.json",
     "design": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized正式设计规划-2026-08-25-v1.md",
     "external_backup_manifest": "C:\\Users\\Administrator\\Desktop\\PlotPilot-Pluginized-preconstruction-backup-20260826\\donor-backup-manifest.json",
     "project_matrix": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized七项目任务书-2026-08-26\\project-matrix.json",
@@ -159,19 +159,19 @@
       "python tools/integration/validate_merge_gate.py --json"
     ],
     "contract_golden_delivery": {
-      "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\contract-golden-manifest.json",
-      "sha256": "460c0da7c597ab4daec529b535ca05ede71d4761ae96d78829edf313194a2abf"
+      "path": "docs/deliveries/PPA-00/contract-golden-manifest.json",
+      "sha256": "38cf19437aa5b6715180ab52c8626ff47c6b887260a0a0b2c30f6070a1124235"
     },
     "contract_manifest": {
-      "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\contracts\\manifest-v1.json",
-      "sha256": "2866b8d0b36ec954ee8cb5c87374e0ca0a0c4acefd1901070cee0b45979d25e7"
+      "path": "contracts/manifest-v1.json",
+      "sha256": "dff5bfc05b14d8d626b79c31f6ef4ef4cfc166f729af06d9c73f6e6300811bc4"
     },
     "parity_ledger": {
-      "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\parity-ledger.json",
+      "path": "docs/deliveries/PPA-00/parity-ledger.json",
       "sha256": "19e3b15f87936fb733e0b255dc1b978c25ef79d1b82f9ef251da87bce2648c53"
     },
     "test_ledger": {
-      "path": "C:\\Users\\Administrator\\Desktop\\写作资料汇总\\PlotPilot-Pluginized\\docs\\deliveries\\PPA-00\\integration-test-ledger.json",
+      "path": "docs/deliveries/PPA-00/integration-test-ledger.json",
       "sha256": "8cea605b8d15c9db7077323327e29601de6bfe7bf18b6ee4fb8832eceb9e32be"
     }
   }

@@ -1785,7 +1785,7 @@
   "v1_immutable": {
     "file_count_excluding_manifest": 141,
     "manifest_path": "contracts/manifest-v1.json",
-    "manifest_sha256": "999bfdaf3f938f4bbb49dba4e978bab7042bd5386b66cc27bdbd7c5bf4c6092a",
+    "manifest_sha256": "dff5bfc05b14d8d626b79c31f6ef4ef4cfc166f729af06d9c73f6e6300811bc4",
     "negative_group_count": 14,
     "schema_count": 55
   }

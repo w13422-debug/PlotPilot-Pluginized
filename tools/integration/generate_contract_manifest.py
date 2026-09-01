@@ -7,6 +7,21 @@ import json
 from pathlib import Path
 from typing import Any
 
+if __package__:
+    from .contract_inventory import (
+        contract_schema_paths,
+        is_v2_contract_path,
+        v1_contract_inventory,
+        v1_negative_group_paths,
+    )
+else:
+    from contract_inventory import (
+        contract_schema_paths,
+        is_v2_contract_path,
+        v1_contract_inventory,
+        v1_negative_group_paths,
+    )
+
 
 ROOT = Path(__file__).resolve().parents[2]
 CONTRACTS = ROOT / "contracts"
@@ -50,13 +65,9 @@ def relative(path: Path) -> str:
 
 
 def _is_v2_path(path: Path) -> bool:
-    components = relative(path).split("/")
-    leaf = components[-1]
-    return (
-        any(component.endswith("-v2") for component in components[:-1])
-        or leaf.endswith("-v2.schema.json")
-        or leaf.endswith(".v2.json")
-    )
+    """Compatibility wrapper around the single inventory path classifier."""
+
+    return is_v2_contract_path(path)
 
 
 def file_records(*, include_v2: bool = False) -> list[dict[str, Any]]:
@@ -82,9 +93,8 @@ def file_records(*, include_v2: bool = False) -> list[dict[str, Any]]:
 
 def schema_records(*, include_v2: bool = False) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
-    for path in sorted((CONTRACTS / "json-schema").glob("*.schema.json")):
-        if not include_v2 and _is_v2_path(path):
-            continue
+    scope = "all" if include_v2 else "v1"
+    for path in contract_schema_paths(scope):
         schema = json.loads(path.read_text(encoding="utf-8"))
         records.append({"contract_id": path.name.removesuffix(".schema.json"), "schema_id": schema.get("$id"), "path": relative(path), "bytes": path.stat().st_size, "sha256": sha256(path)})
     return records
@@ -92,7 +102,7 @@ def schema_records(*, include_v2: bool = False) -> list[dict[str, Any]]:
 
 def negative_records() -> list[dict[str, Any]]:
     records = []
-    for path in sorted((CONTRACTS / "corpus" / "negative" / "84.13").glob("*.json")):
+    for path in v1_negative_group_paths():
         value = json.loads(path.read_text(encoding="utf-8"))
         records.append(
             {
@@ -172,7 +182,10 @@ def prompt_skill_golden_vectors() -> dict[str, Any]:
 def render() -> dict[str, Any]:
     """Render the frozen v1 manifest; v2 files are intentionally excluded."""
 
+    inventory = v1_contract_inventory()
     schemas = schema_records()
+    if len(schemas) != inventory["schema_count"]:
+        raise ValueError("v1 schema projection drift")
     files = file_records()
     closure = json.loads(FINDING_CLOSURE.read_text(encoding="utf-8"))
     closure_ids = [item["finding_id"] for item in closure.get("findings", [])]
@@ -182,10 +195,10 @@ def render() -> dict[str, Any]:
         "source": {"formal_design": DESIGN_PATH, "version": "v1.2", "sha256": DESIGN_SHA256},
         "contract_families": FAMILY_IDS,
         "inventory": {
-            "schema_count": len(schemas),
+            "schema_count": inventory["schema_count"],
             "file_count_excluding_manifest": len(files),
-            "negative_group_count": len(negative_records()),
-            "negative_case_count": sum(item["negative_case_count"] for item in negative_records()),
+            "negative_group_count": inventory["negative_group_count"],
+            "negative_case_count": inventory["negative_case_count"],
         },
         "schemas": schemas,
         "golden_vectors": golden_vectors(),
@@ -200,16 +213,24 @@ def render() -> dict[str, Any]:
     }
 
 
+def manifest_bytes(value: dict[str, Any]) -> bytes:
+    return (json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
+
+
 def render_v2() -> dict[str, Any]:
     """Render an additive manifest containing v1 plus the v2 surface."""
 
     v1 = render()
+    v1_inventory = v1_contract_inventory()
     schemas = schema_records(include_v2=True)
+    v2_schemas = contract_schema_paths("v2")
+    if len(schemas) != v1_inventory["schema_count"] + len(v2_schemas):
+        raise ValueError("v1/v2 schema projection partition drift")
     files = file_records(include_v2=True)
     v2_groups = v2_negative_records()
     prompt_skill_groups = prompt_skill_negative_records()
     prompt_skill_expected = prompt_skill_golden_vectors()
-    v1_manifest_bytes = OUTPUT.read_bytes() if OUTPUT.exists() else (json.dumps(v1, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    v1_manifest_bytes = manifest_bytes(v1)
     return {
         "schema": "plotpilot-contract-manifest/v2",
         "contract_version": "2.0.0",
@@ -228,9 +249,9 @@ def render_v2() -> dict[str, Any]:
             "negative_group_count": v1["inventory"]["negative_group_count"],
         },
         "inventory": {
-            "schema_count": len(schemas),
-            "v1_schema_count": len(schema_records()),
-            "v2_schema_count": len(schemas) - len(schema_records()),
+            "schema_count": v1_inventory["schema_count"] + len(v2_schemas),
+            "v1_schema_count": v1_inventory["schema_count"],
+            "v2_schema_count": len(v2_schemas),
             "file_count_excluding_manifest": len(files),
             "v1_file_count": len(file_records()),
             "v2_file_count": len(files) - len(file_records()),
@@ -265,9 +286,9 @@ def render_v2() -> dict[str, Any]:
 
 def _render_bytes(version: str) -> tuple[Path, bytes]:
     if version == "v1":
-        return OUTPUT, (json.dumps(render(), ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
+        return OUTPUT, manifest_bytes(render())
     if version == "v2":
-        return OUTPUT_V2, (json.dumps(render_v2(), ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
+        return OUTPUT_V2, manifest_bytes(render_v2())
     raise ValueError(f"unknown manifest version: {version}")
 
 

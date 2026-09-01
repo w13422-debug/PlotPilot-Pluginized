@@ -15,10 +15,20 @@ import subprocess
 from pathlib import Path
 from typing import Any, Iterable
 
-try:
-    from validate_merge_gate import verify_creation_gate
-except ModuleNotFoundError:  # pragma: no cover - package-style imports
+if __package__:
+    from .contract_inventory import (
+        contract_schema_paths,
+        v1_contract_inventory,
+        v1_negative_group_paths,
+    )
     from .validate_merge_gate import verify_creation_gate
+else:
+    from contract_inventory import (
+        contract_schema_paths,
+        v1_contract_inventory,
+        v1_negative_group_paths,
+    )
+    from validate_merge_gate import verify_creation_gate
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -60,6 +70,7 @@ FAMILY_IDS = [
 SCHEMA_SECTIONS = {
     "_common-v1": "84.1",
     "artifact-item-v1": "84.5",
+    "asset-metadata-v1": "2.1 / 5 / 84.8",
     "backup-bundle-v1": "84.9",
     "broker-child-record-v1": "84.12",
     "broker-invocation-v1": "84.4 / 84.12",
@@ -67,11 +78,16 @@ SCHEMA_SECTIONS = {
     "capability-provider-v1": "84.2",
     "checkpoint-v1": "84.6",
     "compatibility-v1": "84.8",
+    "core-authority-command-query-v1": "2.1 / 5 / 84.8",
     "core-event-v1": "84.6",
+    "core-http-request-error-v1": "2.1 / 5 / 84.8 / ADR-043",
+    "core-http-request-failure-policy-v1": "2.1 / 5 / 84.8 / ADR-043",
     "core-snapshot-v1": "84.6",
     "diagnostic-item-v1": "84.5",
+    "export-current-revisions-v1": "2.1 / 5 / 71 / 84.8",
     "job-event-page-v1": "84.6 / 84.12",
     "job-snapshot-v1": "84.6 / 84.12",
+    "operation-context-identity-v1": "20.5 / 84.8",
     "plugin-data-bundle-v1": "84.2",
     "plugin-generation-v1": "84.7",
     "plugin-job-event-v1": "84.6",
@@ -87,6 +103,7 @@ SCHEMA_SECTIONS = {
     "plugin-ui-message-v1": "84.10",
     "plugin-ui-tree-v1": "84.10",
     "provenance-receipt-v1": "84.5",
+    "publication-command-result-v1": "8 / 10 / 84.8",
     "release-pin-v1": "84.7",
     "release-retirement-v1": "84.7",
     "restore-report-v1": "84.9",
@@ -181,6 +198,15 @@ def rel(path: Path) -> str:
     return path.relative_to(ROOT).as_posix()
 
 
+def stable_path(path: Path) -> str:
+    """Serialize repository paths independently of the checkout location."""
+
+    try:
+        return rel(path)
+    except ValueError:
+        return str(path)
+
+
 def read_json(path: Path) -> dict[str, Any]:
     raw = path.read_bytes()
     if raw.startswith(b"\xef\xbb\xbf"):
@@ -213,18 +239,14 @@ def iter_files(*roots: Path) -> Iterable[Path]:
 
 
 def corpus_inventory() -> dict[str, Any]:
-    """Read counts from the current contract tree instead of stale constants."""
+    """Return the shared v1 projection plus presentation-only group IDs."""
 
-    negative_paths = sorted((CONTRACTS / "corpus" / "negative" / "84.13").glob("*.json"))
-    groups = [read_json(path) for path in negative_paths]
-    return {
-        "schema_count": len(list(SCHEMAS.glob("*.schema.json"))),
-        "positive_fixture_count": len(list((CONTRACTS / "examples" / "fixtures").glob("*.json"))),
-        "combination_example_count": len(list((CONTRACTS / "examples").glob("*.json"))),
-        "negative_group_count": len(groups),
-        "negative_case_count": sum(len(group.get("negative", [])) for group in groups),
-        "negative_group_ids": [str(group["group_id"]) for group in groups],
-    }
+    inventory: dict[str, Any] = dict(v1_contract_inventory())
+    inventory["negative_group_ids"] = [
+        str(read_json(path)["group_id"])
+        for path in v1_negative_group_paths()
+    ]
+    return inventory
 
 
 def evidence_flow_id(flow: dict[str, Any]) -> str:
@@ -367,7 +389,7 @@ Skill receipt 具备四级独立归因；Job 的 Attempt/Step/Job terminal 与 B
     )
 
     schema_rows: list[str] = []
-    for path in sorted(SCHEMAS.glob("*.schema.json"), key=lambda item: item.name):
+    for path in contract_schema_paths("v1"):
         contract_id = path.name.removesuffix(".schema.json")
         schema = read_json(path)
         schema_rows.append(
@@ -486,6 +508,9 @@ def build_contract_golden_manifest() -> dict[str, Any]:
     contract_manifest = read_json(contract_manifest_path)
     contract_files = [dict(item) for item in contract_manifest["files"]]
     schema_files = [dict(item) for item in contract_manifest["schemas"]]
+    inventory = v1_contract_inventory()
+    if len(schema_files) != inventory["schema_count"]:
+        raise ValueError("contract manifest does not match the v1 inventory projection")
     docs = [file_record(path) for path in iter_files(ROOT / "docs" / "contracts")]
     sdk = [
         file_record(path)
@@ -498,7 +523,7 @@ def build_contract_golden_manifest() -> dict[str, Any]:
         if path.suffix in {".py", ".mjs"} and "__pycache__" not in path.parts
     ]
     negative = []
-    for path in sorted((CONTRACTS / "corpus" / "negative" / "84.13").glob("*.json")):
+    for path in v1_negative_group_paths():
         value = read_json(path)
         negative.append(
             {
@@ -509,6 +534,10 @@ def build_contract_golden_manifest() -> dict[str, Any]:
                 "sha256": sha256(path),
             }
         )
+    if len(negative) != inventory["negative_group_count"] or sum(
+        item["negative_case_count"] for item in negative
+    ) != inventory["negative_case_count"]:
+        raise ValueError("negative corpus does not match the v1 inventory projection")
     golden: dict[str, Any] = {}
     for name in ("package", "skill", "run-snapshot", "backup"):
         expected = CONTRACTS / "golden" / name / "expected.json"
@@ -530,13 +559,7 @@ def build_contract_golden_manifest() -> dict[str, Any]:
             "schema_count": len(schema_files),
             "contract_file_count": len(contract_files),
         },
-        "inventory": {
-            "schema_count": len(schema_files),
-            "positive_fixture_count": len(list((CONTRACTS / "examples" / "fixtures").glob("*.json"))),
-            "combination_example_count": len(list((CONTRACTS / "examples").glob("*.json"))),
-            "negative_group_count": len(negative),
-            "negative_case_count": sum(item["negative_case_count"] for item in negative),
-        },
+        "inventory": dict(inventory),
         "golden_vectors": golden,
         "negative_groups": negative,
         "artifacts": {"contract_files": contract_files, "contract_docs": docs, "sdk": sdk, "tooling": tooling},
@@ -836,7 +859,7 @@ def build_m0_open_manifest(contract_manifest: dict[str, Any], parity: dict[str, 
             "project_id": "P0",
             "project_name": "PPA-00-Integration",
             "branch": P0_BRANCH,
-            "worktree": str(ROOT),
+            "worktree": stable_path(ROOT),
             "base_sha": BASE_SHA,
             "formal_design_version": "v1.2",
             "formal_design_sha256": DESIGN_SHA256,
@@ -847,22 +870,22 @@ def build_m0_open_manifest(contract_manifest: dict[str, Any], parity: dict[str, 
             "project_matrix": str(MATRIX_PATH),
             "external_backup_manifest": str(BACKUP_MANIFEST_PATH),
             "bootstrap_evidence": str(BOOTSTRAP_PATH),
-            "dependency_delta": str(ROOT / "coordination" / "integration-queue" / "dependency-delta-naive-ui-2.44.1.json"),
+            "dependency_delta": stable_path(ROOT / "coordination" / "integration-queue" / "dependency-delta-naive-ui-2.44.1.json"),
         },
         "gates": {
-            "M0.1": {"status": "passed", "evidence": [str(DELIVERY / "m0.1-donor-protection.json"), str(BACKUP_MANIFEST_PATH), str(BOOTSTRAP_PATH)], "assertion": "external donor manifest, three file hashes, donor HEAD/status and product bootstrap identity match"},
-            "M0.2": {"status": "passed", "evidence": [str(EVIDENCE / "m0.2-identity-runtime.json"), str(DELIVERY / "runtime-toolchain-lock.json"), str(DELIVERY / "license-ledger.json"), str(ROOT / "coordination" / "integration-queue" / "dependency-delta-naive-ui-2.44.1.json")], "assertion": "baseline, exact runtime lock, browser-only scripts, source/data-root separation, license record and dependency delta"},
+            "M0.1": {"status": "passed", "evidence": [stable_path(DELIVERY / "m0.1-donor-protection.json"), str(BACKUP_MANIFEST_PATH), str(BOOTSTRAP_PATH)], "assertion": "external donor manifest, three file hashes, donor HEAD/status and product bootstrap identity match"},
+            "M0.2": {"status": "passed", "evidence": [stable_path(EVIDENCE / "m0.2-identity-runtime.json"), stable_path(DELIVERY / "runtime-toolchain-lock.json"), stable_path(DELIVERY / "license-ledger.json"), stable_path(ROOT / "coordination" / "integration-queue" / "dependency-delta-naive-ui-2.44.1.json")], "assertion": "baseline, exact runtime lock, browser-only scripts, source/data-root separation, license record and dependency delta"},
             "M0.3": {"status": "passed", "evidence": ["backend/plotpilot_core/bootstrap", "backend/plotpilot_plugin_sdk/ports.py", "frontend/src/contracts/types.ts", "frontend/src/contracts/rpc.ts"], "assertion": "composition root, typed ports, unified errors/diagnostics and existing Home/Workbench composition preserved"},
             "M0.4": {"status": "passed", "evidence": ["contracts/manifest-v1.json", "docs/contracts/README.md", "docs/contracts/schema-map.md", "docs/contracts/method-matrix.md", "docs/contracts/negative-golden.md"], "assertion": f"{inventory['schema_count']} closed schemas, §13.4/§20/§84 surface, four goldens and all {inventory['negative_group_count']} negative groups ({inventory['negative_case_count']} executable cases)"},
             "M0.5": {"status": "passed", "evidence": ["backend/plotpilot_plugin_sdk/fake_provider.py", "backend/plotpilot_plugin_sdk/fixtures.py", "backend/plotpilot_plugin_sdk/ports.py", "frontend/src/contracts/verifier.ts"], "assertion": "deterministic fake Provider, typed port/UI/HTTP/SSE fixtures and Python/TypeScript SDK/verifiers"},
-            "M0.6": {"status": "passed", "evidence": [str(DELIVERY / "parity-ledger.json"), str(EVIDENCE / "browser-smoke.json"), str(ROOT / "docs" / "deliveries" / "PPA-00" / "parity" / "screenshots")], "assertion": "ten formal flow records cite real UI actions, expected/actual assertions, API trace, execution/recovery evidence and screenshots; deterministic fake Provider is isolated from live network"},
+            "M0.6": {"status": "passed", "evidence": [stable_path(DELIVERY / "parity-ledger.json"), stable_path(EVIDENCE / "browser-smoke.json"), stable_path(ROOT / "docs" / "deliveries" / "PPA-00" / "parity" / "screenshots")], "assertion": "ten formal flow records cite real UI actions, expected/actual assertions, API trace, execution/recovery evidence and screenshots; deterministic fake Provider is isolated from live network"},
             "M0.7": {"status": "passed", "evidence": ["AGENTS.md", "coordination/integration-queue", "coordination/PPA-00/state.json", "tools/integration/validate_merge_gate.py"], "assertion": "write-set, delta, integration-ready, checkpoint, state, single queue and merge gate are tracked"},
         },
         "verification": {
-            "contract_manifest": {"path": str(CONTRACTS / "manifest-v1.json"), "sha256": sha256(CONTRACTS / "manifest-v1.json")},
-            "contract_golden_delivery": {"path": str(outputs["contract_golden_manifest"]), "sha256": sha256(outputs["contract_golden_manifest"]) if outputs["contract_golden_manifest"].exists() else None},
-            "parity_ledger": {"path": str(outputs["parity_ledger"]), "sha256": sha256(outputs["parity_ledger"]) if outputs["parity_ledger"].exists() else None},
-            "test_ledger": {"path": str(outputs["integration_test_ledger"]), "sha256": sha256(outputs["integration_test_ledger"]) if outputs["integration_test_ledger"].exists() else None},
+            "contract_manifest": {"path": stable_path(CONTRACTS / "manifest-v1.json"), "sha256": sha256(CONTRACTS / "manifest-v1.json")},
+            "contract_golden_delivery": {"path": stable_path(outputs["contract_golden_manifest"]), "sha256": sha256(outputs["contract_golden_manifest"]) if outputs["contract_golden_manifest"].exists() else None},
+            "parity_ledger": {"path": stable_path(outputs["parity_ledger"]), "sha256": sha256(outputs["parity_ledger"]) if outputs["parity_ledger"].exists() else None},
+            "test_ledger": {"path": stable_path(outputs["integration_test_ledger"]), "sha256": sha256(outputs["integration_test_ledger"]) if outputs["integration_test_ledger"].exists() else None},
             "commands": ["python tools/integration/verify_contracts.py --all", "pytest tests/contract tests/acceptance -q", "python tools/integration/verify_cross_language_goldens.py", "node tools/integration/verify_contracts.mjs --all", "python tools/integration/validate_merge_gate.py --json"],
         },
         "constraints": {

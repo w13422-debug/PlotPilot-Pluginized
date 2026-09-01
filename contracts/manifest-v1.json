@@ -761,7 +761,7 @@
       "PPV11-PASS2-NEW-007"
     ],
     "path": "docs/contracts/finding-closure-v1.json",
-    "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+    "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
   },
   "golden_vectors": {
     "backup": {

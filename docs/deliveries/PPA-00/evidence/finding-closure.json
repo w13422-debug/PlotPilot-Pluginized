@@ -1,18 +1,18 @@
 {
   "artifacts": [
     {
-      "bytes": 20392,
+      "bytes": 19682,
       "exit_code": 0,
       "path": "docs/contracts/finding-closure-v1.json",
       "role": "closure-index",
-      "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+      "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
     },
     {
       "bytes": 54086,
       "exit_code": 0,
       "path": "contracts/manifest-v1.json",
       "role": "manifest",
-      "sha256": "999bfdaf3f938f4bbb49dba4e978bab7042bd5386b66cc27bdbd7c5bf4c6092a"
+      "sha256": "dff5bfc05b14d8d626b79c31f6ef4ef4cfc166f729af06d9c73f6e6300811bc4"
     },
     {
       "bytes": 10692,
@@ -36,11 +36,11 @@
       "sha256": "f1c2d04db6b05366d45c3b38ba9f5e0b4ca16209d8e89b81cd3e66059135d199"
     },
     {
-      "bytes": 9069,
+      "bytes": 8864,
       "exit_code": 0,
       "path": "backend/plotpilot_plugin_sdk/rpc.py",
       "role": "executable-support",
-      "sha256": "21bea3b33daafd539415de41cd6da126e713a7bb3033333e5a3b60f3fa6d64d9"
+      "sha256": "ea05d3f19f9d366340c9166989cc888f7852a21f3bde4457478a39e82e6e666f"
     },
     {
       "bytes": 4629,
@@ -50,11 +50,11 @@
       "sha256": "94b6c6b2cf048825b3b78578f0c81eee7b8bc81c4d540af7940951a8832ef86b"
     },
     {
-      "bytes": 10346,
+      "bytes": 10122,
       "exit_code": 0,
       "path": "backend/plotpilot_plugin_sdk/package.py",
       "role": "executable-support",
-      "sha256": "a6e28a8d53f61c6299e62aff9a20a8df1a42eeda1cc1d5498d551d4d8317e701"
+      "sha256": "49c94038c1e15db2389b375e9319efb65193a41a63d5e8a1602fc298d051e26d"
     },
     {
       "bytes": 4314,
@@ -408,21 +408,21 @@
     }
   ],
   "closure_index": {
-    "bytes": 20392,
+    "bytes": 19682,
     "exit_code": 0,
     "path": "docs/contracts/finding-closure-v1.json",
     "role": "closure-index",
-    "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+    "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
   },
   "commands": [
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -436,7 +436,7 @@
           "exit_code": 0,
           "path": "contracts/manifest-v1.json",
           "role": "manifest",
-          "sha256": "999bfdaf3f938f4bbb49dba4e978bab7042bd5386b66cc27bdbd7c5bf4c6092a"
+          "sha256": "dff5bfc05b14d8d626b79c31f6ef4ef4cfc166f729af06d9c73f6e6300811bc4"
         }
       ],
       "command": "python -m pytest tests/contract/test_finding_closure.py -q -p no:cacheprovider",
@@ -587,11 +587,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -605,7 +605,7 @@
           "exit_code": 0,
           "path": "contracts/manifest-v1.json",
           "role": "manifest",
-          "sha256": "999bfdaf3f938f4bbb49dba4e978bab7042bd5386b66cc27bdbd7c5bf4c6092a"
+          "sha256": "dff5bfc05b14d8d626b79c31f6ef4ef4cfc166f729af06d9c73f6e6300811bc4"
         }
       ],
       "command": "python -m pytest tests/contract/test_finding_closure.py -q -p no:cacheprovider",
@@ -744,11 +744,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -805,11 +805,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -866,11 +866,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -928,11 +928,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -998,11 +998,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -1069,11 +1069,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -1140,11 +1140,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -1207,11 +1207,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -1269,11 +1269,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -1347,11 +1347,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -1399,11 +1399,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -1471,11 +1471,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -1548,11 +1548,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -1610,11 +1610,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -1674,11 +1674,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -1727,11 +1727,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -1797,11 +1797,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -1852,11 +1852,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -1931,11 +1931,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -1993,11 +1993,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -2055,11 +2055,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -2124,11 +2124,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -2194,11 +2194,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -2264,11 +2264,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -2336,11 +2336,11 @@
     {
       "artifacts": [
         {
-          "bytes": 20392,
+          "bytes": 19682,
           "exit_code": 0,
           "path": "docs/contracts/finding-closure-v1.json",
           "role": "closure-index",
-          "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+          "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
         },
         {
           "bytes": 10692,
@@ -2653,7 +2653,7 @@
   },
   "manifest_binding": {
     "binding": {
-      "bytes": 20392,
+      "bytes": 19682,
       "finding_count": 25,
       "ids": [
         "PPV11-FINAL-001",
@@ -2683,13 +2683,13 @@
         "PPV11-PASS2-NEW-007"
       ],
       "path": "docs/contracts/finding-closure-v1.json",
-      "sha256": "0d7d2a56634a1b7e9ba367107ad82d21c1b05135200153f7e2d0715a32dbda61"
+      "sha256": "bab052ed1488ae26650a75103424650d40c7e421063fa91e7c366a610b3076a2"
     },
     "bytes": 54086,
     "exit_code": 0,
     "path": "contracts/manifest-v1.json",
     "role": "manifest",
-    "sha256": "999bfdaf3f938f4bbb49dba4e978bab7042bd5386b66cc27bdbd7c5bf4c6092a"
+    "sha256": "dff5bfc05b14d8d626b79c31f6ef4ef4cfc166f729af06d9c73f6e6300811bc4"
   },
   "schema": "plotpilot-finding-closure-evidence/v1",
   "status": "passed",

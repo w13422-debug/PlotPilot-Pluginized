@@ -26,7 +26,7 @@ def test_m0_contract_gate_is_green() -> None:
     assert summary["prompt_skill_rpc_v2"]["negative_cases"] > 25
     manifest_v1 = ROOT / "contracts" / "manifest-v1.json"
     manifest_v2 = ROOT / "contracts" / "manifest-v2.json"
-    assert hashlib.sha256(manifest_v1.read_bytes()).hexdigest() == "999bfdaf3f938f4bbb49dba4e978bab7042bd5386b66cc27bdbd7c5bf4c6092a"
+    assert hashlib.sha256(manifest_v1.read_bytes()).hexdigest() == "dff5bfc05b14d8d626b79c31f6ef4ef4cfc166f729af06d9c73f6e6300811bc4"
     assert hashlib.sha256(manifest_v2.read_bytes()).hexdigest() != "b25f74bf3e28573fd5499b6a0988cba04228707d694b6c1cf8d3f663913fe71a"
     inventory = json.loads(manifest_v2.read_text(encoding="utf-8"))["inventory"]
     assert (inventory["schema_count"], inventory["v1_schema_count"], inventory["v2_schema_count"]) == (64, 55, 9)
