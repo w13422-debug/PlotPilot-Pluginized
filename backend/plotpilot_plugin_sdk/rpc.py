@@ -6,7 +6,7 @@ import hashlib
 import json
 import uuid
 from dataclasses import dataclass, field
-from pathlib import Path
+from importlib.resources import files as resource_files
 from typing import Any, Callable, Mapping
 
 from .canonical import canonical_bytes
@@ -14,9 +14,12 @@ from .errors import ContractError, ErrorCode
 from .framing import decode_frame, encode_frame
 
 
-ROOT = Path(__file__).resolve().parents[2]
-MATRIX_PATH = ROOT / "contracts" / "json-schema" / "rpc-method-matrix.v1.json"
-METHOD_MATRIX: dict[str, Any] = json.loads(MATRIX_PATH.read_text(encoding="utf-8"))
+_MATRIX_RESOURCE = "rpc-method-matrix.v1.json"
+METHOD_MATRIX: dict[str, Any] = json.loads(
+    resource_files("plotpilot_plugin_sdk")
+    .joinpath("resources", _MATRIX_RESOURCE)
+    .read_text(encoding="utf-8")
+)
 ERROR_CODES: dict[int, str] = {int(k): v for k, v in METHOD_MATRIX["error_codes"].items()}
 WORKER_METHODS: tuple[str, ...] = tuple(METHOD_MATRIX["worker_methods"])
 HOST_METHODS: tuple[str, ...] = tuple(METHOD_MATRIX["host_methods"])

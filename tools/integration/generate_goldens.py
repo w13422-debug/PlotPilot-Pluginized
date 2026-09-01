@@ -6,7 +6,22 @@ import json
 from pathlib import Path
 from typing import Any
 
-import rfc8785
+try:
+    import rfc8785
+except ModuleNotFoundError:  # pragma: no cover - only for the dependency-light source runner
+    class _Rfc8785Fallback:
+        @staticmethod
+        def dumps(value: Any) -> bytes:
+            """Canonicalize the ASCII-only generator fixtures without a package install.
+
+            The checked-in vectors use strings/integers only.  Their JCS form is
+            identical to compact, UTF-8, lexicographically sorted JSON.  CI
+            still imports the real RFC 8785 implementation when available.
+            """
+
+            return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+
+    rfc8785 = _Rfc8785Fallback()
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -395,6 +410,246 @@ def contract_publication_vectors() -> None:
     write_json(out / "expected.json", {"context_identities": {item["profile"]: item["context_identity"] for item in vectors}, "export_asset_sha256": export_hash, "export_snapshot_hash": export_snapshot["snapshot_hash"], "authority_payload_count": len(authority_payloads), "http_exchange_count": len(http["exchanges"]), "http_failure_exchange_count": sum(1 for item in http["exchanges"] if item["status"] >= 400), "ui_ingress_fixture_count": 4})
 
 
+def v2_public_surface_vectors() -> None:
+    """Emit deterministic positive vectors for the additive M4/M5 surface."""
+
+    out = GOLDEN / "m4-m5-public-surface-v2"
+    # Candidate preview is a byte-bearing response.  Keep the positive vector
+    # honest: the candidate payload hash and the returned range hash are the
+    # SHA-256 of the exact five bytes encoded below.
+    h_payload = sha256(b"hello")
+    h_replace_payload = sha256(b"replace")
+    h_structure_payload = sha256(b"structure")
+    h_relation_payload = sha256(b"relation")
+    h_base = "1" * 64
+    h_base_other = "7" * 64
+    h_replace_base = "8" * 64
+    h_structure_base = "9" * 64
+    h_relation_base = "a" * 64
+    h_revision = "2" * 64
+    h_replace_revision = "b" * 64
+    h_structure_revision = "c" * 64
+    h_relation_revision = "d" * 64
+    h_incomplete_revision = "e" * 64
+    h_snapshot = "4" * 64
+    h_release = "5" * 64
+    h_package = "6" * 64
+    h_stream = sha256(b"hello")
+
+    def candidate_variant(
+        candidate_id: str,
+        item_kind: str,
+        entity_kind: str,
+        entity_id: str,
+        mode: str,
+        payload_schema: str,
+        payload_hash: str,
+        payload_asset_id: str,
+        revision_id: str,
+        base_hash: str,
+        *,
+        write_set: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        return {
+            "schema": "candidate/v2",
+            "candidate_id": candidate_id,
+            "workspace_id": "ws-1",
+            "item_kind": item_kind,
+            "target": {"workspace_id": "ws-1", "entity_kind": entity_kind, "entity_id": entity_id},
+            "mutation": {"mode": mode, "payload_schema": payload_schema, "payload_hash": payload_hash},
+            "payload_asset_id": payload_asset_id,
+            "base": {"revision_id": revision_id, "content_hash": base_hash},
+            "write_set": write_set or [{"workspace_id": "ws-1", "entity_kind": entity_kind, "entity_id": entity_id, "revision_id": revision_id, "content_hash": base_hash}],
+            "parent_candidate_ids": [],
+            "source_refs": [{"workspace_id": "ws-source", "source_type": "candidate", "source_id": "source-candidate", "revision_or_hash": "source-rev-1"}],
+            "status": "complete",
+            "publication_eligibility": "eligible",
+            "created_at": "2026-08-30T00:00:00Z",
+            "source_job_id": "job-v2",
+        }
+
+    # The text-patch Candidate intentionally has two target identities.  The
+    # complete tuple order and the per-entry base values are part of the
+    # deterministic same-transaction CAS surface.
+    candidate = candidate_variant(
+        "candidate-v2", "document", "document", "doc-a", "text_patch", "core/document-text/v2", h_payload,
+        "asset-candidate-v2", "rev-1", h_base,
+        write_set=[
+            {"workspace_id": "ws-1", "entity_kind": "document", "entity_id": "doc-a", "revision_id": "rev-1", "content_hash": h_base},
+            {"workspace_id": "ws-1", "entity_kind": "document", "entity_id": "doc-b", "revision_id": "rev-b", "content_hash": h_base_other},
+        ],
+    )
+    candidate_text_patch = candidate
+    candidate_replace = candidate_variant(
+        "candidate-replace-v2", "document", "document", "doc-replace", "replace", "core/document-text/v2", h_replace_payload,
+        "asset-candidate-replace-v2", "rev-replace-1", h_replace_base,
+    )
+    candidate_structure_patch = candidate_variant(
+        "candidate-structure-v2", "node_structure", "node_structure", "node-a", "structure_patch", "core/node-structure/v2", h_structure_payload,
+        "asset-candidate-structure-v2", "rev-structure-1", h_structure_base,
+    )
+    candidate_relation_patch = candidate_variant(
+        "candidate-relation-v2", "relation_set", "relation_set", "relation-a", "relation_patch", "core/relation-set/v2", h_relation_payload,
+        "asset-candidate-relation-v2", "rev-relation-1", h_relation_base,
+    )
+    candidate_cross_workspace_source = {**candidate, "candidate_id": "candidate-cross-source", "source_refs": [{"workspace_id": "ws-other", "source_type": "external", "source_id": "source-doc", "revision_or_hash": h_snapshot}]}
+    candidate_list_result = {
+        "schema": "candidate-list-result/v2",
+        "workspace_id": "ws-1",
+        "items": [candidate],
+        "next_cursor": "candidate/ws-1/1",
+        "cursor_domain": "candidate",
+        "total": 1,
+    }
+    candidate_list_query = {"schema": "candidate-list-query/v2", "workspace_id": "ws-1", "cursor": None, "limit": 50}
+    candidate_get_query = {"schema": "candidate-get-query/v2", "workspace_id": "ws-1", "candidate_id": "candidate-v2"}
+    candidate_get_result = {"schema": "candidate-get-result/v2", "workspace_id": "ws-1", "candidate": candidate}
+    candidate_preview_query = {"schema": "candidate-preview-query/v2", "workspace_id": "ws-1", "candidate_id": "candidate-v2", "offset": 0, "length": 5}
+    candidate_preview_result = {
+        "schema": "candidate-preview-result/v2",
+        "workspace_id": "ws-1",
+        "candidate_id": "candidate-v2",
+        "payload_asset_id": "asset-candidate-v2",
+        "payload_hash": h_payload,
+        "offset": 0,
+        "length": 5,
+        "total_length": 5,
+        "base64_chunk": "aGVsbG8=",
+        "next_offset": None,
+        "content_hash": h_payload,
+    }
+    candidate_partial = {**candidate, "candidate_id": "candidate-partial", "status": "partial", "publication_eligibility": "review_only"}
+    incomplete_candidate = {
+        **candidate,
+        "schema": "candidate/v2",
+        "candidate_id": "candidate-incomplete",
+        "item_kind": "incomplete_stream",
+        "mutation": {"mode": "replace", "payload_schema": "core/document-text/v2", "payload_hash": h_stream},
+        "payload_asset_id": "asset-stream-v2",
+        "status": "partial",
+        "publication_eligibility": "eligible",
+    }
+    write_json(out / "candidate.json", {"schema": "m4-m5-public-surface-golden/v2", "candidate": candidate, "candidate_text_patch": candidate_text_patch, "candidate_replace": candidate_replace, "candidate_structure_patch": candidate_structure_patch, "candidate_relation_patch": candidate_relation_patch, "candidate_cross_workspace_source": candidate_cross_workspace_source, "candidate_partial": candidate_partial, "candidate_incomplete_stream": incomplete_candidate, "candidate_list_query": candidate_list_query, "candidate_list_result": candidate_list_result, "candidate_get_query": candidate_get_query, "candidate_get_result": candidate_get_result, "candidate_preview_query": candidate_preview_query, "candidate_preview_result": candidate_preview_result})
+
+    review_query = {"schema": "candidate-review-query/v2", "workspace_id": "ws-1", "candidate_id": "candidate-v2", "include_lineage": True, "include_preview": True}
+    review_command = {"schema": "candidate-review-command/v2", "operation_key": "review-op-v2", "workspace_id": "ws-1", "candidate_id": "candidate-v2", "decision": "approve", "decided_by": "user-v2", "expected_status": "complete"}
+    review_result = {"schema": "candidate-review-result/v2", "operation_key": "review-op-v2", "workspace_id": "ws-1", "candidate_id": "candidate-v2", "decision": "approve", "status": "reviewed", "publication_eligibility": "eligible", "idempotent": False, "review_revision": 2}
+    write_json(out / "review.json", {"schema": "m4-m5-public-surface-golden/v2", "query": review_query, "command": review_command, "result": review_result})
+
+    def publication_pair(candidate_value: dict[str, Any], operation_key: str, publication_id: str, revision_id: str, revision_number: int, final_hash: str, receipt_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
+        command = {"schema": "publication-command/v2", "publication_operation_key": operation_key, "workspace_id": "ws-1", "candidate_id": candidate_value["candidate_id"], "accepted_by": "user-v2"}
+        result = {"schema": "publication-result/v2", "publication_id": publication_id, "publication_operation_key": operation_key, "candidate_id": candidate_value["candidate_id"], "workspace_id": "ws-1", "entity_kind": candidate_value["target"]["entity_kind"], "entity_id": candidate_value["target"]["entity_id"], "revision_id": revision_id, "revision_number": revision_number, "cas": {"base_revision_id": candidate_value["base"]["revision_id"], "base_content_hash": candidate_value["base"]["content_hash"], "revision_id": revision_id, "revision_number": revision_number, "content_hash": final_hash, "write_set": candidate_value["write_set"]}, "content_hash": final_hash, "provenance_receipt_id": receipt_id, "idempotent": False}
+        return command, result
+
+    publication_command, publication_result = publication_pair(candidate, "publication-op-v2", "publication-v2", "rev-2", 2, h_revision, "receipt-v2")
+    replace_publication_command, replace_publication_result = publication_pair(candidate_replace, "publication-op-replace-v2", "publication-replace-v2", "rev-replace-2", 2, h_replace_revision, "receipt-replace-v2")
+    structure_publication_command, structure_publication_result = publication_pair(candidate_structure_patch, "publication-op-structure-v2", "publication-structure-v2", "rev-structure-2", 2, h_structure_revision, "receipt-structure-v2")
+    relation_publication_command, relation_publication_result = publication_pair(candidate_relation_patch, "publication-op-relation-v2", "publication-relation-v2", "rev-relation-2", 2, h_relation_revision, "receipt-relation-v2")
+    incomplete_publication_command = {**publication_command, "publication_operation_key": "publication-op-incomplete-v2", "candidate_id": "candidate-incomplete"}
+    incomplete_publication_result = {**publication_result, "publication_id": "publication-incomplete-v2", "publication_operation_key": "publication-op-incomplete-v2", "candidate_id": "candidate-incomplete", "revision_id": "rev-3", "revision_number": 3, "cas": {**publication_result["cas"], "revision_id": "rev-3", "revision_number": 3, "content_hash": h_incomplete_revision}, "content_hash": h_incomplete_revision, "provenance_receipt_id": "receipt-incomplete-v2"}
+    authority_query = {"schema": "core-authority-query/v2", "workspace_id": "ws-1", "entity_kind": "document", "entity_id": "doc-a", "include_assets": True}
+    authority_result = {"schema": "core-authority-result/v2", "workspace_id": "ws-1", "entity_kind": "document", "entity_id": "doc-a", "revision_id": "rev-2", "revision_number": 2, "content_asset_id": "asset-revision-v2", "content_hash": h_revision, "derived_from_candidate_id": "candidate-v2"}
+    write_json(out / "publication.json", {"schema": "m4-m5-public-surface-golden/v2", "authority_query": authority_query, "authority_result": authority_result, "command_complete": publication_command, "result_complete": publication_result, "command_replace": replace_publication_command, "result_replace": replace_publication_result, "command_structure_patch": structure_publication_command, "result_structure_patch": structure_publication_result, "command_relation_patch": relation_publication_command, "result_relation_patch": relation_publication_result, "command_partial": {**publication_command, "publication_operation_key": "publication-op-partial-v2", "candidate_id": "candidate-partial"}, "command_incomplete_stream": incomplete_publication_command, "result_incomplete_stream": incomplete_publication_result})
+
+    receipt_parent = {"receipt_id": "receipt-parent-v2", "parent_receipt_ids": []}
+    receipt_parent["receipt_hash"] = self_hash("story-state-receipt/v2", receipt_parent, "receipt_hash")
+    receipt_root = {"receipt_id": "receipt-v2", "parent_receipt_ids": [receipt_parent["receipt_id"]]}
+    receipt_root["receipt_hash"] = self_hash("story-state-receipt/v2", receipt_root, "receipt_hash")
+    unreachable_receipt = {"receipt_id": "receipt-unreachable-v2", "parent_receipt_ids": []}
+    unreachable_receipt["receipt_hash"] = self_hash("story-state-receipt/v2", unreachable_receipt, "receipt_hash")
+
+    projection = {
+        "schema": "story-state-projection-input/v2",
+        "projection_input_id": "projection-v2",
+        "workspace_id": "ws-1",
+        "publication": {"publication_id": "publication-v2", "candidate_id": "candidate-v2", "revision_id": "rev-2", "revision_number": 2, "content_hash": h_revision},
+        "candidate": {"candidate_id": "candidate-v2", "target": candidate["target"], "payload_asset_id": "asset-candidate-v2", "payload_hash": h_payload, "status": "complete"},
+        "current_revision": {"revision_id": "rev-2", "content_asset_id": "asset-revision-v2", "content_hash": h_revision, "revision_number": 2},
+        "assets": [{"asset_id": "asset-candidate-v2", "sha256": h_payload, "role": "candidate.payload"}, {"asset_id": "asset-revision-v2", "sha256": h_revision, "role": "revision.content"}],
+        "provenance": {"receipt_id": "receipt-v2", "receipt_hash": receipt_root["receipt_hash"], "run_snapshot_hash": h_snapshot, "release_id": h_release, "package_hash": h_package, "parent_receipt_ids": receipt_root["parent_receipt_ids"]},
+        "receipt_closure": [receipt_parent, receipt_root],
+        "derived_at": "2026-08-30T00:00:01Z",
+    }
+    projection_with_unreachable = {**projection, "receipt_closure": [*projection["receipt_closure"], unreachable_receipt]}
+    write_json(out / "story-state.json", {"schema": "m4-m5-public-surface-golden/v2", "projection": projection, "projection_with_unreachable_receipt": projection_with_unreachable})
+
+    target = {"workspace_id": "ws-1", "entity_kind": "document", "entity_id": "doc-a"}
+    stream = {"stream_id": "stream-v2", "output_role": "chapter", "target": target, "acked_prefix_seq": 2, "acked_bytes": 5, "acked_prefix_hash": h_stream}
+    snapshot = {"job_id": "job-v2", "workspace_id": "ws-1", "state": "running", "job_revision": 3, "writer_epoch": 1, "current_attempt_id": "attempt-v2", "candidate_ids": ["candidate-v2"], "checkpoint_id": None, "stream_high_waters": [stream], "job_event_high_water": 5, "core_event_high_water": 3, "created_at": "2026-08-30T00:00:00Z", "updated_at": "2026-08-30T00:00:01Z", "snapshot_hash": ""}
+    snapshot["snapshot_hash"] = sha256(b"job-snapshot/v2\n" + jcs({key: value for key, value in snapshot.items() if key != "snapshot_hash"}))
+    job_list_query = {"schema": "job-list-query/v2", "workspace_id": "ws-1", "cursor": None, "limit": 50, "state": None}
+    job_list_result = {"schema": "job-list-result/v2", "workspace_id": "ws-1", "items": [snapshot], "next_cursor": "job/job-v2/5", "cursor_domain": "job", "total": 1}
+    job_snapshot_query = {"schema": "job-snapshot-query/v2", "workspace_id": "ws-1", "job_id": "job-v2"}
+    job_snapshot_result = {"schema": "job-snapshot-result/v2", "workspace_id": "ws-1", "job_id": "job-v2", "snapshot": snapshot, "cursor": "job/job-v2/5"}
+    job_start = {"schema": "job-start-command/v2", "operation_key": "job-start-op-v2", "workspace_id": "ws-1", "job_id": "job-v2", "capability_id": "writing.chapter/v2", "run_snapshot_asset_id": "asset-run-snapshot-v2", "writer_epoch": 1}
+    job_control = {"schema": "job-control-command/v2", "operation_key": "job-pause-op-v2", "workspace_id": "ws-1", "job_id": "job-v2", "expected_job_revision": 3, "reason": "user requested pause", "command": "pause", "resume_intent_id": None}
+    job_command_result = {"schema": "job-command-result/v2", "operation_key": "job-start-op-v2", "workspace_id": "ws-1", "job_id": "job-v2", "command": "start", "accepted": True, "idempotent": False, "terminal_known": False, "state": "running", "job_revision": 3, "snapshot_cursor": "job/job-v2/5"}
+    event1 = {"event_id": "job-event-v2-1", "job_id": "job-v2", "job_event_seq": 1, "event_type": "job.progress", "aggregate_revision": 2, "payload_asset_id": None, "payload_hash": None, "occurred_at": "2026-08-30T00:00:00Z"}
+    event2 = {"event_id": "job-event-v2-2", "job_id": "job-v2", "job_event_seq": 2, "event_type": "job.progress", "aggregate_revision": 3, "payload_asset_id": None, "payload_hash": None, "occurred_at": "2026-08-30T00:00:01Z"}
+    event5 = {"event_id": "job-event-v2-5", "job_id": "job-v2", "job_event_seq": 5, "event_type": "job.progress", "aggregate_revision": 6, "payload_asset_id": None, "payload_hash": None, "occurred_at": "2026-08-30T00:00:04Z"}
+    event6 = {"event_id": "job-event-v2-6", "job_id": "job-v2", "job_event_seq": 6, "event_type": "job.progress", "aggregate_revision": 7, "payload_asset_id": None, "payload_hash": None, "occurred_at": "2026-08-30T00:00:05Z"}
+    job_event_query = {"schema": "job-event-page-query/v2", "workspace_id": "ws-1", "job_id": "job-v2", "after_cursor": "job/job-v2/0", "after_job_event_seq": 0, "limit": 50}
+    job_event_page = {"schema": "job-event-page-result/v2", "workspace_id": "ws-1", "job_id": "job-v2", "events": [event1, event2], "next_cursor": "job/job-v2/2", "high_water_seq": 2, "cursor_domain": "job"}
+    sse_replay_query = {"schema": "job-sse-recovery-query/v2", "workspace_id": "ws-1", "job_id": "job-v2", "after_seq": 1, "last_event_id": "job/job-v2/1", "requested_cursor_domain": "job"}
+    sse_replay = {"schema": "job-sse-recovery-result/v2", "workspace_id": "ws-1", "job_id": "job-v2", "requested_after_seq": 1, "replay_floor_seq": 1, "durable_high_water_seq": 2, "gap": False, "snapshot_required": False, "snapshot": None, "snapshot_cursor": "job/job-v2/2", "tail": [event2]}
+    gap_snapshot = {**snapshot, "job_revision": 4, "job_event_high_water": 4, "snapshot_hash": ""}
+    gap_snapshot["snapshot_hash"] = sha256(b"job-snapshot/v2\n" + jcs({key: value for key, value in gap_snapshot.items() if key != "snapshot_hash"}))
+    sse_gap_query = {"schema": "job-sse-recovery-query/v2", "workspace_id": "ws-1", "job_id": "job-v2", "after_seq": 0, "last_event_id": "job/job-v2/0", "requested_cursor_domain": "job"}
+    sse_gap = {"schema": "job-sse-recovery-result/v2", "workspace_id": "ws-1", "job_id": "job-v2", "requested_after_seq": 0, "replay_floor_seq": 2, "durable_high_water_seq": 6, "gap": True, "snapshot_required": True, "snapshot": gap_snapshot, "snapshot_cursor": "job/job-v2/4", "tail": [event5, event6]}
+    write_json(out / "job.json", {"schema": "m4-m5-public-surface-golden/v2", "snapshot": snapshot, "list_query": job_list_query, "list_result": job_list_result, "snapshot_query": job_snapshot_query, "snapshot_result": job_snapshot_result, "start": job_start, "control": job_control, "command_result": job_command_result, "event_query": job_event_query, "event_page": job_event_page, "sse_replay_query": sse_replay_query, "sse_replay": sse_replay, "sse_gap_query": sse_gap_query, "sse_gap": sse_gap})
+
+    plugin = {"plugin_id": "com.plotpilot.demo", "release_id": h_release, "package_hash": h_package, "state": "active", "generation_id": "generation-1", "capabilities": ["writing.chapter/v2"], "updated_at": "2026-08-30T00:00:00Z"}
+    discovery_query = {"schema": "plugin-discovery-query/v2", "cursor": None, "limit": 50, "state": None}
+    discovery_result = {"schema": "plugin-discovery-result/v2", "items": [plugin], "next_cursor": "core/5", "cursor_domain": "core", "total": 1}
+    discovery_error_request = {"schema": "plugin-discovery-query/v2", "cursor": "core/1", "limit": 50, "state": None}
+    discovery_error = {"schema": "plugin-http-error/v2", "error_code": "cursor_domain_mismatch", "message": "plugin discovery cursor must use the core domain", "retryable": False, "operation_key": None}
+    install = {"schema": "plugin-lifecycle-command/v2", "operation_key": "plugin-install-op-v2", "plugin_id": "com.plotpilot.demo", "action": "install", "release_id": h_release, "package_hash": h_package, "expected_generation_id": None, "target_generation_id": "generation-1"}
+    upgrade = {"schema": "plugin-lifecycle-command/v2", "operation_key": "plugin-upgrade-op-v2", "plugin_id": "com.plotpilot.demo", "action": "upgrade", "release_id": "7" * 64, "package_hash": "8" * 64, "expected_generation_id": "generation-1", "target_generation_id": "generation-2"}
+    retire = {"schema": "plugin-lifecycle-command/v2", "operation_key": "plugin-retire-op-v2", "plugin_id": "com.plotpilot.demo", "action": "retire", "release_id": None, "package_hash": None, "expected_generation_id": "generation-2", "target_generation_id": "generation-2"}
+    rollback = {"schema": "plugin-lifecycle-command/v2", "operation_key": "plugin-rollback-op-v2", "plugin_id": "com.plotpilot.demo", "action": "rollback", "release_id": h_release, "package_hash": h_package, "expected_generation_id": "generation-2", "target_generation_id": "generation-1"}
+    lifecycle_result_install = {"schema": "plugin-lifecycle-result/v2", "operation_key": "plugin-install-op-v2", "plugin_id": "com.plotpilot.demo", "action": "install", "state": "active", "generation_id": "generation-1", "idempotent": False, "failure_code": None}
+    lifecycle_result_upgrade = {"schema": "plugin-lifecycle-result/v2", "operation_key": "plugin-upgrade-op-v2", "plugin_id": "com.plotpilot.demo", "action": "upgrade", "state": "active", "generation_id": "generation-2", "idempotent": False, "failure_code": None}
+    lifecycle_result_retire = {"schema": "plugin-lifecycle-result/v2", "operation_key": "plugin-retire-op-v2", "plugin_id": "com.plotpilot.demo", "action": "retire", "state": "retired", "generation_id": "generation-2", "idempotent": False, "failure_code": None}
+    lifecycle_result_rollback = {"schema": "plugin-lifecycle-result/v2", "operation_key": "plugin-rollback-op-v2", "plugin_id": "com.plotpilot.demo", "action": "rollback", "state": "active", "generation_id": "generation-1", "idempotent": False, "failure_code": None}
+    write_json(out / "plugin.json", {"schema": "m4-m5-public-surface-golden/v2", "plugin": plugin, "discovery_query": discovery_query, "discovery_result": discovery_result, "discovery_error": discovery_error, "discovery_error_request": discovery_error_request, "install": install, "upgrade": upgrade, "retire": retire, "rollback": rollback, "lifecycle_result_install": lifecycle_result_install, "lifecycle_result_upgrade": lifecycle_result_upgrade, "lifecycle_result_retire": lifecycle_result_retire, "lifecycle_result_rollback": lifecycle_result_rollback})
+
+    # One frozen success exchange per route keeps the method matrix executable
+    # without introducing a second fixture/transport format.  The request and
+    # response objects are the same positive DTOs validated above.
+    job_pause = {**job_control, "operation_key": "job-pause-op-v2", "command": "pause"}
+    job_resume = {**job_control, "operation_key": "job-resume-op-v2", "expected_job_revision": 4, "command": "resume", "resume_intent_id": "resume-intent-v2"}
+    job_cancel = {**job_control, "operation_key": "job-cancel-op-v2", "expected_job_revision": 5, "command": "cancel", "resume_intent_id": None}
+    job_pause_result = {**job_command_result, "operation_key": "job-pause-op-v2", "command": "pause", "state": "paused", "job_revision": 4}
+    job_resume_result = {**job_command_result, "operation_key": "job-resume-op-v2", "command": "resume", "state": "running", "job_revision": 5}
+    job_cancel_result = {**job_command_result, "operation_key": "job-cancel-op-v2", "command": "cancel", "state": "cancelling", "job_revision": 6}
+    http_exchanges = [
+        {"route_id": "candidate.list", "status": 200, "request": candidate_list_query, "response": candidate_list_result},
+        {"route_id": "candidate.get", "status": 200, "request": candidate_get_query, "response": candidate_get_result},
+        {"route_id": "candidate.review", "status": 200, "request": review_command, "response": review_result},
+        {"route_id": "candidate.preview", "status": 200, "request": candidate_preview_query, "response": candidate_preview_result},
+        {"route_id": "publication.accept", "status": 200, "request": publication_command, "response": publication_result},
+        {"route_id": "story-state.projection-input", "status": 200, "request": authority_query, "response": projection},
+        {"route_id": "job.list", "status": 200, "request": job_list_query, "response": job_list_result},
+        {"route_id": "job.get", "status": 200, "request": job_snapshot_query, "response": job_snapshot_result},
+        {"route_id": "job.start", "status": 201, "request": job_start, "response": job_command_result},
+        {"route_id": "job.pause", "status": 200, "request": job_pause, "response": job_pause_result},
+        {"route_id": "job.resume", "status": 200, "request": job_resume, "response": job_resume_result},
+        {"route_id": "job.cancel", "status": 200, "request": job_cancel, "response": job_cancel_result},
+        {"route_id": "job.events", "status": 200, "request": job_event_query, "response": job_event_page},
+        {"route_id": "job.sse-recovery", "status": 200, "request": sse_replay_query, "response": sse_replay},
+        {"route_id": "plugin.discovery", "status": 200, "request": discovery_query, "response": discovery_result},
+        {"route_id": "plugin.install", "status": 200, "request": install, "response": lifecycle_result_install},
+        {"route_id": "plugin.upgrade", "status": 200, "request": upgrade, "response": lifecycle_result_upgrade},
+        {"route_id": "plugin.retire", "status": 200, "request": retire, "response": lifecycle_result_retire},
+        {"route_id": "plugin.rollback", "status": 200, "request": rollback, "response": lifecycle_result_rollback},
+    ]
+    discovery_error_exchange = {"route_id": "plugin.discovery", "status": 400, "request": discovery_error_request, "response": discovery_error}
+    write_json(out / "http.json", {"schema": "m4-m5-public-surface-http-golden/v2", "exchange_count": len(http_exchanges), "exchanges": http_exchanges, "error_exchanges": [discovery_error_exchange]})
+
+    files = {path.name: sha256(path.read_bytes()) for path in sorted(out.glob("*.json")) if path.name != "expected.json"}
+    write_json(out / "expected.json", {"schema": "m4-m5-public-surface-golden-index/v2", "fixture_files": files, "candidate_ids": [candidate["candidate_id"], candidate_partial["candidate_id"], incomplete_candidate["candidate_id"], candidate_replace["candidate_id"], candidate_structure_patch["candidate_id"], candidate_relation_patch["candidate_id"]], "mutation_kinds": ["replace", "text_patch", "structure_patch", "relation_patch"], "publication_paths": ["publication.accept"], "cursor_domains": ["candidate", "job", "core"], "http_exchange_count": len(http_exchanges), "snapshot_hash": snapshot["snapshot_hash"], "gap_snapshot_hash": gap_snapshot["snapshot_hash"]})
+
+
 def examples(snapshot: dict[str, Any]) -> None:
     snapshot_value = snapshot["snapshot"]
     candidate = {
@@ -424,8 +679,9 @@ def main() -> int:
     snapshot = snapshot_vector(package, skill)
     backup_vector(snapshot)
     contract_publication_vectors()
+    v2_public_surface_vectors()
     examples(snapshot)
-    print("golden vectors and positive fixtures written")
+    print("golden vectors and positive fixtures written (including additive v2 surface)")
     return 0
 
 

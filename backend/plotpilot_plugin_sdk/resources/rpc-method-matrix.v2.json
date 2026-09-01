@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://plotpilot.local/contracts/rpc-method-matrix-v2",
+  "title": "PlotPilot Prompt/Skill execute RPC method matrix v2",
+  "type": "object",
+  "additionalProperties": false,
+  "unevaluatedProperties": false,
+  "schema": "rpc-method-matrix/v2",
+  "contract_version": "2.0.0",
+  "authority": "core",
+  "plugin_authority_allowed": false,
+  "protocol": {
+    "jsonrpc": "2.0",
+    "version": "1",
+    "framing": "content-length-crlf",
+    "encoding": "utf-8",
+    "batch": false
+  },
+  "envelope": {
+    "exactly_one": true,
+    "members": [
+      "request",
+      "success",
+      "error"
+    ]
+  },
+  "methods": [
+    {
+      "method": "prompt.skill.execute/v2",
+      "authority": "core",
+      "consumer": "P2",
+      "direction": "host-to-worker",
+      "endpoint": "worker",
+      "protocol_version": "1",
+      "framing": "content-length-crlf",
+      "meta_profile": "attempt",
+      "lease_fenced": true,
+      "operation_key_required": true,
+      "request_schema": "prompt-skill-execute-request/v2",
+      "result_contract": "artifact-bundle/v1",
+      "result_schema": "prompt-skill-execute-result/v2",
+      "success_schema": "rpc-method-success/v2",
+      "error_schema": "rpc-error-v1",
+      "error_code_registry": "rpc-method-matrix/v1#error_codes",
+      "envelope": {
+        "exactly_one": true,
+        "members": [
+          "request",
+          "success",
+          "error"
+        ]
+      },
+      "secrets": {
+        "location": "params",
+        "mode": "one-shot",
+        "response_forbidden": true
+      },
+      "job_mapping": {
+        "start": {
+          "method": "job.start",
+          "source": "attempt",
+          "required": [
+            "capability_id",
+            "run_snapshot_asset_id",
+            "checkpoint_asset_id",
+            "secrets"
+          ]
+        },
+        "resume": {
+          "method": "job.resume",
+          "source": "attempt",
+          "required": [
+            "capability_id",
+            "run_snapshot_asset_id",
+            "resume_of_attempt_id",
+            "checkpoint_asset_id",
+            "resume_intent_id",
+            "resume_reason",
+            "secrets"
+          ]
+        }
+      }
+    }
+  ]
+}

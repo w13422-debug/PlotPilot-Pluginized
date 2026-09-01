@@ -1,0 +1,360 @@
+{
+  "$id": "https://plotpilot.local/contracts/plugin-api-command-query-v2",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "additionalProperties": false,
+      "properties": {
+        "cursor": {
+          "anyOf": [
+            {
+              "pattern": "^(?:candidate|job|core)/[A-Za-z0-9][A-Za-z0-9._:/-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "limit": {
+          "maximum": 200,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "schema": {
+          "const": "plugin-discovery-query/v2"
+        },
+        "state": {
+          "anyOf": [
+            {
+              "enum": [
+                "discovered",
+                "installed",
+                "active",
+                "retiring",
+                "retired",
+                "failed"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schema",
+        "cursor",
+        "limit",
+        "state"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "cursor_domain": {
+          "const": "core"
+        },
+        "items": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "capabilities": {
+                "items": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                  "type": "string"
+                },
+                "minItems": 0,
+                "type": "array",
+                "uniqueItems": true
+              },
+              "generation_id": {
+                "anyOf": [
+                  {
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "package_hash": {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              "plugin_id": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                "type": "string"
+              },
+              "release_id": {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              "state": {
+                "enum": [
+                  "discovered",
+                  "installed",
+                  "active",
+                  "retiring",
+                  "retired",
+                  "failed"
+                ]
+              },
+              "updated_at": {
+                "pattern": "^(?:[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z|[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.(?!000)[0-9]{3}Z)$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "plugin_id",
+              "release_id",
+              "package_hash",
+              "state",
+              "generation_id",
+              "capabilities",
+              "updated_at"
+            ],
+            "type": "object"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "pattern": "^(?:candidate|job|core)/[A-Za-z0-9][A-Za-z0-9._:/-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "schema": {
+          "const": "plugin-discovery-result/v2"
+        },
+        "total": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "schema",
+        "items",
+        "next_cursor",
+        "cursor_domain",
+        "total"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "enum": [
+            "install",
+            "upgrade",
+            "retire",
+            "rollback"
+          ]
+        },
+        "expected_generation_id": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "operation_key": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "package_hash": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "plugin_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "release_id": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "schema": {
+          "const": "plugin-lifecycle-command/v2"
+        },
+        "target_generation_id": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schema",
+        "operation_key",
+        "plugin_id",
+        "action",
+        "release_id",
+        "package_hash",
+        "expected_generation_id",
+        "target_generation_id"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "enum": [
+            "install",
+            "upgrade",
+            "retire",
+            "rollback"
+          ]
+        },
+        "failure_code": {
+          "anyOf": [
+            {
+              "enum": [
+                "package_invalid",
+                "release_missing",
+                "generation_conflict",
+                "pinned_release",
+                "active_job",
+                "retire_failed",
+                "rollback_failed"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "generation_id": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "idempotent": {
+          "type": "boolean"
+        },
+        "operation_key": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "plugin_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "schema": {
+          "const": "plugin-lifecycle-result/v2"
+        },
+        "state": {
+          "enum": [
+            "discovered",
+            "installed",
+            "active",
+            "retiring",
+            "retired",
+            "failed"
+          ]
+        }
+      },
+      "required": [
+        "schema",
+        "operation_key",
+        "plugin_id",
+        "action",
+        "state",
+        "generation_id",
+        "idempotent",
+        "failure_code"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "error_code": {
+          "enum": [
+            "malformed_request",
+            "cursor_domain_mismatch",
+            "unknown_plugin",
+            "release_missing",
+            "generation_conflict",
+            "pinned_release",
+            "active_job",
+            "retire_failed",
+            "rollback_failed",
+            "duplicate_operation",
+            "publication_forbidden"
+          ]
+        },
+        "message": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "operation_key": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "schema": {
+          "const": "plugin-http-error/v2"
+        }
+      },
+      "required": [
+        "schema",
+        "error_code",
+        "message",
+        "retryable",
+        "operation_key"
+      ],
+      "type": "object"
+    }
+  ],
+  "title": "PlotPilot plugin-api-command-query-v2",
+  "unevaluatedProperties": false
+}

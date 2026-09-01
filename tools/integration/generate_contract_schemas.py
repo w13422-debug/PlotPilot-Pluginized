@@ -17,6 +17,24 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_DIR = ROOT / "contracts" / "json-schema"
+PACKAGE_RESOURCE_DIR = ROOT / "backend" / "plotpilot_plugin_sdk" / "resources"
+EXTERNAL_AUTHORED_ARTIFACTS = frozenset(
+    {
+        "prompt-skill-execute-request-v2.schema.json",
+        "prompt-skill-execute-result-v2.schema.json",
+        "rpc-method-matrix.v2.json",
+        "rpc-method-success-v2.schema.json",
+    }
+)
+PACKAGE_RESOURCE_SOURCES = {
+    "unicode-casefold-v1.json": ROOT / "contracts" / "unicode-casefold-v1.json",
+    "rpc-method-matrix.v1.json": SCHEMA_DIR / "rpc-method-matrix.v1.json",
+    "rpc-method-matrix.v2.json": SCHEMA_DIR / "rpc-method-matrix.v2.json",
+    "rpc-error-v1.schema.json": SCHEMA_DIR / "rpc-error-v1.schema.json",
+    "prompt-skill-execute-request-v2.schema.json": SCHEMA_DIR / "prompt-skill-execute-request-v2.schema.json",
+    "prompt-skill-execute-result-v2.schema.json": SCHEMA_DIR / "prompt-skill-execute-result-v2.schema.json",
+    "rpc-method-success-v2.schema.json": SCHEMA_DIR / "rpc-method-success-v2.schema.json",
+}
 
 
 def const(value: Any) -> dict[str, Any]:
@@ -52,6 +70,10 @@ def obj(properties: dict[str, dict[str, Any]], required: tuple[str, ...] = ()) -
 ID = {"type": "string", "pattern": r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"}
 UUID = {"type": "string", "pattern": r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"}
 HASH = {"type": "string", "pattern": r"^[0-9a-f]{64}$"}
+BASE64 = {
+    "type": "string",
+    "pattern": r"^(?:[A-Za-z0-9+/]{4})*(?:(?:[A-Za-z0-9+/]{2}==)|(?:[A-Za-z0-9+/]{3}=))?$",
+}
 UTC = {"type": "string", "pattern": r"^(?:[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z|[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.(?!000)[0-9]{3}Z)$"}
 SEMVER = {"type": "string", "pattern": r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$"}
 PATH = {"type": "string", "minLength": 1, "maxLength": 240, "pattern": r"^[^\\\x00]+$"}
@@ -1099,6 +1121,317 @@ def compatibility_schema() -> dict[str, Any]:
     }
 
 
+# ---------------------------------------------------------------------------
+# Additive post-M0 public surface (v2)
+# ---------------------------------------------------------------------------
+#
+# These builders intentionally live in the existing generator.  The v2 lane
+# is an additive contract, not a second schema-generation system.  Every
+# object is closed and every union is guarded by ``unevaluatedProperties`` so
+# that a future field or route cannot be accepted accidentally.
+
+
+V2_CURSOR = {"type": "string", "pattern": r"^(?:candidate|job|core)/[A-Za-z0-9][A-Za-z0-9._:/-]*$"}
+V2_ENTITY_KIND = enum("document", "node_structure", "relation_set")
+# Failed/skipped values belong to staging/outcome mappings.  They are not
+# Candidate records and therefore must not be representable on the public
+# Candidate query/review surface.
+V2_CANDIDATE_STATUS = enum("complete", "partial")
+
+
+def v2_union(*branches: dict[str, Any]) -> dict[str, Any]:
+    return {"oneOf": list(branches), "unevaluatedProperties": False}
+
+
+def v2_target() -> dict[str, Any]:
+    return obj(
+        {"workspace_id": ID, "entity_kind": V2_ENTITY_KIND, "entity_id": ID},
+        ("workspace_id", "entity_kind", "entity_id"),
+    )
+
+
+def v2_mutation() -> dict[str, Any]:
+    return obj(
+        {
+            "mode": enum("replace", "text_patch", "structure_patch", "relation_patch", "append_text"),
+            "payload_schema": ID,
+            "payload_hash": HASH,
+        },
+        ("mode", "payload_schema", "payload_hash"),
+    )
+
+
+def v2_write_set_entry() -> dict[str, Any]:
+    return obj(
+        {
+            "workspace_id": ID,
+            "entity_kind": V2_ENTITY_KIND,
+            "entity_id": ID,
+            "revision_id": ID,
+            "content_hash": HASH,
+        },
+        ("workspace_id", "entity_kind", "entity_id", "revision_id", "content_hash"),
+    )
+
+
+def v2_source_ref() -> dict[str, Any]:
+    return obj(
+        {
+            "workspace_id": nullable(ID),
+            "source_type": enum("publication", "asset", "candidate", "revision", "job", "external"),
+            "source_id": ID,
+            "revision_or_hash": ID,
+        },
+        ("workspace_id", "source_type", "source_id", "revision_or_hash"),
+    )
+
+
+def v2_candidate_record() -> dict[str, Any]:
+    return obj(
+        {
+            "schema": const("candidate/v2"),
+            "candidate_id": ID,
+            "workspace_id": ID,
+            "item_kind": enum("document", "node_structure", "relation_set", "incomplete_stream"),
+            "target": v2_target(),
+            "mutation": v2_mutation(),
+            "payload_asset_id": ID,
+            "base": obj({"revision_id": ID, "content_hash": HASH}, ("revision_id", "content_hash")),
+            "write_set": array(v2_write_set_entry(), min_items=1, unique=True),
+            "parent_candidate_ids": array(ID, unique=True),
+            "source_refs": array(v2_source_ref(), unique=True),
+            "status": V2_CANDIDATE_STATUS,
+            "publication_eligibility": enum("eligible", "review_only", "none"),
+            "created_at": UTC,
+            "source_job_id": nullable(ID),
+        },
+        (
+            "schema", "candidate_id", "workspace_id", "item_kind", "target", "mutation",
+            "payload_asset_id", "base", "write_set", "parent_candidate_ids", "source_refs",
+            "status", "publication_eligibility", "created_at", "source_job_id",
+        ),
+    )
+
+
+def v2_candidate_query_result_schemas() -> dict[str, dict[str, Any]]:
+    candidate_record = v2_candidate_record()
+    candidate_list_query = obj(
+        {"schema": const("candidate-list-query/v2"), "workspace_id": ID, "cursor": nullable(V2_CURSOR), "limit": {"type": "integer", "minimum": 1, "maximum": 200}},
+        ("schema", "workspace_id", "cursor", "limit"),
+    )
+    candidate_list_result = obj(
+        {"schema": const("candidate-list-result/v2"), "workspace_id": ID, "items": array(v2_candidate_record()), "next_cursor": nullable(V2_CURSOR), "cursor_domain": const("candidate"), "total": NONNEG_INT},
+        ("schema", "workspace_id", "items", "next_cursor", "cursor_domain", "total"),
+    )
+    candidate_get_query = obj(
+        {"schema": const("candidate-get-query/v2"), "workspace_id": ID, "candidate_id": ID},
+        ("schema", "workspace_id", "candidate_id"),
+    )
+    candidate_get_result = obj(
+        {"schema": const("candidate-get-result/v2"), "workspace_id": ID, "candidate": v2_candidate_record()},
+        ("schema", "workspace_id", "candidate"),
+    )
+    candidate_preview_query = obj(
+        {"schema": const("candidate-preview-query/v2"), "workspace_id": ID, "candidate_id": ID, "offset": NONNEG_INT, "length": {"type": "integer", "minimum": 1, "maximum": 65536}},
+        ("schema", "workspace_id", "candidate_id", "offset", "length"),
+    )
+    candidate_preview_result = obj(
+        {"schema": const("candidate-preview-result/v2"), "workspace_id": ID, "candidate_id": ID, "payload_asset_id": ID, "payload_hash": HASH, "offset": NONNEG_INT, "length": NONNEG_INT, "total_length": NONNEG_INT, "base64_chunk": BASE64, "next_offset": nullable(NONNEG_INT), "content_hash": HASH},
+        ("schema", "workspace_id", "candidate_id", "payload_asset_id", "payload_hash", "offset", "length", "total_length", "base64_chunk", "next_offset", "content_hash"),
+    )
+    return {
+        "candidate-query-result-v2": v2_union(candidate_record, candidate_list_query, candidate_list_result, candidate_get_query, candidate_get_result, candidate_preview_query, candidate_preview_result),
+    }
+
+
+def v2_core_authority_schemas() -> dict[str, dict[str, Any]]:
+    authority_query = obj(
+        {"schema": const("core-authority-query/v2"), "workspace_id": ID, "entity_kind": enum("workspace", "document", "node_structure", "relation_set", "revision", "publication"), "entity_id": ID, "include_assets": BOOL},
+        ("schema", "workspace_id", "entity_kind", "entity_id", "include_assets"),
+    )
+    authority_result = obj(
+        {"schema": const("core-authority-result/v2"), "workspace_id": ID, "entity_kind": enum("workspace", "document", "node_structure", "relation_set", "revision", "publication"), "entity_id": ID, "revision_id": nullable(ID), "revision_number": NONNEG_INT, "content_asset_id": nullable(ID), "content_hash": nullable(HASH), "derived_from_candidate_id": nullable(ID)},
+        ("schema", "workspace_id", "entity_kind", "entity_id", "revision_id", "revision_number", "content_asset_id", "content_hash", "derived_from_candidate_id"),
+    )
+    publication_command = obj(
+        {"schema": const("publication-command/v2"), "publication_operation_key": ID, "workspace_id": ID, "candidate_id": ID, "accepted_by": ID},
+        ("schema", "publication_operation_key", "workspace_id", "candidate_id", "accepted_by"),
+    )
+    publication_cas = obj(
+        {
+            "base_revision_id": ID,
+            "base_content_hash": HASH,
+            "revision_id": ID,
+            "revision_number": POS_INT,
+            "content_hash": HASH,
+            # Bind the complete ordered Candidate write_set, not only the
+            # Publication target, to this single CAS result.
+            "write_set": array(v2_write_set_entry(), min_items=1, unique=True),
+        },
+        ("base_revision_id", "base_content_hash", "revision_id", "revision_number", "content_hash", "write_set"),
+    )
+    publication_result = obj(
+        {
+            "schema": const("publication-result/v2"),
+            "publication_id": ID,
+            "publication_operation_key": ID,
+            "candidate_id": ID,
+            "workspace_id": ID,
+            "entity_kind": V2_ENTITY_KIND,
+            "entity_id": ID,
+            "revision_id": ID,
+            "revision_number": POS_INT,
+            # ``content_hash`` is the final Revision hash returned by Core.
+            # The mutation payload hash is intentionally not substituted here.
+            "content_hash": HASH,
+            "cas": publication_cas,
+            "provenance_receipt_id": ID,
+            "idempotent": BOOL,
+        },
+        ("schema", "publication_id", "publication_operation_key", "candidate_id", "workspace_id", "entity_kind", "entity_id", "revision_id", "revision_number", "content_hash", "cas", "provenance_receipt_id", "idempotent"),
+    )
+    error = obj(
+        {"schema": const("core-http-error/v2"), "error_code": enum("malformed_request", "unknown_reference", "cross_workspace", "stale_cas", "duplicate_operation", "candidate_not_publishable", "publication_only_core"), "message": NONEMPTY, "retryable": BOOL, "operation_key": nullable(ID)},
+        ("schema", "error_code", "message", "retryable", "operation_key"),
+    )
+    return {"core-authority-command-query-v2": v2_union(authority_query, authority_result, publication_command, publication_result, error)}
+
+
+def v2_candidate_review_schemas() -> dict[str, dict[str, Any]]:
+    review_query = obj(
+        {"schema": const("candidate-review-query/v2"), "workspace_id": ID, "candidate_id": ID, "include_lineage": BOOL, "include_preview": BOOL},
+        ("schema", "workspace_id", "candidate_id", "include_lineage", "include_preview"),
+    )
+    review_command = obj(
+        {"schema": const("candidate-review-command/v2"), "operation_key": ID, "workspace_id": ID, "candidate_id": ID, "decision": enum("approve", "reject"), "decided_by": ID, "expected_status": V2_CANDIDATE_STATUS},
+        ("schema", "operation_key", "workspace_id", "candidate_id", "decision", "decided_by", "expected_status"),
+    )
+    review_result = obj(
+        {"schema": const("candidate-review-result/v2"), "operation_key": ID, "workspace_id": ID, "candidate_id": ID, "decision": enum("approve", "reject"), "status": enum("reviewed", "rejected"), "publication_eligibility": enum("eligible", "review_only", "none"), "idempotent": BOOL, "review_revision": POS_INT},
+        ("schema", "operation_key", "workspace_id", "candidate_id", "decision", "status", "publication_eligibility", "idempotent", "review_revision"),
+    )
+    return {"candidate-review-v2": v2_union(review_query, review_command, review_result)}
+
+
+def v2_story_state_projection_schemas() -> dict[str, dict[str, Any]]:
+    publication_ref = obj(
+        {"publication_id": ID, "candidate_id": ID, "revision_id": ID, "revision_number": POS_INT, "content_hash": HASH},
+        ("publication_id", "candidate_id", "revision_id", "revision_number", "content_hash"),
+    )
+    candidate_ref = obj(
+        {"candidate_id": ID, "target": v2_target(), "payload_asset_id": ID, "payload_hash": HASH, "status": V2_CANDIDATE_STATUS},
+        ("candidate_id", "target", "payload_asset_id", "payload_hash", "status"),
+    )
+    revision_ref = obj(
+        {"revision_id": ID, "content_asset_id": ID, "content_hash": HASH, "revision_number": POS_INT},
+        ("revision_id", "content_asset_id", "content_hash", "revision_number"),
+    )
+    asset_ref = obj({"asset_id": ID, "sha256": HASH, "role": NONEMPTY}, ("asset_id", "sha256", "role"))
+    receipt_ref = obj({"receipt_id": ID, "receipt_hash": HASH, "parent_receipt_ids": array(ID, unique=True)}, ("receipt_id", "receipt_hash", "parent_receipt_ids"))
+    projection = obj(
+        {"schema": const("story-state-projection-input/v2"), "projection_input_id": ID, "workspace_id": ID, "publication": publication_ref, "candidate": candidate_ref, "current_revision": revision_ref, "assets": array(asset_ref, min_items=1, unique=True), "provenance": obj({"receipt_id": ID, "receipt_hash": HASH, "run_snapshot_hash": HASH, "release_id": HASH, "package_hash": HASH, "parent_receipt_ids": array(ID, unique=True)}, ("receipt_id", "receipt_hash", "run_snapshot_hash", "release_id", "package_hash", "parent_receipt_ids")), "receipt_closure": array(receipt_ref, min_items=1, unique=True), "derived_at": UTC},
+        ("schema", "projection_input_id", "workspace_id", "publication", "candidate", "current_revision", "assets", "provenance", "receipt_closure", "derived_at"),
+    )
+    return {"story-state-projection-input-v2": projection}
+
+
+def v2_job_snapshot() -> dict[str, Any]:
+    stream = obj(
+        {"stream_id": ID, "output_role": ID, "target": v2_target(), "acked_prefix_seq": NONNEG_INT, "acked_bytes": NONNEG_INT, "acked_prefix_hash": HASH},
+        ("stream_id", "output_role", "target", "acked_prefix_seq", "acked_bytes", "acked_prefix_hash"),
+    )
+    return obj(
+        {"job_id": ID, "workspace_id": ID, "state": enum("queued", "running", "paused", "cancelling", "succeeded", "partial", "failed", "cancelled", "needs_attention"), "job_revision": POS_INT, "writer_epoch": POS_INT, "current_attempt_id": nullable(ID), "candidate_ids": array(ID, unique=True), "checkpoint_id": nullable(ID), "stream_high_waters": array(stream, unique=True), "job_event_high_water": NONNEG_INT, "core_event_high_water": NONNEG_INT, "created_at": UTC, "updated_at": UTC, "snapshot_hash": HASH},
+        ("job_id", "workspace_id", "state", "job_revision", "writer_epoch", "current_attempt_id", "candidate_ids", "checkpoint_id", "stream_high_waters", "job_event_high_water", "core_event_high_water", "created_at", "updated_at", "snapshot_hash"),
+    )
+
+
+def v2_job_http_schemas() -> dict[str, dict[str, Any]]:
+    error = obj(
+        {"schema": const("job-http-error/v2"), "error_code": enum("malformed_request", "unknown_job", "cross_workspace", "stale_revision", "duplicate_operation", "cursor_ahead", "cursor_domain_mismatch", "sse_recovery_required", "terminal_job", "invalid_transition", "candidate_not_ready"), "message": NONEMPTY, "retryable": BOOL, "operation_key": nullable(ID), "cursor_domain": nullable(enum("candidate", "job", "core"))},
+        ("schema", "error_code", "message", "retryable", "operation_key", "cursor_domain"),
+    )
+    list_query = obj({"schema": const("job-list-query/v2"), "workspace_id": ID, "cursor": nullable(V2_CURSOR), "limit": {"type": "integer", "minimum": 1, "maximum": 200}, "state": nullable(enum("queued", "running", "paused", "cancelling", "succeeded", "partial", "failed", "cancelled", "needs_attention"))}, ("schema", "workspace_id", "cursor", "limit", "state"))
+    list_result = obj({"schema": const("job-list-result/v2"), "workspace_id": ID, "items": array(v2_job_snapshot()), "next_cursor": nullable(V2_CURSOR), "cursor_domain": const("job"), "total": NONNEG_INT}, ("schema", "workspace_id", "items", "next_cursor", "cursor_domain", "total"))
+    get_query = obj({"schema": const("job-snapshot-query/v2"), "workspace_id": ID, "job_id": ID}, ("schema", "workspace_id", "job_id"))
+    get_result = obj({"schema": const("job-snapshot-result/v2"), "workspace_id": ID, "job_id": ID, "snapshot": v2_job_snapshot(), "cursor": V2_CURSOR}, ("schema", "workspace_id", "job_id", "snapshot", "cursor"))
+    start = obj({"schema": const("job-start-command/v2"), "operation_key": ID, "workspace_id": ID, "job_id": ID, "capability_id": ID, "run_snapshot_asset_id": ID, "writer_epoch": POS_INT}, ("schema", "operation_key", "workspace_id", "job_id", "capability_id", "run_snapshot_asset_id", "writer_epoch"))
+    control = obj({"schema": const("job-control-command/v2"), "operation_key": ID, "workspace_id": ID, "job_id": ID, "expected_job_revision": POS_INT, "reason": NONEMPTY, "command": enum("pause", "resume", "cancel"), "resume_intent_id": nullable(ID)}, ("schema", "operation_key", "workspace_id", "job_id", "expected_job_revision", "reason", "command", "resume_intent_id"))
+    command_result = obj({"schema": const("job-command-result/v2"), "operation_key": ID, "workspace_id": ID, "job_id": ID, "command": enum("start", "pause", "resume", "cancel"), "accepted": BOOL, "idempotent": BOOL, "terminal_known": BOOL, "state": enum("queued", "running", "paused", "cancelling", "succeeded", "partial", "failed", "cancelled", "needs_attention"), "job_revision": POS_INT, "snapshot_cursor": V2_CURSOR}, ("schema", "operation_key", "workspace_id", "job_id", "command", "accepted", "idempotent", "terminal_known", "state", "job_revision", "snapshot_cursor"))
+    event = obj({"event_id": ID, "job_id": ID, "job_event_seq": POS_INT, "event_type": NONEMPTY, "aggregate_revision": POS_INT, "payload_asset_id": nullable(ID), "payload_hash": nullable(HASH), "occurred_at": UTC}, ("event_id", "job_id", "job_event_seq", "event_type", "aggregate_revision", "payload_asset_id", "payload_hash", "occurred_at"))
+    event_query = obj({"schema": const("job-event-page-query/v2"), "workspace_id": ID, "job_id": ID, "after_cursor": nullable(V2_CURSOR), "after_job_event_seq": NONNEG_INT, "limit": {"type": "integer", "minimum": 1, "maximum": 200}}, ("schema", "workspace_id", "job_id", "after_cursor", "after_job_event_seq", "limit"))
+    event_result = obj({"schema": const("job-event-page-result/v2"), "workspace_id": ID, "job_id": ID, "events": array(event), "next_cursor": V2_CURSOR, "high_water_seq": NONNEG_INT, "cursor_domain": const("job")}, ("schema", "workspace_id", "job_id", "events", "next_cursor", "high_water_seq", "cursor_domain"))
+    sse_query = obj({"schema": const("job-sse-recovery-query/v2"), "workspace_id": ID, "job_id": ID, "after_seq": NONNEG_INT, "last_event_id": V2_CURSOR, "requested_cursor_domain": const("job")}, ("schema", "workspace_id", "job_id", "after_seq", "last_event_id", "requested_cursor_domain"))
+    sse_result = obj({"schema": const("job-sse-recovery-result/v2"), "workspace_id": ID, "job_id": ID, "requested_after_seq": NONNEG_INT, "replay_floor_seq": NONNEG_INT, "durable_high_water_seq": NONNEG_INT, "gap": BOOL, "snapshot_required": BOOL, "snapshot": nullable(v2_job_snapshot()), "snapshot_cursor": V2_CURSOR, "tail": array(event)}, ("schema", "workspace_id", "job_id", "requested_after_seq", "replay_floor_seq", "durable_high_water_seq", "gap", "snapshot_required", "snapshot", "snapshot_cursor", "tail"))
+    return {"job-http-command-query-v2": v2_union(error, list_query, list_result, get_query, get_result, start, control, command_result, event_query, event_result, sse_query, sse_result)}
+
+
+def v2_plugin_api_schemas() -> dict[str, dict[str, Any]]:
+    plugin = obj({"plugin_id": ID, "release_id": HASH, "package_hash": HASH, "state": enum("discovered", "installed", "active", "retiring", "retired", "failed"), "generation_id": nullable(ID), "capabilities": array(ID, unique=True), "updated_at": UTC}, ("plugin_id", "release_id", "package_hash", "state", "generation_id", "capabilities", "updated_at"))
+    discovery_query = obj({"schema": const("plugin-discovery-query/v2"), "cursor": nullable(V2_CURSOR), "limit": {"type": "integer", "minimum": 1, "maximum": 200}, "state": nullable(enum("discovered", "installed", "active", "retiring", "retired", "failed"))}, ("schema", "cursor", "limit", "state"))
+    discovery_result = obj({"schema": const("plugin-discovery-result/v2"), "items": array(plugin), "next_cursor": nullable(V2_CURSOR), "cursor_domain": const("core"), "total": NONNEG_INT}, ("schema", "items", "next_cursor", "cursor_domain", "total"))
+    lifecycle = obj({"schema": const("plugin-lifecycle-command/v2"), "operation_key": ID, "plugin_id": ID, "action": enum("install", "upgrade", "retire", "rollback"), "release_id": nullable(HASH), "package_hash": nullable(HASH), "expected_generation_id": nullable(ID), "target_generation_id": nullable(ID)}, ("schema", "operation_key", "plugin_id", "action", "release_id", "package_hash", "expected_generation_id", "target_generation_id"))
+    lifecycle_result = obj({"schema": const("plugin-lifecycle-result/v2"), "operation_key": ID, "plugin_id": ID, "action": enum("install", "upgrade", "retire", "rollback"), "state": enum("discovered", "installed", "active", "retiring", "retired", "failed"), "generation_id": nullable(ID), "idempotent": BOOL, "failure_code": nullable(enum("package_invalid", "release_missing", "generation_conflict", "pinned_release", "active_job", "retire_failed", "rollback_failed"))}, ("schema", "operation_key", "plugin_id", "action", "state", "generation_id", "idempotent", "failure_code"))
+    error = obj({"schema": const("plugin-http-error/v2"), "error_code": enum("malformed_request", "cursor_domain_mismatch", "unknown_plugin", "release_missing", "generation_conflict", "pinned_release", "active_job", "retire_failed", "rollback_failed", "duplicate_operation", "publication_forbidden"), "message": NONEMPTY, "retryable": BOOL, "operation_key": nullable(ID)}, ("schema", "error_code", "message", "retryable", "operation_key"))
+    return {"plugin-api-command-query-v2": v2_union(discovery_query, discovery_result, lifecycle, lifecycle_result, error)}
+
+
+def core_api_method_matrix_v2() -> dict[str, Any]:
+    def route(route_id: str, method: str, path: str, request_schema: str, result_schema: str, *, read_only: bool, operation_key_required: bool, cursor_domain: str | None = None, success_statuses: tuple[int, ...] = (200,), failures: tuple[tuple[int, tuple[str, ...]], ...] = ((400, ("malformed_request",)), (404, ("unknown_reference",)))) -> dict[str, Any]:
+        placeholders = re.findall(r"\{([^{}]+)\}", path)
+        error_schema = {
+            "job": "job-http-error/v2",
+            "plugin": "plugin-http-error/v2",
+        }.get(route_id.split(".", 1)[0], "core-http-error/v2")
+        return {
+            "route_id": route_id,
+            "method": method,
+            "path_template": path,
+            "path_identity": placeholders,
+            "request_schema": request_schema,
+            "result_schema": result_schema,
+            "error_schema": error_schema,
+            "success_statuses": list(success_statuses),
+            "failure_statuses": [{"status": status, "error_codes": list(codes)} for status, codes in failures],
+            "read_only": read_only,
+            "operation_key_required": operation_key_required,
+            "cursor_domain": cursor_domain,
+        }
+
+    routes = [
+        route("candidate.list", "GET", "/api/v2/core/workspaces/{workspace_id}/candidates", "candidate-list-query/v2", "candidate-list-result/v2", read_only=True, operation_key_required=False, cursor_domain="candidate", failures=((400, ("malformed_request", "cursor_domain_mismatch")), (404, ("unknown_reference",)))),
+        route("candidate.get", "GET", "/api/v2/core/workspaces/{workspace_id}/candidates/{candidate_id}", "candidate-get-query/v2", "candidate-get-result/v2", read_only=True, operation_key_required=False, failures=((400, ("malformed_request",)), (404, ("unknown_reference", "cross_workspace")))),
+        route("candidate.review", "POST", "/api/v2/core/workspaces/{workspace_id}/candidates/{candidate_id}/review", "candidate-review-command/v2", "candidate-review-result/v2", read_only=False, operation_key_required=True, failures=((400, ("malformed_request",)), (404, ("unknown_reference", "cross_workspace")), (409, ("stale_cas", "duplicate_operation")))),
+        route("candidate.preview", "GET", "/api/v2/core/workspaces/{workspace_id}/candidates/{candidate_id}/preview", "candidate-preview-query/v2", "candidate-preview-result/v2", read_only=True, operation_key_required=False, failures=((400, ("malformed_request",)), (404, ("unknown_reference", "cross_workspace")))),
+        route("publication.accept", "POST", "/api/v2/core/workspaces/{workspace_id}/publications:accept", "publication-command/v2", "publication-result/v2", read_only=False, operation_key_required=True, success_statuses=(200, 201), failures=((400, ("malformed_request", "candidate_not_publishable")), (404, ("unknown_reference", "cross_workspace")), (409, ("stale_cas", "duplicate_operation")))),
+        route("story-state.projection-input", "GET", "/api/v2/core/workspaces/{workspace_id}/story-state/projection-input", "core-authority-query/v2", "story-state-projection-input/v2", read_only=True, operation_key_required=False, failures=((400, ("malformed_request",)), (404, ("unknown_reference", "cross_workspace")))),
+        route("job.list", "GET", "/api/v2/jobs/{workspace_id}", "job-list-query/v2", "job-list-result/v2", read_only=True, operation_key_required=False, cursor_domain="job", failures=((400, ("malformed_request", "cursor_domain_mismatch")),)),
+        route("job.get", "GET", "/api/v2/jobs/{workspace_id}/{job_id}", "job-snapshot-query/v2", "job-snapshot-result/v2", read_only=True, operation_key_required=False, cursor_domain="job", failures=((400, ("malformed_request", "cursor_domain_mismatch")), (404, ("unknown_job", "cross_workspace")))),
+        route("job.start", "POST", "/api/v2/jobs/{workspace_id}/start", "job-start-command/v2", "job-command-result/v2", read_only=False, operation_key_required=True, cursor_domain="job", success_statuses=(201,), failures=((400, ("malformed_request",)), (409, ("duplicate_operation", "invalid_transition")))),
+        route("job.pause", "POST", "/api/v2/jobs/{workspace_id}/{job_id}/pause", "job-control-command/v2", "job-command-result/v2", read_only=False, operation_key_required=True, cursor_domain="job", failures=((400, ("malformed_request",)), (404, ("unknown_job", "cross_workspace")), (409, ("stale_revision", "terminal_job", "invalid_transition", "duplicate_operation")))),
+        route("job.resume", "POST", "/api/v2/jobs/{workspace_id}/{job_id}/resume", "job-control-command/v2", "job-command-result/v2", read_only=False, operation_key_required=True, cursor_domain="job", failures=((400, ("malformed_request",)), (404, ("unknown_job", "cross_workspace")), (409, ("stale_revision", "terminal_job", "invalid_transition", "duplicate_operation")))),
+        route("job.cancel", "POST", "/api/v2/jobs/{workspace_id}/{job_id}/cancel", "job-control-command/v2", "job-command-result/v2", read_only=False, operation_key_required=True, cursor_domain="job", failures=((400, ("malformed_request",)), (404, ("unknown_job", "cross_workspace")), (409, ("stale_revision", "terminal_job", "invalid_transition", "duplicate_operation")))),
+        route("job.events", "GET", "/api/v2/jobs/{workspace_id}/{job_id}/events", "job-event-page-query/v2", "job-event-page-result/v2", read_only=True, operation_key_required=False, cursor_domain="job", failures=((400, ("malformed_request", "cursor_domain_mismatch", "cursor_ahead")), (404, ("unknown_job", "cross_workspace")))),
+        route("job.sse-recovery", "GET", "/api/v2/jobs/{workspace_id}/{job_id}/events/stream", "job-sse-recovery-query/v2", "job-sse-recovery-result/v2", read_only=True, operation_key_required=False, cursor_domain="job", failures=((400, ("malformed_request", "cursor_domain_mismatch")), (404, ("unknown_job", "cross_workspace")), (409, ("sse_recovery_required", "cursor_ahead")))),
+        route("plugin.discovery", "GET", "/api/v2/plugins", "plugin-discovery-query/v2", "plugin-discovery-result/v2", read_only=True, operation_key_required=False, cursor_domain="core", failures=((400, ("malformed_request", "cursor_domain_mismatch")),)),
+        route("plugin.install", "POST", "/api/v2/plugins/{plugin_id}/install", "plugin-lifecycle-command/v2", "plugin-lifecycle-result/v2", read_only=False, operation_key_required=True, failures=((400, ("malformed_request",)), (404, ("unknown_plugin", "release_missing")), (409, ("generation_conflict", "duplicate_operation")))),
+        route("plugin.upgrade", "POST", "/api/v2/plugins/{plugin_id}/upgrade", "plugin-lifecycle-command/v2", "plugin-lifecycle-result/v2", read_only=False, operation_key_required=True, failures=((400, ("malformed_request",)), (404, ("unknown_plugin", "release_missing")), (409, ("generation_conflict", "duplicate_operation")))),
+        route("plugin.retire", "POST", "/api/v2/plugins/{plugin_id}/retire", "plugin-lifecycle-command/v2", "plugin-lifecycle-result/v2", read_only=False, operation_key_required=True, failures=((400, ("malformed_request",)), (404, ("unknown_plugin",)), (409, ("pinned_release", "active_job", "retire_failed", "duplicate_operation")))),
+        route("plugin.rollback", "POST", "/api/v2/plugins/{plugin_id}/rollback", "plugin-lifecycle-command/v2", "plugin-lifecycle-result/v2", read_only=False, operation_key_required=True, failures=((400, ("malformed_request",)), (404, ("unknown_plugin",)), (409, ("generation_conflict", "rollback_failed", "duplicate_operation")))),
+    ]
+    return {
+        "schema": "core-api-method-matrix/v2",
+        "contract_version": "2.0.0",
+        "roots": {"core": "/api/v2/core", "jobs": "/api/v2/jobs", "plugins": "/api/v2/plugins"},
+        "routes": routes,
+        "cursor_domains": {"candidate": "candidate/*", "job": "job/{job_id}/{seq}", "core": "core/{seq}"},
+        "error_codes": ["malformed_request", "unknown_reference", "cross_workspace", "stale_cas", "duplicate_operation", "candidate_not_publishable", "unknown_job", "stale_revision", "cursor_ahead", "cursor_domain_mismatch", "sse_recovery_required", "terminal_job", "invalid_transition", "candidate_not_ready", "unknown_plugin", "release_missing", "generation_conflict", "pinned_release", "active_job", "retire_failed", "rollback_failed", "publication_forbidden"],
+        "publication_path": "publication.accept",
+        "publication_owner": "core",
+        "plugin_publication_allowed": False,
+    }
+
+
 def schema_inventory() -> dict[str, dict[str, Any]]:
     schemas: dict[str, dict[str, Any]] = {
         "plugin-manifest-v1": manifest_schema(),
@@ -1119,6 +1452,12 @@ def schema_inventory() -> dict[str, dict[str, Any]]:
         **backup_schemas(),
         **job_broker_schemas(),
         **rpc_schemas(),
+        **v2_candidate_query_result_schemas(),
+        **v2_core_authority_schemas(),
+        **v2_candidate_review_schemas(),
+        **v2_story_state_projection_schemas(),
+        **v2_job_http_schemas(),
+        **v2_plugin_api_schemas(),
         "compatibility-v1": compatibility_schema(),
     }
     return schemas
@@ -1150,6 +1489,7 @@ def render() -> dict[str, bytes]:
     compatibility = {"schema": "compatibility-matrix/v1", "core_api": ">=1.0 <2.0", "plugin_rpc": "1", "ui_host": "1", "python": "3.12.*", "handshake_downgrade": False}
     rendered["compatibility-matrix.v1.json"] = (json.dumps(compatibility, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
     rendered["core-api-method-matrix.v1.json"] = (json.dumps(core_api_method_matrix(), ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    rendered["core-api-method-matrix.v2.json"] = (json.dumps(core_api_method_matrix_v2(), ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
     rendered["_common-v1.schema.json"] = (json.dumps(document("common-v1", {"type": "object", "additionalProperties": False, "unevaluatedProperties": False, "properties": {}}), ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
     return rendered
 
@@ -1159,7 +1499,10 @@ def write() -> None:
     rendered = render()
     for relative, data in rendered.items():
         (SCHEMA_DIR / relative).write_bytes(data)
-    print(f"generated {len(rendered)} schema/matrix artifacts")
+    PACKAGE_RESOURCE_DIR.mkdir(parents=True, exist_ok=True)
+    for name, source in PACKAGE_RESOURCE_SOURCES.items():
+        (PACKAGE_RESOURCE_DIR / name).write_bytes(source.read_bytes())
+    print(f"generated {len(rendered)} schema/matrix artifacts and {len(PACKAGE_RESOURCE_SOURCES)} package resources")
 
 
 def check() -> int:
@@ -1178,9 +1521,32 @@ def check() -> int:
         if changed:
             print("changed:", ", ".join(changed))
         return 1
-    extras = sorted(p.name for p in SCHEMA_DIR.iterdir() if p.is_file() and p.name not in rendered)
+    missing_external = sorted(name for name in EXTERNAL_AUTHORED_ARTIFACTS if not (SCHEMA_DIR / name).is_file())
+    if missing_external:
+        print("missing external authored schema files:", ", ".join(missing_external))
+        return 1
+    extras = sorted(
+        p.name
+        for p in SCHEMA_DIR.iterdir()
+        if p.is_file() and p.name not in rendered and p.name not in EXTERNAL_AUTHORED_ARTIFACTS
+    )
     if extras:
         print("unexpected generated-schema files:", ", ".join(extras))
+        return 1
+    missing_resources = sorted(name for name, source in PACKAGE_RESOURCE_SOURCES.items() if not (PACKAGE_RESOURCE_DIR / name).is_file() or not source.is_file())
+    changed_resources = sorted(name for name, source in PACKAGE_RESOURCE_SOURCES.items() if (PACKAGE_RESOURCE_DIR / name).is_file() and source.is_file() and (PACKAGE_RESOURCE_DIR / name).read_bytes() != source.read_bytes())
+    resource_extras = sorted(
+        path.relative_to(PACKAGE_RESOURCE_DIR).as_posix()
+        for path in PACKAGE_RESOURCE_DIR.rglob("*")
+        if path.is_file() and path.relative_to(PACKAGE_RESOURCE_DIR).as_posix() not in PACKAGE_RESOURCE_SOURCES
+    ) if PACKAGE_RESOURCE_DIR.is_dir() else []
+    if missing_resources or changed_resources or resource_extras:
+        if missing_resources:
+            print("missing package resources:", ", ".join(missing_resources))
+        if changed_resources:
+            print("changed package resources:", ", ".join(changed_resources))
+        if resource_extras:
+            print("unexpected package resources:", ", ".join(resource_extras))
         return 1
     print(f"generated artifacts are deterministic ({len(rendered)} files)")
     return 0

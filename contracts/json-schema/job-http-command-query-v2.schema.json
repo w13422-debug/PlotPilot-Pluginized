@@ -1,0 +1,1202 @@
+{
+  "$id": "https://plotpilot.local/contracts/job-http-command-query-v2",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "additionalProperties": false,
+      "properties": {
+        "cursor_domain": {
+          "anyOf": [
+            {
+              "enum": [
+                "candidate",
+                "job",
+                "core"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error_code": {
+          "enum": [
+            "malformed_request",
+            "unknown_job",
+            "cross_workspace",
+            "stale_revision",
+            "duplicate_operation",
+            "cursor_ahead",
+            "cursor_domain_mismatch",
+            "sse_recovery_required",
+            "terminal_job",
+            "invalid_transition",
+            "candidate_not_ready"
+          ]
+        },
+        "message": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "operation_key": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "schema": {
+          "const": "job-http-error/v2"
+        }
+      },
+      "required": [
+        "schema",
+        "error_code",
+        "message",
+        "retryable",
+        "operation_key",
+        "cursor_domain"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "cursor": {
+          "anyOf": [
+            {
+              "pattern": "^(?:candidate|job|core)/[A-Za-z0-9][A-Za-z0-9._:/-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "limit": {
+          "maximum": 200,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "schema": {
+          "const": "job-list-query/v2"
+        },
+        "state": {
+          "anyOf": [
+            {
+              "enum": [
+                "queued",
+                "running",
+                "paused",
+                "cancelling",
+                "succeeded",
+                "partial",
+                "failed",
+                "cancelled",
+                "needs_attention"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "workspace_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "workspace_id",
+        "cursor",
+        "limit",
+        "state"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "cursor_domain": {
+          "const": "job"
+        },
+        "items": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "candidate_ids": {
+                "items": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                  "type": "string"
+                },
+                "minItems": 0,
+                "type": "array",
+                "uniqueItems": true
+              },
+              "checkpoint_id": {
+                "anyOf": [
+                  {
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "core_event_high_water": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "created_at": {
+                "pattern": "^(?:[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z|[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.(?!000)[0-9]{3}Z)$",
+                "type": "string"
+              },
+              "current_attempt_id": {
+                "anyOf": [
+                  {
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "job_event_high_water": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "job_id": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                "type": "string"
+              },
+              "job_revision": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "snapshot_hash": {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              "state": {
+                "enum": [
+                  "queued",
+                  "running",
+                  "paused",
+                  "cancelling",
+                  "succeeded",
+                  "partial",
+                  "failed",
+                  "cancelled",
+                  "needs_attention"
+                ]
+              },
+              "stream_high_waters": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "acked_bytes": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "acked_prefix_hash": {
+                      "pattern": "^[0-9a-f]{64}$",
+                      "type": "string"
+                    },
+                    "acked_prefix_seq": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "output_role": {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                      "type": "string"
+                    },
+                    "stream_id": {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                      "type": "string"
+                    },
+                    "target": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "entity_id": {
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                          "type": "string"
+                        },
+                        "entity_kind": {
+                          "enum": [
+                            "document",
+                            "node_structure",
+                            "relation_set"
+                          ]
+                        },
+                        "workspace_id": {
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "workspace_id",
+                        "entity_kind",
+                        "entity_id"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "stream_id",
+                    "output_role",
+                    "target",
+                    "acked_prefix_seq",
+                    "acked_bytes",
+                    "acked_prefix_hash"
+                  ],
+                  "type": "object"
+                },
+                "minItems": 0,
+                "type": "array",
+                "uniqueItems": true
+              },
+              "updated_at": {
+                "pattern": "^(?:[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z|[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.(?!000)[0-9]{3}Z)$",
+                "type": "string"
+              },
+              "workspace_id": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                "type": "string"
+              },
+              "writer_epoch": {
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "job_id",
+              "workspace_id",
+              "state",
+              "job_revision",
+              "writer_epoch",
+              "current_attempt_id",
+              "candidate_ids",
+              "checkpoint_id",
+              "stream_high_waters",
+              "job_event_high_water",
+              "core_event_high_water",
+              "created_at",
+              "updated_at",
+              "snapshot_hash"
+            ],
+            "type": "object"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "pattern": "^(?:candidate|job|core)/[A-Za-z0-9][A-Za-z0-9._:/-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "schema": {
+          "const": "job-list-result/v2"
+        },
+        "total": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "workspace_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "workspace_id",
+        "items",
+        "next_cursor",
+        "cursor_domain",
+        "total"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "job_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "schema": {
+          "const": "job-snapshot-query/v2"
+        },
+        "workspace_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "workspace_id",
+        "job_id"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "cursor": {
+          "pattern": "^(?:candidate|job|core)/[A-Za-z0-9][A-Za-z0-9._:/-]*$",
+          "type": "string"
+        },
+        "job_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "schema": {
+          "const": "job-snapshot-result/v2"
+        },
+        "snapshot": {
+          "additionalProperties": false,
+          "properties": {
+            "candidate_ids": {
+              "items": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                "type": "string"
+              },
+              "minItems": 0,
+              "type": "array",
+              "uniqueItems": true
+            },
+            "checkpoint_id": {
+              "anyOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "core_event_high_water": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "created_at": {
+              "pattern": "^(?:[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z|[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.(?!000)[0-9]{3}Z)$",
+              "type": "string"
+            },
+            "current_attempt_id": {
+              "anyOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "job_event_high_water": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "job_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            "job_revision": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "snapshot_hash": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "state": {
+              "enum": [
+                "queued",
+                "running",
+                "paused",
+                "cancelling",
+                "succeeded",
+                "partial",
+                "failed",
+                "cancelled",
+                "needs_attention"
+              ]
+            },
+            "stream_high_waters": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "acked_bytes": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "acked_prefix_hash": {
+                    "pattern": "^[0-9a-f]{64}$",
+                    "type": "string"
+                  },
+                  "acked_prefix_seq": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "output_role": {
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                    "type": "string"
+                  },
+                  "stream_id": {
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                    "type": "string"
+                  },
+                  "target": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "entity_id": {
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                        "type": "string"
+                      },
+                      "entity_kind": {
+                        "enum": [
+                          "document",
+                          "node_structure",
+                          "relation_set"
+                        ]
+                      },
+                      "workspace_id": {
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "workspace_id",
+                      "entity_kind",
+                      "entity_id"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "stream_id",
+                  "output_role",
+                  "target",
+                  "acked_prefix_seq",
+                  "acked_bytes",
+                  "acked_prefix_hash"
+                ],
+                "type": "object"
+              },
+              "minItems": 0,
+              "type": "array",
+              "uniqueItems": true
+            },
+            "updated_at": {
+              "pattern": "^(?:[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z|[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.(?!000)[0-9]{3}Z)$",
+              "type": "string"
+            },
+            "workspace_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            "writer_epoch": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "job_id",
+            "workspace_id",
+            "state",
+            "job_revision",
+            "writer_epoch",
+            "current_attempt_id",
+            "candidate_ids",
+            "checkpoint_id",
+            "stream_high_waters",
+            "job_event_high_water",
+            "core_event_high_water",
+            "created_at",
+            "updated_at",
+            "snapshot_hash"
+          ],
+          "type": "object"
+        },
+        "workspace_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "workspace_id",
+        "job_id",
+        "snapshot",
+        "cursor"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "capability_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "job_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "operation_key": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "run_snapshot_asset_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "schema": {
+          "const": "job-start-command/v2"
+        },
+        "workspace_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "writer_epoch": {
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "schema",
+        "operation_key",
+        "workspace_id",
+        "job_id",
+        "capability_id",
+        "run_snapshot_asset_id",
+        "writer_epoch"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "enum": [
+            "pause",
+            "resume",
+            "cancel"
+          ]
+        },
+        "expected_job_revision": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "job_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "operation_key": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "reason": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "resume_intent_id": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "schema": {
+          "const": "job-control-command/v2"
+        },
+        "workspace_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "operation_key",
+        "workspace_id",
+        "job_id",
+        "expected_job_revision",
+        "reason",
+        "command",
+        "resume_intent_id"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "accepted": {
+          "type": "boolean"
+        },
+        "command": {
+          "enum": [
+            "start",
+            "pause",
+            "resume",
+            "cancel"
+          ]
+        },
+        "idempotent": {
+          "type": "boolean"
+        },
+        "job_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "job_revision": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "operation_key": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "schema": {
+          "const": "job-command-result/v2"
+        },
+        "snapshot_cursor": {
+          "pattern": "^(?:candidate|job|core)/[A-Za-z0-9][A-Za-z0-9._:/-]*$",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "queued",
+            "running",
+            "paused",
+            "cancelling",
+            "succeeded",
+            "partial",
+            "failed",
+            "cancelled",
+            "needs_attention"
+          ]
+        },
+        "terminal_known": {
+          "type": "boolean"
+        },
+        "workspace_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "operation_key",
+        "workspace_id",
+        "job_id",
+        "command",
+        "accepted",
+        "idempotent",
+        "terminal_known",
+        "state",
+        "job_revision",
+        "snapshot_cursor"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "after_cursor": {
+          "anyOf": [
+            {
+              "pattern": "^(?:candidate|job|core)/[A-Za-z0-9][A-Za-z0-9._:/-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "after_job_event_seq": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "job_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "limit": {
+          "maximum": 200,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "schema": {
+          "const": "job-event-page-query/v2"
+        },
+        "workspace_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "workspace_id",
+        "job_id",
+        "after_cursor",
+        "after_job_event_seq",
+        "limit"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "cursor_domain": {
+          "const": "job"
+        },
+        "events": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "aggregate_revision": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "event_id": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                "type": "string"
+              },
+              "event_type": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "job_event_seq": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "job_id": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                "type": "string"
+              },
+              "occurred_at": {
+                "pattern": "^(?:[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z|[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.(?!000)[0-9]{3}Z)$",
+                "type": "string"
+              },
+              "payload_asset_id": {
+                "anyOf": [
+                  {
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "payload_hash": {
+                "anyOf": [
+                  {
+                    "pattern": "^[0-9a-f]{64}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "event_id",
+              "job_id",
+              "job_event_seq",
+              "event_type",
+              "aggregate_revision",
+              "payload_asset_id",
+              "payload_hash",
+              "occurred_at"
+            ],
+            "type": "object"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "high_water_seq": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "job_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "next_cursor": {
+          "pattern": "^(?:candidate|job|core)/[A-Za-z0-9][A-Za-z0-9._:/-]*$",
+          "type": "string"
+        },
+        "schema": {
+          "const": "job-event-page-result/v2"
+        },
+        "workspace_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "workspace_id",
+        "job_id",
+        "events",
+        "next_cursor",
+        "high_water_seq",
+        "cursor_domain"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "after_seq": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "job_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "last_event_id": {
+          "pattern": "^(?:candidate|job|core)/[A-Za-z0-9][A-Za-z0-9._:/-]*$",
+          "type": "string"
+        },
+        "requested_cursor_domain": {
+          "const": "job"
+        },
+        "schema": {
+          "const": "job-sse-recovery-query/v2"
+        },
+        "workspace_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "workspace_id",
+        "job_id",
+        "after_seq",
+        "last_event_id",
+        "requested_cursor_domain"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "durable_high_water_seq": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "gap": {
+          "type": "boolean"
+        },
+        "job_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "replay_floor_seq": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "requested_after_seq": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "schema": {
+          "const": "job-sse-recovery-result/v2"
+        },
+        "snapshot": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "candidate_ids": {
+                  "items": {
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                    "type": "string"
+                  },
+                  "minItems": 0,
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "checkpoint_id": {
+                  "anyOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "core_event_high_water": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "created_at": {
+                  "pattern": "^(?:[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z|[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.(?!000)[0-9]{3}Z)$",
+                  "type": "string"
+                },
+                "current_attempt_id": {
+                  "anyOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "job_event_high_water": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "job_id": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                  "type": "string"
+                },
+                "job_revision": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "snapshot_hash": {
+                  "pattern": "^[0-9a-f]{64}$",
+                  "type": "string"
+                },
+                "state": {
+                  "enum": [
+                    "queued",
+                    "running",
+                    "paused",
+                    "cancelling",
+                    "succeeded",
+                    "partial",
+                    "failed",
+                    "cancelled",
+                    "needs_attention"
+                  ]
+                },
+                "stream_high_waters": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "acked_bytes": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "acked_prefix_hash": {
+                        "pattern": "^[0-9a-f]{64}$",
+                        "type": "string"
+                      },
+                      "acked_prefix_seq": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "output_role": {
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                        "type": "string"
+                      },
+                      "stream_id": {
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                        "type": "string"
+                      },
+                      "target": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "entity_id": {
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                            "type": "string"
+                          },
+                          "entity_kind": {
+                            "enum": [
+                              "document",
+                              "node_structure",
+                              "relation_set"
+                            ]
+                          },
+                          "workspace_id": {
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "workspace_id",
+                          "entity_kind",
+                          "entity_id"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "stream_id",
+                      "output_role",
+                      "target",
+                      "acked_prefix_seq",
+                      "acked_bytes",
+                      "acked_prefix_hash"
+                    ],
+                    "type": "object"
+                  },
+                  "minItems": 0,
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "updated_at": {
+                  "pattern": "^(?:[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z|[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.(?!000)[0-9]{3}Z)$",
+                  "type": "string"
+                },
+                "workspace_id": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                  "type": "string"
+                },
+                "writer_epoch": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "job_id",
+                "workspace_id",
+                "state",
+                "job_revision",
+                "writer_epoch",
+                "current_attempt_id",
+                "candidate_ids",
+                "checkpoint_id",
+                "stream_high_waters",
+                "job_event_high_water",
+                "core_event_high_water",
+                "created_at",
+                "updated_at",
+                "snapshot_hash"
+              ],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "snapshot_cursor": {
+          "pattern": "^(?:candidate|job|core)/[A-Za-z0-9][A-Za-z0-9._:/-]*$",
+          "type": "string"
+        },
+        "snapshot_required": {
+          "type": "boolean"
+        },
+        "tail": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "aggregate_revision": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "event_id": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                "type": "string"
+              },
+              "event_type": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "job_event_seq": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "job_id": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                "type": "string"
+              },
+              "occurred_at": {
+                "pattern": "^(?:[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z|[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.(?!000)[0-9]{3}Z)$",
+                "type": "string"
+              },
+              "payload_asset_id": {
+                "anyOf": [
+                  {
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "payload_hash": {
+                "anyOf": [
+                  {
+                    "pattern": "^[0-9a-f]{64}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "event_id",
+              "job_id",
+              "job_event_seq",
+              "event_type",
+              "aggregate_revision",
+              "payload_asset_id",
+              "payload_hash",
+              "occurred_at"
+            ],
+            "type": "object"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "workspace_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "workspace_id",
+        "job_id",
+        "requested_after_seq",
+        "replay_floor_seq",
+        "durable_high_water_seq",
+        "gap",
+        "snapshot_required",
+        "snapshot",
+        "snapshot_cursor",
+        "tail"
+      ],
+      "type": "object"
+    }
+  ],
+  "title": "PlotPilot job-http-command-query-v2",
+  "unevaluatedProperties": false
+}

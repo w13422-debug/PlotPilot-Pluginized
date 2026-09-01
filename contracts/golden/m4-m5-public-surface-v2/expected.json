@@ -1,0 +1,37 @@
+{
+  "candidate_ids": [
+    "candidate-v2",
+    "candidate-partial",
+    "candidate-incomplete",
+    "candidate-replace-v2",
+    "candidate-structure-v2",
+    "candidate-relation-v2"
+  ],
+  "cursor_domains": [
+    "candidate",
+    "job",
+    "core"
+  ],
+  "fixture_files": {
+    "candidate.json": "ba4aaad8cd1de6e5b038761092191e1fae03f73a2375063b22a4f8858f103f9d",
+    "http.json": "eb4754f157ea1cc0f029c877fec3d936faef444cac54a4127db1b825dc3187ee",
+    "job.json": "73867e609724e10bc23a4cab209d7c6dbfe86df0b252b1cf5c2a04720dabef1b",
+    "plugin.json": "4f98b5ab5ea9e74580cbe649b5f89c5d913c048c44f509dad7b406559b6dc24d",
+    "publication.json": "d15e71f1c8a9557212dc5a855166de28b4e3a7799f3e59d016cffee32e0db484",
+    "review.json": "3f65b9a5c92f61bd334c3fcfb64fa9fa29e01271c3d780474941a43edfc8860a",
+    "story-state.json": "63eb937f08e9fdd7fec4f7049780df1b5d900757ead5d1dbedf99d440efcfe84"
+  },
+  "gap_snapshot_hash": "593801172d60fe3ee80e88a537c92007202937a3f084491f18642359378b0675",
+  "http_exchange_count": 19,
+  "mutation_kinds": [
+    "replace",
+    "text_patch",
+    "structure_patch",
+    "relation_patch"
+  ],
+  "publication_paths": [
+    "publication.accept"
+  ],
+  "schema": "m4-m5-public-surface-golden-index/v2",
+  "snapshot_hash": "04dbafa81b9e78beb766b584bb48c5cc2095254960d1020701bdc3d979f560bd"
+}

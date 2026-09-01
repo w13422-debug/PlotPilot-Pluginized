@@ -1,0 +1,223 @@
+{
+  "group_id": "m4-m5-v2-04-job-sse",
+  "negative": [
+    {
+      "case_id": "v2-job-closed-extra-field",
+      "expected": "closed_schema_rejection",
+      "fixture": "job.snapshot",
+      "kind": "closed_schema",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "unexpected"
+        ],
+        "value": true
+      }
+    },
+    {
+      "case_id": "v2-job-cursor-domain-mix",
+      "expected": "cursor_domain_mismatch",
+      "fixture": "job.event_page",
+      "kind": "job_cursor",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "next_cursor"
+        ],
+        "value": "candidate/cursor-9"
+      }
+    },
+    {
+      "case_id": "v2-job-cursor-ahead",
+      "expected": "cursor_ahead",
+      "fixture": "job.sse.replay",
+      "kind": "job_cursor",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "requested_after_seq"
+        ],
+        "value": 9
+      }
+    },
+    {
+      "case_id": "v2-job-sse-gap-without-snapshot",
+      "expected": "sse_recovery_required",
+      "fixture": "job.sse.gap",
+      "kind": "job_sse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "snapshot_required"
+        ],
+        "value": false
+      }
+    },
+    {
+      "case_id": "v2-job-event-high-water-regression",
+      "expected": "cursor_regression",
+      "fixture": "job.event_page",
+      "kind": "job_cursor",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "high_water_seq"
+        ],
+        "value": 0
+      }
+    },
+    {
+      "case_id": "v2-job-next-cursor-ahead",
+      "expected": "cursor_ahead",
+      "fixture": "job.event_page",
+      "kind": "job_cursor",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "next_cursor"
+        ],
+        "value": "job/job-v2/999"
+      }
+    },
+    {
+      "case_id": "v2-job-event-payload-pair",
+      "expected": "event_payload_binding",
+      "fixture": "job.event_page",
+      "kind": "job_cursor",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "events",
+          0,
+          "payload_hash"
+        ],
+        "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "case_id": "v2-job-event-query-cursor-pair",
+      "expected": "cursor_pair",
+      "fixture": "http.job.events",
+      "kind": "http_request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "request",
+          "after_cursor"
+        ],
+        "value": "job/job-v2/1"
+      },
+      "route_id": "job.events"
+    },
+    {
+      "case_id": "v2-job-sse-query-cursor-pair",
+      "expected": "cursor_pair",
+      "fixture": "http.job.sse-recovery",
+      "kind": "http_request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "request",
+          "after_seq"
+        ],
+        "value": 0
+      },
+      "route_id": "job.sse-recovery"
+    },
+    {
+      "case_id": "v2-job-sse-snapshot-workspace-binding",
+      "expected": "snapshot_binding",
+      "fixture": "job.sse.gap",
+      "kind": "job_sse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "snapshot",
+          "workspace_id"
+        ],
+        "value": "ws-other"
+      }
+    },
+    {
+      "case_id": "v2-job-sse-snapshot-cursor-binding",
+      "expected": "snapshot_binding",
+      "fixture": "job.sse.gap",
+      "kind": "job_sse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "snapshot_cursor"
+        ],
+        "value": "job/job-v2/3"
+      }
+    },
+    {
+      "case_id": "v2-job-sse-gap-tail-starts-after-snapshot",
+      "expected": "sse_snapshot_baseline",
+      "fixture": "job.sse.gap",
+      "kind": "job_sse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "tail",
+          0,
+          "job_event_seq"
+        ],
+        "value": 4
+      }
+    },
+    {
+      "case_id": "v2-job-sse-gap-tail-continuity",
+      "expected": "sse_tail_continuity",
+      "fixture": "job.sse.gap",
+      "kind": "job_sse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "tail",
+          1,
+          "job_event_seq"
+        ],
+        "value": 7
+      }
+    },
+    {
+      "case_id": "v2-job-sse-gap-tail-must-reach-high-water",
+      "expected": "sse_high_water_convergence",
+      "fixture": "job.sse.gap",
+      "kind": "job_sse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "tail"
+        ],
+        "value": []
+      }
+    },
+    {
+      "case_id": "v2-job-command-snapshot-domain",
+      "expected": "cursor_domain_mismatch",
+      "fixture": "http.job.start",
+      "kind": "http_exchange",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "response",
+          "snapshot_cursor"
+        ],
+        "value": "candidate/candidate-v2"
+      },
+      "route_id": "job.start"
+    }
+  ],
+  "positive": [
+    "job.snapshot",
+    "job.list_result",
+    "job.command.start",
+    "job.event_page",
+    "job.sse.replay",
+    "job.sse.gap"
+  ],
+  "schema": "m4-m5-public-surface-corpus/v2",
+  "title": "Durable Job snapshots and disjoint SSE cursor recovery"
+}

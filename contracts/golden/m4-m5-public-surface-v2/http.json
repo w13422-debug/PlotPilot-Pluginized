@@ -1,0 +1,737 @@
+{
+  "error_exchanges": [
+    {
+      "request": {
+        "cursor": "core/1",
+        "limit": 50,
+        "schema": "plugin-discovery-query/v2",
+        "state": null
+      },
+      "response": {
+        "error_code": "cursor_domain_mismatch",
+        "message": "plugin discovery cursor must use the core domain",
+        "operation_key": null,
+        "retryable": false,
+        "schema": "plugin-http-error/v2"
+      },
+      "route_id": "plugin.discovery",
+      "status": 400
+    }
+  ],
+  "exchange_count": 19,
+  "exchanges": [
+    {
+      "request": {
+        "cursor": null,
+        "limit": 50,
+        "schema": "candidate-list-query/v2",
+        "workspace_id": "ws-1"
+      },
+      "response": {
+        "cursor_domain": "candidate",
+        "items": [
+          {
+            "base": {
+              "content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "revision_id": "rev-1"
+            },
+            "candidate_id": "candidate-v2",
+            "created_at": "2026-08-30T00:00:00Z",
+            "item_kind": "document",
+            "mutation": {
+              "mode": "text_patch",
+              "payload_hash": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+              "payload_schema": "core/document-text/v2"
+            },
+            "parent_candidate_ids": [],
+            "payload_asset_id": "asset-candidate-v2",
+            "publication_eligibility": "eligible",
+            "schema": "candidate/v2",
+            "source_job_id": "job-v2",
+            "source_refs": [
+              {
+                "revision_or_hash": "source-rev-1",
+                "source_id": "source-candidate",
+                "source_type": "candidate",
+                "workspace_id": "ws-source"
+              }
+            ],
+            "status": "complete",
+            "target": {
+              "entity_id": "doc-a",
+              "entity_kind": "document",
+              "workspace_id": "ws-1"
+            },
+            "workspace_id": "ws-1",
+            "write_set": [
+              {
+                "content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+                "entity_id": "doc-a",
+                "entity_kind": "document",
+                "revision_id": "rev-1",
+                "workspace_id": "ws-1"
+              },
+              {
+                "content_hash": "7777777777777777777777777777777777777777777777777777777777777777",
+                "entity_id": "doc-b",
+                "entity_kind": "document",
+                "revision_id": "rev-b",
+                "workspace_id": "ws-1"
+              }
+            ]
+          }
+        ],
+        "next_cursor": "candidate/ws-1/1",
+        "schema": "candidate-list-result/v2",
+        "total": 1,
+        "workspace_id": "ws-1"
+      },
+      "route_id": "candidate.list",
+      "status": 200
+    },
+    {
+      "request": {
+        "candidate_id": "candidate-v2",
+        "schema": "candidate-get-query/v2",
+        "workspace_id": "ws-1"
+      },
+      "response": {
+        "candidate": {
+          "base": {
+            "content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+            "revision_id": "rev-1"
+          },
+          "candidate_id": "candidate-v2",
+          "created_at": "2026-08-30T00:00:00Z",
+          "item_kind": "document",
+          "mutation": {
+            "mode": "text_patch",
+            "payload_hash": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+            "payload_schema": "core/document-text/v2"
+          },
+          "parent_candidate_ids": [],
+          "payload_asset_id": "asset-candidate-v2",
+          "publication_eligibility": "eligible",
+          "schema": "candidate/v2",
+          "source_job_id": "job-v2",
+          "source_refs": [
+            {
+              "revision_or_hash": "source-rev-1",
+              "source_id": "source-candidate",
+              "source_type": "candidate",
+              "workspace_id": "ws-source"
+            }
+          ],
+          "status": "complete",
+          "target": {
+            "entity_id": "doc-a",
+            "entity_kind": "document",
+            "workspace_id": "ws-1"
+          },
+          "workspace_id": "ws-1",
+          "write_set": [
+            {
+              "content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "entity_id": "doc-a",
+              "entity_kind": "document",
+              "revision_id": "rev-1",
+              "workspace_id": "ws-1"
+            },
+            {
+              "content_hash": "7777777777777777777777777777777777777777777777777777777777777777",
+              "entity_id": "doc-b",
+              "entity_kind": "document",
+              "revision_id": "rev-b",
+              "workspace_id": "ws-1"
+            }
+          ]
+        },
+        "schema": "candidate-get-result/v2",
+        "workspace_id": "ws-1"
+      },
+      "route_id": "candidate.get",
+      "status": 200
+    },
+    {
+      "request": {
+        "candidate_id": "candidate-v2",
+        "decided_by": "user-v2",
+        "decision": "approve",
+        "expected_status": "complete",
+        "operation_key": "review-op-v2",
+        "schema": "candidate-review-command/v2",
+        "workspace_id": "ws-1"
+      },
+      "response": {
+        "candidate_id": "candidate-v2",
+        "decision": "approve",
+        "idempotent": false,
+        "operation_key": "review-op-v2",
+        "publication_eligibility": "eligible",
+        "review_revision": 2,
+        "schema": "candidate-review-result/v2",
+        "status": "reviewed",
+        "workspace_id": "ws-1"
+      },
+      "route_id": "candidate.review",
+      "status": 200
+    },
+    {
+      "request": {
+        "candidate_id": "candidate-v2",
+        "length": 5,
+        "offset": 0,
+        "schema": "candidate-preview-query/v2",
+        "workspace_id": "ws-1"
+      },
+      "response": {
+        "base64_chunk": "aGVsbG8=",
+        "candidate_id": "candidate-v2",
+        "content_hash": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+        "length": 5,
+        "next_offset": null,
+        "offset": 0,
+        "payload_asset_id": "asset-candidate-v2",
+        "payload_hash": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+        "schema": "candidate-preview-result/v2",
+        "total_length": 5,
+        "workspace_id": "ws-1"
+      },
+      "route_id": "candidate.preview",
+      "status": 200
+    },
+    {
+      "request": {
+        "accepted_by": "user-v2",
+        "candidate_id": "candidate-v2",
+        "publication_operation_key": "publication-op-v2",
+        "schema": "publication-command/v2",
+        "workspace_id": "ws-1"
+      },
+      "response": {
+        "candidate_id": "candidate-v2",
+        "cas": {
+          "base_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+          "base_revision_id": "rev-1",
+          "content_hash": "2222222222222222222222222222222222222222222222222222222222222222",
+          "revision_id": "rev-2",
+          "revision_number": 2,
+          "write_set": [
+            {
+              "content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "entity_id": "doc-a",
+              "entity_kind": "document",
+              "revision_id": "rev-1",
+              "workspace_id": "ws-1"
+            },
+            {
+              "content_hash": "7777777777777777777777777777777777777777777777777777777777777777",
+              "entity_id": "doc-b",
+              "entity_kind": "document",
+              "revision_id": "rev-b",
+              "workspace_id": "ws-1"
+            }
+          ]
+        },
+        "content_hash": "2222222222222222222222222222222222222222222222222222222222222222",
+        "entity_id": "doc-a",
+        "entity_kind": "document",
+        "idempotent": false,
+        "provenance_receipt_id": "receipt-v2",
+        "publication_id": "publication-v2",
+        "publication_operation_key": "publication-op-v2",
+        "revision_id": "rev-2",
+        "revision_number": 2,
+        "schema": "publication-result/v2",
+        "workspace_id": "ws-1"
+      },
+      "route_id": "publication.accept",
+      "status": 200
+    },
+    {
+      "request": {
+        "entity_id": "doc-a",
+        "entity_kind": "document",
+        "include_assets": true,
+        "schema": "core-authority-query/v2",
+        "workspace_id": "ws-1"
+      },
+      "response": {
+        "assets": [
+          {
+            "asset_id": "asset-candidate-v2",
+            "role": "candidate.payload",
+            "sha256": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+          },
+          {
+            "asset_id": "asset-revision-v2",
+            "role": "revision.content",
+            "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+          }
+        ],
+        "candidate": {
+          "candidate_id": "candidate-v2",
+          "payload_asset_id": "asset-candidate-v2",
+          "payload_hash": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+          "status": "complete",
+          "target": {
+            "entity_id": "doc-a",
+            "entity_kind": "document",
+            "workspace_id": "ws-1"
+          }
+        },
+        "current_revision": {
+          "content_asset_id": "asset-revision-v2",
+          "content_hash": "2222222222222222222222222222222222222222222222222222222222222222",
+          "revision_id": "rev-2",
+          "revision_number": 2
+        },
+        "derived_at": "2026-08-30T00:00:01Z",
+        "projection_input_id": "projection-v2",
+        "provenance": {
+          "package_hash": "6666666666666666666666666666666666666666666666666666666666666666",
+          "parent_receipt_ids": [
+            "receipt-parent-v2"
+          ],
+          "receipt_hash": "ad59779b1ed5d96708f24cdc5664bd7ddab6288ac856f91cc63c878834a3d3eb",
+          "receipt_id": "receipt-v2",
+          "release_id": "5555555555555555555555555555555555555555555555555555555555555555",
+          "run_snapshot_hash": "4444444444444444444444444444444444444444444444444444444444444444"
+        },
+        "publication": {
+          "candidate_id": "candidate-v2",
+          "content_hash": "2222222222222222222222222222222222222222222222222222222222222222",
+          "publication_id": "publication-v2",
+          "revision_id": "rev-2",
+          "revision_number": 2
+        },
+        "receipt_closure": [
+          {
+            "parent_receipt_ids": [],
+            "receipt_hash": "2bd7cb10e44944bc401520363fd9d5ca4a1486228b90f2ea475975e0713b3e5c",
+            "receipt_id": "receipt-parent-v2"
+          },
+          {
+            "parent_receipt_ids": [
+              "receipt-parent-v2"
+            ],
+            "receipt_hash": "ad59779b1ed5d96708f24cdc5664bd7ddab6288ac856f91cc63c878834a3d3eb",
+            "receipt_id": "receipt-v2"
+          }
+        ],
+        "schema": "story-state-projection-input/v2",
+        "workspace_id": "ws-1"
+      },
+      "route_id": "story-state.projection-input",
+      "status": 200
+    },
+    {
+      "request": {
+        "cursor": null,
+        "limit": 50,
+        "schema": "job-list-query/v2",
+        "state": null,
+        "workspace_id": "ws-1"
+      },
+      "response": {
+        "cursor_domain": "job",
+        "items": [
+          {
+            "candidate_ids": [
+              "candidate-v2"
+            ],
+            "checkpoint_id": null,
+            "core_event_high_water": 3,
+            "created_at": "2026-08-30T00:00:00Z",
+            "current_attempt_id": "attempt-v2",
+            "job_event_high_water": 5,
+            "job_id": "job-v2",
+            "job_revision": 3,
+            "snapshot_hash": "04dbafa81b9e78beb766b584bb48c5cc2095254960d1020701bdc3d979f560bd",
+            "state": "running",
+            "stream_high_waters": [
+              {
+                "acked_bytes": 5,
+                "acked_prefix_hash": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+                "acked_prefix_seq": 2,
+                "output_role": "chapter",
+                "stream_id": "stream-v2",
+                "target": {
+                  "entity_id": "doc-a",
+                  "entity_kind": "document",
+                  "workspace_id": "ws-1"
+                }
+              }
+            ],
+            "updated_at": "2026-08-30T00:00:01Z",
+            "workspace_id": "ws-1",
+            "writer_epoch": 1
+          }
+        ],
+        "next_cursor": "job/job-v2/5",
+        "schema": "job-list-result/v2",
+        "total": 1,
+        "workspace_id": "ws-1"
+      },
+      "route_id": "job.list",
+      "status": 200
+    },
+    {
+      "request": {
+        "job_id": "job-v2",
+        "schema": "job-snapshot-query/v2",
+        "workspace_id": "ws-1"
+      },
+      "response": {
+        "cursor": "job/job-v2/5",
+        "job_id": "job-v2",
+        "schema": "job-snapshot-result/v2",
+        "snapshot": {
+          "candidate_ids": [
+            "candidate-v2"
+          ],
+          "checkpoint_id": null,
+          "core_event_high_water": 3,
+          "created_at": "2026-08-30T00:00:00Z",
+          "current_attempt_id": "attempt-v2",
+          "job_event_high_water": 5,
+          "job_id": "job-v2",
+          "job_revision": 3,
+          "snapshot_hash": "04dbafa81b9e78beb766b584bb48c5cc2095254960d1020701bdc3d979f560bd",
+          "state": "running",
+          "stream_high_waters": [
+            {
+              "acked_bytes": 5,
+              "acked_prefix_hash": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+              "acked_prefix_seq": 2,
+              "output_role": "chapter",
+              "stream_id": "stream-v2",
+              "target": {
+                "entity_id": "doc-a",
+                "entity_kind": "document",
+                "workspace_id": "ws-1"
+              }
+            }
+          ],
+          "updated_at": "2026-08-30T00:00:01Z",
+          "workspace_id": "ws-1",
+          "writer_epoch": 1
+        },
+        "workspace_id": "ws-1"
+      },
+      "route_id": "job.get",
+      "status": 200
+    },
+    {
+      "request": {
+        "capability_id": "writing.chapter/v2",
+        "job_id": "job-v2",
+        "operation_key": "job-start-op-v2",
+        "run_snapshot_asset_id": "asset-run-snapshot-v2",
+        "schema": "job-start-command/v2",
+        "workspace_id": "ws-1",
+        "writer_epoch": 1
+      },
+      "response": {
+        "accepted": true,
+        "command": "start",
+        "idempotent": false,
+        "job_id": "job-v2",
+        "job_revision": 3,
+        "operation_key": "job-start-op-v2",
+        "schema": "job-command-result/v2",
+        "snapshot_cursor": "job/job-v2/5",
+        "state": "running",
+        "terminal_known": false,
+        "workspace_id": "ws-1"
+      },
+      "route_id": "job.start",
+      "status": 201
+    },
+    {
+      "request": {
+        "command": "pause",
+        "expected_job_revision": 3,
+        "job_id": "job-v2",
+        "operation_key": "job-pause-op-v2",
+        "reason": "user requested pause",
+        "resume_intent_id": null,
+        "schema": "job-control-command/v2",
+        "workspace_id": "ws-1"
+      },
+      "response": {
+        "accepted": true,
+        "command": "pause",
+        "idempotent": false,
+        "job_id": "job-v2",
+        "job_revision": 4,
+        "operation_key": "job-pause-op-v2",
+        "schema": "job-command-result/v2",
+        "snapshot_cursor": "job/job-v2/5",
+        "state": "paused",
+        "terminal_known": false,
+        "workspace_id": "ws-1"
+      },
+      "route_id": "job.pause",
+      "status": 200
+    },
+    {
+      "request": {
+        "command": "resume",
+        "expected_job_revision": 4,
+        "job_id": "job-v2",
+        "operation_key": "job-resume-op-v2",
+        "reason": "user requested pause",
+        "resume_intent_id": "resume-intent-v2",
+        "schema": "job-control-command/v2",
+        "workspace_id": "ws-1"
+      },
+      "response": {
+        "accepted": true,
+        "command": "resume",
+        "idempotent": false,
+        "job_id": "job-v2",
+        "job_revision": 5,
+        "operation_key": "job-resume-op-v2",
+        "schema": "job-command-result/v2",
+        "snapshot_cursor": "job/job-v2/5",
+        "state": "running",
+        "terminal_known": false,
+        "workspace_id": "ws-1"
+      },
+      "route_id": "job.resume",
+      "status": 200
+    },
+    {
+      "request": {
+        "command": "cancel",
+        "expected_job_revision": 5,
+        "job_id": "job-v2",
+        "operation_key": "job-cancel-op-v2",
+        "reason": "user requested pause",
+        "resume_intent_id": null,
+        "schema": "job-control-command/v2",
+        "workspace_id": "ws-1"
+      },
+      "response": {
+        "accepted": true,
+        "command": "cancel",
+        "idempotent": false,
+        "job_id": "job-v2",
+        "job_revision": 6,
+        "operation_key": "job-cancel-op-v2",
+        "schema": "job-command-result/v2",
+        "snapshot_cursor": "job/job-v2/5",
+        "state": "cancelling",
+        "terminal_known": false,
+        "workspace_id": "ws-1"
+      },
+      "route_id": "job.cancel",
+      "status": 200
+    },
+    {
+      "request": {
+        "after_cursor": "job/job-v2/0",
+        "after_job_event_seq": 0,
+        "job_id": "job-v2",
+        "limit": 50,
+        "schema": "job-event-page-query/v2",
+        "workspace_id": "ws-1"
+      },
+      "response": {
+        "cursor_domain": "job",
+        "events": [
+          {
+            "aggregate_revision": 2,
+            "event_id": "job-event-v2-1",
+            "event_type": "job.progress",
+            "job_event_seq": 1,
+            "job_id": "job-v2",
+            "occurred_at": "2026-08-30T00:00:00Z",
+            "payload_asset_id": null,
+            "payload_hash": null
+          },
+          {
+            "aggregate_revision": 3,
+            "event_id": "job-event-v2-2",
+            "event_type": "job.progress",
+            "job_event_seq": 2,
+            "job_id": "job-v2",
+            "occurred_at": "2026-08-30T00:00:01Z",
+            "payload_asset_id": null,
+            "payload_hash": null
+          }
+        ],
+        "high_water_seq": 2,
+        "job_id": "job-v2",
+        "next_cursor": "job/job-v2/2",
+        "schema": "job-event-page-result/v2",
+        "workspace_id": "ws-1"
+      },
+      "route_id": "job.events",
+      "status": 200
+    },
+    {
+      "request": {
+        "after_seq": 1,
+        "job_id": "job-v2",
+        "last_event_id": "job/job-v2/1",
+        "requested_cursor_domain": "job",
+        "schema": "job-sse-recovery-query/v2",
+        "workspace_id": "ws-1"
+      },
+      "response": {
+        "durable_high_water_seq": 2,
+        "gap": false,
+        "job_id": "job-v2",
+        "replay_floor_seq": 1,
+        "requested_after_seq": 1,
+        "schema": "job-sse-recovery-result/v2",
+        "snapshot": null,
+        "snapshot_cursor": "job/job-v2/2",
+        "snapshot_required": false,
+        "tail": [
+          {
+            "aggregate_revision": 3,
+            "event_id": "job-event-v2-2",
+            "event_type": "job.progress",
+            "job_event_seq": 2,
+            "job_id": "job-v2",
+            "occurred_at": "2026-08-30T00:00:01Z",
+            "payload_asset_id": null,
+            "payload_hash": null
+          }
+        ],
+        "workspace_id": "ws-1"
+      },
+      "route_id": "job.sse-recovery",
+      "status": 200
+    },
+    {
+      "request": {
+        "cursor": null,
+        "limit": 50,
+        "schema": "plugin-discovery-query/v2",
+        "state": null
+      },
+      "response": {
+        "cursor_domain": "core",
+        "items": [
+          {
+            "capabilities": [
+              "writing.chapter/v2"
+            ],
+            "generation_id": "generation-1",
+            "package_hash": "6666666666666666666666666666666666666666666666666666666666666666",
+            "plugin_id": "com.plotpilot.demo",
+            "release_id": "5555555555555555555555555555555555555555555555555555555555555555",
+            "state": "active",
+            "updated_at": "2026-08-30T00:00:00Z"
+          }
+        ],
+        "next_cursor": "core/5",
+        "schema": "plugin-discovery-result/v2",
+        "total": 1
+      },
+      "route_id": "plugin.discovery",
+      "status": 200
+    },
+    {
+      "request": {
+        "action": "install",
+        "expected_generation_id": null,
+        "operation_key": "plugin-install-op-v2",
+        "package_hash": "6666666666666666666666666666666666666666666666666666666666666666",
+        "plugin_id": "com.plotpilot.demo",
+        "release_id": "5555555555555555555555555555555555555555555555555555555555555555",
+        "schema": "plugin-lifecycle-command/v2",
+        "target_generation_id": "generation-1"
+      },
+      "response": {
+        "action": "install",
+        "failure_code": null,
+        "generation_id": "generation-1",
+        "idempotent": false,
+        "operation_key": "plugin-install-op-v2",
+        "plugin_id": "com.plotpilot.demo",
+        "schema": "plugin-lifecycle-result/v2",
+        "state": "active"
+      },
+      "route_id": "plugin.install",
+      "status": 200
+    },
+    {
+      "request": {
+        "action": "upgrade",
+        "expected_generation_id": "generation-1",
+        "operation_key": "plugin-upgrade-op-v2",
+        "package_hash": "8888888888888888888888888888888888888888888888888888888888888888",
+        "plugin_id": "com.plotpilot.demo",
+        "release_id": "7777777777777777777777777777777777777777777777777777777777777777",
+        "schema": "plugin-lifecycle-command/v2",
+        "target_generation_id": "generation-2"
+      },
+      "response": {
+        "action": "upgrade",
+        "failure_code": null,
+        "generation_id": "generation-2",
+        "idempotent": false,
+        "operation_key": "plugin-upgrade-op-v2",
+        "plugin_id": "com.plotpilot.demo",
+        "schema": "plugin-lifecycle-result/v2",
+        "state": "active"
+      },
+      "route_id": "plugin.upgrade",
+      "status": 200
+    },
+    {
+      "request": {
+        "action": "retire",
+        "expected_generation_id": "generation-2",
+        "operation_key": "plugin-retire-op-v2",
+        "package_hash": null,
+        "plugin_id": "com.plotpilot.demo",
+        "release_id": null,
+        "schema": "plugin-lifecycle-command/v2",
+        "target_generation_id": "generation-2"
+      },
+      "response": {
+        "action": "retire",
+        "failure_code": null,
+        "generation_id": "generation-2",
+        "idempotent": false,
+        "operation_key": "plugin-retire-op-v2",
+        "plugin_id": "com.plotpilot.demo",
+        "schema": "plugin-lifecycle-result/v2",
+        "state": "retired"
+      },
+      "route_id": "plugin.retire",
+      "status": 200
+    },
+    {
+      "request": {
+        "action": "rollback",
+        "expected_generation_id": "generation-2",
+        "operation_key": "plugin-rollback-op-v2",
+        "package_hash": "6666666666666666666666666666666666666666666666666666666666666666",
+        "plugin_id": "com.plotpilot.demo",
+        "release_id": "5555555555555555555555555555555555555555555555555555555555555555",
+        "schema": "plugin-lifecycle-command/v2",
+        "target_generation_id": "generation-1"
+      },
+      "response": {
+        "action": "rollback",
+        "failure_code": null,
+        "generation_id": "generation-1",
+        "idempotent": false,
+        "operation_key": "plugin-rollback-op-v2",
+        "plugin_id": "com.plotpilot.demo",
+        "schema": "plugin-lifecycle-result/v2",
+        "state": "active"
+      },
+      "route_id": "plugin.rollback",
+      "status": 200
+    }
+  ],
+  "schema": "m4-m5-public-surface-http-golden/v2"
+}

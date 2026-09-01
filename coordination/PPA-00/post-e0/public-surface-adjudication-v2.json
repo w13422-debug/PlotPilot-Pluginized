@@ -1,0 +1,67 @@
+{
+  "schema": "plotpilot-public-surface-adjudication/v2",
+  "task_id": "POST-E0-S0-P0-PUBLIC-SURFACE-V2-01",
+  "matrix_node_id": "POST-E0-P0-M45-PUBLIC-SURFACE-V2-01",
+  "owner_project": "P0",
+  "status": "ADJUDICATED_SOURCE",
+  "baseline": {
+    "branch": "codex/ppa-00-integration",
+    "head": "761c79a8343dbc17ee8f40e21e60fb962eeecd79",
+    "tree": "668e6cef338bbe79a647c6c9d160747e906e3795",
+    "parent": "060d10d0312e500607a1f12d0df6bd3a333feb33",
+    "clean_required": true
+  },
+  "authority": {
+    "taskbook_sha256": "e17dd1603cd7442d041ac243bb6c5844d1deeddb539c7e701a58931c0910f164",
+    "matrix_sha256": "3bdd3127f4a063f60a4abd8a2fb098749b1ddac95c29ba22b30893d4f66cfb06",
+    "formal_design_sha256": "e70f450b75cfa753148cf620d13855d0073f7d61294e7599ea9cc98f3e612b7b"
+  },
+  "decisions": [
+    {
+      "id": "V2-001",
+      "subject": "versioning",
+      "decision": "All post-M0 Candidate, Publication, Story-State, Job HTTP/SSE and plugin lifecycle additions use the additive v2 roots and schemas. Existing v1 contract, SDK and api/v1 bytes are not reinterpreted or regenerated into v2."
+    },
+    {
+      "id": "V2-002",
+      "subject": "candidate-authority",
+      "decision": "Candidate target, base and write_set are same-Workspace Core inputs. Parent candidates and source_refs may cross Workspace only as lineage/evidence. Candidate review is non-publishing; publication.accept is the sole publication route."
+    },
+    {
+      "id": "V2-003",
+      "subject": "partial-publication",
+      "decision": "A normal partial Candidate is review-only. The only publishable partial form is the Core-generated incomplete_stream Candidate, whose frozen mutation is accepted through publication.accept after the same CAS and evidence checks."
+    },
+    {
+      "id": "V2-004",
+      "subject": "projection",
+      "decision": "Story-State projection input is a closed, read-only projection of one Core-derived Publication, its Candidate, the current Revision, immutable Assets and a complete provenance receipt closure."
+    },
+    {
+      "id": "V2-005",
+      "subject": "job-cursors",
+      "decision": "candidate, job and core cursors are disjoint domains. A job SSE recovery response reports cursor-ahead and replay-gap/snapshot recovery separately and never converts a candidate/core cursor into a job cursor."
+    },
+    {
+      "id": "V2-006",
+      "subject": "plugin-lifecycle",
+      "decision": "Install, upgrade, retire and rollback are explicit Core lifecycle commands protected by operation_key and generation CAS. Plugin lifecycle has no publication capability; publication remains Core-owned."
+    }
+  ],
+  "implementation_note": "The exact v2 route and DTO field inventory in this artifact is a P0 adjudicated minimum closed surface for the post-M0 gap. It is not claimed to be a verbatim extraction from formal design v1.2. The existing generators and verifiers remain the single contract pipeline.",
+  "artifacts": {
+    "adr": "docs/contracts/adr-044-m4-m5-public-surface-v2.md",
+    "method_matrix": "contracts/json-schema/core-api-method-matrix.v2.json",
+    "schemas": [
+      "contracts/json-schema/core-authority-command-query-v2.schema.json",
+      "contracts/json-schema/candidate-review-v2.schema.json",
+      "contracts/json-schema/story-state-projection-input-v2.schema.json",
+      "contracts/json-schema/job-http-command-query-v2.schema.json",
+      "contracts/json-schema/plugin-api-command-query-v2.schema.json",
+      "contracts/json-schema/candidate-query-result-v2.schema.json"
+    ],
+    "manifest": "contracts/manifest-v2.json",
+    "corpus_root": "contracts/corpus/m4-m5-public-surface-v2",
+    "golden_root": "contracts/golden/m4-m5-public-surface-v2"
+  }
+}

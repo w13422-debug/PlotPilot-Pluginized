@@ -1,0 +1,132 @@
+{
+  "group_id": "m4-m5-v2-03-story-state",
+  "negative": [
+    {
+      "case_id": "v2-projection-closed-extra-field",
+      "expected": "closed_schema_rejection",
+      "fixture": "story_state.projection",
+      "kind": "closed_schema",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "unexpected"
+        ],
+        "value": true
+      }
+    },
+    {
+      "case_id": "v2-projection-missing-receipt-closure",
+      "expected": "provenance_closure",
+      "fixture": "story_state.projection",
+      "kind": "projection_semantics",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "receipt_closure"
+        ],
+        "value": []
+      }
+    },
+    {
+      "case_id": "v2-projection-publication-candidate-mismatch",
+      "expected": "projection_binding",
+      "fixture": "story_state.projection",
+      "kind": "projection_semantics",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "publication",
+          "candidate_id"
+        ],
+        "value": "candidate-other"
+      }
+    },
+    {
+      "case_id": "v2-projection-cross-workspace-asset",
+      "expected": "asset_closure",
+      "fixture": "story_state.projection",
+      "kind": "projection_semantics",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "assets",
+          0,
+          "sha256"
+        ],
+        "value": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    },
+    {
+      "case_id": "v2-projection-duplicate-asset-identity",
+      "expected": "asset_identity_uniqueness",
+      "fixture": "story_state.projection",
+      "kind": "projection_semantics",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "assets",
+          1,
+          "asset_id"
+        ],
+        "value": "asset-candidate-v2"
+      }
+    },
+    {
+      "case_id": "v2-projection-extra-unreachable-receipt",
+      "expected": "receipt_reachability",
+      "fixture": "story_state.projection_with_unreachable_receipt",
+      "kind": "projection_semantics",
+      "mutation": {
+        "op": "noop"
+      }
+    },
+    {
+      "case_id": "v2-projection-duplicate-receipt-identity",
+      "expected": "receipt_identity_uniqueness",
+      "fixture": "story_state.projection",
+      "kind": "projection_semantics",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "receipt_closure",
+          1,
+          "receipt_id"
+        ],
+        "value": "receipt-parent-v2"
+      }
+    },
+    {
+      "case_id": "v2-projection-missing-parent-receipt",
+      "expected": "receipt_parent_closure",
+      "fixture": "story_state.projection",
+      "kind": "projection_semantics",
+      "mutation": {
+        "op": "delete",
+        "path": [
+          "receipt_closure",
+          0
+        ]
+      }
+    },
+    {
+      "case_id": "v2-projection-tampered-receipt-hash",
+      "expected": "receipt_content_hash",
+      "fixture": "story_state.projection",
+      "kind": "projection_semantics",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "receipt_closure",
+          1,
+          "receipt_hash"
+        ],
+        "value": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    }
+  ],
+  "positive": [
+    "story_state.projection"
+  ],
+  "schema": "m4-m5-public-surface-corpus/v2",
+  "title": "Story-State is a closed Core-derived projection"
+}

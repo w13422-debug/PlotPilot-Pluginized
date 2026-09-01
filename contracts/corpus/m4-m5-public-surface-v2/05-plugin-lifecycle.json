@@ -1,0 +1,172 @@
+{
+  "group_id": "m4-m5-v2-05-plugin-lifecycle",
+  "negative": [
+    {
+      "case_id": "v2-plugin-closed-extra-field",
+      "expected": "closed_schema_rejection",
+      "fixture": "plugin.lifecycle.install",
+      "kind": "closed_schema",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "unexpected"
+        ],
+        "value": true
+      }
+    },
+    {
+      "case_id": "v2-plugin-generation-race",
+      "expected": "generation_conflict",
+      "fixture": "plugin.lifecycle.upgrade",
+      "kind": "plugin_lifecycle",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "expected_generation_id"
+        ],
+        "value": "generation-stale"
+      }
+    },
+    {
+      "case_id": "v2-plugin-retire-active-job",
+      "expected": "active_job",
+      "fixture": "plugin.lifecycle.retire",
+      "kind": "plugin_lifecycle",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "target_generation_id"
+        ],
+        "value": "generation-active-job"
+      }
+    },
+    {
+      "case_id": "v2-plugin-publication-forbidden",
+      "expected": "publication_forbidden",
+      "fixture": "plugin.lifecycle.install",
+      "kind": "plugin_publication",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "action"
+        ],
+        "value": "publish"
+      }
+    },
+    {
+      "case_id": "v2-plugin-operation-key-reuse",
+      "expected": "duplicate_operation",
+      "fixture": "plugin.lifecycle.upgrade",
+      "kind": "operation_key_reuse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "package_hash"
+        ],
+        "value": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    },
+    {
+      "case_id": "v2-plugin-install-missing-release",
+      "expected": "release_missing",
+      "fixture": "plugin.lifecycle.install",
+      "kind": "plugin_lifecycle",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "release_id"
+        ],
+        "value": null
+      }
+    },
+    {
+      "case_id": "v2-plugin-http-action-binding",
+      "expected": "route_binding",
+      "fixture": "http.plugin.install",
+      "kind": "http_exchange",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "request",
+          "action"
+        ],
+        "value": "upgrade"
+      },
+      "route_id": "plugin.install"
+    },
+    {
+      "case_id": "v2-plugin-http-generation-binding",
+      "expected": "generation_binding",
+      "fixture": "http.plugin.upgrade",
+      "kind": "http_exchange",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "response",
+          "generation_id"
+        ],
+        "value": "generation-other"
+      },
+      "route_id": "plugin.upgrade"
+    },
+    {
+      "case_id": "v2-plugin-http-response-id-binding",
+      "expected": "exchange_binding",
+      "fixture": "http.plugin.upgrade",
+      "kind": "http_exchange",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "response",
+          "plugin_id"
+        ],
+        "value": "com.plotpilot.other"
+      },
+      "route_id": "plugin.upgrade"
+    },
+    {
+      "case_id": "v2-plugin-discovery-cursor-error-schema",
+      "expected": "plugin_http_error_binding",
+      "fixture": "http.plugin.discovery.error",
+      "kind": "http_exchange",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "response",
+          "schema"
+        ],
+        "value": "core-http-error/v2"
+      },
+      "route_id": "plugin.discovery"
+    },
+    {
+      "case_id": "v2-plugin-discovery-cursor-request-domain",
+      "expected": "cursor_domain_mismatch",
+      "fixture": "http.plugin.discovery.error",
+      "kind": "http_request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "request",
+          "cursor"
+        ],
+        "value": "candidate/ws-1/1"
+      },
+      "route_id": "plugin.discovery"
+    }
+  ],
+  "positive": [
+    "plugin.discovery",
+    "plugin.discovery_error",
+    "plugin.lifecycle.install",
+    "plugin.lifecycle.upgrade",
+    "plugin.lifecycle.retire",
+    "plugin.lifecycle.rollback",
+    "plugin.lifecycle.result.install",
+    "plugin.lifecycle.result.upgrade",
+    "plugin.lifecycle.result.retire",
+    "plugin.lifecycle.result.rollback"
+  ],
+  "schema": "m4-m5-public-surface-corpus/v2",
+  "title": "Plugin generation lifecycle CAS and publication isolation"
+}

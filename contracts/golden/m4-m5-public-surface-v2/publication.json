@@ -1,0 +1,227 @@
+{
+  "authority_query": {
+    "entity_id": "doc-a",
+    "entity_kind": "document",
+    "include_assets": true,
+    "schema": "core-authority-query/v2",
+    "workspace_id": "ws-1"
+  },
+  "authority_result": {
+    "content_asset_id": "asset-revision-v2",
+    "content_hash": "2222222222222222222222222222222222222222222222222222222222222222",
+    "derived_from_candidate_id": "candidate-v2",
+    "entity_id": "doc-a",
+    "entity_kind": "document",
+    "revision_id": "rev-2",
+    "revision_number": 2,
+    "schema": "core-authority-result/v2",
+    "workspace_id": "ws-1"
+  },
+  "command_complete": {
+    "accepted_by": "user-v2",
+    "candidate_id": "candidate-v2",
+    "publication_operation_key": "publication-op-v2",
+    "schema": "publication-command/v2",
+    "workspace_id": "ws-1"
+  },
+  "command_incomplete_stream": {
+    "accepted_by": "user-v2",
+    "candidate_id": "candidate-incomplete",
+    "publication_operation_key": "publication-op-incomplete-v2",
+    "schema": "publication-command/v2",
+    "workspace_id": "ws-1"
+  },
+  "command_partial": {
+    "accepted_by": "user-v2",
+    "candidate_id": "candidate-partial",
+    "publication_operation_key": "publication-op-partial-v2",
+    "schema": "publication-command/v2",
+    "workspace_id": "ws-1"
+  },
+  "command_relation_patch": {
+    "accepted_by": "user-v2",
+    "candidate_id": "candidate-relation-v2",
+    "publication_operation_key": "publication-op-relation-v2",
+    "schema": "publication-command/v2",
+    "workspace_id": "ws-1"
+  },
+  "command_replace": {
+    "accepted_by": "user-v2",
+    "candidate_id": "candidate-replace-v2",
+    "publication_operation_key": "publication-op-replace-v2",
+    "schema": "publication-command/v2",
+    "workspace_id": "ws-1"
+  },
+  "command_structure_patch": {
+    "accepted_by": "user-v2",
+    "candidate_id": "candidate-structure-v2",
+    "publication_operation_key": "publication-op-structure-v2",
+    "schema": "publication-command/v2",
+    "workspace_id": "ws-1"
+  },
+  "result_complete": {
+    "candidate_id": "candidate-v2",
+    "cas": {
+      "base_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "base_revision_id": "rev-1",
+      "content_hash": "2222222222222222222222222222222222222222222222222222222222222222",
+      "revision_id": "rev-2",
+      "revision_number": 2,
+      "write_set": [
+        {
+          "content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+          "entity_id": "doc-a",
+          "entity_kind": "document",
+          "revision_id": "rev-1",
+          "workspace_id": "ws-1"
+        },
+        {
+          "content_hash": "7777777777777777777777777777777777777777777777777777777777777777",
+          "entity_id": "doc-b",
+          "entity_kind": "document",
+          "revision_id": "rev-b",
+          "workspace_id": "ws-1"
+        }
+      ]
+    },
+    "content_hash": "2222222222222222222222222222222222222222222222222222222222222222",
+    "entity_id": "doc-a",
+    "entity_kind": "document",
+    "idempotent": false,
+    "provenance_receipt_id": "receipt-v2",
+    "publication_id": "publication-v2",
+    "publication_operation_key": "publication-op-v2",
+    "revision_id": "rev-2",
+    "revision_number": 2,
+    "schema": "publication-result/v2",
+    "workspace_id": "ws-1"
+  },
+  "result_incomplete_stream": {
+    "candidate_id": "candidate-incomplete",
+    "cas": {
+      "base_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "base_revision_id": "rev-1",
+      "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "revision_id": "rev-3",
+      "revision_number": 3,
+      "write_set": [
+        {
+          "content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+          "entity_id": "doc-a",
+          "entity_kind": "document",
+          "revision_id": "rev-1",
+          "workspace_id": "ws-1"
+        },
+        {
+          "content_hash": "7777777777777777777777777777777777777777777777777777777777777777",
+          "entity_id": "doc-b",
+          "entity_kind": "document",
+          "revision_id": "rev-b",
+          "workspace_id": "ws-1"
+        }
+      ]
+    },
+    "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "entity_id": "doc-a",
+    "entity_kind": "document",
+    "idempotent": false,
+    "provenance_receipt_id": "receipt-incomplete-v2",
+    "publication_id": "publication-incomplete-v2",
+    "publication_operation_key": "publication-op-incomplete-v2",
+    "revision_id": "rev-3",
+    "revision_number": 3,
+    "schema": "publication-result/v2",
+    "workspace_id": "ws-1"
+  },
+  "result_relation_patch": {
+    "candidate_id": "candidate-relation-v2",
+    "cas": {
+      "base_content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "base_revision_id": "rev-relation-1",
+      "content_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "revision_id": "rev-relation-2",
+      "revision_number": 2,
+      "write_set": [
+        {
+          "content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "entity_id": "relation-a",
+          "entity_kind": "relation_set",
+          "revision_id": "rev-relation-1",
+          "workspace_id": "ws-1"
+        }
+      ]
+    },
+    "content_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "entity_id": "relation-a",
+    "entity_kind": "relation_set",
+    "idempotent": false,
+    "provenance_receipt_id": "receipt-relation-v2",
+    "publication_id": "publication-relation-v2",
+    "publication_operation_key": "publication-op-relation-v2",
+    "revision_id": "rev-relation-2",
+    "revision_number": 2,
+    "schema": "publication-result/v2",
+    "workspace_id": "ws-1"
+  },
+  "result_replace": {
+    "candidate_id": "candidate-replace-v2",
+    "cas": {
+      "base_content_hash": "8888888888888888888888888888888888888888888888888888888888888888",
+      "base_revision_id": "rev-replace-1",
+      "content_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "revision_id": "rev-replace-2",
+      "revision_number": 2,
+      "write_set": [
+        {
+          "content_hash": "8888888888888888888888888888888888888888888888888888888888888888",
+          "entity_id": "doc-replace",
+          "entity_kind": "document",
+          "revision_id": "rev-replace-1",
+          "workspace_id": "ws-1"
+        }
+      ]
+    },
+    "content_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "entity_id": "doc-replace",
+    "entity_kind": "document",
+    "idempotent": false,
+    "provenance_receipt_id": "receipt-replace-v2",
+    "publication_id": "publication-replace-v2",
+    "publication_operation_key": "publication-op-replace-v2",
+    "revision_id": "rev-replace-2",
+    "revision_number": 2,
+    "schema": "publication-result/v2",
+    "workspace_id": "ws-1"
+  },
+  "result_structure_patch": {
+    "candidate_id": "candidate-structure-v2",
+    "cas": {
+      "base_content_hash": "9999999999999999999999999999999999999999999999999999999999999999",
+      "base_revision_id": "rev-structure-1",
+      "content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "revision_id": "rev-structure-2",
+      "revision_number": 2,
+      "write_set": [
+        {
+          "content_hash": "9999999999999999999999999999999999999999999999999999999999999999",
+          "entity_id": "node-a",
+          "entity_kind": "node_structure",
+          "revision_id": "rev-structure-1",
+          "workspace_id": "ws-1"
+        }
+      ]
+    },
+    "content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "entity_id": "node-a",
+    "entity_kind": "node_structure",
+    "idempotent": false,
+    "provenance_receipt_id": "receipt-structure-v2",
+    "publication_id": "publication-structure-v2",
+    "publication_operation_key": "publication-op-structure-v2",
+    "revision_id": "rev-structure-2",
+    "revision_number": 2,
+    "schema": "publication-result/v2",
+    "workspace_id": "ws-1"
+  },
+  "schema": "m4-m5-public-surface-golden/v2"
+}

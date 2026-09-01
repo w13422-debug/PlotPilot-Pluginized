@@ -1,0 +1,221 @@
+{
+  "group_id": "m4-m5-v2-01-candidate",
+  "negative": [
+    {
+      "case_id": "v2-candidate-closed-extra-field",
+      "expected": "closed_schema_rejection",
+      "fixture": "candidate.record",
+      "kind": "closed_schema",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "unexpected"
+        ],
+        "value": true
+      }
+    },
+    {
+      "case_id": "v2-candidate-target-cross-workspace",
+      "expected": "cross_workspace",
+      "fixture": "candidate.record",
+      "kind": "candidate_semantics",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "target",
+          "workspace_id"
+        ],
+        "value": "ws-other"
+      }
+    },
+    {
+      "case_id": "v2-candidate-write-set-cross-workspace",
+      "expected": "cross_workspace",
+      "fixture": "candidate.record",
+      "kind": "candidate_semantics",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "write_set",
+          0,
+          "workspace_id"
+        ],
+        "value": "ws-other"
+      }
+    },
+    {
+      "case_id": "v2-candidate-write-set-duplicate-full-identity",
+      "expected": "duplicate_entity_identity",
+      "fixture": "candidate.record",
+      "kind": "candidate_semantics",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "write_set",
+          1,
+          "entity_id"
+        ],
+        "value": "doc-a"
+      }
+    },
+    {
+      "case_id": "v2-candidate-write-set-unstable-order",
+      "expected": "stable_entity_order",
+      "fixture": "candidate.record",
+      "kind": "candidate_semantics",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "write_set",
+          0,
+          "entity_id"
+        ],
+        "value": "doc-z"
+      }
+    },
+    {
+      "case_id": "v2-candidate-target-write-set-mismatch",
+      "expected": "target_write_set_binding",
+      "fixture": "candidate.record",
+      "kind": "candidate_semantics",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "write_set",
+          0,
+          "entity_id"
+        ],
+        "value": "doc-other"
+      }
+    },
+    {
+      "case_id": "v2-candidate-base-hash-mismatch",
+      "expected": "base_write_set_binding",
+      "fixture": "candidate.record",
+      "kind": "candidate_semantics",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "base",
+          "content_hash"
+        ],
+        "value": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "case_id": "v2-candidate-failed-query-surface",
+      "expected": "staging_outcome_rejection",
+      "fixture": "candidate.record",
+      "kind": "closed_schema",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "status"
+        ],
+        "value": "failed"
+      }
+    },
+    {
+      "case_id": "v2-candidate-skipped-review-surface",
+      "expected": "staging_outcome_rejection",
+      "fixture": "candidate.list_result",
+      "kind": "closed_schema",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "items",
+          0,
+          "status"
+        ],
+        "value": "skipped"
+      }
+    },
+    {
+      "case_id": "v2-candidate-parent-cycle",
+      "expected": "parent_cycle",
+      "fixture": "candidate.record",
+      "kind": "candidate_parent_cycle",
+      "mutation": {
+        "op": "cycle"
+      }
+    },
+    {
+      "case_id": "v2-candidate-preview-invalid-base64",
+      "expected": "preview_bytes",
+      "fixture": "candidate.preview_result",
+      "kind": "candidate_preview",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "base64_chunk"
+        ],
+        "value": "not-base64"
+      }
+    },
+    {
+      "case_id": "v2-candidate-preview-length-mismatch",
+      "expected": "preview_bytes",
+      "fixture": "candidate.preview_result",
+      "kind": "candidate_preview",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "length"
+        ],
+        "value": 4
+      }
+    },
+    {
+      "case_id": "v2-candidate-preview-content-hash-mismatch",
+      "expected": "preview_bytes",
+      "fixture": "candidate.preview_result",
+      "kind": "candidate_preview",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "content_hash"
+        ],
+        "value": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    {
+      "case_id": "v2-candidate-preview-next-offset-gap",
+      "expected": "preview_range",
+      "fixture": "candidate.preview_result",
+      "kind": "candidate_preview",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "next_offset"
+        ],
+        "value": 4
+      }
+    },
+    {
+      "case_id": "v2-candidate-preview-payload-hash-mismatch",
+      "expected": "preview_payload_binding",
+      "fixture": "candidate.preview_result",
+      "kind": "candidate_preview",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "payload_hash"
+        ],
+        "value": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    }
+  ],
+  "positive": [
+    "candidate.record",
+    "candidate.text_patch",
+    "candidate.replace",
+    "candidate.structure_patch",
+    "candidate.relation_patch",
+    "candidate.list_result",
+    "candidate.cross_workspace_source_ref",
+    "candidate.get_result",
+    "candidate.preview_result"
+  ],
+  "schema": "m4-m5-public-surface-corpus/v2",
+  "title": "Candidate closed shape, Workspace bindings and lineage"
+}

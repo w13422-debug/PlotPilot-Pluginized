@@ -1,0 +1,297 @@
+{
+  "command_result": {
+    "accepted": true,
+    "command": "start",
+    "idempotent": false,
+    "job_id": "job-v2",
+    "job_revision": 3,
+    "operation_key": "job-start-op-v2",
+    "schema": "job-command-result/v2",
+    "snapshot_cursor": "job/job-v2/5",
+    "state": "running",
+    "terminal_known": false,
+    "workspace_id": "ws-1"
+  },
+  "control": {
+    "command": "pause",
+    "expected_job_revision": 3,
+    "job_id": "job-v2",
+    "operation_key": "job-pause-op-v2",
+    "reason": "user requested pause",
+    "resume_intent_id": null,
+    "schema": "job-control-command/v2",
+    "workspace_id": "ws-1"
+  },
+  "event_page": {
+    "cursor_domain": "job",
+    "events": [
+      {
+        "aggregate_revision": 2,
+        "event_id": "job-event-v2-1",
+        "event_type": "job.progress",
+        "job_event_seq": 1,
+        "job_id": "job-v2",
+        "occurred_at": "2026-08-30T00:00:00Z",
+        "payload_asset_id": null,
+        "payload_hash": null
+      },
+      {
+        "aggregate_revision": 3,
+        "event_id": "job-event-v2-2",
+        "event_type": "job.progress",
+        "job_event_seq": 2,
+        "job_id": "job-v2",
+        "occurred_at": "2026-08-30T00:00:01Z",
+        "payload_asset_id": null,
+        "payload_hash": null
+      }
+    ],
+    "high_water_seq": 2,
+    "job_id": "job-v2",
+    "next_cursor": "job/job-v2/2",
+    "schema": "job-event-page-result/v2",
+    "workspace_id": "ws-1"
+  },
+  "event_query": {
+    "after_cursor": "job/job-v2/0",
+    "after_job_event_seq": 0,
+    "job_id": "job-v2",
+    "limit": 50,
+    "schema": "job-event-page-query/v2",
+    "workspace_id": "ws-1"
+  },
+  "list_query": {
+    "cursor": null,
+    "limit": 50,
+    "schema": "job-list-query/v2",
+    "state": null,
+    "workspace_id": "ws-1"
+  },
+  "list_result": {
+    "cursor_domain": "job",
+    "items": [
+      {
+        "candidate_ids": [
+          "candidate-v2"
+        ],
+        "checkpoint_id": null,
+        "core_event_high_water": 3,
+        "created_at": "2026-08-30T00:00:00Z",
+        "current_attempt_id": "attempt-v2",
+        "job_event_high_water": 5,
+        "job_id": "job-v2",
+        "job_revision": 3,
+        "snapshot_hash": "04dbafa81b9e78beb766b584bb48c5cc2095254960d1020701bdc3d979f560bd",
+        "state": "running",
+        "stream_high_waters": [
+          {
+            "acked_bytes": 5,
+            "acked_prefix_hash": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+            "acked_prefix_seq": 2,
+            "output_role": "chapter",
+            "stream_id": "stream-v2",
+            "target": {
+              "entity_id": "doc-a",
+              "entity_kind": "document",
+              "workspace_id": "ws-1"
+            }
+          }
+        ],
+        "updated_at": "2026-08-30T00:00:01Z",
+        "workspace_id": "ws-1",
+        "writer_epoch": 1
+      }
+    ],
+    "next_cursor": "job/job-v2/5",
+    "schema": "job-list-result/v2",
+    "total": 1,
+    "workspace_id": "ws-1"
+  },
+  "schema": "m4-m5-public-surface-golden/v2",
+  "snapshot": {
+    "candidate_ids": [
+      "candidate-v2"
+    ],
+    "checkpoint_id": null,
+    "core_event_high_water": 3,
+    "created_at": "2026-08-30T00:00:00Z",
+    "current_attempt_id": "attempt-v2",
+    "job_event_high_water": 5,
+    "job_id": "job-v2",
+    "job_revision": 3,
+    "snapshot_hash": "04dbafa81b9e78beb766b584bb48c5cc2095254960d1020701bdc3d979f560bd",
+    "state": "running",
+    "stream_high_waters": [
+      {
+        "acked_bytes": 5,
+        "acked_prefix_hash": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+        "acked_prefix_seq": 2,
+        "output_role": "chapter",
+        "stream_id": "stream-v2",
+        "target": {
+          "entity_id": "doc-a",
+          "entity_kind": "document",
+          "workspace_id": "ws-1"
+        }
+      }
+    ],
+    "updated_at": "2026-08-30T00:00:01Z",
+    "workspace_id": "ws-1",
+    "writer_epoch": 1
+  },
+  "snapshot_query": {
+    "job_id": "job-v2",
+    "schema": "job-snapshot-query/v2",
+    "workspace_id": "ws-1"
+  },
+  "snapshot_result": {
+    "cursor": "job/job-v2/5",
+    "job_id": "job-v2",
+    "schema": "job-snapshot-result/v2",
+    "snapshot": {
+      "candidate_ids": [
+        "candidate-v2"
+      ],
+      "checkpoint_id": null,
+      "core_event_high_water": 3,
+      "created_at": "2026-08-30T00:00:00Z",
+      "current_attempt_id": "attempt-v2",
+      "job_event_high_water": 5,
+      "job_id": "job-v2",
+      "job_revision": 3,
+      "snapshot_hash": "04dbafa81b9e78beb766b584bb48c5cc2095254960d1020701bdc3d979f560bd",
+      "state": "running",
+      "stream_high_waters": [
+        {
+          "acked_bytes": 5,
+          "acked_prefix_hash": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+          "acked_prefix_seq": 2,
+          "output_role": "chapter",
+          "stream_id": "stream-v2",
+          "target": {
+            "entity_id": "doc-a",
+            "entity_kind": "document",
+            "workspace_id": "ws-1"
+          }
+        }
+      ],
+      "updated_at": "2026-08-30T00:00:01Z",
+      "workspace_id": "ws-1",
+      "writer_epoch": 1
+    },
+    "workspace_id": "ws-1"
+  },
+  "sse_gap": {
+    "durable_high_water_seq": 6,
+    "gap": true,
+    "job_id": "job-v2",
+    "replay_floor_seq": 2,
+    "requested_after_seq": 0,
+    "schema": "job-sse-recovery-result/v2",
+    "snapshot": {
+      "candidate_ids": [
+        "candidate-v2"
+      ],
+      "checkpoint_id": null,
+      "core_event_high_water": 3,
+      "created_at": "2026-08-30T00:00:00Z",
+      "current_attempt_id": "attempt-v2",
+      "job_event_high_water": 4,
+      "job_id": "job-v2",
+      "job_revision": 4,
+      "snapshot_hash": "593801172d60fe3ee80e88a537c92007202937a3f084491f18642359378b0675",
+      "state": "running",
+      "stream_high_waters": [
+        {
+          "acked_bytes": 5,
+          "acked_prefix_hash": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+          "acked_prefix_seq": 2,
+          "output_role": "chapter",
+          "stream_id": "stream-v2",
+          "target": {
+            "entity_id": "doc-a",
+            "entity_kind": "document",
+            "workspace_id": "ws-1"
+          }
+        }
+      ],
+      "updated_at": "2026-08-30T00:00:01Z",
+      "workspace_id": "ws-1",
+      "writer_epoch": 1
+    },
+    "snapshot_cursor": "job/job-v2/4",
+    "snapshot_required": true,
+    "tail": [
+      {
+        "aggregate_revision": 6,
+        "event_id": "job-event-v2-5",
+        "event_type": "job.progress",
+        "job_event_seq": 5,
+        "job_id": "job-v2",
+        "occurred_at": "2026-08-30T00:00:04Z",
+        "payload_asset_id": null,
+        "payload_hash": null
+      },
+      {
+        "aggregate_revision": 7,
+        "event_id": "job-event-v2-6",
+        "event_type": "job.progress",
+        "job_event_seq": 6,
+        "job_id": "job-v2",
+        "occurred_at": "2026-08-30T00:00:05Z",
+        "payload_asset_id": null,
+        "payload_hash": null
+      }
+    ],
+    "workspace_id": "ws-1"
+  },
+  "sse_gap_query": {
+    "after_seq": 0,
+    "job_id": "job-v2",
+    "last_event_id": "job/job-v2/0",
+    "requested_cursor_domain": "job",
+    "schema": "job-sse-recovery-query/v2",
+    "workspace_id": "ws-1"
+  },
+  "sse_replay": {
+    "durable_high_water_seq": 2,
+    "gap": false,
+    "job_id": "job-v2",
+    "replay_floor_seq": 1,
+    "requested_after_seq": 1,
+    "schema": "job-sse-recovery-result/v2",
+    "snapshot": null,
+    "snapshot_cursor": "job/job-v2/2",
+    "snapshot_required": false,
+    "tail": [
+      {
+        "aggregate_revision": 3,
+        "event_id": "job-event-v2-2",
+        "event_type": "job.progress",
+        "job_event_seq": 2,
+        "job_id": "job-v2",
+        "occurred_at": "2026-08-30T00:00:01Z",
+        "payload_asset_id": null,
+        "payload_hash": null
+      }
+    ],
+    "workspace_id": "ws-1"
+  },
+  "sse_replay_query": {
+    "after_seq": 1,
+    "job_id": "job-v2",
+    "last_event_id": "job/job-v2/1",
+    "requested_cursor_domain": "job",
+    "schema": "job-sse-recovery-query/v2",
+    "workspace_id": "ws-1"
+  },
+  "start": {
+    "capability_id": "writing.chapter/v2",
+    "job_id": "job-v2",
+    "operation_key": "job-start-op-v2",
+    "run_snapshot_asset_id": "asset-run-snapshot-v2",
+    "schema": "job-start-command/v2",
+    "workspace_id": "ws-1",
+    "writer_epoch": 1
+  }
+}

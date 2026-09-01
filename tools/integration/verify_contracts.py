@@ -26,7 +26,7 @@ if str(BACKEND) not in sys.path:
 
 from jsonschema import Draft202012Validator  # noqa: E402
 
-from plotpilot_plugin_sdk.canonical import canonical_bytes, sha256_hex  # noqa: E402
+from plotpilot_plugin_sdk.canonical import canonical_bytes, hash_jcs, sha256_hex  # noqa: E402
 from plotpilot_plugin_sdk.errors import ContractError, ContractValidationError, ErrorCode  # noqa: E402
 from plotpilot_plugin_sdk.fake_provider import FakeProvider  # noqa: E402
 from plotpilot_plugin_sdk.fixtures import PluginUIHostFixture  # noqa: E402
@@ -45,7 +45,38 @@ from plotpilot_plugin_sdk.core_api import (  # noqa: E402
     verify_export_current_revisions_asset,
     verify_asset_metadata_range_pair,
 )
+from plotpilot_plugin_sdk.core_api_v2 import (  # noqa: E402
+    parse_candidate_query_result_v2,
+    parse_candidate_review_v2,
+    parse_candidate_v2,
+    parse_core_authority_v2,
+    parse_job_event_page_v2,
+    parse_job_http_v2,
+    parse_job_snapshot_v2,
+    parse_job_sse_recovery_v2,
+    parse_plugin_api_v2,
+    validate_candidate_v2,
+    validate_plugin_lifecycle_v2,
+    validate_publication_v2,
+    validate_story_state_projection_v2,
+)
+from plotpilot_plugin_sdk.m4_m5_http_v2 import (  # noqa: E402
+    OperationKeyLedgerV2,
+    parse_http_request,
+    parse_http_response,
+    validate_http_exchange,
+)
 from plotpilot_plugin_sdk.package import build_files_sha256, normalize_relative_path, package_hash  # noqa: E402
+from plotpilot_plugin_sdk.prompt_skill_rpc_v2 import (  # noqa: E402
+    PromptSkillOperationLedgerV2,
+    parse_prompt_skill_execute_request_v2,
+    parse_prompt_skill_execute_result_v2,
+    parse_prompt_skill_rpc_envelope_v2,
+    parse_rpc_error_v2,
+    prompt_skill_operation_key,
+    validate_prompt_skill_execute_v2,
+    validate_rpc_success_v2,
+)
 from plotpilot_plugin_sdk.rpc import (  # noqa: E402
     ChunkUploadLedger,
     OperationLedger,
@@ -90,7 +121,8 @@ from plotpilot_plugin_sdk.verifier import (  # noqa: E402
     snapshot_hash,
 )
 
-SCHEMA_DIR = ROOT / "contracts" / "json-schema"
+CONTRACTS = ROOT / "contracts"
+SCHEMA_DIR = CONTRACTS / "json-schema"
 EXAMPLES_DIR = ROOT / "contracts" / "examples"
 FIXTURES_DIR = EXAMPLES_DIR / "fixtures"
 GOLDEN_DIR = ROOT / "contracts" / "golden"
@@ -627,8 +659,10 @@ def verify_schemas() -> dict[str, Any]:
     if check.returncode:
         raise AssertionError(check.stdout + check.stderr)
     paths = sorted(SCHEMA_DIR.glob("*.schema.json"))
-    if len(paths) != 55:
-        raise AssertionError(f"expected 55 Draft 2020-12 schemas, found {len(paths)}")
+    v1_paths = [path for path in paths if not path.name.endswith("-v2.schema.json")]
+    v2_paths = [path for path in paths if path.name.endswith("-v2.schema.json")]
+    if len(v1_paths) != 55 or len(v2_paths) != 9:
+        raise AssertionError(f"expected 55 v1 + 9 v2 Draft 2020-12 schemas, found {len(v1_paths)} + {len(v2_paths)}")
     for path in paths:
         schema = load_strict_json(path)
         Draft202012Validator.check_schema(schema)
@@ -648,14 +682,14 @@ def verify_schemas() -> dict[str, Any]:
         schema = load_strict_json(SCHEMA_DIR / name)
         if "oneOf" in schema and schema.get("unevaluatedProperties") is not False:
             raise AssertionError(f"union root {name} must set unevaluatedProperties:false")
-    return {"schemas": len(paths), "generator_check": check.stdout.strip()}
+    return {"schemas": len(paths), "v1_schemas": len(v1_paths), "v2_schemas": len(v2_paths), "generator_check": check.stdout.strip()}
 
 
 def verify_contract_manifest() -> dict[str, Any]:
     """Verify the checked-in content inventory and its generated hashes."""
     generator = ROOT / "tools" / "integration" / "generate_contract_manifest.py"
     check = subprocess.run(
-        [sys.executable, str(generator), "--check"],
+        [sys.executable, str(generator), "--all", "--check"],
         cwd=ROOT,
         capture_output=True,
         text=True,
@@ -683,7 +717,41 @@ def verify_contract_manifest() -> dict[str, Any]:
             raise AssertionError(f"contract manifest hash drift: {record['path']}")
     if manifest["inventory"]["schema_count"] != 55 or manifest["inventory"]["negative_group_count"] != 14:
         raise AssertionError("contract manifest inventory does not cover the full M0 contract set")
-    return {"files": len(records), "schemas": manifest["inventory"]["schema_count"], "negative_groups": manifest["inventory"]["negative_group_count"], "generator_check": check.stdout.strip()}
+    v2_manifest_path = ROOT / "contracts" / "manifest-v2.json"
+    v2_manifest = load_strict_json(v2_manifest_path)
+    if v2_manifest.get("schema") != "plotpilot-contract-manifest/v2":
+        raise AssertionError("v2 contract manifest schema drift")
+    if v2_manifest.get("v1_immutable", {}).get("manifest_sha256") != hashlib.sha256(manifest_path.read_bytes()).hexdigest():
+        raise AssertionError("v2 manifest does not retain the v1 manifest identity")
+    v2_inventory = v2_manifest.get("inventory", {})
+    if v2_inventory.get("v2_schema_count") != 9 or v2_inventory.get("negative_group_count_v2") != 5:
+        raise AssertionError("v2 manifest inventory does not cover the additive surface")
+    if (
+        v2_inventory.get("schema_count") != 64
+        or v2_inventory.get("v1_schema_count") != 55
+        or v2_inventory.get("file_count_excluding_manifest") != 170
+        or v2_inventory.get("v1_file_count") != 141
+        or v2_inventory.get("v2_file_count") != 29
+        or v2_inventory.get("prompt_skill_schema_count") != 3
+        or v2_inventory.get("prompt_skill_negative_group_count_v2") != 1
+    ):
+        raise AssertionError("Prompt-Skill or additive manifest inventory drift")
+    v2_records = v2_manifest.get("files")
+    if not isinstance(v2_records, list):
+        raise AssertionError("v2 manifest has no file inventory")
+    for record in v2_records:
+        path = ROOT / record["path"]
+        if not path.is_file() or path.stat().st_size != record["bytes"] or hashlib.sha256(path.read_bytes()).hexdigest() != record["sha256"]:
+            raise AssertionError(f"v2 contract manifest hash drift: {record['path']}")
+    return {
+        "files": len(records),
+        "schemas": manifest["inventory"]["schema_count"],
+        "negative_groups": manifest["inventory"]["negative_group_count"],
+        "v2_files": len(v2_records),
+        "v2_schemas": v2_manifest["inventory"]["v2_schema_count"],
+        "prompt_skill_negative_cases": v2_inventory.get("prompt_skill_negative_case_count_v2"),
+        "generator_check": check.stdout.strip(),
+    }
 
 
 def verify_goldens() -> dict[str, Any]:
@@ -740,6 +808,679 @@ def verify_goldens() -> dict[str, Any]:
         "request_key": snapshot_expected["request_key"],
         "snapshot_hash": snapshot_expected["snapshot_hash"],
         "backup_hash": backup["bundle_hash"],
+    }
+
+
+def _v2_mutate(value: Any, mutation: Mapping[str, Any]) -> Any:
+    """Apply a declarative v2 corpus mutation without becoming a verifier."""
+
+    if mutation.get("op") == "noop":
+        return copy.deepcopy(value)
+    if mutation.get("op") == "cycle":
+        result = copy.deepcopy(value)
+        result["parent_candidate_ids"] = [result["candidate_id"]]
+        return result
+    result = copy.deepcopy(value)
+    path = list(mutation.get("path", []))
+    if not path:
+        raise AssertionError(f"v2 mutation path is empty: {mutation}")
+    target = result
+    for token in path[:-1]:
+        target = target[token]
+    if mutation.get("op") == "set":
+        target[path[-1]] = copy.deepcopy(mutation["value"])
+    elif mutation.get("op") == "delete":
+        del target[path[-1]]
+    else:
+        raise AssertionError(f"unsupported v2 mutation: {mutation}")
+    return result
+
+
+def verify_v2_public_surface() -> dict[str, Any]:
+    """Verify the additive v2 schemas, goldens, routes and semantic corpus."""
+
+    matrix = load_strict_json(SCHEMA_DIR / "core-api-method-matrix.v2.json")
+    if matrix.get("schema") != "core-api-method-matrix/v2" or matrix.get("publication_path") != "publication.accept" or matrix.get("publication_owner") != "core" or matrix.get("plugin_publication_allowed") is not False:
+        raise AssertionError("v2 method matrix does not keep Core as the sole Publication owner")
+    routes = matrix.get("routes")
+    if not isinstance(routes, list) or len(routes) != 19:
+        raise AssertionError("v2 method matrix route inventory drift")
+    route_ids = [route.get("route_id") for route in routes]
+    if len(route_ids) != len(set(route_ids)) or route_ids.count("publication.accept") != 1:
+        raise AssertionError("v2 method matrix has duplicate or missing Publication route")
+    if any(route.get("route_id") != "publication.accept" and "publication" in route.get("path_template", "") for route in routes):
+        raise AssertionError("v2 matrix exposes a second Publication path")
+    expected_placeholders = {
+        route["route_id"]: re.findall(r"\{([^{}]+)\}", route["path_template"])
+        for route in routes
+    }
+    if any(route.get("path_identity") != expected_placeholders[route["route_id"]] for route in routes):
+        raise AssertionError("v2 path identity is not derived from its template")
+    if set(matrix.get("roots", {})) != {"core", "jobs", "plugins"}:
+        raise AssertionError("v2 API root inventory drift")
+    if set(matrix.get("cursor_domains", {})) != {"candidate", "job", "core"}:
+        raise AssertionError("v2 cursor domain inventory drift")
+
+    golden_root = GOLDEN_DIR / "m4-m5-public-surface-v2"
+    golden = {
+        name: load_strict_json(golden_root / name)
+        for name in ("candidate.json", "review.json", "publication.json", "story-state.json", "job.json", "plugin.json", "http.json", "expected.json")
+    }
+    expected = golden["expected.json"]
+    if expected.get("mutation_kinds") != ["replace", "text_patch", "structure_patch", "relation_patch"]:
+        raise AssertionError("v2 mutation-kind golden inventory drift")
+    for name, digest in expected["fixture_files"].items():
+        path = golden_root / name
+        if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != digest:
+            raise AssertionError(f"v2 golden file hash drift: {name}")
+
+    candidate_doc = golden["candidate.json"]
+    candidate = candidate_doc["candidate"]
+    candidate_text_patch = candidate_doc["candidate_text_patch"]
+    candidate_replace = candidate_doc["candidate_replace"]
+    candidate_structure_patch = candidate_doc["candidate_structure_patch"]
+    candidate_relation_patch = candidate_doc["candidate_relation_patch"]
+    candidate_partial = candidate_doc["candidate_partial"]
+    candidate_incomplete = candidate_doc["candidate_incomplete_stream"]
+    candidate_cross_source = candidate_doc["candidate_cross_workspace_source"]
+    for candidate_variant in (candidate, candidate_text_patch, candidate_replace, candidate_structure_patch, candidate_relation_patch):
+        parse_candidate_v2(candidate_variant)
+    if candidate_text_patch != candidate:
+        raise AssertionError("text-patch Candidate golden is not the primary Candidate vector")
+    parse_candidate_v2(candidate_cross_source)
+    parse_candidate_v2(candidate_partial)
+    parse_candidate_v2(candidate_incomplete)
+    parse_candidate_query_result_v2(candidate_doc["candidate_get_query"])
+    parse_candidate_query_result_v2(candidate_doc["candidate_get_result"])
+    parse_candidate_query_result_v2(candidate_doc["candidate_preview_query"])
+    parse_candidate_query_result_v2(candidate_doc["candidate_preview_result"])
+    parse_candidate_query_result_v2(candidate_doc["candidate_list_result"])
+    for key in ("query", "command", "result"):
+        parse_candidate_review_v2(golden["review.json"][key])
+
+    publication_doc = golden["publication.json"]
+    publication_variants = (
+        (candidate_replace, publication_doc["command_replace"], publication_doc["result_replace"]),
+        (candidate, publication_doc["command_complete"], publication_doc["result_complete"]),
+        (candidate_structure_patch, publication_doc["command_structure_patch"], publication_doc["result_structure_patch"]),
+        (candidate_relation_patch, publication_doc["command_relation_patch"], publication_doc["result_relation_patch"]),
+    )
+    for publication_candidate, publication_command_variant, publication_result_variant in publication_variants:
+        validate_publication_v2(
+            publication_command_variant,
+            publication_result_variant,
+            candidate=publication_candidate,
+            expected_workspace_id="ws-1",
+        )
+        if publication_result_variant["content_hash"] == publication_candidate["mutation"]["payload_hash"]:
+            raise AssertionError("Publication golden collapsed mutation payload hash into final Revision hash")
+    validate_publication_v2(
+        publication_doc["command_complete"],
+        publication_doc["result_complete"],
+        candidate=candidate,
+        expected_workspace_id="ws-1",
+    )
+    validate_publication_v2(
+        publication_doc["command_incomplete_stream"],
+        publication_doc["result_incomplete_stream"],
+        candidate=candidate_incomplete,
+        expected_workspace_id="ws-1",
+    )
+    projection = golden["story-state.json"]["projection"]
+    validate_story_state_projection_v2(projection, expected_workspace_id="ws-1")
+
+    job_doc = golden["job.json"]
+    parse_job_snapshot_v2(job_doc["snapshot"])
+    for key in ("list_query", "list_result", "snapshot_query", "snapshot_result", "start", "control", "command_result", "event_query", "event_page", "sse_replay_query", "sse_replay", "sse_gap_query", "sse_gap"):
+        parse_job_http_v2(job_doc[key])
+    parse_job_event_page_v2(job_doc["event_page"])
+    parse_job_sse_recovery_v2(job_doc["sse_replay"])
+    parse_job_sse_recovery_v2(job_doc["sse_gap"])
+    plugin_doc = golden["plugin.json"]
+    parse_plugin_api_v2(plugin_doc["discovery_query"])
+    parse_plugin_api_v2(plugin_doc["discovery_result"])
+    parse_plugin_api_v2(plugin_doc["discovery_error"])
+    for key in ("install", "upgrade", "retire", "rollback", "lifecycle_result_install", "lifecycle_result_upgrade", "lifecycle_result_retire", "lifecycle_result_rollback"):
+        parse_plugin_api_v2(plugin_doc[key])
+    validate_plugin_lifecycle_v2(plugin_doc["install"])
+    validate_plugin_lifecycle_v2(plugin_doc["upgrade"], current_generation_id="generation-1")
+    validate_plugin_lifecycle_v2(plugin_doc["retire"], current_generation_id="generation-2")
+    validate_plugin_lifecycle_v2(plugin_doc["rollback"], current_generation_id="generation-2")
+
+    http_doc = golden["http.json"]
+    if http_doc.get("schema") != "m4-m5-public-surface-http-golden/v2":
+        raise AssertionError("v2 HTTP golden schema drift")
+    http_exchanges = http_doc.get("exchanges")
+    if not isinstance(http_exchanges, list) or http_doc.get("exchange_count") != len(http_exchanges) or len(http_exchanges) != len(routes):
+        raise AssertionError("v2 HTTP golden exchange inventory drift")
+    route_by_id = {route["route_id"]: route for route in routes}
+    observed_route_ids = [exchange.get("route_id") for exchange in http_exchanges]
+    if set(observed_route_ids) != set(route_by_id) or len(observed_route_ids) != len(set(observed_route_ids)):
+        raise AssertionError("v2 HTTP goldens do not cover every method-matrix route exactly once")
+
+    candidate_by_id = {
+        item["candidate_id"]: item
+        for item in (candidate, candidate_text_patch, candidate_replace, candidate_structure_patch, candidate_relation_patch, candidate_partial, candidate_incomplete)
+    }
+    for exchange in http_exchanges:
+        route_id = exchange["route_id"]
+        request = exchange["request"]
+        candidate_for_exchange = candidate_by_id.get(request.get("candidate_id"))
+        validate_http_exchange(route_id, request, exchange["status"], exchange["response"], candidate=candidate_for_exchange)
+    error_exchanges = http_doc.get("error_exchanges")
+    if not isinstance(error_exchanges, list) or len(error_exchanges) != 1:
+        raise AssertionError("v2 HTTP error golden inventory drift")
+    for exchange in error_exchanges:
+        if exchange.get("route_id") != "plugin.discovery" or exchange.get("status") != 400 or exchange.get("response", {}).get("schema") != "plugin-http-error/v2" or exchange.get("response", {}).get("error_code") != "cursor_domain_mismatch":
+            raise AssertionError("plugin.discovery cursor-domain error golden drift")
+        validate_http_exchange(exchange["route_id"], exchange["request"], exchange["status"], exchange["response"])
+
+    fixtures: dict[str, Any] = {
+        "candidate.record": candidate,
+        "candidate.text_patch": candidate_text_patch,
+        "candidate.replace": candidate_replace,
+        "candidate.structure_patch": candidate_structure_patch,
+        "candidate.relation_patch": candidate_relation_patch,
+        "candidate.list_result": candidate_doc["candidate_list_result"],
+        "candidate.cross_workspace_source_ref": candidate_cross_source,
+        "candidate.get_result": candidate_doc["candidate_get_result"],
+        "candidate.preview_result": candidate_doc["candidate_preview_result"],
+        "review.query": golden["review.json"]["query"],
+        "review.command": golden["review.json"]["command"],
+        "review.result": golden["review.json"]["result"],
+        "publication.command.complete": publication_doc["command_complete"],
+        "publication.result.complete": publication_doc["result_complete"],
+        "publication.command.replace": publication_doc["command_replace"],
+        "publication.result.replace": publication_doc["result_replace"],
+        "publication.command.structure_patch": publication_doc["command_structure_patch"],
+        "publication.result.structure_patch": publication_doc["result_structure_patch"],
+        "publication.command.relation_patch": publication_doc["command_relation_patch"],
+        "publication.result.relation_patch": publication_doc["result_relation_patch"],
+        "publication.command.partial": publication_doc["command_partial"],
+        "publication.command.incomplete_stream": publication_doc["command_incomplete_stream"],
+        "publication.result.incomplete_stream": publication_doc["result_incomplete_stream"],
+        "story_state.projection": projection,
+        "story_state.projection_with_unreachable_receipt": golden["story-state.json"]["projection_with_unreachable_receipt"],
+        "job.snapshot": job_doc["snapshot"],
+        "job.list_result": job_doc["list_result"],
+        "job.command.start": job_doc["start"],
+        "job.event_page": job_doc["event_page"],
+        "job.sse.replay": job_doc["sse_replay"],
+        "job.sse.gap": job_doc["sse_gap"],
+        "plugin.discovery": plugin_doc["discovery_result"],
+        "plugin.discovery_error": plugin_doc["discovery_error"],
+        "plugin.lifecycle.install": plugin_doc["install"],
+        "plugin.lifecycle.upgrade": plugin_doc["upgrade"],
+        "plugin.lifecycle.retire": plugin_doc["retire"],
+        "plugin.lifecycle.rollback": plugin_doc["rollback"],
+        "plugin.lifecycle.result.install": plugin_doc["lifecycle_result_install"],
+        "plugin.lifecycle.result.upgrade": plugin_doc["lifecycle_result_upgrade"],
+        "plugin.lifecycle.result.retire": plugin_doc["lifecycle_result_retire"],
+        "plugin.lifecycle.result.rollback": plugin_doc["lifecycle_result_rollback"],
+    }
+    for exchange in http_exchanges:
+        fixtures[f"http.{exchange['route_id']}"] = exchange
+    for exchange in error_exchanges:
+        fixtures["http.plugin.discovery.error"] = exchange
+
+    def parse_fixture(fixture_id: str, value: Any) -> Any:
+        if fixture_id.startswith("candidate."):
+            return parse_candidate_query_result_v2(value)
+        if fixture_id.startswith("review."):
+            return parse_candidate_review_v2(value)
+        if fixture_id.startswith("publication.command"):
+            return parse_core_authority_v2(value)
+        if fixture_id.startswith("publication.result"):
+            return parse_core_authority_v2(value)
+        if fixture_id.startswith("story_state.projection"):
+            return validate_story_state_projection_v2(value) or value
+        if fixture_id == "job.snapshot":
+            return parse_job_snapshot_v2(value)
+        if fixture_id == "job.event_page":
+            return parse_job_event_page_v2(value)
+        if fixture_id.startswith("job.sse."):
+            return parse_job_sse_recovery_v2(value)
+        if fixture_id.startswith("job."):
+            return parse_job_http_v2(value)
+        if fixture_id.startswith("plugin."):
+            return parse_plugin_api_v2(value)
+        if fixture_id.startswith("http."):
+            return value
+        raise AssertionError(f"unknown v2 fixture ID: {fixture_id}")
+
+    def expect_rejected(action: Callable[[], Any], case_id: str) -> None:
+        try:
+            action()
+        except (ContractError, ContractValidationError, AssertionError, ValueError, KeyError, TypeError):
+            return
+        raise AssertionError(f"v2 corpus false-accepted: {case_id}")
+
+    corpus_root = CORPUS_DIR / "m4-m5-public-surface-v2"
+    manifest = load_strict_json(corpus_root / "manifest.json")
+    group_paths = sorted(path for path in corpus_root.glob("*.json") if path.name != "manifest.json")
+    if manifest.get("group_count") != 5 or len(group_paths) != 5:
+        raise AssertionError("v2 corpus group inventory drift")
+    total_cases = 0
+    seen_cases: set[str] = set()
+    for group_path in group_paths:
+        group = load_strict_json(group_path)
+        if group.get("schema") != "m4-m5-public-surface-corpus/v2":
+            raise AssertionError(f"v2 corpus schema drift: {group_path.name}")
+        for fixture_id in group["positive"]:
+            if fixture_id not in fixtures:
+                raise AssertionError(f"v2 corpus has no positive fixture: {fixture_id}")
+            parse_fixture(fixture_id, fixtures[fixture_id])
+        for case in group["negative"]:
+            case_id = case["case_id"]
+            if case_id in seen_cases:
+                raise AssertionError(f"duplicate v2 corpus case: {case_id}")
+            seen_cases.add(case_id)
+            total_cases += 1
+            fixture_id = case["fixture"]
+            value = _v2_mutate(fixtures[fixture_id], case["mutation"])
+            kind = case["kind"]
+            if kind == "closed_schema":
+                action = lambda fixture_id=fixture_id, value=value: parse_fixture(fixture_id, value)
+            elif kind == "candidate_semantics":
+                action = lambda value=value: validate_candidate_v2(value)
+            elif kind == "candidate_preview":
+                action = lambda value=value: parse_candidate_query_result_v2(value)
+            elif kind == "candidate_parent_cycle":
+                action = lambda value=value: validate_candidate_v2(value, parent_records={value["candidate_id"]: value})
+            elif kind == "publication_semantics":
+                if fixture_id == "publication.command.partial":
+                    partial_result = copy.deepcopy(publication_doc["result_complete"])
+                    partial_result.update({"publication_operation_key": value["publication_operation_key"], "candidate_id": value["candidate_id"], "content_hash": candidate_partial["mutation"]["payload_hash"]})
+                    action = lambda value=value, partial_result=partial_result: validate_publication_v2(value, partial_result, candidate=candidate_partial, expected_workspace_id="ws-1")
+                elif fixture_id == "publication.command.complete":
+                    action = lambda value=value: validate_publication_v2(value, publication_doc["result_complete"], candidate=candidate, expected_workspace_id="ws-1")
+                else:
+                    action = lambda value=value: validate_publication_v2(publication_doc["command_complete"], value, candidate=candidate, expected_workspace_id="ws-1")
+            elif kind == "publication_write_set":
+                action = lambda value=value: validate_publication_v2(
+                    publication_doc["command_complete"],
+                    publication_doc["result_complete"],
+                    candidate=value,
+                    expected_workspace_id="ws-1",
+                )
+            elif kind == "projection_semantics":
+                action = lambda value=value: validate_story_state_projection_v2(value)
+            elif kind == "job_cursor":
+                action = lambda fixture_id=fixture_id, value=value: parse_job_event_page_v2(value) if fixture_id == "job.event_page" else parse_job_sse_recovery_v2(value)
+            elif kind == "job_sse":
+                action = lambda value=value: parse_job_sse_recovery_v2(value)
+            elif kind == "http_request":
+                route_id = case["route_id"]
+                action = lambda value=value, route_id=route_id: parse_http_request(route_id, value["request"])
+            elif kind == "http_exchange":
+                route_id = case["route_id"]
+                candidate_for_exchange = candidate_by_id.get(value["request"].get("candidate_id"))
+                action = lambda value=value, route_id=route_id, candidate_for_exchange=candidate_for_exchange: validate_http_exchange(
+                    route_id,
+                    value["request"],
+                    value["status"],
+                    value["response"],
+                    candidate=candidate_for_exchange,
+                )
+            elif kind == "plugin_lifecycle":
+                action = lambda value=value: validate_plugin_lifecycle_v2(value, current_generation_id="generation-1", active_job=value.get("action") == "retire")
+            elif kind == "plugin_publication":
+                action = lambda value=value: parse_plugin_api_v2(value)
+            elif kind == "operation_key_reuse":
+                if fixture_id.startswith("publication"):
+                    route_id, response = "publication.accept", publication_doc["result_complete"]
+                else:
+                    route_id, response = "plugin.upgrade", plugin_doc["lifecycle_result_upgrade"]
+                ledger = OperationKeyLedgerV2()
+                ledger.record(route_id, fixtures[fixture_id], 200 if route_id == "publication.accept" else 200, response)
+                action = lambda value=value, ledger=ledger, route_id=route_id, response=response: ledger.record(route_id, value, 200, response)
+            elif kind == "operation_response_drift":
+                route_id = case["route_id"]
+                original = fixtures[fixture_id]
+                candidate_for_exchange = candidate_by_id.get(original["request"].get("candidate_id"))
+                ledger = OperationKeyLedgerV2()
+                ledger.record(route_id, original["request"], original["status"], original["response"], candidate=candidate_for_exchange)
+                action = lambda value=value, ledger=ledger, route_id=route_id, candidate_for_exchange=candidate_for_exchange: ledger.record(
+                    route_id,
+                    value["request"],
+                    value["status"],
+                    value["response"],
+                    candidate=candidate_for_exchange,
+                )
+            else:
+                raise AssertionError(f"unknown v2 corpus kind: {kind}")
+            expect_rejected(action, case_id)
+    if manifest.get("negative_case_count") != total_cases:
+        raise AssertionError(f"v2 corpus case count drift: manifest={manifest.get('negative_case_count')} actual={total_cases}")
+    case_digest = hashlib.sha256(json.dumps(sorted(seen_cases), ensure_ascii=True, separators=(",", ":")).encode("ascii")).hexdigest()
+    return {
+        "routes": len(routes),
+        "schemas": 6,
+        "golden_files": len(expected["fixture_files"]),
+        "corpus_groups": len(group_paths),
+        "negative_cases": total_cases,
+        "negative_case_digest": case_digest,
+        "http_exchanges": len(http_exchanges),
+        "publication_path": matrix["publication_path"],
+        "cursor_domains": sorted(matrix["cursor_domains"]),
+    }
+
+
+def verify_prompt_skill_rpc_v2() -> dict[str, Any]:
+    """Verify the additive Prompt/Skill RPC without changing the M4/M5 gate."""
+
+    matrix = load_strict_json(SCHEMA_DIR / "rpc-method-matrix.v2.json")
+    if matrix.get("schema") != "rpc-method-matrix/v2" or matrix.get("authority") != "core" or matrix.get("plugin_authority_allowed") is not False:
+        raise AssertionError("Prompt-Skill method matrix authority drift")
+    if matrix.get("protocol", {}).get("jsonrpc") != "2.0" or matrix.get("protocol", {}).get("version") != "1":
+        raise AssertionError("Prompt-Skill method matrix protocol drift")
+    if matrix.get("envelope") != {"exactly_one": True, "members": ["request", "success", "error"]}:
+        raise AssertionError("Prompt-Skill envelope composition drift")
+    methods = matrix.get("methods")
+    if not isinstance(methods, list) or len(methods) != 1:
+        raise AssertionError("Prompt-Skill method inventory drift")
+    method = methods[0]
+    expected_method_fields = {
+        "method": "prompt.skill.execute/v2",
+        "authority": "core",
+        "consumer": "P2",
+        "direction": "host-to-worker",
+        "endpoint": "worker",
+        "protocol_version": "1",
+        "framing": "content-length-crlf",
+        "meta_profile": "attempt",
+        "lease_fenced": True,
+        "operation_key_required": True,
+        "request_schema": "prompt-skill-execute-request/v2",
+        "result_contract": "artifact-bundle/v1",
+        "result_schema": "prompt-skill-execute-result/v2",
+        "success_schema": "rpc-method-success/v2",
+        "error_schema": "rpc-error-v1",
+        "error_code_registry": "rpc-method-matrix/v1#error_codes",
+    }
+    if any(method.get(key) != value for key, value in expected_method_fields.items()):
+        raise AssertionError("Prompt-Skill method matrix dispatch fields drift")
+    if method.get("secrets") != {"location": "params", "mode": "one-shot", "response_forbidden": True}:
+        raise AssertionError("Prompt-Skill secret policy drift")
+    if method.get("job_mapping", {}).get("start", {}).get("method") != "job.start" or method.get("job_mapping", {}).get("resume", {}).get("method") != "job.resume":
+        raise AssertionError("Prompt-Skill job mapping drift")
+
+    resource_sources = {
+        "unicode-casefold-v1.json": CONTRACTS / "unicode-casefold-v1.json",
+        "rpc-method-matrix.v1.json": SCHEMA_DIR / "rpc-method-matrix.v1.json",
+        "rpc-method-matrix.v2.json": SCHEMA_DIR / "rpc-method-matrix.v2.json",
+        "rpc-error-v1.schema.json": SCHEMA_DIR / "rpc-error-v1.schema.json",
+        "prompt-skill-execute-request-v2.schema.json": SCHEMA_DIR / "prompt-skill-execute-request-v2.schema.json",
+        "prompt-skill-execute-result-v2.schema.json": SCHEMA_DIR / "prompt-skill-execute-result-v2.schema.json",
+        "rpc-method-success-v2.schema.json": SCHEMA_DIR / "rpc-method-success-v2.schema.json",
+    }
+    resource_dir = BACKEND / "plotpilot_plugin_sdk" / "resources"
+    if (resource_dir / "__init__.py").exists():
+        raise AssertionError("Prompt-Skill resources must not contain __init__.py")
+    for name, source in resource_sources.items():
+        target = resource_dir / name
+        if not target.is_file() or target.read_bytes() != source.read_bytes():
+            raise AssertionError(f"Prompt-Skill packaged resource drift: {name}")
+
+    golden_root = GOLDEN_DIR / "prompt-skill-rpc-v2"
+    golden = load_strict_json(golden_root / "execute.json")
+    expected = load_strict_json(golden_root / "expected.json")
+    for name, digest in expected.get("fixture_files", {}).items():
+        path = golden_root / name
+        if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != digest:
+            raise AssertionError(f"Prompt-Skill golden hash drift: {name}")
+    request = parse_prompt_skill_execute_request_v2(golden["request"])
+    result = parse_prompt_skill_execute_result_v2(golden["result"])
+    if validate_rpc_success_v2(golden["success"], request=request) != result:
+        raise AssertionError("Prompt-Skill success envelope result drift")
+    if parse_prompt_skill_rpc_envelope_v2(golden["request"]) != request:
+        raise AssertionError("Prompt-Skill request envelope dispatch drift")
+    if parse_prompt_skill_rpc_envelope_v2(golden["success"], request=request) != result:
+        raise AssertionError("Prompt-Skill success envelope dispatch drift")
+    if parse_prompt_skill_rpc_envelope_v2(golden["error"], request=request) != golden["error"]:
+        raise AssertionError("Prompt-Skill error envelope dispatch drift")
+    for status in ("failed", "cancelled", "uncertain"):
+        parsed_terminal = parse_prompt_skill_execute_result_v2(golden[status])
+        if parsed_terminal["status"] != status:
+            raise AssertionError(f"Prompt-Skill terminal fixture drift: {status}")
+    if validate_prompt_skill_execute_v2(request, golden["success"]) != result:
+        raise AssertionError("Prompt-Skill request/result binding drift")
+    operation_digest = prompt_skill_operation_key(request)
+    if operation_digest != expected.get("operation_digest") or operation_digest != golden.get("operation_digest"):
+        raise AssertionError("Prompt-Skill canonical operation digest drift")
+    operation_bytes = canonical_bytes(request["params"])
+    operation_bytes_hex = operation_bytes.hex()
+    if operation_bytes_hex != expected.get("operation_canonical_bytes_hex") or operation_bytes_hex != golden.get("operation_canonical_bytes_hex"):
+        raise AssertionError("Prompt-Skill canonical operation bytes drift")
+    if hash_jcs("prompt-skill-execute/v2", request["params"]) != operation_digest:
+        raise AssertionError("Prompt-Skill canonical operation hash binding drift")
+    permuted_request = copy.deepcopy(request)
+    permuted_request["params"]["skill_releases"] = list(reversed(permuted_request["params"]["skill_releases"]))
+    if canonical_bytes(permuted_request["params"]) == operation_bytes or prompt_skill_operation_key(permuted_request) == operation_digest:
+        raise AssertionError("Prompt-Skill Skill array permutation did not change canonical identity")
+
+    authority = {field: request["params"][field] for field in ("workspace_id", "generation_id", "plugin_id", "plugin_release_id", "job_id", "step_id", "attempt_id", "lease_epoch", "operation_key")}
+    ledger = PromptSkillOperationLedgerV2()
+    recorded, replayed = ledger.record(request, result, authoritative_context=authority)
+    if recorded != result or replayed:
+        raise AssertionError("Prompt-Skill ledger first record drift")
+    if ledger.replay(request, authoritative_context=authority) != result:
+        raise AssertionError("Prompt-Skill ledger authoritative replay drift")
+
+    corpus_root = CORPUS_DIR / "prompt-skill-rpc-v2"
+    corpus_manifest = load_strict_json(corpus_root / "manifest.json")
+    group_paths = sorted(path for path in corpus_root.glob("*.json") if path.name != "manifest.json")
+    if corpus_manifest.get("group_count") != 1 or len(group_paths) != 1:
+        raise AssertionError("Prompt-Skill corpus group inventory drift")
+    groups = [load_strict_json(path) for path in group_paths]
+    if any(group.get("schema") != "prompt-skill-rpc-corpus/v2" for group in groups):
+        raise AssertionError("Prompt-Skill corpus schema drift")
+    fixtures: dict[str, Any] = {
+        "execute.request": golden["request"],
+        "execute.result": golden["result"],
+        "execute.success": golden["success"],
+        "execute.failed": golden["failed"],
+        "execute.cancelled": golden["cancelled"],
+        "execute.uncertain": golden["uncertain"],
+        "execute.error": golden["error"],
+        "execute.envelope": golden["request"],
+        "execute.ledger": golden["request"],
+    }
+    seen_cases: set[str] = set()
+    total_cases = 0
+
+    def expect_rejected(action: Callable[[], Any], case_id: str) -> None:
+        try:
+            action()
+        except (ContractError, ContractValidationError, AssertionError, ValueError, KeyError, TypeError):
+            return
+        raise AssertionError(f"Prompt-Skill corpus false-accepted: {case_id}")
+
+    for group in groups:
+        if not isinstance(group.get("positive"), list) or not isinstance(group.get("negative"), list):
+            raise AssertionError("Prompt-Skill corpus positive/negative inventory drift")
+        for fixture_id in group["positive"]:
+            if fixture_id not in fixtures:
+                raise AssertionError(f"Prompt-Skill corpus has no positive fixture: {fixture_id}")
+            if fixture_id == "execute.request":
+                parse_prompt_skill_execute_request_v2(fixtures[fixture_id])
+            elif fixture_id in {"execute.result", "execute.failed", "execute.cancelled", "execute.uncertain"}:
+                parse_prompt_skill_execute_result_v2(fixtures[fixture_id])
+            elif fixture_id == "execute.success":
+                validate_rpc_success_v2(fixtures[fixture_id], request=request)
+            elif fixture_id == "execute.error":
+                parse_rpc_error_v2(fixtures[fixture_id])
+
+        for case in group["negative"]:
+            case_id = case.get("case_id")
+            if not isinstance(case_id, str) or case_id in seen_cases:
+                raise AssertionError(f"Prompt-Skill corpus case ID is missing or duplicated: {case_id!r}")
+            seen_cases.add(case_id)
+            total_cases += 1
+            fixture_id = case["fixture"]
+            mutation = case["mutation"]
+            if fixture_id == "execute.ledger":
+                action_name = mutation.get("op")
+
+                def ledger_action(action_name: str = action_name) -> Any:
+                    if action_name == "no-authority":
+                        return PromptSkillOperationLedgerV2().replay(request)
+                    if action_name == "stale-replay":
+                        stale_ledger = PromptSkillOperationLedgerV2()
+                        stale_ledger.record(request, result, authoritative_context=authority)
+                        stale_authority = dict(authority)
+                        stale_authority["attempt_id"] = "attempt-other"
+                        return stale_ledger.replay(request, authoritative_context=stale_authority)
+                    if action_name in {"future-poison", "future-epoch-rejected-before-mutation"}:
+                        future_request = _v2_mutate(request, {"op": "set", "path": ["params", "lease_epoch"], "value": 99})
+                        future_request = _v2_mutate(future_request, {"op": "set", "path": ["meta", "lease_epoch"], "value": 99})
+                        future_result = _v2_mutate(result, {"op": "set", "path": ["lease_epoch"], "value": 99})
+                        future_ledger = PromptSkillOperationLedgerV2()
+                        return future_ledger.record(future_request, future_result, authoritative_context=authority)
+                    if action_name == "authority-missing":
+                        missing_authority = dict(authority)
+                        del missing_authority[mutation["field"]]
+                        return PromptSkillOperationLedgerV2().record(request, result, authoritative_context=missing_authority)
+                    if action_name == "authority-additional":
+                        additional_authority = dict(authority)
+                        additional_authority[mutation["field"]] = copy.deepcopy(mutation["value"])
+                        return PromptSkillOperationLedgerV2().record(request, result, authoritative_context=additional_authority)
+                    if action_name == "authority-partial":
+                        return PromptSkillOperationLedgerV2().record(request, result, authoritative_context={"lease_epoch": request["params"]["lease_epoch"]})
+                    raise AssertionError(f"unknown Prompt-Skill ledger mutation: {action_name}")
+
+                expect_rejected(ledger_action, case_id)
+                continue
+
+            value = _v2_mutate(fixtures[fixture_id], mutation)
+            if fixture_id == "execute.request":
+                action = lambda value=value: parse_prompt_skill_execute_request_v2(value)
+            elif fixture_id == "execute.result":
+                action = lambda value=value: validate_prompt_skill_execute_v2(request, value)
+            elif fixture_id in {"execute.failed", "execute.cancelled", "execute.uncertain"}:
+                action = lambda value=value: parse_prompt_skill_execute_result_v2(value)
+            elif fixture_id == "execute.success":
+                action = lambda value=value: validate_prompt_skill_execute_v2(request, value)
+            elif fixture_id == "execute.error":
+                action = lambda value=value: parse_rpc_error_v2(value, request=request)
+            elif fixture_id == "execute.envelope":
+                action = lambda value=value: parse_prompt_skill_rpc_envelope_v2(value)
+            else:
+                raise AssertionError(f"unknown Prompt-Skill fixture: {fixture_id}")
+            expect_rejected(action, case_id)
+
+    if total_cases != corpus_manifest.get("negative_case_count") or total_cases <= 25:
+        raise AssertionError("Prompt-Skill negative corpus count drift")
+    if len(seen_cases) != total_cases:
+        raise AssertionError("Prompt-Skill negative corpus IDs are not unique")
+    for field in authority:
+        authority_probe = PromptSkillOperationLedgerV2()
+        missing_authority = dict(authority)
+        del missing_authority[field]
+        try:
+            authority_probe.record(request, result, authoritative_context=missing_authority)
+        except (ContractError, ContractValidationError, KeyError, TypeError, ValueError):
+            pass
+        else:
+            raise AssertionError(f"Prompt-Skill missing authority field was accepted: {field}")
+        _, authority_replayed = authority_probe.record(request, result, authoritative_context=authority)
+        if authority_replayed:
+            raise AssertionError(f"Prompt-Skill authority rejection mutated the ledger: {field}")
+
+    additional_probe = PromptSkillOperationLedgerV2()
+    additional_authority = dict(authority)
+    additional_authority["unexpected_authority"] = True
+    try:
+        additional_probe.record(request, result, authoritative_context=additional_authority)
+    except (ContractError, ContractValidationError, KeyError, TypeError, ValueError):
+        pass
+    else:
+        raise AssertionError("Prompt-Skill additional authority field was accepted")
+    _, additional_replayed = additional_probe.record(request, result, authoritative_context=authority)
+    if additional_replayed:
+        raise AssertionError("Prompt-Skill additional-authority rejection mutated the ledger")
+
+    partial_probe = PromptSkillOperationLedgerV2()
+    try:
+        partial_probe.record(request, result, authoritative_context={"lease_epoch": authority["lease_epoch"]})
+    except (ContractError, ContractValidationError, KeyError, TypeError, ValueError):
+        pass
+    else:
+        raise AssertionError("Prompt-Skill partial authority context was accepted")
+    _, partial_replayed = partial_probe.record(request, result, authoritative_context=authority)
+    if partial_replayed:
+        raise AssertionError("Prompt-Skill partial-authority rejection mutated the ledger")
+
+    future_request = _v2_mutate(request, {"op": "set", "path": ["params", "lease_epoch"], "value": authority["lease_epoch"] + 1})
+    future_request = _v2_mutate(future_request, {"op": "set", "path": ["meta", "lease_epoch"], "value": authority["lease_epoch"] + 1})
+    future_result = _v2_mutate(result, {"op": "set", "path": ["lease_epoch"], "value": authority["lease_epoch"] + 1})
+    future_probe = PromptSkillOperationLedgerV2()
+    try:
+        future_probe.record(future_request, future_result, authoritative_context=authority)
+    except (ContractError, ContractValidationError, KeyError, TypeError, ValueError):
+        pass
+    else:
+        raise AssertionError("Prompt-Skill future lease epoch was accepted")
+    _, future_replayed = future_probe.record(request, result, authoritative_context=authority)
+    if future_replayed:
+        raise AssertionError("Prompt-Skill future-epoch rejection mutated the ledger")
+
+    request_schema = load_strict_json(SCHEMA_DIR / "prompt-skill-execute-request-v2.schema.json")
+    result_schema = load_strict_json(SCHEMA_DIR / "prompt-skill-execute-result-v2.schema.json")
+    success_schema = load_strict_json(SCHEMA_DIR / "rpc-method-success-v2.schema.json")
+    request_validator = Draft202012Validator(request_schema)
+    result_validator = Draft202012Validator(result_schema)
+    success_validator = Draft202012Validator(success_schema)
+    valid_request = copy.deepcopy(golden["request"])
+    valid_request["params"]["secrets"][0]["value"] = "astral-😀"
+    if not request_validator.is_valid(valid_request):
+        raise AssertionError("Prompt-Skill Draft request Unicode scalar probe rejected a valid astral scalar")
+    parse_prompt_skill_execute_request_v2(valid_request)
+    valid_result = copy.deepcopy(golden["result"])
+    valid_result["warnings"] = [{"code": "prompt-skill.warning", "message": "astral-😀"}]
+    if not result_validator.is_valid(valid_result):
+        raise AssertionError("Prompt-Skill Draft result Unicode scalar probe rejected a valid astral scalar")
+    parse_prompt_skill_execute_result_v2(valid_result)
+    valid_success = copy.deepcopy(golden["success"])
+    valid_success["result"]["warnings"] = [{"code": "prompt-skill.warning", "message": "astral-😀"}]
+    if not success_validator.is_valid(valid_success):
+        raise AssertionError("Prompt-Skill Draft success Unicode scalar probe rejected a valid astral scalar")
+    validate_rpc_success_v2(valid_success, request=request)
+    invalid_request = copy.deepcopy(golden["request"])
+    invalid_request["params"]["secrets"][0]["value"] = "lone-\ud800"
+    invalid_result = copy.deepcopy(golden["result"])
+    invalid_result["warnings"] = [{"code": "prompt-skill.warning", "message": "lone-\ud800"}]
+    invalid_success = copy.deepcopy(golden["success"])
+    invalid_success["result"]["warnings"] = [{"code": "prompt-skill.warning", "message": "lone-\ud800"}]
+    if request_validator.is_valid(invalid_request) or result_validator.is_valid(invalid_result) or success_validator.is_valid(invalid_success):
+        raise AssertionError("Prompt-Skill Draft Unicode scalar probe accepted a lone surrogate")
+    for action in (
+        lambda: parse_prompt_skill_execute_request_v2(invalid_request),
+        lambda: parse_prompt_skill_execute_result_v2(invalid_result),
+        lambda: validate_rpc_success_v2(invalid_success, request=request),
+    ):
+        try:
+            action()
+        except (ContractError, ContractValidationError, KeyError, TypeError, ValueError, UnicodeError):
+            continue
+        raise AssertionError("Prompt-Skill Python Unicode scalar probe accepted a lone surrogate")
+    invalid_error = copy.deepcopy(golden["error"])
+    invalid_error["error"]["message"] = "lone-\ud800"
+    try:
+        parse_rpc_error_v2(invalid_error)
+    except (ContractError, ContractValidationError, KeyError, TypeError, ValueError, UnicodeError):
+        pass
+    else:
+        raise AssertionError("Prompt-Skill Python RPC error ingress accepted a lone surrogate")
+    if expected.get("terminal_statuses") != ["succeeded", "failed", "cancelled", "uncertain"]:
+        raise AssertionError("Prompt-Skill terminal status inventory drift")
+    return {
+        "schema_count": 3,
+        "golden_files": len(expected.get("fixture_files", {})),
+        "corpus_groups": len(groups),
+        "negative_cases": total_cases,
+        "operation_digest": operation_digest,
+        "package_resources": len(resource_sources),
     }
 
 
@@ -2944,6 +3685,8 @@ def verify_all() -> dict[str, Any]:
     result = {
         "manifest": verify_contract_manifest(),
         "schemas": verify_schemas(),
+        "prompt_skill_rpc_v2": verify_prompt_skill_rpc_v2(),
+        "v2_public_surface": verify_v2_public_surface(),
         "goldens": verify_goldens(),
         "positive": verify_positive_fixtures(),
         "corpus": verify_corpus(),

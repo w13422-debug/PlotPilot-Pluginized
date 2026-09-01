@@ -1,0 +1,398 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://plotpilot.local/contracts/prompt-skill-execute-request-v2",
+  "title": "PlotPilot Prompt/Skill execute request v2",
+  "type": "object",
+  "additionalProperties": false,
+  "unevaluatedProperties": false,
+  "properties": {
+    "jsonrpc": {
+      "const": "2.0"
+    },
+    "id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "method": {
+      "const": "prompt.skill.execute/v2"
+    },
+    "meta": {
+      "$ref": "#/$defs/meta"
+    },
+    "params": {
+      "$ref": "#/$defs/execute-params"
+    }
+  },
+  "required": [
+    "jsonrpc",
+    "id",
+    "method",
+    "meta",
+    "params"
+  ],
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+    },
+    "safe-nonnegative": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "safe-positive": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "nullable-id": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/id"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "nullable-hash": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/hash"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "anchor": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "result_bundle_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "result_item_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "stream_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "acked_prefix_hash": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "result_bundle_id",
+        "result_item_id",
+        "stream_id",
+        "acked_prefix_hash"
+      ]
+    },
+    "skill-release": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "skill_id": {
+          "$ref": "#/$defs/id"
+        },
+        "release_id": {
+          "$ref": "#/$defs/hash"
+        },
+        "package_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "parameters_asset_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "parameters_content_hash": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "skill_id",
+        "release_id",
+        "package_hash",
+        "parameters_asset_id",
+        "parameters_content_hash"
+      ]
+    },
+    "secret": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "secret_id": {
+          "$ref": "#/$defs/id"
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^(?:[^\\uD800-\\uDFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])*$"
+        }
+      },
+      "required": [
+        "secret_id",
+        "value"
+      ]
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "protocol_version": {
+          "const": "1"
+        },
+        "generation_id": {
+          "$ref": "#/$defs/id"
+        },
+        "plugin_release_id": {
+          "$ref": "#/$defs/hash"
+        },
+        "deadline_at": {
+          "type": "string",
+          "pattern": "^(?:[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z|[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.(?!000)[0-9]{3}Z)$"
+        },
+        "context": {
+          "const": "attempt"
+        },
+        "operation_id": {
+          "$ref": "#/$defs/id"
+        },
+        "job_id": {
+          "$ref": "#/$defs/id"
+        },
+        "step_id": {
+          "$ref": "#/$defs/id"
+        },
+        "attempt_id": {
+          "$ref": "#/$defs/id"
+        },
+        "lease_epoch": {
+          "$ref": "#/$defs/safe-positive"
+        }
+      },
+      "required": [
+        "protocol_version",
+        "generation_id",
+        "plugin_release_id",
+        "deadline_at",
+        "context",
+        "operation_id",
+        "job_id",
+        "step_id",
+        "attempt_id",
+        "lease_epoch"
+      ]
+    },
+    "execute-params": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "properties": {
+        "schema": {
+          "const": "prompt-skill-execute-request/v2"
+        },
+        "authority": {
+          "const": "core"
+        },
+        "capability_id": {
+          "const": "prompt.skill.execute/v2"
+        },
+        "result_contract": {
+          "const": "artifact-bundle/v1"
+        },
+        "operation_key": {
+          "$ref": "#/$defs/id"
+        },
+        "workspace_id": {
+          "$ref": "#/$defs/id"
+        },
+        "plugin_id": {
+          "$ref": "#/$defs/id"
+        },
+        "plugin_release_id": {
+          "$ref": "#/$defs/hash"
+        },
+        "plugin_package_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "skill_releases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/skill-release"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "run_snapshot_id": {
+          "$ref": "#/$defs/id"
+        },
+        "run_snapshot_asset_id": {
+          "$ref": "#/$defs/id"
+        },
+        "run_snapshot_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "generation_id": {
+          "$ref": "#/$defs/id"
+        },
+        "job_id": {
+          "$ref": "#/$defs/id"
+        },
+        "step_id": {
+          "$ref": "#/$defs/id"
+        },
+        "attempt_id": {
+          "$ref": "#/$defs/id"
+        },
+        "lease_epoch": {
+          "$ref": "#/$defs/safe-positive"
+        },
+        "chain_id": {
+          "$ref": "#/$defs/id"
+        },
+        "chain_asset_id": {
+          "$ref": "#/$defs/id"
+        },
+        "chain_content_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "input_asset_id": {
+          "$ref": "#/$defs/id"
+        },
+        "input_content_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "parameters_asset_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "parameters_content_hash": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "model_profile_revision_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "anchor": {
+          "$ref": "#/$defs/anchor"
+        },
+        "secrets": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/secret"
+              },
+              "minItems": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schema",
+        "authority",
+        "capability_id",
+        "result_contract",
+        "operation_key",
+        "workspace_id",
+        "plugin_id",
+        "plugin_release_id",
+        "plugin_package_hash",
+        "skill_releases",
+        "run_snapshot_id",
+        "run_snapshot_asset_id",
+        "run_snapshot_hash",
+        "generation_id",
+        "job_id",
+        "step_id",
+        "attempt_id",
+        "lease_epoch",
+        "chain_id",
+        "chain_asset_id",
+        "chain_content_hash",
+        "input_asset_id",
+        "input_content_hash",
+        "parameters_asset_id",
+        "parameters_content_hash",
+        "model_profile_revision_id",
+        "anchor",
+        "secrets"
+      ]
+    }
+  }
+}
