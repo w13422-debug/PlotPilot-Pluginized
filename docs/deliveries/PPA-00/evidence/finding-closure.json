@@ -22,11 +22,11 @@
       "sha256": "fc59c2a7f52c33f7cd7fa8606f3b1fa56ef66a881f2006cf79602fe93173ae9d"
     },
     {
-      "bytes": 143798,
+      "bytes": 188237,
       "exit_code": 0,
       "path": "tools/integration/verify_contracts.py",
       "role": "executable-support",
-      "sha256": "f72c6086fbb4b4ed29d9da775ccab488294f2a579f105724d41f0104183abf34"
+      "sha256": "698d529a455b30277fcf741fba4bfb7be2a6a8f70fff502ad24ed8415b9f1f4f"
     },
     {
       "bytes": 44839,
@@ -36,11 +36,11 @@
       "sha256": "f1c2d04db6b05366d45c3b38ba9f5e0b4ca16209d8e89b81cd3e66059135d199"
     },
     {
-      "bytes": 8825,
+      "bytes": 9069,
       "exit_code": 0,
       "path": "backend/plotpilot_plugin_sdk/rpc.py",
       "role": "executable-support",
-      "sha256": "d07b298c42c327158923e36d05aa55928d209ebd6b3134f9f32201adca80ddab"
+      "sha256": "21bea3b33daafd539415de41cd6da126e713a7bb3033333e5a3b60f3fa6d64d9"
     },
     {
       "bytes": 4629,
@@ -50,11 +50,11 @@
       "sha256": "94b6c6b2cf048825b3b78578f0c81eee7b8bc81c4d540af7940951a8832ef86b"
     },
     {
-      "bytes": 9803,
+      "bytes": 10346,
       "exit_code": 0,
       "path": "backend/plotpilot_plugin_sdk/package.py",
       "role": "executable-support",
-      "sha256": "fa3cc43691494b4417104bafd2cc4cd6525af84764b75e73d42c299c5f539457"
+      "sha256": "a6e28a8d53f61c6299e62aff9a20a8df1a42eeda1cc1d5498d551d4d8317e701"
     },
     {
       "bytes": 4314,
