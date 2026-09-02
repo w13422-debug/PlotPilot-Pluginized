@@ -149,6 +149,55 @@ def test_composition_uses_one_core_writer_for_fenced_candidate_staging(tmp_path)
         repository.close()
 
 
+def test_composition_builds_omitted_authority_from_exact_objects(tmp_path):
+    repository = CoreAuthorityRepository(tmp_path / "core.db")
+    assets = AssetStore(tmp_path / "assets")
+    try:
+        adapters = build_m4_authority_adapters(repository, assets)
+
+        assert adapters.execution.repository is repository
+        assert adapters.execution.assets is assets
+    finally:
+        repository.close()
+
+
+def test_composition_rejects_authority_with_mismatched_repository(tmp_path):
+    repository = CoreAuthorityRepository(tmp_path / "core.db")
+    other_repository = CoreAuthorityRepository(tmp_path / "other.db")
+    assets = AssetStore(tmp_path / "assets")
+    authority = ExecutionAuthority(other_repository, assets)
+    try:
+        with pytest.raises(ValueError) as error:
+            build_m4_authority_adapters(
+                repository, assets, execution_authority=authority
+            )
+
+        assert str(error.value) == (
+            "execution_authority.repository must be the exact repository object"
+        )
+    finally:
+        repository.close()
+        other_repository.close()
+
+
+def test_composition_rejects_authority_with_mismatched_asset_store(tmp_path):
+    repository = CoreAuthorityRepository(tmp_path / "core.db")
+    assets = AssetStore(tmp_path / "assets")
+    other_assets = AssetStore(tmp_path / "other-assets")
+    authority = ExecutionAuthority(repository, other_assets)
+    try:
+        with pytest.raises(ValueError) as error:
+            build_m4_authority_adapters(
+                repository, assets, execution_authority=authority
+            )
+
+        assert str(error.value) == (
+            "execution_authority.assets must be the exact AssetStore object"
+        )
+    finally:
+        repository.close()
+
+
 def test_incomplete_stream_requires_the_composed_core_writer(tmp_path):
     repository = CoreAuthorityRepository(tmp_path / "core.db")
     try:

@@ -35,8 +35,22 @@ def build_m4_authority_adapters(
     execution_authority: ExecutionAuthority | None = None,
 ) -> M4AuthorityAdapters:
     """Build adapters without adding a second database, writer, or API v1 path."""
+    if execution_authority is not None:
+        if execution_authority.repository is not repository:
+            raise ValueError(
+                "execution_authority.repository must be the exact repository object"
+            )
+        if execution_authority.assets is not assets:
+            raise ValueError(
+                "execution_authority.assets must be the exact AssetStore object"
+            )
+
     repository.ensure_chapter_authority_schema()
-    execution = execution_authority or ExecutionAuthority(repository, assets)
+    execution = (
+        ExecutionAuthority(repository, assets)
+        if execution_authority is None
+        else execution_authority
+    )
     candidates = CandidateApplication(
         CandidateService(repository, assets), execution_authority=execution
     )
