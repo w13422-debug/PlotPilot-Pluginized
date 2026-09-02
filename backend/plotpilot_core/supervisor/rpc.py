@@ -220,6 +220,26 @@ class FramedRpcSession:
         call = self._inbound.get(request_id)
         return None if call is None else call.response_frame
 
+    def has_staged_host_success(self, request_id: str) -> bool:
+        """Return whether the retained replay bytes are one canonical success ACK."""
+
+        call = self._inbound.get(request_id)
+        frame = self.host_replay_frame(request_id)
+        if call is None or frame is None:
+            return False
+        try:
+            response = decode_frame(frame)
+            validate_rpc_response(response, request=call.request)
+        except Exception:  # noqa: BLE001 -- malformed retained bytes fail closed
+            return False
+        return "result" in response and "error" not in response and encode_frame(response) == frame
+
+    def has_host_request(self, request_id: str) -> bool:
+        """Return whether an admitted inbound id is a frozen Host RPC request."""
+
+        call = self._inbound.get(request_id)
+        return call is not None and call.request.get("method") in HOST_METHODS
+
     def _reserve_inbound(self, request_id: str, call: _InboundCall) -> None:
         if len(self._inbound) >= self._inbound_limit:
             written_id = next((key for key, value in self._inbound.items() if value.written), None)

@@ -14,6 +14,16 @@ from plotpilot_core.api.v1.plugins import (
     route_inventory,
 )
 from plotpilot_core.api.v1.plugins.composition import STOPPED_ROUTES
+from plotpilot_core.api.v2.plugins.ports import PluginLifecycleFacade
+from plotpilot_core.api.v2.plugins.router import (
+    ROUTE_ALLOWLIST as V2_ROUTE_ALLOWLIST,
+)
+from plotpilot_core.api.v2.plugins.router import (
+    create_lifecycle_router,
+)
+from plotpilot_core.api.v2.plugins.router import (
+    route_inventory as v2_route_inventory,
+)
 from plotpilot_core.plugins.store import PackageStore
 
 
@@ -180,3 +190,22 @@ def test_delta_keeps_all_mutation_authority_seams_stopped() -> None:
         "P1-RETIREMENT-OPERATION-LEDGER",
         "P1-CANDIDATE-PUBLICATION-RETIREMENT-BARRIER",
     } == {item["seam_id"] for item in delta["authority_seams"]}
+
+
+class NeverCalledLifecycleJobs:
+    def request_worker(self, run_snapshot):
+        del run_snapshot
+        raise AssertionError("inventory must not execute endpoints")
+
+
+def test_v2_lifecycle_inventory_is_derived_from_the_unmounted_router() -> None:
+    router = create_lifecycle_router(PluginLifecycleFacade(NeverCalledLifecycleJobs()))
+
+    assert v2_route_inventory(router) == V2_ROUTE_ALLOWLIST
+    assert v2_route_inventory(router) == (
+        {
+            "method": "POST",
+            "path": "/api/v2/plugins/lifecycle/workers/request",
+            "route_id": "plugin_worker_request",
+        },
+    )

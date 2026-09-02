@@ -411,3 +411,40 @@ def test_durable_replay_rejects_same_id_with_nonidentical_exact_request(variant:
     with pytest.raises(ContractError) as caught:
         session.feed(encode_frame(stale))
     assert caught.value.code in {ErrorCode.STALE_LEASE, ErrorCode.RESULT_CONTRACT_MISMATCH}
+
+
+def test_admitted_host_request_can_be_queried_without_new_rpc_semantics() -> None:
+    session, request = new_session()
+    session.feed(handshake_response(request))
+    session.bind_attempt(AttemptFence("job-1", "step-1", "attempt-1", 2, "connection-1"))
+    request_id = "123e4567-e89b-12d3-a456-426614174097"
+    host_request = {
+        "jsonrpc": "2.0",
+        "id": request_id,
+        "method": "host.log/v1",
+        "meta": {
+            "protocol_version": "1",
+            "generation_id": "generation-1",
+            "plugin_release_id": RELEASE_A,
+            "deadline_at": "2026-08-28T00:01:00Z",
+            "context": "attempt",
+            "operation_id": "operation-log",
+            "job_id": "job-1",
+            "step_id": "step-1",
+            "attempt_id": "attempt-1",
+            "lease_epoch": 2,
+        },
+        "params": {
+            "level": "info",
+            "message": "ready",
+            "fields_asset_id": None,
+            "local_seq": 1,
+        },
+    }
+
+    assert session.feed(encode_frame(host_request))[0].kind == "host_request"
+    assert session.has_host_request(request_id) is True
+    assert session.has_host_request("not-an-admitted-id") is False
+    assert session.has_staged_host_success(request_id) is False
+    session.build_host_success(request_id, {"accepted": True, "dropped": False})
+    assert session.has_staged_host_success(request_id) is True
