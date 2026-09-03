@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import math
+import re
 import threading
 import time
 import uuid
@@ -29,6 +30,7 @@ from .rpc import FramedRpcSession, RpcEvent
 
 _TERMINAL = {WorkerState.STOPPED, WorkerState.CRASHED, WorkerState.FAILED, WorkerState.FENCED}
 _PROTOCOL_STATES = {WorkerState.STARTING, WorkerState.READY}
+_RELEASE_ID = re.compile(r"^[0-9a-f]{64}$")
 
 
 class SystemClock:
@@ -96,6 +98,8 @@ class _Record:
     failure: str | None = None
     exit_code: int | None = None
     claim_released: bool = False
+    claim_release_requires_poll: bool = False
+    exit_poll_confirmed: bool = False
     termination_target: WorkerState | None = None
     termination_deadline: float | None = None
     kill_sent: bool = False
@@ -315,12 +319,15 @@ class PluginProcessSupervisor:
                 self._pending_releases[key] = (fence, lifecycle_id)
         return released
 
-    def _current_authority(self, record: _Record) -> bool:
+    def _holds_authority(self, fence: WorkerFence, lifecycle_id: str) -> bool:
         try:
-            snapshot = self._authority.snapshot(record.fence.worker_id)
-            return record.fence.same_authority(snapshot) and self._authority.holds(record.fence, record.lifecycle_id)
+            snapshot = self._authority.snapshot(fence.worker_id)
+            return fence.same_authority(snapshot) and self._authority.holds(fence, lifecycle_id)
         except Exception:  # noqa: BLE001 -- fail closed at the authority boundary
             return False
+
+    def _current_authority(self, record: _Record) -> bool:
+        return self._holds_authority(record.fence, record.lifecycle_id)
 
     def _reconcile_and_release(self, key: tuple[str, str]) -> None:
         with self._lock:
@@ -338,6 +345,8 @@ class PluginProcessSupervisor:
             if record.claim_released:
                 if not self._is_current_locked(record):
                     self._records.pop(key, None)
+                return
+            if record.claim_release_requires_poll and not record.exit_poll_confirmed:
                 return
             if record.exit_code is None:
                 return
@@ -368,22 +377,42 @@ class PluginProcessSupervisor:
             if released and not self._is_current_locked(record):
                 self._records.pop(key, None)
 
-    def acquire(self, worker_id: str) -> WorkerTicket:
+    def acquire(self, worker_id: str, *, expected_release_id: str | None = None) -> WorkerTicket:
         """Lazy-start or retain the exact worker currently authorized by Core."""
 
+        if expected_release_id is not None and (
+            not isinstance(expected_release_id, str) or _RELEASE_ID.fullmatch(expected_release_id) is None
+        ):
+            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "expected release is not lowercase SHA-256")
         with self._worker_lock(worker_id):
             current = self._authority.snapshot(worker_id)
-            terminate_key: tuple[str, str] | None = None
+            if expected_release_id is not None and (
+                current is None or not current.allowed or current.release_id != expected_release_id
+            ):
+                raise ContractError(
+                    ErrorCode.STALE_LEASE,
+                    "Core authority does not hold the RunSnapshot-bound release",
+                )
+            reusable: _Record | None = None
             with self._lock:
                 old = self._current_record_locked(worker_id)
                 if old is not None and old.fence.same_authority(current) and old.state in _PROTOCOL_STATES:
-                    retain_id = self._new_retain_id_locked(old)
-                    was_idle = not old.retains
-                    old.retains.add(retain_id)
-                    old.idle_since = None
-                    if was_idle and old.state == WorkerState.READY:
-                        old.last_heartbeat = self._clock.monotonic()
-                    return self._ticket(old, retain_id)
+                    reusable = old
+            if reusable is not None and self._holds_authority(reusable.fence, reusable.lifecycle_id):
+                with self._lock:
+                    old = self._current_record_locked(worker_id)
+                    if old is reusable and old.state in _PROTOCOL_STATES:
+                        retain_id = self._new_retain_id_locked(old)
+                        was_idle = not old.retains
+                        old.retains.add(retain_id)
+                        old.idle_since = None
+                        if was_idle and old.state == WorkerState.READY:
+                            old.last_heartbeat = self._clock.monotonic()
+                        return self._ticket(old, retain_id)
+
+            terminate_key: tuple[str, str] | None = None
+            with self._lock:
+                old = self._current_record_locked(worker_id)
                 if old is not None and old.state not in _TERMINAL:
                     terminate_key = self._key(worker_id, old.lifecycle_id)
                 elif old is not None and old.claim_released:
@@ -397,10 +426,20 @@ class PluginProcessSupervisor:
                 )
 
             lifecycle_id = self._id_factory()
-            fence = self._authority.claim(worker_id, lifecycle_id)
-            if fence is None or not fence.allowed:
-                raise ContractError(ErrorCode.RELEASE_RETIRING, "Core authority rejected the worker pin")
+            fence: WorkerFence | None = None
+            claimed = False
             try:
+                fence = self._authority.claim(worker_id, lifecycle_id)
+                if fence is None or not fence.allowed:
+                    raise ContractError(ErrorCode.RELEASE_RETIRING, "Core authority rejected the worker pin")
+                claimed = True
+                if expected_release_id is not None and fence.release_id != expected_release_id:
+                    self._release_or_enqueue(fence, lifecycle_id)
+                    claimed = False
+                    raise ContractError(
+                        ErrorCode.STALE_LEASE,
+                        "Core authority changed release while requesting a RunSnapshot-bound worker",
+                    )
                 route = self._lookup.resolve_worker(fence, lifecycle_id)
                 session = FramedRpcSession(
                     plugin_id=fence.plugin_id,
@@ -451,24 +490,47 @@ class PluginProcessSupervisor:
                     on_exit=lambda code: dispatch("exit", code),
                     on_transport_error=lambda error: dispatch("transport", error),
                 )
+                record = _Record(
+                    lifecycle_id=lifecycle_id,
+                    fence=fence,
+                    route=route,
+                    process=process,
+                    session=session,
+                    state=WorkerState.STARTING,
+                    retains=set(),
+                    retain_sequence=0,
+                    started_at=now,
+                    last_heartbeat=now,
+                )
+                if not self._holds_authority(fence, lifecycle_id):
+                    record.claim_release_requires_poll = True
+                    with self._lock:
+                        self._records[key] = record
+                    claimed = False
+                    self._begin_termination(
+                        key,
+                        WorkerState.FENCED,
+                        "Core authority changed while starting the worker",
+                    )
+                    with callback_lock:
+                        callbacks_armed = True
+                        queued = tuple(pending_callbacks)
+                        pending_callbacks.clear()
+                    for kind, payload in queued:
+                        dispatch(kind, payload)
+                    raise ContractError(
+                        ErrorCode.STALE_LEASE,
+                        "Core authority changed while starting the worker",
+                    )
             except Exception:
-                self._release_or_enqueue(fence, lifecycle_id)
+                if claimed and fence is not None:
+                    self._release_or_enqueue(fence, lifecycle_id)
                 raise
 
-            record = _Record(
-                lifecycle_id=lifecycle_id,
-                fence=fence,
-                route=route,
-                process=process,
-                session=session,
-                state=WorkerState.STARTING,
-                retains={retain_id},
-                retain_sequence=1,
-                started_at=now,
-                last_heartbeat=now,
-            )
             with self._lock:
                 previous_lifecycle = self._current.get(worker_id)
+                record.retains.add(retain_id)
+                record.retain_sequence = 1
                 self._records[key] = record
                 self._current[worker_id] = lifecycle_id
                 if previous_lifecycle is not None and previous_lifecycle != lifecycle_id:
@@ -586,6 +648,8 @@ class PluginProcessSupervisor:
         with record.rpc_lock, self._lock:
             current = self._records.get(key)
             if current is not record or record.exit_code is not None:
+                return
+            if record.claim_release_requires_poll and not record.exit_poll_confirmed:
                 return
             record.exit_code = code
             try:
@@ -751,6 +815,28 @@ class PluginProcessSupervisor:
                         if not self._is_current_locked(record):
                             self._records.pop(key, None)
 
+    def _confirm_cleanup_exit(self, key: tuple[str, str], process: ManagedProcess) -> bool:
+        try:
+            code = process.poll()
+        except Exception:  # noqa: BLE001 -- a failed observation cannot release the live-process claim
+            return False
+        if code is None:
+            return False
+        with self._lock:
+            record = self._records.get(key)
+            if (
+                record is None
+                or record.process is not process
+                or not record.claim_release_requires_poll
+                or record.exit_poll_confirmed
+            ):
+                return False
+            record.exit_poll_confirmed = True
+            worker_id = record.fence.worker_id
+            lifecycle_id = record.lifecycle_id
+        self._on_exit(worker_id, lifecycle_id, code)
+        return True
+
     def tick(self) -> None:
         """Run watchdog/idle transitions without changing Core authority."""
 
@@ -768,6 +854,9 @@ class PluginProcessSupervisor:
                 kill_sent = record.kill_sent
                 process = record.process
                 current = self._is_current_locked(record)
+                cleanup_poll_pending = record.claim_release_requires_poll and not record.exit_poll_confirmed
+            if cleanup_poll_pending and self._confirm_cleanup_exit(key, process):
+                continue
             if state in _TERMINAL:
                 self._reconcile_and_release(key)
                 continue
@@ -894,6 +983,53 @@ class PluginProcessSupervisor:
                     self._begin_termination(key, WorkerState.FAILED, f"idle shutdown failed: {exc}", reconcile_attempt=True)
             elif action is not None:
                 self._begin_termination(key, action[0], action[1], reconcile_attempt=action[2])
+
+    def _peek_host_events(self, ticket: WorkerTicket) -> tuple[RpcEvent, ...]:
+        """View admitted Host RPCs without dropping a durable operation retry."""
+
+        with self._lock:
+            record = self._record_locked(ticket.worker_id, ticket.lifecycle_id)
+            if (
+                record is None
+                or not self._matches_lifecycle(record, ticket)
+                or not self._is_current_locked(record)
+                or record.state in _TERMINAL
+            ):
+                raise ContractError(ErrorCode.STALE_LEASE, "Host event belongs to an old lifecycle")
+            return tuple(event for event in record.events if event.kind == "host_request")
+
+    def _dispose_host_event(self, ticket: WorkerTicket, request_id: str) -> None:
+        """Drop exactly one Host event after its durable success ACK is staged."""
+
+        with self._lock:
+            record = self._record_locked(ticket.worker_id, ticket.lifecycle_id)
+            if (
+                record is None
+                or not self._matches_lifecycle(record, ticket)
+                or not self._is_current_locked(record)
+                or record.state not in _PROTOCOL_STATES
+            ):
+                raise ContractError(ErrorCode.STALE_LEASE, "Host event belongs to an old lifecycle")
+        with record.rpc_lock, self._lock:
+            current = self._records.get(self._key(ticket.worker_id, ticket.lifecycle_id))
+            if (
+                current is not record
+                or not self._is_current_locked(record)
+                or record.state not in _PROTOCOL_STATES
+            ):
+                raise ContractError(ErrorCode.STALE_LEASE, "Host event raced lifecycle termination")
+            if not record.session.has_host_request(request_id):
+                raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "Host event id was not admitted")
+            if not record.session.has_staged_host_success(request_id):
+                raise ContractError(
+                    ErrorCode.RESULT_CONTRACT_MISMATCH,
+                    "Host event has no staged canonical success response",
+                )
+            for index, event in enumerate(record.events):
+                if event.kind == "host_request" and str(event.message.get("id")) == request_id:
+                    record.events.pop(index)
+                    return
+        raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "Host event is not pending disposition")
 
     def drain_events(self, ticket: WorkerTicket) -> tuple[RpcEvent, ...]:
         with self._lock:
