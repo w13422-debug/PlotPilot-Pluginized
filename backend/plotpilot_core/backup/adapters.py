@@ -22,7 +22,6 @@ from backend.plotpilot_plugin_sdk.framing import decode_frame
 from backend.plotpilot_plugin_sdk.verifier import (
     assert_valid,
     hash_without_field,
-    validate_rpc_result,
     verify_checkpoint,
     verify_snapshot,
 )
@@ -76,6 +75,10 @@ _CORE_TABLE_ORDER = (
     "revision",
     "relation",
     "candidate",
+    "candidate_review",
+    "candidate_batch_operation",
+    "chapter_candidate_authority",
+    "chapter_writer_fence",
     "publication_receipt",
     "execution_job",
     "execution_step",
@@ -253,6 +256,28 @@ class SqliteWorkspaceDatabaseProjector:
                 candidates.append(row)
                 candidate_items[candidate_id] = item
         selected["candidate"] = candidates
+        selected["candidate_review"] = [
+            row
+            for row in _rows(connection, "candidate_review")
+            if row.get("candidate_id") in candidate_items
+        ]
+        selected["candidate_batch_operation"] = _rows(
+            connection,
+            "candidate_batch_operation",
+            where='"workspace_id"=?',
+            parameters=(workspace_id,),
+        )
+        selected["chapter_candidate_authority"] = [
+            row
+            for row in _rows(connection, "chapter_candidate_authority")
+            if row.get("candidate_id") in candidate_items
+        ]
+        selected["chapter_writer_fence"] = _rows(
+            connection,
+            "chapter_writer_fence",
+            where='"workspace_id"=?',
+            parameters=(workspace_id,),
+        )
         selected["publication_receipt"] = _rows(
             connection,
             "publication_receipt",
@@ -633,6 +658,51 @@ class SqliteWorkspaceDatabaseProjector:
                         "candidate source reference crosses Workspace"
                     )
 
+        for row in _rows(connection, "candidate_review"):
+            require(candidate_owner, row.get("candidate_id"), "candidate review Candidate")
+
+        candidates_by_operation: dict[str, list[dict[str, object]]] = defaultdict(list)
+        for row in candidate_rows.values():
+            operation_key = row.get("operation_key")
+            if not isinstance(operation_key, str) or not operation_key:
+                raise WorkspaceProjectionError("candidate operation identity is invalid")
+            candidates_by_operation[operation_key].append(row)
+        for row in _rows(connection, "candidate_batch_operation"):
+            owner = require(
+                workspace_owner,
+                row.get("workspace_id"),
+                "candidate batch Workspace",
+            )
+            operation_key = row.get("operation_key")
+            raw_item_ids = row.get("item_ids_json")
+            if not isinstance(operation_key, str) or not operation_key:
+                raise WorkspaceProjectionError("candidate batch operation identity is invalid")
+            if not isinstance(raw_item_ids, str):
+                raise WorkspaceProjectionError("candidate batch item authority is invalid")
+            try:
+                item_ids = parse_json_bytes(raw_item_ids.encode("utf-8"))
+            except Exception as exc:
+                raise WorkspaceProjectionError(
+                    "candidate batch item authority is invalid"
+                ) from exc
+            if (
+                not isinstance(item_ids, list)
+                or not item_ids
+                or any(not isinstance(item_id, str) or not item_id for item_id in item_ids)
+                or len(set(item_ids)) != len(item_ids)
+            ):
+                raise WorkspaceProjectionError("candidate batch item authority is invalid")
+            item_id_set = set(item_ids)
+            for candidate in candidates_by_operation.get(operation_key, []):
+                candidate_id = str(candidate["candidate_id"])
+                if (
+                    candidate_owner[candidate_id] != owner
+                    or candidate.get("item_id") not in item_id_set
+                ):
+                    raise WorkspaceProjectionError(
+                        "candidate batch operation crosses Workspace or item closure"
+                    )
+
         publication_owner: dict[str, str] = {}
         publication_rows: dict[str, dict[str, object]] = {}
         for row in _rows(connection, "publication_receipt"):
@@ -702,6 +772,110 @@ class SqliteWorkspaceDatabaseProjector:
             ):
                 raise WorkspaceProjectionError("execution attempt crosses Workspace")
             attempt_owner[attempt_id] = owner
+
+        chapter_authority_rows: dict[str, dict[str, object]] = {}
+        for row in _rows(connection, "chapter_candidate_authority"):
+            candidate_id = row.get("candidate_id")
+            owner = require(
+                candidate_owner,
+                candidate_id,
+                "chapter Candidate authority Candidate",
+            )
+            if not isinstance(candidate_id, str) or candidate_id in chapter_authority_rows:
+                raise WorkspaceProjectionError("chapter Candidate authority is ambiguous")
+            source_job_id = row.get("source_job_id")
+            source_attempt_id = row.get("source_attempt_id")
+            writer_epoch = row.get("writer_epoch")
+            source_values = (source_job_id, source_attempt_id, writer_epoch)
+            if any(value is None for value in source_values) and not all(
+                value is None for value in source_values
+            ):
+                raise WorkspaceProjectionError(
+                    "chapter Candidate source authority is incomplete"
+                )
+            if source_job_id is not None:
+                source_attempt = attempt_rows.get(str(source_attempt_id))
+                if (
+                    require(job_owner, source_job_id, "chapter Candidate source job")
+                    != owner
+                    or require(
+                        attempt_owner,
+                        source_attempt_id,
+                        "chapter Candidate source attempt",
+                    )
+                    != owner
+                    or source_attempt is None
+                    or source_attempt.get("job_id") != source_job_id
+                    or source_attempt.get("lease_epoch") != writer_epoch
+                ):
+                    raise WorkspaceProjectionError(
+                        "chapter Candidate source crosses Workspace or Attempt"
+                    )
+            if (
+                not isinstance(row.get("provenance_receipt_id"), str)
+                or not row.get("provenance_receipt_id")
+                or not isinstance(row.get("operation_key"), str)
+                or not row.get("operation_key")
+            ):
+                raise WorkspaceProjectionError(
+                    "chapter Candidate provenance authority is invalid"
+                )
+            chapter_authority_rows[candidate_id] = row
+
+        for row in _rows(connection, "chapter_writer_fence"):
+            owner = require(
+                workspace_owner,
+                row.get("workspace_id"),
+                "chapter writer fence Workspace",
+            )
+            candidate_id = row.get("candidate_id")
+            candidate_owner_id = require(
+                candidate_owner,
+                candidate_id,
+                "chapter writer fence Candidate",
+            )
+            candidate_item = candidate_items[str(candidate_id)]
+            target = candidate_item.get("target")
+            job_id = row.get("job_id")
+            step_id = row.get("step_id")
+            attempt_id = row.get("attempt_id")
+            attempt = attempt_rows.get(str(attempt_id))
+            authority = chapter_authority_rows.get(str(candidate_id))
+            if (
+                candidate_owner_id != owner
+                or not isinstance(target, dict)
+                or row.get("entity_kind") != "document"
+                or target.get("workspace_id") != owner
+                or target.get("entity_kind") != row.get("entity_kind")
+                or target.get("entity_id") != row.get("entity_id")
+                or require(
+                    document_owner,
+                    row.get("entity_id"),
+                    "chapter writer fence target",
+                )
+                != owner
+                or require(job_owner, job_id, "chapter writer fence job") != owner
+                or require(step_owner, step_id, "chapter writer fence step") != owner
+                or require(
+                    attempt_owner,
+                    attempt_id,
+                    "chapter writer fence attempt",
+                )
+                != owner
+                or step_job[str(step_id)] != job_id
+                or attempt is None
+                or attempt.get("job_id") != job_id
+                or attempt.get("step_id") != step_id
+                or attempt.get("lease_epoch") != row.get("writer_epoch")
+                or authority is None
+                or authority.get("source_job_id") != job_id
+                or authority.get("source_attempt_id") != attempt_id
+                or authority.get("writer_epoch") != row.get("writer_epoch")
+                or authority.get("operation_key") != row.get("operation_key")
+            ):
+                raise WorkspaceProjectionError(
+                    "chapter writer fence crosses Workspace or authority closure"
+                )
 
         owner_rows: dict[str, dict[str, object]] = {}
         for row in _rows(connection, "execution_orchestration_owner"):

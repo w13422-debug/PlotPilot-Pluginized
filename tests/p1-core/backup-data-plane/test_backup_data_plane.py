@@ -626,6 +626,113 @@ def _add_integrated_execution_closure(
     }
 
 
+def _add_chapter_authority_projection_closure(
+    repository: CoreAuthorityRepository,
+    closure: dict[str, object],
+    *,
+    workspace_id: str,
+    marker: str,
+) -> dict[str, str]:
+    """Materialize all four chapter-authority tables for backup projection tests."""
+
+    candidate_id = str(closure["candidate_id"])
+    job_id = str(closure["job_id"])
+    step_id = str(closure["step_id"])
+    attempt_id = str(closure["attempt_id"])
+    review_operation_key = f"review-{marker}"
+    authority_operation_key = f"chapter-authority-{marker}"
+    failed_item_id = f"failed-{marker}"
+    with repository.transaction() as connection:
+        candidate = connection.execute(
+            "SELECT operation_key,item_id,item_json FROM candidate WHERE candidate_id=?",
+            (candidate_id,),
+        ).fetchone()
+        attempt = connection.execute(
+            "SELECT lease_epoch FROM execution_attempt WHERE attempt_id=?",
+            (attempt_id,),
+        ).fetchone()
+        assert candidate is not None
+        assert attempt is not None
+        item = json.loads(candidate["item_json"])
+        target = item["target"]
+        writer_epoch = int(attempt["lease_epoch"])
+        item_ids_json = json.dumps(
+            [candidate["item_id"], failed_item_id],
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+        connection.execute(
+            "INSERT INTO candidate_review("
+            "candidate_id,operation_key,request_hash,decision,decided_by,"
+            "expected_status,review_revision,review_status,created_at) "
+            "VALUES(?,?,?,?,?,?,?,?,?)",
+            (
+                candidate_id,
+                review_operation_key,
+                hashlib.sha256(review_operation_key.encode()).hexdigest(),
+                "approve",
+                "backup-test",
+                item["status"],
+                1,
+                "reviewed",
+                NOW,
+            ),
+        )
+        connection.execute(
+            "INSERT INTO candidate_batch_operation("
+            "operation_key,workspace_id,payload_hash,item_ids_json,created_at) "
+            "VALUES(?,?,?,?,?)",
+            (
+                candidate["operation_key"],
+                workspace_id,
+                hashlib.sha256(marker.encode()).hexdigest(),
+                item_ids_json,
+                NOW,
+            ),
+        )
+        connection.execute(
+            "INSERT INTO chapter_candidate_authority("
+            "candidate_id,source_job_id,source_attempt_id,writer_epoch,"
+            "provenance_receipt_id,operation_key,created_at) VALUES(?,?,?,?,?,?,?)",
+            (
+                candidate_id,
+                job_id,
+                attempt_id,
+                writer_epoch,
+                str(closure["receipt_id"]),
+                authority_operation_key,
+                NOW,
+            ),
+        )
+        connection.execute(
+            "INSERT INTO chapter_writer_fence("
+            "workspace_id,entity_kind,entity_id,candidate_id,job_id,step_id,"
+            "attempt_id,writer_epoch,operation_key,revision,created_at,updated_at) "
+            "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                workspace_id,
+                target["entity_kind"],
+                target["entity_id"],
+                candidate_id,
+                job_id,
+                step_id,
+                attempt_id,
+                writer_epoch,
+                authority_operation_key,
+                1,
+                NOW,
+                NOW,
+            ),
+        )
+    return {
+        "review_operation_key": review_operation_key,
+        "batch_operation_key": str(candidate["operation_key"]),
+        "batch_item_ids_json": item_ids_json,
+        "failed_item_id": failed_item_id,
+        "authority_operation_key": authority_operation_key,
+    }
+
+
 def _add_durable_control_closure(
     repository: CoreAuthorityRepository,
     assets: AssetStore,
@@ -1927,15 +2034,16 @@ def test_workspace_backup_projects_integrated_execution_and_broker_closure(
         ).fetchall() == [
             ("0001-core-authority",),
             ("0002-candidate-publication",),
-                ("p3-jobs-001",),
-                ("0003-execution-authority",),
-                ("0004-execution-remediation",),
-                ("0005-durable-checkpoint-authority",),
-                ("0006-durable-authority-operation-closure",),
-            ]
+            ("0003-chapter-authority",),
+            ("p3-jobs-001",),
+            ("0003-execution-authority",),
+            ("0004-execution-remediation",),
+            ("0005-durable-checkpoint-authority",),
+            ("0006-durable-authority-operation-closure",),
+        ]
         assert connection.execute(
             "SELECT count(*) FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%'"
-        ).fetchone()[0] == 36
+        ).fetchone()[0] == 43
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
         assert connection.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
         assert connection.execute(
@@ -2052,6 +2160,283 @@ def test_workspace_backup_projects_integrated_execution_and_broker_closure(
         unscoped_db.close()
 
 
+def test_workspace_backup_projects_and_restores_chapter_authority_closure(
+    tmp_path: Path,
+) -> None:
+    source, database, assets, _ = _source(tmp_path)
+    store = AssetStore(assets)
+    repository = CoreAuthorityRepository(database)
+    repository.create_document(
+        Document("doc-authority-1", "ws-1", "Selected", created_at=NOW, updated_at=NOW)
+    )
+    repository.create_workspace(
+        Workspace("ws-2", "Other", created_at=NOW, updated_at=NOW)
+    )
+    repository.create_document(
+        Document("doc-authority-2", "ws-2", "Other", created_at=NOW, updated_at=NOW)
+    )
+    selected = _add_integrated_execution_closure(
+        repository,
+        store,
+        workspace_id="ws-1",
+        document_id="doc-authority-1",
+        marker="authority-1",
+        content=b"selected authority payload",
+    )
+    excluded = _add_integrated_execution_closure(
+        repository,
+        store,
+        workspace_id="ws-2",
+        document_id="doc-authority-2",
+        marker="authority-2",
+        content=b"excluded authority payload",
+    )
+    selected_authority = _add_chapter_authority_projection_closure(
+        repository, selected, workspace_id="ws-1", marker="authority-1"
+    )
+    _add_chapter_authority_projection_closure(
+        repository, excluded, workspace_id="ws-2", marker="authority-2"
+    )
+    repository.close()
+
+    backup = _plane(source, database, assets).create_backup(
+        tmp_path / "chapter-authority-backup",
+        _request("chapter-authority-backup"),
+    )
+    projected_database = backup.bundle_root / "core/core.db"
+    projected = sqlite3.connect(projected_database)
+    try:
+        assert projected.execute(
+            "SELECT candidate_id,operation_key FROM candidate_review"
+        ).fetchall() == [
+            (selected["candidate_id"], selected_authority["review_operation_key"])
+        ]
+        assert projected.execute(
+            "SELECT operation_key,workspace_id,item_ids_json "
+            "FROM candidate_batch_operation"
+        ).fetchall() == [
+            (
+                selected_authority["batch_operation_key"],
+                "ws-1",
+                selected_authority["batch_item_ids_json"],
+            )
+        ]
+        assert selected_authority["failed_item_id"] in json.loads(
+            selected_authority["batch_item_ids_json"]
+        )
+        assert projected.execute(
+            "SELECT candidate_id,source_job_id,source_attempt_id,writer_epoch,operation_key "
+            "FROM chapter_candidate_authority"
+        ).fetchall() == [
+            (
+                selected["candidate_id"],
+                selected["job_id"],
+                selected["attempt_id"],
+                1,
+                selected_authority["authority_operation_key"],
+            )
+        ]
+        assert projected.execute(
+            "SELECT workspace_id,entity_id,candidate_id,job_id,step_id,attempt_id,"
+            "writer_epoch,operation_key FROM chapter_writer_fence"
+        ).fetchall() == [
+            (
+                "ws-1",
+                "doc-authority-1",
+                selected["candidate_id"],
+                selected["job_id"],
+                selected["step_id"],
+                selected["attempt_id"],
+                1,
+                selected_authority["authority_operation_key"],
+            )
+        ]
+        assert projected.execute("PRAGMA foreign_key_check").fetchall() == []
+    finally:
+        projected.close()
+
+    state_asset_id = json.loads(
+        (backup.bundle_root / "core/snapshot.json").read_text(encoding="utf-8")
+    )["covered_aggregates"][0]["state_asset_id"]
+    state = json.loads(store.read(state_asset_id))
+    assert {
+        "candidate_review",
+        "candidate_batch_operation",
+        "chapter_candidate_authority",
+        "chapter_writer_fence",
+    }.issubset(state["tables"])
+
+    restored = _plane(source, database, assets).stage_restore(
+        backup.bundle_root,
+        tmp_path / "chapter-authority-restored",
+        _restore_request("restore-chapter-authority"),
+    )
+    reopened = CoreAuthorityRepository(restored.target_root / "core/core.db")
+    try:
+        assert [
+            tuple(row)
+            for row in reopened._connection.execute(
+                "SELECT candidate_id FROM candidate_review"
+            ).fetchall()
+        ] == [(selected["candidate_id"],)]
+        assert [
+            tuple(row)
+            for row in reopened._connection.execute(
+                "SELECT workspace_id FROM candidate_batch_operation"
+            ).fetchall()
+        ] == [("ws-1",)]
+        assert [
+            tuple(row)
+            for row in reopened._connection.execute(
+                "SELECT source_job_id,source_attempt_id FROM chapter_candidate_authority"
+            ).fetchall()
+        ] == [(selected["job_id"], selected["attempt_id"])]
+        assert [
+            tuple(row)
+            for row in reopened._connection.execute(
+                "SELECT candidate_id,job_id,step_id,attempt_id "
+                "FROM chapter_writer_fence"
+            ).fetchall()
+        ] == [
+            (
+                selected["candidate_id"],
+                selected["job_id"],
+                selected["step_id"],
+                selected["attempt_id"],
+            )
+        ]
+        assert reopened._connection.execute("PRAGMA foreign_key_check").fetchall() == []
+    finally:
+        reopened.close()
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "batch_workspace_cross",
+        "batch_item_outside_ledger",
+        "authority_job_cross",
+        "authority_attempt_cross",
+        "authority_epoch_drift",
+        "fence_candidate_cross",
+        "fence_job_cross",
+        "fence_step_cross",
+        "fence_attempt_cross",
+        "fence_epoch_drift",
+        "fence_operation_drift",
+    ],
+)
+def test_workspace_backup_rejects_open_chapter_authority_closure(
+    tmp_path: Path, mutation: str
+) -> None:
+    source, database, assets, _ = _source(tmp_path)
+    store = AssetStore(assets)
+    repository = CoreAuthorityRepository(database)
+    repository.create_document(
+        Document("doc-open-1", "ws-1", "Selected", created_at=NOW, updated_at=NOW)
+    )
+    repository.create_workspace(
+        Workspace("ws-2", "Other", created_at=NOW, updated_at=NOW)
+    )
+    repository.create_document(
+        Document("doc-open-2", "ws-2", "Other", created_at=NOW, updated_at=NOW)
+    )
+    selected = _add_integrated_execution_closure(
+        repository,
+        store,
+        workspace_id="ws-1",
+        document_id="doc-open-1",
+        marker="open-1",
+        content=b"selected open closure",
+    )
+    excluded = _add_integrated_execution_closure(
+        repository,
+        store,
+        workspace_id="ws-2",
+        document_id="doc-open-2",
+        marker="open-2",
+        content=b"excluded open closure",
+    )
+    authority = _add_chapter_authority_projection_closure(
+        repository, selected, workspace_id="ws-1", marker="open-1"
+    )
+    repository.close()
+
+    connection = sqlite3.connect(database)
+    if mutation == "batch_workspace_cross":
+        connection.execute(
+            "UPDATE candidate_batch_operation SET workspace_id='ws-2' "
+            "WHERE operation_key=?",
+            (authority["batch_operation_key"],),
+        )
+    elif mutation == "batch_item_outside_ledger":
+        connection.execute(
+            "UPDATE candidate_batch_operation SET item_ids_json='[\"unrelated-item\"]' "
+            "WHERE operation_key=?",
+            (authority["batch_operation_key"],),
+        )
+    elif mutation == "authority_job_cross":
+        connection.execute(
+            "UPDATE chapter_candidate_authority SET source_job_id=? WHERE candidate_id=?",
+            (excluded["job_id"], selected["candidate_id"]),
+        )
+    elif mutation == "authority_attempt_cross":
+        connection.execute(
+            "UPDATE chapter_candidate_authority SET source_attempt_id=? "
+            "WHERE candidate_id=?",
+            (excluded["attempt_id"], selected["candidate_id"]),
+        )
+    elif mutation == "authority_epoch_drift":
+        connection.execute(
+            "UPDATE chapter_candidate_authority SET writer_epoch=writer_epoch+1 "
+            "WHERE candidate_id=?",
+            (selected["candidate_id"],),
+        )
+    elif mutation == "fence_candidate_cross":
+        connection.execute(
+            "UPDATE chapter_writer_fence SET candidate_id=? WHERE candidate_id=?",
+            (excluded["candidate_id"], selected["candidate_id"]),
+        )
+    elif mutation == "fence_job_cross":
+        connection.execute(
+            "UPDATE chapter_writer_fence SET job_id=? WHERE candidate_id=?",
+            (excluded["job_id"], selected["candidate_id"]),
+        )
+    elif mutation == "fence_step_cross":
+        connection.execute(
+            "UPDATE chapter_writer_fence SET step_id=? WHERE candidate_id=?",
+            (excluded["step_id"], selected["candidate_id"]),
+        )
+    elif mutation == "fence_attempt_cross":
+        connection.execute(
+            "UPDATE chapter_writer_fence SET attempt_id=? WHERE candidate_id=?",
+            (excluded["attempt_id"], selected["candidate_id"]),
+        )
+    elif mutation == "fence_epoch_drift":
+        connection.execute(
+            "UPDATE chapter_writer_fence SET writer_epoch=writer_epoch+1 "
+            "WHERE candidate_id=?",
+            (selected["candidate_id"],),
+        )
+    else:
+        connection.execute(
+            "UPDATE chapter_writer_fence SET operation_key='drifted-operation' "
+            "WHERE candidate_id=?",
+            (selected["candidate_id"],),
+        )
+    connection.commit()
+    connection.close()
+    source_before = _durable_tree_hashes(source)
+    destination = tmp_path / f"open-chapter-authority-{mutation}"
+
+    with pytest.raises(BackupValidationError, match="safely scoped"):
+        _plane(source, database, assets).create_backup(destination, _request())
+
+    assert not destination.exists()
+    assert not list(tmp_path.glob(".b-*.stage"))
+    assert _durable_tree_hashes(source) == source_before
+
+
 def test_workspace_backup_projects_durable_authority_and_restores_checkpoint_closure(
     tmp_path: Path,
 ) -> None:
@@ -2123,7 +2508,7 @@ def test_workspace_backup_projects_durable_authority_and_restores_checkpoint_clo
         restored_authority = ExecutionAuthority(reopened, restored_assets)
         latest = restored_authority.checkpoint_store.get_latest(closure["job_id"])
         assert latest is not None
-        assert latest["checkpoint_id"] == f"checkpoint-durable-control"
+        assert latest["checkpoint_id"] == "checkpoint-durable-control"
         replay = restored_authority.control_port.resume(
             job_id=closure["job_id"],
             step_id=closure["step_id"],

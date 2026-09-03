@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
 import hashlib
 import json
 import sqlite3
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
 from typing import Any
 
 from backend.plotpilot_plugin_sdk import (
@@ -20,21 +20,24 @@ from backend.plotpilot_plugin_sdk import (
     verify_skill_chain,
     verify_snapshot,
 )
-from backend.plotpilot_plugin_sdk.rpc import encode_frame
 from backend.plotpilot_plugin_sdk.framing import decode_frame
-from backend.plotpilot_plugin_sdk.verifier import hash_without_field, validate_rpc_result
+from backend.plotpilot_plugin_sdk.rpc import encode_frame
+from backend.plotpilot_plugin_sdk.verifier import (
+    hash_without_field,
+    validate_rpc_result,
+)
 
 from ..assets import AssetStore
 from ..broker.service import (
-    BrokerInvocationEnvelope,
+    TERMINAL_STATES,
     BrokerChildRecord,
+    BrokerInvocationEnvelope,
     BrokerInvokeResult,
     BrokerLedgerEntry,
     BrokerOperationReservation,
     CallerAttemptContext,
     ChildCreationRequest,
     ChildCreationResult,
-    TERMINAL_STATES,
     verify_child_snapshot_binding,
 )
 from ..candidates import CandidateError, CandidateService
@@ -46,7 +49,6 @@ from .checkpoints import (
     SQLiteExecutionControlPort,
     SQLiteOrchestrationOwnerStore,
 )
-
 
 _INVOKE = "host.capability.invoke/v1"
 _COMPLETE = "host.job.complete/v1"
@@ -597,6 +599,190 @@ class ExecutionAuthority:
         with self.repository.transaction() as connection:
             self._validate_attempt_row(connection, context)
 
+    def stage_incomplete_stream(
+        self,
+        *,
+        job_id: str,
+        step_id: str,
+        attempt_id: str,
+        lease_epoch: int,
+        operation_key: str,
+        item: Mapping[str, Any],
+        writer_epoch: int | None = None,
+    ):
+        """Stage one Core-owned partial chapter Candidate behind an Attempt fence.
+
+        Plugins cannot use this path: their terminal Bundle remains subject to
+        the frozen incomplete-stream rejection below.  This adapter is for a
+        Core stream collector that has already established the active writer
+        Attempt and needs a durable Candidate without publishing a Revision.
+        """
+        if writer_epoch is not None and writer_epoch != lease_epoch:
+            raise ContractError(
+                ErrorCode.STALE_LEASE, "writer epoch is not the caller lease epoch"
+            )
+        context_identity = _broker_context_identity(job_id, step_id, attempt_id)
+        value = dict(item)
+        now = utc_now()
+        with self.repository.transaction() as connection:
+            lineage = connection.execute(
+                "SELECT generation_id,release_id FROM execution_attempt WHERE attempt_id=?",
+                (attempt_id,),
+            ).fetchone()
+            context = CallerAttemptContext(
+                job_id,
+                step_id,
+                attempt_id,
+                lease_epoch,
+                generation_id=None if lineage is None else lineage["generation_id"],
+                plugin_release_id=None if lineage is None else lineage["release_id"],
+            )
+            attempt = self._validate_attempt_row(connection, context)
+            if not str(attempt["capability_id"]).startswith("writing."):
+                raise ContractError(
+                    ErrorCode.INVALID_TRANSITION,
+                    "only a writing Attempt may stage an incomplete stream",
+                )
+            try:
+                staged = self.candidates.stage_in_transaction(
+                    connection,
+                    operation_key,
+                    value,
+                    context_identity=context_identity,
+                    method="core.chapter.incomplete-stream/v2",
+                    expected_workspace_id=attempt["workspace_id"],
+                    allow_incomplete_stream=True,
+                )
+            except CandidateError as exc:
+                raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, str(exc)) from exc
+            if staged.candidate_id is None:
+                raise ContractError(
+                    ErrorCode.RESULT_CONTRACT_MISMATCH,
+                    "incomplete stream did not create a Candidate",
+                )
+
+            target = value["target"]
+            current_epoch = int(attempt["lease_epoch"])
+            fence = connection.execute(
+                "SELECT * FROM chapter_writer_fence "
+                "WHERE workspace_id=? AND entity_kind=? AND entity_id=?",
+                (
+                    target["workspace_id"],
+                    target["entity_kind"],
+                    target["entity_id"],
+                ),
+            ).fetchone()
+            if fence is None:
+                connection.execute(
+                    "INSERT INTO chapter_writer_fence"
+                    "(workspace_id,entity_kind,entity_id,candidate_id,job_id,step_id,"
+                    "attempt_id,writer_epoch,operation_key,revision,created_at,updated_at) "
+                    "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+                    (
+                        target["workspace_id"],
+                        target["entity_kind"],
+                        target["entity_id"],
+                        staged.candidate_id,
+                        job_id,
+                        step_id,
+                        attempt_id,
+                        current_epoch,
+                        operation_key,
+                        1,
+                        now,
+                        now,
+                    ),
+                )
+            elif (
+                fence["attempt_id"] == attempt_id
+                and fence["writer_epoch"] == current_epoch
+            ):
+                if (
+                    fence["operation_key"] != operation_key
+                    or fence["candidate_id"] != staged.candidate_id
+                ):
+                    raise ContractError(
+                        ErrorCode.DUPLICATE_REQUEST,
+                        "active writer already owns this chapter stream",
+                    )
+            else:
+                if int(fence["writer_epoch"]) >= current_epoch:
+                    raise ContractError(
+                        ErrorCode.STALE_LEASE,
+                        "chapter stream writer fence is newer than this caller",
+                    )
+                connection.execute(
+                    "UPDATE chapter_writer_fence SET candidate_id=?,job_id=?,"
+                    "step_id=?,attempt_id=?,writer_epoch=?,operation_key=?,"
+                    "revision=revision+1,updated_at=? "
+                    "WHERE workspace_id=? AND entity_kind=? AND entity_id=? "
+                    "AND writer_epoch<?",
+                    (
+                        staged.candidate_id,
+                        job_id,
+                        step_id,
+                        attempt_id,
+                        current_epoch,
+                        operation_key,
+                        now,
+                        target["workspace_id"],
+                        target["entity_kind"],
+                        target["entity_id"],
+                        current_epoch,
+                    ),
+                )
+                if connection.execute(
+                    "SELECT candidate_id,writer_epoch FROM chapter_writer_fence "
+                    "WHERE workspace_id=? AND entity_kind=? AND entity_id=?",
+                    (
+                        target["workspace_id"],
+                        target["entity_kind"],
+                        target["entity_id"],
+                    ),
+                ).fetchone()["candidate_id"] != staged.candidate_id:
+                    raise ContractError(
+                        ErrorCode.STALE_LEASE, "chapter stream fence changed"
+                    )
+
+            provenance_receipt_id = "stream-receipt-" + hashlib.sha256(
+                (
+                    f"{job_id}\n{step_id}\n{attempt_id}\n{current_epoch}"
+                    f"\n{staged.candidate_id}"
+                ).encode()
+            ).hexdigest()[:48]
+            origin = connection.execute(
+                "SELECT * FROM chapter_candidate_authority WHERE candidate_id=?",
+                (staged.candidate_id,),
+            ).fetchone()
+            if origin is None:
+                connection.execute(
+                    "INSERT INTO chapter_candidate_authority"
+                    "(candidate_id,source_job_id,source_attempt_id,writer_epoch,"
+                    "provenance_receipt_id,operation_key,created_at) "
+                    "VALUES(?,?,?,?,?,?,?)",
+                    (
+                        staged.candidate_id,
+                        job_id,
+                        attempt_id,
+                        current_epoch,
+                        provenance_receipt_id,
+                        operation_key,
+                        now,
+                    ),
+                )
+            elif (
+                origin["source_job_id"] != job_id
+                or origin["source_attempt_id"] != attempt_id
+                or origin["writer_epoch"] != current_epoch
+                or origin["operation_key"] != operation_key
+                or origin["provenance_receipt_id"] != provenance_receipt_id
+            ):
+                raise ContractError(
+                    ErrorCode.DUPLICATE_REQUEST,
+                    "incomplete stream Candidate origin drifted",
+                )
+            return staged
+
     def _synchronize_and_validate_children(
         self,
         connection: sqlite3.Connection,
@@ -825,7 +1011,7 @@ class ExecutionAuthority:
             )
         except ContractError as exc:
             raise ContractError(ErrorCode.ASSET_ERROR, "committed frozen Job plan drifted") from exc
-        snapshot = self._verify_replay_snapshot_profile(connection, attempt)
+        self._verify_replay_snapshot_profile(connection, attempt)
         receipt_row = connection.execute(
             "SELECT * FROM execution_receipt WHERE receipt_id=? AND job_id=? AND step_id=? AND attempt_id=?",
             (previous["provenance_receipt_id"], previous["job_id"], previous["step_id"], previous["attempt_id"]),
@@ -944,9 +1130,15 @@ class ExecutionAuthority:
                 raise ContractError(ErrorCode.ASSET_ERROR, "committed completion Core Event drifted")
         if len(aggregate_revisions) != 1:
             raise ContractError(ErrorCode.ASSET_ERROR, "committed completion Core Event revision drifted")
-        if result["job_state"] in {"succeeded", "partial", "failed", "cancelled"} and attempt["is_output"]:
-            if attempt["job_bundle"] != previous["result_bundle_asset_id"] or attempt["job_receipt"] != previous["provenance_receipt_id"]:
-                raise ContractError(ErrorCode.ASSET_ERROR, "committed Job output anchors drifted")
+        if (
+            result["job_state"] in {"succeeded", "partial", "failed", "cancelled"}
+            and attempt["is_output"]
+            and (
+                attempt["job_bundle"] != previous["result_bundle_asset_id"]
+                or attempt["job_receipt"] != previous["provenance_receipt_id"]
+            )
+        ):
+            raise ContractError(ErrorCode.ASSET_ERROR, "committed Job output anchors drifted")
         for item_id in receipt["staged_items"]:
             binding = connection.execute(
                 "SELECT candidate_id FROM execution_candidate_binding WHERE attempt_id=? AND item_id=?",
@@ -1252,7 +1444,7 @@ class ExecutionAuthority:
                 plan_frozen=attempt["plan_frozen"],
                 output_step_id=attempt["output_step_id"],
             )
-            snapshot = self._verify_replay_snapshot_profile(connection, attempt)
+            self._verify_replay_snapshot_profile(connection, attempt)
             if (
                 attempt["state"] == "cancelling" or attempt["job_state"] == "cancelling"
             ) and outcome in {"succeeded", "partial"}:
