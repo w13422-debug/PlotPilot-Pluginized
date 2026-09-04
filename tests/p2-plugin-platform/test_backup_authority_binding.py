@@ -142,8 +142,40 @@ def test_missing_null_and_generation_only_sources_fail_before_state_read() -> No
     assert null.reads == 0
 
 
+def test_contributor_binding_is_live_and_read_only_before_generation_read() -> None:
+    initial = object()
+    replacement = object()
+    source = CountingGenerationSource(initial, GenerationState())
+    contributor = GenerationBackupContributor(source)
+
+    source.core_authority_binding = replacement
+
+    assert contributor.core_authority_binding is replacement
+    with pytest.raises(AttributeError):
+        contributor.core_authority_binding = initial
+    assert contributor.core_authority_binding is replacement
+    assert source.reads == 0
+
+
+@pytest.mark.parametrize("drift", ["missing", "null"])
+def test_live_contributor_rejects_missing_or_null_drift_before_generation_read(
+    drift: str,
+) -> None:
+    source = CountingGenerationSource(object(), GenerationState())
+    contributor = GenerationBackupContributor(source)
+
+    if drift == "missing":
+        del source.core_authority_binding
+    else:
+        source.core_authority_binding = None
+
+    with pytest.raises(GenerationBackupError, match="authority binding"):
+        _ = contributor.core_authority_binding
+    assert source.reads == 0
+
+
 @pytest.mark.parametrize("same_database", [False, True])
-def test_foreign_repository_identity_is_rejectable_before_generation_read(
+def test_post_construction_repository_drift_is_rejected_before_generation_read(
     tmp_path: Path,
     same_database: bool,
 ) -> None:
@@ -155,11 +187,15 @@ def test_foreign_repository_identity_is_rejectable_before_generation_read(
         source = CountingGenerationSource(repository, GenerationState())
         contributor = GenerationBackupContributor(source)
 
+        assert contributor.core_authority_binding is repository
         assert repository is not foreign
         if same_database:
             assert Path(repository.database) == Path(foreign.database)
+        source.core_authority_binding = foreign
+
+        assert contributor.core_authority_binding is foreign
         with pytest.raises(GenerationBackupError, match="another Core authority"):
-            _dependent_identity_fence(foreign, contributor)
+            _dependent_identity_fence(repository, contributor)
         assert source.reads == 0
     finally:
         foreign.close()

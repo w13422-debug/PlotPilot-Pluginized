@@ -22,7 +22,10 @@ from backend.plotpilot_core.backup import (
 from backend.plotpilot_core.backup.models import PluginDataSnapshot
 from backend.plotpilot_core.domain import Document, Workspace
 from backend.plotpilot_core.jobs.backup import JobRuntimeBackupContributor
-from backend.plotpilot_core.plugins.backup import GenerationBackupContributor
+from backend.plotpilot_core.plugins.backup import (
+    GenerationBackupContributor,
+    GenerationBackupError,
+)
 from backend.plotpilot_core.plugins.generation import GenerationState
 from backend.plotpilot_core.plugins.lifecycle import LifecycleRepository
 from backend.plotpilot_core.repositories import CoreAuthorityRepository
@@ -37,8 +40,10 @@ class StaticGenerationSource:
     state: GenerationState
     core_authority_binding: object | None
     failure: BaseException | None = None
+    reads: int = 0
 
     def generation_state(self) -> GenerationState:
+        self.reads += 1
         if self.failure is not None:
             raise self.failure
         return self.state
@@ -100,6 +105,7 @@ def _stack(
     failure: BaseException | None = None,
     contributors: tuple[Any, ...] = (),
     with_document: bool = True,
+    preconstructed_generation: bool = False,
 ) -> Iterator[RuntimeStack]:
     source_root = tmp_path / "active-root"
     (source_root / "core").mkdir(parents=True)
@@ -120,10 +126,15 @@ def _stack(
             )
         state = GenerationState() if state_builder is None else state_builder(assets)
         generations = StaticGenerationSource(state, repository, failure)
+        generation_input = (
+            GenerationBackupContributor(generations)
+            if preconstructed_generation
+            else generations
+        )
         runtime = compose_backup_runtime(
             repository,
             assets,
-            generations,
+            generation_input,
             source_root=source_root,
             library_root_id="root-active",
             plugin_data_contributors=contributors,
@@ -704,28 +715,58 @@ def test_accepted_generation_contributor_forwards_exact_authority_identity(
         repository.close()
 
 
-def test_changed_public_authority_is_rejected_before_stage_or_barrier(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize("source_shape", ["raw", "preconstructed"])
+@pytest.mark.parametrize("drift", ["foreign", "missing", "null", "same_database"])
+def test_live_generation_authority_drift_is_rejected_before_any_effect(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    source_shape: str,
+    drift: str,
 ) -> None:
-    with _stack(tmp_path) as stack:
-        before = _active_proof(stack)
-        barrier_entries: list[bool] = []
+    with _stack(
+        tmp_path,
+        preconstructed_generation=source_shape == "preconstructed",
+    ) as stack:
+        other: CoreAuthorityRepository | None = None
+        try:
+            if drift == "foreign":
+                other = CoreAuthorityRepository(tmp_path / "foreign-core.db")
+                assert Path(other.database) != Path(stack.repository.database)
+                stack.generations.core_authority_binding = other
+            elif drift == "same_database":
+                other = CoreAuthorityRepository(stack.repository.database)
+                assert other is not stack.repository
+                assert Path(other.database) == Path(stack.repository.database)
+                stack.generations.core_authority_binding = other
+            elif drift == "missing":
+                del stack.generations.core_authority_binding
+            else:
+                stack.generations.core_authority_binding = None
 
-        @contextmanager
-        def unexpected_barrier(**_kwargs: Any) -> Iterator[None]:
-            barrier_entries.append(True)
-            yield
+            before = _active_proof(stack)
+            barrier_entries: list[bool] = []
 
-        monkeypatch.setattr(
-            stack.runtime.job_backup, "hold_for_backup", unexpected_barrier
-        )
-        stack.generations.core_authority_binding = object()
-        destination = tmp_path / "changed-authority"
+            @contextmanager
+            def unexpected_barrier(**_kwargs: Any) -> Iterator[None]:
+                barrier_entries.append(True)
+                yield
 
-        with pytest.raises(BackupRuntimePortError, match="changed after composition"):
-            stack.runtime.api.create_backup(destination, _backup_request())
+            monkeypatch.setattr(
+                stack.runtime.job_backup, "hold_for_backup", unexpected_barrier
+            )
+            destination = tmp_path / f"{source_shape}-{drift}-authority"
 
-        assert barrier_entries == []
-        assert not destination.exists()
-        assert not list(tmp_path.glob(".b-*.stage"))
-        assert _active_proof(stack) == before
+            with pytest.raises(
+                (BackupRuntimePortError, GenerationBackupError),
+                match="authority binding",
+            ):
+                stack.runtime.api.create_backup(destination, _backup_request())
+
+            assert stack.generations.reads == 0
+            assert barrier_entries == []
+            assert not destination.exists()
+            assert not list(tmp_path.glob(".b-*.stage"))
+            assert _active_proof(stack) == before
+        finally:
+            if other is not None:
+                other.close()

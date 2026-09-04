@@ -159,18 +159,24 @@ class GenerationBackupContributor:
     def __init__(self, generations: GenerationStateSource) -> None:
         if not callable(getattr(generations, "generation_state", None)):
             raise GenerationBackupError("generation source is absent")
+        self._generations = generations
+        _ = self.core_authority_binding
+
+    @property
+    def core_authority_binding(self) -> object:
+        """Live-read the sole public Core authority held by the source."""
+
         try:
-            core_authority_binding = generations.core_authority_binding
+            binding = self._generations.core_authority_binding
         except AttributeError as exc:
             raise GenerationBackupError(
                 "generation source has no public Core authority binding"
             ) from exc
-        if core_authority_binding is None:
+        if binding is None:
             raise GenerationBackupError(
                 "generation source Core authority binding is null"
             )
-        self._generations = generations
-        self.core_authority_binding = core_authority_binding
+        return binding
 
     def capture_for_backup(
         self,
