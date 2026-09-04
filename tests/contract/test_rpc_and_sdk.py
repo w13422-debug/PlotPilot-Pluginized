@@ -630,6 +630,8 @@ def test_shared_stdio_worker_full_bidirectional_lifecycle_and_asset_helpers() ->
         (messages[0], output[0]),
         (messages[1], output[1]),
         (messages[2], output[2]),
+        (messages[3], output[6]),
+        (messages[6], output[8]),
         (messages[8], output[9]),
         (messages[9], output[10]),
     ):
