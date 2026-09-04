@@ -80,6 +80,35 @@ def test_all_self_hash_positive_fixtures_are_strict_and_tamper_negative() -> Non
     _assert_rejected(lambda: verify_skill_chain(tampered_chain, [receipt]), ErrorCode.RESULT_CONTRACT_MISMATCH)
 
 
+def test_provenance_staged_items_are_non_empty_unique_string_ids() -> None:
+    receipt = load_strict_json(FIXTURES_DIR / "provenance-receipt.json")
+    receipt["staged_items"] = ["candidate-item-1", "candidate-item-2"]
+    receipt["receipt_hash"] = hash_without_field(
+        receipt, "receipt_hash", "provenance-receipt/v1"
+    )
+    verify_provenance_receipt(receipt)
+
+    duplicate = copy.deepcopy(receipt)
+    duplicate["staged_items"] = ["candidate-item-1", "candidate-item-1"]
+    duplicate["receipt_hash"] = hash_without_field(
+        duplicate, "receipt_hash", "provenance-receipt/v1"
+    )
+    _assert_rejected(
+        lambda: verify_provenance_receipt(duplicate),
+        ErrorCode.RESULT_CONTRACT_MISMATCH,
+    )
+
+    object_entry = copy.deepcopy(receipt)
+    object_entry["staged_items"] = [{"item_id": "candidate-item-1"}]
+    object_entry["receipt_hash"] = hash_without_field(
+        object_entry, "receipt_hash", "provenance-receipt/v1"
+    )
+    _assert_rejected(
+        lambda: verify_provenance_receipt(object_entry),
+        ErrorCode.RESULT_CONTRACT_MISMATCH,
+    )
+
+
 def test_data_bundle_hash_unicode_collision_and_skill_manifest_exact_bytes() -> None:
     bundle = load_strict_json(FIXTURES_DIR / "plugin-data-bundle.json")
     verify_data_bundle(bundle)
