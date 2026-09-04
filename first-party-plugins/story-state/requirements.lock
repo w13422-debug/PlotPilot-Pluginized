@@ -1,0 +1,2 @@
+# Source-tree alias of backend/requirements.lock for direct worker validation.
+plotpilot-plugin-sdk==0.1.0 --hash=sha256:61f61bc332a7b5dfe31a6209f15d296e9e4ce8d72e40cba591dfdb09aa1dc120

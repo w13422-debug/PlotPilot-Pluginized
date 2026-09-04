@@ -1,0 +1,6 @@
+{
+  "schema": "p3-module-migrations/v1",
+  "module": "plotpilot_story_state",
+  "runner_owner": "P5",
+  "steps": []
+}
