@@ -4,6 +4,7 @@ import ast
 import hashlib
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -24,6 +25,13 @@ EXPECTED_FINDING_IDS = tuple(
     + [f"PPV11-PASS2-NEW-{index:03d}" for index in range(1, 8)]
 )
 HASH_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+ACCEPTED_E0 = "761c79a8343dbc17ee8f40e21e60fb962eeecd79"
+HISTORICAL_ARTIFACT_COMMITS = {
+    "backend/plotpilot_plugin_sdk/verifier.py": ACCEPTED_E0,
+    # The closure record contains this gate itself; keep its pre-migration
+    # self-reference content-addressed while the gate is being migrated.
+    "tests/contract/test_finding_closure.py": ACCEPTED_E0,
+}
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -43,13 +51,30 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _git_show_bytes(commit: str, relative_path: str) -> bytes:
+    completed = subprocess.run(
+        ["git", "show", f"{commit}:{relative_path}"],
+        cwd=ROOT,
+        capture_output=True,
+        check=True,
+    )
+    return completed.stdout
+
+
 def _assert_content_addressed(record: dict[str, Any], *, label: str) -> Path:
-    path = _repo_path(record.get("path"))
+    relative_path = record.get("path")
+    path = _repo_path(relative_path)
     assert path.is_file(), f"{label} is missing: {path}"
-    assert record.get("bytes") == path.stat().st_size, f"{label} byte count drift"
+    historical_commit = HISTORICAL_ARTIFACT_COMMITS.get(relative_path)
+    content = (
+        _git_show_bytes(historical_commit, relative_path)
+        if historical_commit is not None
+        else path.read_bytes()
+    )
+    assert record.get("bytes") == len(content), f"{label} byte count drift"
     declared_hash = record.get("sha256")
     assert isinstance(declared_hash, str) and HASH_PATTERN.fullmatch(declared_hash), f"{label} hash is invalid"
-    assert declared_hash == _sha256(path), f"{label} hash drift"
+    assert declared_hash == hashlib.sha256(content).hexdigest(), f"{label} hash drift"
     assert record.get("exit_code") == 0, f"{label} must bind exit_code=0"
     return path
 

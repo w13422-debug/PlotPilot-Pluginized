@@ -1217,10 +1217,10 @@ def test_shared_stdio_worker_host_call_eof_returns_framed_error_and_clears_pendi
     assert worker.pending_call_count == 0
 
 
-def test_shared_stdio_worker_sdk_version_is_exactly_0_1_1() -> None:
+def test_shared_stdio_worker_sdk_version_is_exactly_0_1_2() -> None:
     value = tomllib.loads(
         (ROOT / "backend" / "plotpilot_plugin_sdk" / "pyproject.toml").read_text(
             encoding="utf-8"
         )
     )
-    assert value["project"]["version"] == "0.1.1"
+    assert value["project"]["version"] == "0.1.2"
