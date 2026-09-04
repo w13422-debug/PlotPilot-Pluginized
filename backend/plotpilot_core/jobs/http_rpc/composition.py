@@ -18,6 +18,7 @@ from backend.plotpilot_core.api.v2.jobs.rpc.command_query import (
 )
 from backend.plotpilot_core.api.v2.jobs.sse.adapter import JobSSEAdapter
 from backend.plotpilot_core.assets import AssetStore
+from backend.plotpilot_core.broker.service import CapabilityBroker
 from backend.plotpilot_core.events import (
     CoreEventStore,
     EventRecoveryService,
@@ -29,6 +30,8 @@ from backend.plotpilot_core.jobs.chapter_runtime import ChapterJobRuntime
 from backend.plotpilot_core.jobs.checkpoint_adapter import DurableCheckpointAdapter
 from backend.plotpilot_core.jobs.http_rpc.chapter_handlers import (
     CHAPTER_HOST_METHODS,
+    DisposableAssetUploadBuffer,
+    DisposablePollCursorBuffer,
     build_chapter_host_handlers,
 )
 from backend.plotpilot_core.jobs.http_rpc.dispatcher import (
@@ -125,6 +128,7 @@ class _AttemptScopedChapterHandlers(Mapping[str, HostRpcHandler]):
         authority: ExecutionAuthority,
         checkpoints: DurableCheckpointAdapter,
         *,
+        capability_broker: CapabilityBroker,
         provenance_receipt_resolver: Any,
         stream_commit_policy_resolver: Any,
     ) -> None:
@@ -151,6 +155,9 @@ class _AttemptScopedChapterHandlers(Mapping[str, HostRpcHandler]):
         self._authority = authority
         self._repository = authority.repository
         self._checkpoints = checkpoints
+        self._asset_uploads = DisposableAssetUploadBuffer(authority.assets)
+        self._poll_cursors = DisposablePollCursorBuffer()
+        self._capability_broker = capability_broker
         self._receipt_resolver = provenance_receipt_resolver
         self._stream_policy_resolver = stream_commit_policy_resolver
         self._handlers = {
@@ -236,6 +243,9 @@ class _AttemptScopedChapterHandlers(Mapping[str, HostRpcHandler]):
             provenance_receipt_resolver=self._receipt_resolver,
             stream_commit_policy_resolver=self._stream_policy_resolver,
             checkpoints=self._checkpoints,
+            asset_uploads=self._asset_uploads,
+            capability_broker=self._capability_broker,
+            poll_cursors=self._poll_cursors,
         )
         return bound[method](request)
 
@@ -256,6 +266,7 @@ class JobRuntimeComposition:
     recovery: EventRecoveryService
     sse: JobSSEAdapter
     chapter: ChapterJobRuntime
+    capability_broker: CapabilityBroker
     backup: JobRuntimeBackupContributor
     handlers: Mapping[str, HostRpcHandler]
     dispatcher: HostRpcApplicationDispatcher
@@ -290,6 +301,7 @@ def compose_job_runtime(
     authority: ExecutionAuthority,
     supervisor: Any,
     *,
+    capability_broker: CapabilityBroker,
     start_resolver: Any,
     control_resolver: Any,
     provenance_receipt_resolver: Any,
@@ -306,6 +318,19 @@ def compose_job_runtime(
         raise TypeError("authority repository must be CoreAuthorityRepository")
     if not isinstance(assets, AssetStore):
         raise TypeError("authority assets must be AssetStore")
+    if not isinstance(capability_broker, CapabilityBroker):
+        raise TypeError("capability_broker must be the accepted CapabilityBroker")
+    broker_authorities = (
+        (capability_broker.core, assets),
+        (capability_broker.child_factory, authority),
+        (capability_broker.operation_ledger, authority.operation_ledger),
+        (capability_broker.child_records, authority.child_records),
+        (capability_broker.attempt_context, authority),
+    )
+    if any(actual is not expected for actual, expected in broker_authorities):
+        raise TypeError(
+            "capability_broker ports must use the exact composed ExecutionAuthority"
+        )
 
     required_supervisor_ports = (
         "acquire",
@@ -347,6 +372,7 @@ def compose_job_runtime(
     handlers = _AttemptScopedChapterHandlers(
         authority,
         checkpoints,
+        capability_broker=capability_broker,
         provenance_receipt_resolver=provenance_receipt_resolver,
         stream_commit_policy_resolver=stream_policy,
     )
@@ -378,6 +404,7 @@ def compose_job_runtime(
         recovery=recovery,
         sse=sse,
         chapter=chapter,
+        capability_broker=capability_broker,
         backup=backup,
         handlers=handlers,
         dispatcher=dispatcher,
