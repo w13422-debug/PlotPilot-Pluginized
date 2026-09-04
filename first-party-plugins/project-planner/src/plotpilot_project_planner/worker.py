@@ -26,6 +26,7 @@ from plotpilot_plugin_sdk import (
 )
 from plotpilot_plugin_sdk.framing import FrameDecoder, encode_frame
 from plotpilot_plugin_sdk.rpc import HOST_METHODS, build_request
+from plotpilot_plugin_sdk.stdio_worker import FramedStdioWorker, WorkerContext
 from plotpilot_plugin_sdk.verifier import (
     validate_rpc_request,
     validate_rpc_response,
@@ -35,9 +36,11 @@ from plotpilot_plugin_sdk.verifier import (
 
 from .runtime import (
     PLANNER_CAPABILITY_ID,
+    PLANNER_OPERATION,
     PLANNER_PLUGIN_ID,
     PreparedPlannerProposal,
     planner_candidate_items,
+    prepare_planner_from_worker_context,
 )
 
 
@@ -222,10 +225,15 @@ class PlannerHostPublisher:
         self._host = host
 
     def submit(
-        self, proposal: PreparedPlannerProposal, *, meta: Mapping[str, Any]
+        self,
+        proposal: PreparedPlannerProposal,
+        *,
+        meta: Mapping[str, Any],
+        worker_run_id: str,
     ) -> Mapping[str, object]:
         if not isinstance(proposal, PreparedPlannerProposal):
             raise TypeError("Planner Host publisher requires a PreparedPlannerProposal")
+        worker_run_id = _id(worker_run_id, "worker_run_id")
         asset_ids = {
             candidate.role: _upload_asset(
                 self._host,
@@ -262,7 +270,6 @@ class PlannerHostPublisher:
                 ErrorCode.RESULT_CONTRACT_MISMATCH,
                 "Core did not accept the Planner Candidate batch",
             )
-        worker_run_id = "planner-run-" + proposal.operation_payload_hash[:40]
         complete = self._host.call(
             "host.job.complete/v1",
             {
@@ -398,7 +405,11 @@ class PlannerWorker:
             )
         host = self._require_host(request)
         proposal = self._prepare(request["params"], request["meta"])
-        return PlannerHostPublisher(host).submit(proposal, meta=request["meta"])
+        return PlannerHostPublisher(host).submit(
+            proposal,
+            meta=request["meta"],
+            worker_run_id=_id(request["meta"].get("operation_id"), "worker_run_id"),
+        )
 
     def _dispatch(self, request: Mapping[str, Any]) -> dict[str, Any] | None:
         validate_rpc_request(request)
@@ -566,16 +577,118 @@ def serve(
         )
 
 
-def main(*, worker: PlannerWorker | None = None) -> None:
-    """Run the entrypoint; a no-argument process fails closed on job execution."""
+def _production_start(
+    _params: Mapping[str, Any], context: WorkerContext
+) -> Mapping[str, Any]:
+    """Run one fully fenced Planner attempt through shared stdio Host ports."""
+
+    identity = context.identity
+    if identity is None:
+        raise PlannerWorkerError(
+            ErrorCode.INVALID_TRANSITION,
+            "Planner production Job has no shared Attempt identity",
+        )
+    proposal = prepare_planner_from_worker_context(context)
+    return PlannerHostPublisher(context.host).submit(
+        proposal,
+        meta=context.meta,
+        worker_run_id=identity.operation_id,
+    )
+
+
+def _production_cancel(
+    _params: Mapping[str, Any], context: WorkerContext
+) -> Mapping[str, Any]:
+    if context.identity is None:
+        raise PlannerWorkerError(
+            ErrorCode.INVALID_TRANSITION,
+            "Planner cancellation has no shared Attempt identity",
+        )
+    return {"accepted": True, "terminal_known": False, "attempt_state": "cancelling"}
+
+
+def _settings_validate(
+    _params: Mapping[str, Any], _context: WorkerContext
+) -> Mapping[str, Any]:
+    return {
+        "valid": False,
+        "evaluated_payload_hash": None,
+        "details_asset_id": None,
+        "errors": [],
+    }
+
+
+def _migration_plan(
+    _params: Mapping[str, Any], _context: WorkerContext
+) -> Mapping[str, Any]:
+    return {
+        "plan_id": "planner-migration-plan",
+        "steps": [],
+        "backward_compatible": True,
+        "requires_verified_backup": False,
+    }
+
+
+def _migration_apply(
+    _params: Mapping[str, Any], _context: WorkerContext
+) -> Mapping[str, Any]:
+    return {"applied_schema": "0" * 64, "receipt_hash": "0" * 64}
+
+
+def _migration_verify(
+    _params: Mapping[str, Any], _context: WorkerContext
+) -> Mapping[str, Any]:
+    return {"valid": True, "schema_hash": "0" * 64, "errors": []}
+
+
+def _job_pause(
+    _params: Mapping[str, Any], _context: WorkerContext
+) -> Mapping[str, Any]:
+    return {"accepted": False, "checkpoint_asset_id": None}
+
+
+def build_production_worker() -> FramedStdioWorker:
+    """Create the sole no-argument production worker composition.
+
+    Domain execution intentionally delegates all framing, RunSnapshot reads,
+    release/package/generation checks, nested Host RPC, and cancellation
+    binding to the accepted SDK dispatcher.  The legacy ``PlannerWorker``
+    remains injectable only for pre-existing unit seams.
+    """
+
+    worker = FramedStdioWorker(
+        plugin_id=PLANNER_PLUGIN_ID,
+        plugin_version="1.0.0",
+    )
+    worker.register_domain(
+        PLANNER_CAPABILITY_ID,
+        descriptor=lambda release_id: capability_descriptor(release_id=release_id),
+        operations=(PLANNER_OPERATION,),
+        start=_production_start,
+        resume=_production_start,
+        cancel=_production_cancel,
+    )
+    worker.register_handler("settings.validate", _settings_validate)
+    worker.register_handler("migration.plan", _migration_plan)
+    worker.register_handler("migration.apply", _migration_apply)
+    worker.register_handler("migration.verify", _migration_verify)
+    worker.register_handler("job.pause", _job_pause)
+    return worker
+
+
+def main(*, worker: PlannerWorker | FramedStdioWorker | None = None) -> None:
+    """Run the shared production worker, retaining the injected legacy seam."""
+
+    if worker is None:
+        build_production_worker().serve()
+        return
+    if isinstance(worker, FramedStdioWorker):
+        worker.serve()
+        return
 
     import sys
 
-    serve(
-        worker or PlannerWorker(StdioHostPort(sys.stdin.buffer, sys.stdout.buffer)),
-        stdin=sys.stdin.buffer,
-        stdout=sys.stdout.buffer,
-    )
+    serve(worker, stdin=sys.stdin.buffer, stdout=sys.stdout.buffer)
 
 
 __all__ = [
@@ -585,6 +698,7 @@ __all__ = [
     "PlannerWorker",
     "PlannerWorkerError",
     "StdioHostPort",
+    "build_production_worker",
     "capability_descriptor",
     "main",
     "serve",

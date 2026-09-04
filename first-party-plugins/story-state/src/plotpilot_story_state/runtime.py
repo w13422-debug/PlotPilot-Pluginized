@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+import re
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any
@@ -12,6 +13,7 @@ try:
         assert_valid,
         canonical_bytes,
         hash_jcs,
+        parse_json_bytes,
         sha256_hex,
         verify_result_bundle,
     )
@@ -20,6 +22,7 @@ except ModuleNotFoundError:  # pragma: no cover - repository runner fallback
         assert_valid,
         canonical_bytes,
         hash_jcs,
+        parse_json_bytes,
         sha256_hex,
         verify_result_bundle,
     )
@@ -42,6 +45,8 @@ from .ports import (
 )
 
 _PUBLIC_KIND = {"relationship": "relation_set"}
+_RUNTIME_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$")
+_RUNTIME_INPUT_SCHEMA = "story-state-runtime-input/v1"
 
 
 def _public_kind(state_kind: str) -> str:
@@ -296,6 +301,442 @@ def _validate_committed_receipt(committed: Mapping[str, Any], prepared: Mapping[
     return value
 
 
+def _runtime_id(value: object, label: str) -> str:
+    if not isinstance(value, str) or _RUNTIME_ID.fullmatch(value) is None:
+        raise ValueError(f"{label} must be a canonical identity")
+    return value
+
+
+def _runtime_mapping(value: object, *, fields: set[str], label: str) -> Mapping[str, Any]:
+    if not isinstance(value, Mapping) or set(value) != fields:
+        raise ValueError(f"{label} fields are not closed")
+    return value
+
+
+def _runtime_sequence(value: object, *, label: str) -> Sequence[Any]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+        raise TypeError(f"{label} must be an array")
+    return value
+
+
+class _SnapshotReferenceAuthority:
+    """Read-only reference bindings carried by a hash-bound input Asset."""
+
+    def __init__(
+        self,
+        bindings: Mapping[tuple[str, str, str], AuthoritativeFactBinding],
+    ) -> None:
+        self._bindings = dict(bindings)
+
+    def resolve_reference(
+        self,
+        *,
+        workspace_id: str,
+        entity_kind: str,
+        entity_id: str,
+    ) -> AuthoritativeFactBinding:
+        binding = self._bindings.get((workspace_id, entity_kind, entity_id))
+        if binding is None:
+            raise ValueError("Story State reference is not bound by its RunSnapshot input")
+        return binding
+
+
+def _bound_story_runtime_input(
+    context: Any,
+) -> tuple[Mapping[str, Any], Any, Mapping[str, Any]]:
+    """Load a canonical Story-State input Asset pinned by the RunSnapshot."""
+
+    identity = getattr(context, "identity", None)
+    snapshot = getattr(context, "run_snapshot", None)
+    snapshot_asset = getattr(context, "run_snapshot_asset", None)
+    assets = getattr(context, "assets", None)
+    request = getattr(context, "request", None)
+    if (
+        identity is None
+        or not isinstance(snapshot, Mapping)
+        or snapshot_asset is None
+        or not isinstance(request, Mapping)
+        or not callable(getattr(assets, "read", None))
+    ):
+        raise ValueError(
+            "Story State production execution requires a shared stdio-bound Attempt"
+        )
+    params = request.get("params")
+    if (
+        not isinstance(params, Mapping)
+        or params.get("run_snapshot_asset_id")
+        != getattr(identity, "run_snapshot_asset_id", None)
+        or getattr(snapshot_asset, "asset_id", None)
+        != getattr(identity, "run_snapshot_asset_id", None)
+    ):
+        raise ValueError("Story State RunSnapshot Asset binding drifted")
+    parameters_asset_id = _runtime_id(
+        snapshot.get("parameters_asset_id"), "parameters_asset_id"
+    )
+    matches = [
+        item
+        for item in snapshot.get("asset_hashes", ())
+        if isinstance(item, Mapping) and item.get("asset_id") == parameters_asset_id
+    ]
+    if len(matches) != 1:
+        raise ValueError("Story State parameters Asset is not RunSnapshot-bound")
+    expected_hash = matches[0].get("sha256")
+    if not isinstance(expected_hash, str) or len(expected_hash) != 64:
+        raise ValueError("Story State parameters Asset hash is invalid")
+    asset = assets.read(parameters_asset_id)
+    if (
+        getattr(asset, "asset_id", None) != parameters_asset_id
+        or getattr(asset, "sha256", None) != expected_hash
+        or not isinstance(getattr(asset, "content", None), bytes)
+    ):
+        raise ValueError("Story State parameters Asset authority drifted")
+    try:
+        parsed = parse_json_bytes(asset.content)
+    except Exception as exc:
+        raise ValueError("Story State parameters Asset is not JSON") from exc
+    if not isinstance(parsed, Mapping) or canonical_bytes(parsed) != asset.content:
+        raise ValueError("Story State parameters Asset is not canonical JSON")
+    value = _runtime_mapping(
+        parsed,
+        fields={
+            "schema",
+            "run_snapshot",
+            "execution",
+            "request",
+            "reference_bindings",
+        },
+        label="Story State runtime input",
+    )
+    if value["schema"] != _RUNTIME_INPUT_SCHEMA:
+        raise ValueError("Story State runtime input schema is invalid")
+    return value, identity, snapshot
+
+
+def story_state_request_from_worker_context(
+    context: Any,
+) -> tuple[StoryStateRequest, FactReferenceAuthorityPort]:
+    """Build the runtime request after all release and Attempt fences hold.
+
+    The shared framed-stdio worker owns handshake, package, generation and
+    RunSnapshot verification.  This private input adapter additionally binds
+    the selected input bytes, no-settings Story-State profile, P2/Core-issued
+    worker-run identity, and every proposal base/reference to that snapshot
+    before ``StoryStateRuntime`` can reach an Asset-create or Candidate stage.
+    """
+
+    value, identity, snapshot = _bound_story_runtime_input(context)
+    run_snapshot = _runtime_mapping(
+        value["run_snapshot"],
+        fields={
+            "asset_id",
+            "snapshot_id",
+            "workspace_id",
+            "parameters_asset_id",
+        },
+        label="Story State runtime RunSnapshot binding",
+    )
+    parameters_asset_id = snapshot["parameters_asset_id"]
+    parameter_hashes = [
+        item["sha256"]
+        for item in snapshot["asset_hashes"]
+        if item["asset_id"] == parameters_asset_id
+    ]
+    if len(parameter_hashes) != 1:
+        raise ValueError("Story State parameters Asset hash binding drifted")
+    expected_snapshot = {
+        "asset_id": identity.run_snapshot_asset_id,
+        "snapshot_id": identity.run_snapshot_id,
+        "workspace_id": identity.workspace_id,
+        "parameters_asset_id": parameters_asset_id,
+    }
+    if dict(run_snapshot) != expected_snapshot:
+        raise ValueError("Story State runtime input crosses its RunSnapshot")
+
+    execution = _runtime_mapping(
+        value["execution"],
+        fields={
+            "plugin_id",
+            "release_id",
+            "package_hash",
+            "data_generation_id",
+            "capability_id",
+            "settings_revision_id",
+            "job_id",
+            "step_id",
+            "attempt_id",
+            "lease_epoch",
+            "worker_run_id",
+        },
+        label="Story State execution binding",
+    )
+    expected_execution = {
+        "plugin_id": "com.plotpilot.story-state",
+        "release_id": identity.plugin_release_id,
+        "package_hash": identity.package_hash,
+        "data_generation_id": identity.data_generation_id,
+        "capability_id": "planning.story-state.settle/v1",
+        "settings_revision_id": None,
+        "job_id": identity.job_id,
+        "step_id": identity.step_id,
+        "attempt_id": identity.attempt_id,
+        "lease_epoch": identity.lease_epoch,
+        "worker_run_id": identity.operation_id,
+    }
+    if type(execution["lease_epoch"]) is not int or dict(execution) != expected_execution:
+        raise ValueError("Story State execution Attempt binding drifted")
+    releases = [
+        item
+        for item in snapshot["plugin_releases"]
+        if item["plugin_id"] == expected_execution["plugin_id"]
+    ]
+    if len(releases) != 1 or (
+        releases[0]["release_id"],
+        releases[0]["package_hash"],
+        releases[0]["data_generation_id"],
+    ) != (
+        identity.plugin_release_id,
+        identity.package_hash,
+        identity.data_generation_id,
+    ):
+        raise ValueError("Story State release/package/generation binding drifted")
+    if any(
+        item["plugin_id"] == expected_execution["plugin_id"]
+        for item in snapshot["plugin_settings_revisions"]
+    ):
+        raise ValueError("Story State must not execute with a settings revision")
+
+    request_value = _runtime_mapping(
+        value["request"],
+        fields={
+            "bundle_id",
+            "receipt_id",
+            "created_at",
+            "proposals",
+            "known_entity_ids",
+            "parent_receipt_ids",
+            "terminal_detail_asset_id",
+            "local_seq",
+        },
+        label="Story State execution request",
+    )
+    bundle_id = _runtime_id(request_value["bundle_id"], "bundle_id")
+    receipt_id = _runtime_id(request_value["receipt_id"], "receipt_id")
+    created_at = request_value["created_at"]
+    if not isinstance(created_at, str) or not created_at.strip():
+        raise ValueError("Story State created_at must be non-blank")
+    known_values = _runtime_sequence(
+        request_value["known_entity_ids"], label="Story State known_entity_ids"
+    )
+    known_entity_ids = frozenset(
+        _runtime_id(item, "Story State known_entity_id") for item in known_values
+    )
+    if len(known_entity_ids) != len(known_values):
+        raise ValueError("Story State known_entity_ids must be unique")
+    parent_receipts = _runtime_sequence(
+        request_value["parent_receipt_ids"], label="Story State parent_receipt_ids"
+    )
+    parent_receipt_ids = tuple(
+        _runtime_id(item, "Story State parent_receipt_id") for item in parent_receipts
+    )
+    if len(set(parent_receipt_ids)) != len(parent_receipt_ids):
+        raise ValueError("Story State parent_receipt_ids must be unique")
+    terminal_detail_asset_id = request_value["terminal_detail_asset_id"]
+    if terminal_detail_asset_id is not None:
+        terminal_detail_asset_id = _runtime_id(
+            terminal_detail_asset_id, "terminal_detail_asset_id"
+        )
+    local_seq = request_value["local_seq"]
+    if type(local_seq) is not int or local_seq < 1:
+        raise ValueError("Story State local_seq must be positive")
+
+    snapshot_revisions = {
+        (item["document_id"], item["revision_id"], item["content_hash"])
+        for item in snapshot["input_revisions"]
+    }
+    bindings: dict[tuple[str, str, str], AuthoritativeFactBinding] = {}
+    for raw in _runtime_sequence(
+        value["reference_bindings"], label="Story State reference_bindings"
+    ):
+        binding_value = _runtime_mapping(
+            raw,
+            fields={"entity_kind", "document", "revision"},
+            label="Story State reference binding",
+        )
+        entity_kind = _runtime_id(binding_value["entity_kind"], "reference entity_kind")
+        document = parse_core_authority(
+            _runtime_mapping(
+                binding_value["document"],
+                fields={
+                    "schema",
+                    "document_id",
+                    "workspace_id",
+                    "document_type",
+                    "title",
+                    "current_revision_id",
+                    "created_at",
+                    "updated_at",
+                    "revision",
+                },
+                label="Story State reference document",
+            ),
+            expected_workspace_id=identity.workspace_id,
+        )
+        revision = parse_core_authority(
+            _runtime_mapping(
+                binding_value["revision"],
+                fields={
+                    "schema",
+                    "revision_id",
+                    "workspace_id",
+                    "document_id",
+                    "node_id",
+                    "parent_revision_id",
+                    "content_hash",
+                    "created_by",
+                    "source_candidate_id",
+                    "created_at",
+                    "revision_number",
+                    "payload_schema",
+                },
+                label="Story State reference revision",
+            ),
+            expected_workspace_id=identity.workspace_id,
+        )
+        if (
+            document["schema"] != "core-document/v1"
+            or revision["schema"] != "core-revision/v1"
+            or document["current_revision_id"] != revision["revision_id"]
+            or revision["document_id"] != document["document_id"]
+            or (
+                document["document_id"],
+                revision["revision_id"],
+                revision["content_hash"],
+            )
+            not in snapshot_revisions
+        ):
+            raise ValueError("Story State reference binding is not RunSnapshot-backed")
+        key = (identity.workspace_id, entity_kind, document["document_id"])
+        if key in bindings:
+            raise ValueError("Story State reference bindings must be unique")
+        bindings[key] = AuthoritativeFactBinding(entity_kind, document, revision)
+
+    proposals: list[Proposal] = []
+    for raw in _runtime_sequence(request_value["proposals"], label="Story State proposals"):
+        proposal_value = _runtime_mapping(
+            raw,
+            fields={
+                "proposal_id",
+                "operation_id",
+                "item_id",
+                "retry_id",
+                "target",
+                "payload",
+                "parent_candidate_ids",
+                "outcome",
+                "error",
+                "terminal_seq",
+            },
+            label="Story State proposal",
+        )
+        target = FactRef(
+            **dict(
+                _runtime_mapping(
+                    proposal_value["target"],
+                    fields={
+                        "workspace_id",
+                        "entity_kind",
+                        "entity_id",
+                        "revision_id",
+                        "content_hash",
+                    },
+                    label="Story State proposal target",
+                )
+            )
+        )
+        if (
+            target.workspace_id != identity.workspace_id
+            or (target.entity_id, target.revision_id, target.content_hash)
+            not in snapshot_revisions
+        ):
+            raise ValueError("Story State proposal target is not RunSnapshot-backed")
+        parents = _runtime_sequence(
+            proposal_value["parent_candidate_ids"],
+            label="Story State parent_candidate_ids",
+        )
+        parent_candidate_ids = tuple(
+            _runtime_id(item, "Story State parent_candidate_id") for item in parents
+        )
+        if len(set(parent_candidate_ids)) != len(parent_candidate_ids):
+            raise ValueError("Story State parent_candidate_ids must be unique")
+        if proposal_value["operation_id"] != identity.operation_id:
+            raise ValueError("Story State proposal operation is not P2/Core-assigned")
+        proposals.append(
+            Proposal(
+                proposal_id=_runtime_id(proposal_value["proposal_id"], "proposal_id"),
+                operation_id=identity.operation_id,
+                item_id=_runtime_id(proposal_value["item_id"], "item_id"),
+                retry_id=_runtime_id(proposal_value["retry_id"], "retry_id"),
+                target=target,
+                payload=dict(
+                    _runtime_mapping(
+                        proposal_value["payload"],
+                        fields={
+                            "schema",
+                            "state_kind",
+                            "entity_id",
+                            "body",
+                            "references",
+                        },
+                        label="Story State proposal payload",
+                    )
+                ),
+                parent_candidate_ids=parent_candidate_ids,
+                outcome=proposal_value["outcome"],
+                error=proposal_value["error"],
+                terminal_seq=proposal_value["terminal_seq"],
+            )
+        )
+    if not proposals:
+        raise ValueError("Story State runtime input requires proposals")
+
+    operation_material = {
+        "schema": "story-state-terminal-operation/v1",
+        "workspace_id": identity.workspace_id,
+        "run_snapshot_hash": identity.run_snapshot_hash,
+        "job_id": identity.job_id,
+        "step_id": identity.step_id,
+        "attempt_id": identity.attempt_id,
+        "lease_epoch": identity.lease_epoch,
+        "worker_run_id": identity.operation_id,
+        "capability_id": expected_execution["capability_id"],
+    }
+    operation_hash = hash_jcs("story-state-terminal-operation/v1", operation_material)
+    request = StoryStateRequest(
+        operation_key=f"story-state-terminal-{operation_hash}",
+        candidate_stage_operation_key=f"story-state-stage-{operation_hash}",
+        bundle_id=bundle_id,
+        receipt_id=receipt_id,
+        input_snapshot_hash=identity.run_snapshot_hash,
+        lineage=ExecutionLineage(
+            expected_execution["plugin_id"],
+            identity.plugin_release_id,
+            identity.package_hash,
+            expected_execution["capability_id"],
+            identity.job_id,
+            identity.step_id,
+            identity.attempt_id,
+            identity.lease_epoch,
+        ),
+        proposals=tuple(proposals),
+        known_entity_ids=known_entity_ids,
+        created_at=created_at,
+        parent_receipt_ids=parent_receipt_ids,
+        terminal_detail_asset_id=terminal_detail_asset_id,
+        local_seq=local_seq,
+    )
+    return request, _SnapshotReferenceAuthority(bindings)
+
+
 class StoryStateRuntime:
     def __init__(
         self,
@@ -428,10 +869,16 @@ class StoryStateRuntime:
             "provenance_receipt_id": request.receipt_id,
             "skill_chain_result_refs": chain_refs,
         }
+        known_parent_ids = {
+            parent_candidate_id
+            for proposal in request.proposals
+            for parent_candidate_id in proposal.parent_candidate_ids
+        }
         verify_result_bundle(
             bundle,
             snapshot_workspace_id=workspace_id,
             snapshot_hash_value=request.input_snapshot_hash,
+            known_parent_ids=known_parent_ids,
         )
         bundle_asset = _asset(canonical_bytes(bundle))
         receipt = _receipt(request, bundle, bundle_asset.sha256)
@@ -480,3 +927,13 @@ class StoryStateRuntime:
             raise ValueError("terminal Candidate mapping is not exact")
         if any(candidate.publication_eligibility != "eligible" for candidate in completion.candidates):
             raise ValueError("complete Story State Candidate is not publication-eligible")
+
+
+def execute_story_state_from_worker_context(
+    context: Any,
+    terminal: TerminalPort,
+) -> RuntimeResult:
+    """Execute the private, snapshot-bound production input through one terminal."""
+
+    request, reference_authority = story_state_request_from_worker_context(context)
+    return StoryStateRuntime(terminal, reference_authority).execute(request)

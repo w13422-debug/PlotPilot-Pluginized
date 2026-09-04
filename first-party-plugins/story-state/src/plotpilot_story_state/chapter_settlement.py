@@ -9,7 +9,6 @@ ledger: Core's operation/batch authority remains the replay authority.
 from __future__ import annotations
 
 import re
-import threading
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
@@ -43,6 +42,8 @@ _REQUEST_FIELDS = {
     "chapter_revision_id",
     "chapter_content_hash",
 }
+_SETTLEMENT_DOMAIN = "story-state-settlement/v1"
+_SETTLEMENT_CAPABILITY_ID = "planning.story-state.settle/v1"
 
 
 class ChapterSettlementError(ValueError):
@@ -117,10 +118,29 @@ class ChapterSettlementResult:
     replayed: bool
 
 
+def _plain_json(value: Any) -> Any:
+    """Detach the runtime's immutable mappings/tuples into JSON values."""
+
+    if isinstance(value, Mapping):
+        result: dict[str, Any] = {}
+        for key, item in value.items():
+            if not isinstance(key, str):
+                raise ChapterSettlementError("Story-State ResultBundle has a non-string key")
+            result[key] = _plain_json(item)
+        return result
+    if isinstance(value, (list, tuple)):
+        return [_plain_json(item) for item in value]
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    raise ChapterSettlementError(
+        "Story-State ResultBundle contains a non-JSON value"
+    )
+
+
 def _frozen_mapping(value: Mapping[str, Any]) -> Mapping[str, Any]:
     # Canonical JSON gives the caller an independent JSON-only value without
     # retaining mutable input aliases from a generator or a Chapter worker.
-    parsed = parse_json_bytes(canonical_bytes(dict(value)))
+    parsed = parse_json_bytes(canonical_bytes(_plain_json(value)))
     if not isinstance(parsed, Mapping):  # defensive; canonical input was an object
         raise ChapterSettlementError("Story-State ResultBundle must be an object")
     return MappingProxyType(dict(parsed))
@@ -129,9 +149,22 @@ def _frozen_mapping(value: Mapping[str, Any]) -> Mapping[str, Any]:
 def _validate_bundle(
     bundle: Mapping[str, Any], chapter: PublishedChapter
 ) -> Mapping[str, Any]:
+    # ``StoryStateRuntime`` deliberately freezes its returned ResultBundle.
+    # Re-materialize that JSON-only value before applying the public bundle
+    # verifier, whose contract uses JSON arrays rather than implementation
+    # tuples.  This accepts the runtime's actual immutable output without
+    # widening the ResultBundle contract or trusting a mutable caller alias.
+    try:
+        plain = parse_json_bytes(canonical_bytes(_plain_json(bundle)))
+    except Exception as exc:
+        raise ChapterSettlementError(
+            "Story-State ResultBundle is not canonical JSON"
+        ) from exc
+    if not isinstance(plain, Mapping):
+        raise ChapterSettlementError("Story-State ResultBundle must be an object")
     try:
         verify_result_bundle(
-            bundle,
+            plain,
             snapshot_workspace_id=chapter.workspace_id,
             known_parent_ids={chapter.candidate_id},
         )
@@ -140,24 +173,24 @@ def _validate_bundle(
             f"Story-State proposal ResultBundle is invalid: {exc}"
         ) from exc
     if (
-        bundle.get("schema") != "result-bundle/v1"
-        or bundle.get("contract_id") != "candidate-batch/v1"
-        or bundle.get("bundle_type") != "candidate_batch"
-        or bundle.get("partial") is not False
+        plain.get("schema") != "result-bundle/v1"
+        or plain.get("contract_id") != "candidate-batch/v1"
+        or plain.get("bundle_type") != "candidate_batch"
+        or plain.get("partial") is not False
     ):
         raise ChapterSettlementError(
             "Story-State settlement must return a complete Candidate batch"
         )
-    items = bundle.get("items")
+    items = plain.get("items")
     if not isinstance(items, list) or not items:
         raise ChapterSettlementError(
             "Story-State settlement requires at least one Candidate item"
         )
     chapter_ref = {
         "workspace_id": chapter.workspace_id,
-        "source_type": "core.revision",
-        "source_id": chapter.document_id,
-        "revision_or_hash": chapter.revision_id,
+        "source_type": "revision",
+        "source_id": chapter.revision_id,
+        "revision_or_hash": chapter.content_hash,
     }
     for item in items:
         if not isinstance(item, Mapping) or item.get("status") != "complete":
@@ -172,7 +205,10 @@ def _validate_bundle(
             raise ChapterSettlementError(
                 "Story-State Candidate crosses the published chapter Workspace"
             )
-        if target.get("entity_kind") == "document":
+        if (
+            target.get("entity_kind") == "document"
+            and target.get("entity_id") == chapter.document_id
+        ):
             raise ChapterSettlementError(
                 "Story-State settlement cannot target chapter正文"
             )
@@ -181,18 +217,14 @@ def _validate_bundle(
             raise ChapterSettlementError(
                 "Story-State Candidate is not source-bound to the published chapter Revision"
             )
-    return _frozen_mapping(bundle)
+    return _frozen_mapping(plain)
 
 
 class ChapterSettlement:
-    """Idempotent request adapter over an injected Candidate-bundle factory."""
+    """Stateless publication adapter over an injected Core-durable stage seam."""
 
     def __init__(self, proposal_factory: ChapterProposalFactory | None = None) -> None:
         self._proposal_factory = proposal_factory
-        self._lock = threading.RLock()
-        self._by_operation: dict[str, ChapterSettlementResult] = {}
-        self._publication_fingerprints: dict[str, str] = {}
-        self._by_publication: dict[str, ChapterSettlementResult] = {}
 
     def propose_after_chapter(
         self, request: Mapping[str, Any]
@@ -202,63 +234,57 @@ class ChapterSettlement:
     def settle(self, request: Mapping[str, Any]) -> ChapterSettlementResult:
         chapter = PublishedChapter.from_mapping(request)
         canonical_request = chapter.to_request()
+        settlement_operation_key = self._operation_key(chapter)
+        canonical_request["operation_key"] = settlement_operation_key
         fingerprint = hash_jcs(
-            "post-chapter-story-state-settlement/v1", canonical_request
+            "post-chapter-story-state-settlement/v1",
+            {
+                key: value
+                for key, value in canonical_request.items()
+                if key != "operation_key"
+            },
         )
-        with self._lock:
-            existing = self._by_operation.get(chapter.operation_key)
-            if existing is not None:
-                if existing.fingerprint != fingerprint:
-                    raise ChapterSettlementError(
-                        "settlement operation_key was reused with a different publication payload"
-                    )
-                return ChapterSettlementResult(
-                    existing.chapter, existing.fingerprint, existing.bundles, True
-                )
-            previous_fingerprint = self._publication_fingerprints.get(
-                chapter.publication_id
+        if self._proposal_factory is None:
+            raise ChapterSettlementError(
+                "published chapter settlement requires an injected Story-State proposal factory"
             )
-            if previous_fingerprint is not None:
-                if previous_fingerprint != fingerprint:
-                    raise ChapterSettlementError(
-                        "chapter publication identity was reused with a different payload"
-                    )
-                previous = self._by_publication[chapter.publication_id]
-                replay = ChapterSettlementResult(
-                    chapter, fingerprint, previous.bundles, True
-                )
-                self._by_operation[chapter.operation_key] = replay
-                return replay
-            if self._proposal_factory is None:
-                raise ChapterSettlementError(
-                    "published chapter settlement requires an injected Story-State proposal factory"
-                )
-            try:
-                raw_bundles = tuple(
-                    self._proposal_factory(MappingProxyType(canonical_request))
-                )
-            except ChapterSettlementError:
-                raise
-            except Exception as exc:
-                raise ChapterSettlementError(
-                    f"Story-State proposal factory failed: {exc}"
-                ) from exc
-            bundles = tuple(_validate_bundle(bundle, chapter) for bundle in raw_bundles)
-            bundle_ids = [bundle.get("bundle_id") for bundle in bundles]
-            item_ids = [
-                item.get("item_id") for bundle in bundles for item in bundle["items"]
-            ]
-            if len(bundle_ids) != len(set(bundle_ids)) or len(item_ids) != len(
-                set(item_ids)
-            ):
-                raise ChapterSettlementError(
-                    "Story-State settlement contains duplicate bundle or item identity"
-                )
-            result = ChapterSettlementResult(chapter, fingerprint, bundles, False)
-            self._by_operation[chapter.operation_key] = result
-            self._publication_fingerprints[chapter.publication_id] = fingerprint
-            self._by_publication[chapter.publication_id] = result
-            return result
+        try:
+            raw_bundles = tuple(
+                self._proposal_factory(MappingProxyType(canonical_request))
+            )
+        except ChapterSettlementError:
+            raise
+        except Exception as exc:
+            raise ChapterSettlementError(
+                f"Story-State proposal factory failed: {exc}"
+            ) from exc
+        bundles = tuple(_validate_bundle(bundle, chapter) for bundle in raw_bundles)
+        bundle_ids = [bundle.get("bundle_id") for bundle in bundles]
+        item_ids = [
+            item.get("item_id") for bundle in bundles for item in bundle["items"]
+        ]
+        if len(bundle_ids) != len(set(bundle_ids)) or len(item_ids) != len(
+            set(item_ids)
+        ):
+            raise ChapterSettlementError(
+                "Story-State settlement contains duplicate bundle or item identity"
+            )
+        # Replay and payload-conflict outcomes belong to the injected Core
+        # Candidate stage keyed above.  This process keeps no competing cache.
+        return ChapterSettlementResult(chapter, fingerprint, bundles, False)
+
+    @staticmethod
+    def _operation_key(chapter: PublishedChapter) -> str:
+        material = {
+            "schema": "story-state-settlement-operation/v1",
+            "domain": _SETTLEMENT_DOMAIN,
+            "workspace_id": chapter.workspace_id,
+            "chapter_publication_id": chapter.publication_id,
+            "capability_id": _SETTLEMENT_CAPABILITY_ID,
+        }
+        return "story-state-settlement-" + hash_jcs(
+            "story-state-settlement-operation/v1", material
+        )
 
 
 __all__ = [

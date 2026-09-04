@@ -25,6 +25,7 @@ try:
     )
     from plotpilot_plugin_sdk.framing import FrameDecoder, encode_frame
     from plotpilot_plugin_sdk.rpc import HOST_METHODS, build_request
+    from plotpilot_plugin_sdk.stdio_worker import FramedStdioWorker, WorkerContext
     from plotpilot_plugin_sdk.verifier import (
         validate_rpc_request,
         validate_rpc_response,
@@ -40,6 +41,10 @@ except ModuleNotFoundError:  # pragma: no cover - repository-source fallback
     )
     from backend.plotpilot_plugin_sdk.framing import FrameDecoder, encode_frame
     from backend.plotpilot_plugin_sdk.rpc import HOST_METHODS, build_request
+    from backend.plotpilot_plugin_sdk.stdio_worker import (
+        FramedStdioWorker,
+        WorkerContext,
+    )
     from backend.plotpilot_plugin_sdk.verifier import (
         validate_rpc_request,
         validate_rpc_response,
@@ -53,7 +58,7 @@ from .ports import (
     TerminalCompletion,
     TerminalPort,
 )
-from .runtime import RuntimeResult
+from .runtime import RuntimeResult, execute_story_state_from_worker_context
 
 PLUGIN_ID = "com.plotpilot.story-state"
 CAPABILITY_ID = "planning.story-state.settle/v1"
@@ -149,6 +154,15 @@ def _now() -> str:
     )
 
 
+def _id(value: object, label: str) -> str:
+    if not isinstance(value, str) or not value or len(value) > 128:
+        raise StoryStateWorkerError(
+            ErrorCode.RESULT_CONTRACT_MISMATCH,
+            f"{label} must be a Host identifier",
+        )
+    return value
+
+
 def _upload(host: HostPort, asset: PreparedAsset) -> None:
     digest = sha256_hex(asset.content)
     result = host.call(
@@ -179,14 +193,23 @@ def _upload(host: HostPort, asset: PreparedAsset) -> None:
 class HostTerminalPort:
     """One terminal call performs only the accepted Asset/Candidate/Job RPC chain."""
 
-    def __init__(self, host: HostPort, receipt_reader: CommittedReceiptReader) -> None:
+    def __init__(
+        self,
+        host: HostPort,
+        receipt_reader: CommittedReceiptReader | None = None,
+        *,
+        worker_run_id: str,
+    ) -> None:
         self._host = host
         self._receipt_reader = receipt_reader
+        self._worker_run_id = _id(worker_run_id, "worker_run_id")
 
     def complete(self, command: TerminalCommand) -> TerminalCompletion:
-        # Receipt composition is required before the first effect, so a missing
-        # seam cannot leave a partially submitted Story-State operation.
-        if not callable(self._receipt_reader):
+        # An injected reader can provide the persisted receipt for legacy
+        # composition.  The shared production path instead treats the accepted
+        # terminal ACK and its preallocated receipt ID as the Core authority;
+        # it never fabricates a separate receipt store.
+        if self._receipt_reader is not None and not callable(self._receipt_reader):
             raise StoryStateWorkerError(
                 ErrorCode.INVALID_TRANSITION,
                 "Story-State requires a committed receipt reader",
@@ -249,8 +272,7 @@ class HostTerminalPort:
             "host.job.complete/v1",
             {
                 "operation_key": command.operation_key,
-                "worker_run_id": "story-state-run-"
-                + sha256_hex(command.operation_key.encode("utf-8"))[:40],
+                "worker_run_id": self._worker_run_id,
                 "outcome": command.outcome,
                 "result_bundle_asset_id": command.result_bundle_asset.asset_id,
                 "candidate_stage_operation_key": command.candidate_stage_operation_key,
@@ -269,7 +291,16 @@ class HostTerminalPort:
                 ErrorCode.RESULT_CONTRACT_MISMATCH,
                 "Core completion has no provenance receipt identity",
             )
-        committed = self._receipt_reader(receipt_id, command.provenance_receipt)
+        if self._receipt_reader is None:
+            expected_receipt_id = command.provenance_receipt.get("receipt_id")
+            if receipt_id != expected_receipt_id:
+                raise StoryStateWorkerError(
+                    ErrorCode.RESULT_CONTRACT_MISMATCH,
+                    "Core completion receipt is not the preallocated receipt",
+                )
+            committed: Mapping[str, Any] = dict(command.provenance_receipt)
+        else:
+            committed = self._receipt_reader(receipt_id, command.provenance_receipt)
         if (
             not isinstance(committed, Mapping)
             or committed.get("receipt_id") != receipt_id
@@ -371,7 +402,7 @@ class StoryStateWorker:
         return result
 
     def _run(self, request: Mapping[str, Any]) -> Mapping[str, Any]:
-        if self._host is None or self._execute is None or self._receipt_reader is None:
+        if self._host is None or self._execute is None:
             raise StoryStateWorkerError(
                 ErrorCode.INVALID_TRANSITION,
                 "Story-State requires the composed Host/Core execution ports",
@@ -382,7 +413,11 @@ class StoryStateWorker:
         runtime_result = self._execute(
             request["params"],
             request["meta"],
-            HostTerminalPort(self._host, self._receipt_reader),
+            HostTerminalPort(
+                self._host,
+                self._receipt_reader,
+                worker_run_id=_id(request["meta"].get("operation_id"), "worker_run_id"),
+            ),
         )
         if not isinstance(runtime_result, RuntimeResult):
             raise StoryStateWorkerError(
@@ -397,8 +432,9 @@ class StoryStateWorker:
             )
         return {
             "accepted": True,
-            "worker_run_id": "story-state-run-"
-            + sha256_hex(runtime_result.bundle["bundle_id"].encode("utf-8"))[:40],
+            "worker_run_id": _id(
+                request["meta"].get("operation_id"), "worker_run_id"
+            ),
             "provenance_receipt_id": receipt_id,
             "output_streams": [],
         }
@@ -568,14 +604,119 @@ def serve(
         )
 
 
-def main(*, worker: StoryStateWorker | None = None) -> None:
+def _production_start(
+    _params: Mapping[str, Any], context: WorkerContext
+) -> Mapping[str, Any]:
+    """Execute one fully fenced Story-State Job through the shared dispatcher."""
+
+    identity = context.identity
+    if identity is None:
+        raise StoryStateWorkerError(
+            ErrorCode.INVALID_TRANSITION,
+            "Story-State production Job has no shared Attempt identity",
+        )
+    runtime_result = execute_story_state_from_worker_context(
+        context,
+        HostTerminalPort(context.host, worker_run_id=identity.operation_id),
+    )
+    receipt_id = runtime_result.committed_receipt.get("receipt_id")
+    if not isinstance(receipt_id, str) or not receipt_id:
+        raise StoryStateWorkerError(
+            ErrorCode.RESULT_CONTRACT_MISMATCH,
+            "Story-State runtime has no Core-bound provenance receipt",
+        )
+    return {
+        "accepted": True,
+        "worker_run_id": identity.operation_id,
+        "provenance_receipt_id": receipt_id,
+        "output_streams": [],
+    }
+
+
+def _production_cancel(
+    _params: Mapping[str, Any], context: WorkerContext
+) -> Mapping[str, Any]:
+    if context.identity is None:
+        raise StoryStateWorkerError(
+            ErrorCode.INVALID_TRANSITION,
+            "Story-State cancellation has no shared Attempt identity",
+        )
+    return {"accepted": True, "terminal_known": False, "attempt_state": "cancelling"}
+
+
+def _settings_validate(
+    _params: Mapping[str, Any], _context: WorkerContext
+) -> Mapping[str, Any]:
+    return {
+        "valid": False,
+        "evaluated_payload_hash": None,
+        "details_asset_id": None,
+        "errors": [],
+    }
+
+
+def _migration_plan(
+    _params: Mapping[str, Any], _context: WorkerContext
+) -> Mapping[str, Any]:
+    return {
+        "plan_id": "story-state-migration-plan",
+        "steps": [],
+        "backward_compatible": True,
+        "requires_verified_backup": False,
+    }
+
+
+def _migration_apply(
+    _params: Mapping[str, Any], _context: WorkerContext
+) -> Mapping[str, Any]:
+    return {"applied_schema": "0" * 64, "receipt_hash": "0" * 64}
+
+
+def _migration_verify(
+    _params: Mapping[str, Any], _context: WorkerContext
+) -> Mapping[str, Any]:
+    return {"valid": True, "schema_hash": "0" * 64, "errors": []}
+
+
+def _job_pause(
+    _params: Mapping[str, Any], _context: WorkerContext
+) -> Mapping[str, Any]:
+    return {"accepted": False, "checkpoint_asset_id": None}
+
+
+def build_production_worker() -> FramedStdioWorker:
+    """Create the shared stdio production composition for Story-State."""
+
+    worker = FramedStdioWorker(plugin_id=PLUGIN_ID, plugin_version="1.0.0")
+    worker.register_domain(
+        CAPABILITY_ID,
+        descriptor=lambda release_id: capability_descriptor(release_id=release_id),
+        operations=(CAPABILITY_ID,),
+        start=_production_start,
+        resume=_production_start,
+        cancel=_production_cancel,
+    )
+    worker.register_handler("settings.validate", _settings_validate)
+    worker.register_handler("migration.plan", _migration_plan)
+    worker.register_handler("migration.apply", _migration_apply)
+    worker.register_handler("migration.verify", _migration_verify)
+    worker.register_handler("job.pause", _job_pause)
+    return worker
+
+
+def main(*, worker: StoryStateWorker | FramedStdioWorker | None = None) -> None:
+    """Run shared production stdio, retaining the injected legacy test seam."""
+
+    if worker is None:
+        build_production_worker().serve()
+        return
+    if isinstance(worker, FramedStdioWorker):
+        worker.serve()
+        return
+
     import sys
 
-    serve(
-        worker or StoryStateWorker(StdioHostPort(sys.stdin.buffer, sys.stdout.buffer)),
-        stdin=sys.stdin.buffer,
-        stdout=sys.stdout.buffer,
-    )
+    serve(worker, stdin=sys.stdin.buffer, stdout=sys.stdout.buffer)
 
 
 __all__ = [
@@ -588,6 +729,7 @@ __all__ = [
     "StoryStateExecutionPort",
     "StoryStateWorker",
     "StoryStateWorkerError",
+    "build_production_worker",
     "capability_descriptor",
     "main",
     "serve",

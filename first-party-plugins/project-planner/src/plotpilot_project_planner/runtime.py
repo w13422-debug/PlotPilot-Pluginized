@@ -722,6 +722,246 @@ def planner_candidate_items(
     return tuple(items)
 
 
+_RUNTIME_INPUT_SCHEMA = "project-planner-runtime-input/v1"
+
+
+def _production_mapping(
+    value: object, *, fields: set[str], label: str
+) -> Mapping[str, Any]:
+    if not isinstance(value, Mapping) or set(value) != fields:
+        raise PlannerRuntimeError(f"{label} fields are not closed")
+    return value
+
+
+def _production_sequence(value: object, *, label: str) -> Sequence[Any]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+        raise PlannerRuntimeError(f"{label} must be an array")
+    return value
+
+
+def _bound_runtime_input(context: Any) -> tuple[Mapping[str, Any], Any, Mapping[str, Any]]:
+    """Read the one RunSnapshot-hash-bound private Planner input Asset.
+
+    The shared framed-stdio worker already verifies the immutable RunSnapshot
+    and populates its Attempt identity.  This adapter deliberately performs
+    the remaining domain binding before it returns a proposal to the Host
+    publisher: the input Asset must be the exact ``parameters_asset_id``
+    listed in that snapshot, canonical JSON, and hash-attested by the snapshot
+    itself.  It is intentionally private to this plugin rather than a second
+    public RPC contract.
+    """
+
+    identity = getattr(context, "identity", None)
+    snapshot = getattr(context, "run_snapshot", None)
+    snapshot_asset = getattr(context, "run_snapshot_asset", None)
+    assets = getattr(context, "assets", None)
+    request = getattr(context, "request", None)
+    if (
+        identity is None
+        or not isinstance(snapshot, Mapping)
+        or snapshot_asset is None
+        or not isinstance(request, Mapping)
+        or not callable(getattr(assets, "read", None))
+    ):
+        raise PlannerRuntimeError(
+            "Planner production execution requires a shared stdio-bound Attempt"
+        )
+    params = request.get("params")
+    if (
+        not isinstance(params, Mapping)
+        or params.get("run_snapshot_asset_id")
+        != getattr(identity, "run_snapshot_asset_id", None)
+        or getattr(snapshot_asset, "asset_id", None)
+        != getattr(identity, "run_snapshot_asset_id", None)
+    ):
+        raise PlannerRuntimeError("Planner RunSnapshot Asset binding drifted")
+    parameters_asset_id = _identifier(
+        snapshot.get("parameters_asset_id"), "parameters_asset_id"
+    )
+    matches = [
+        item
+        for item in snapshot.get("asset_hashes", ())
+        if isinstance(item, Mapping) and item.get("asset_id") == parameters_asset_id
+    ]
+    if len(matches) != 1:
+        raise PlannerRuntimeError(
+            "Planner parameters Asset is not hash-bound by the RunSnapshot"
+        )
+    expected_hash = _digest(matches[0].get("sha256"), "parameters_asset sha256")
+    asset = assets.read(parameters_asset_id)
+    if (
+        getattr(asset, "asset_id", None) != parameters_asset_id
+        or getattr(asset, "sha256", None) != expected_hash
+        or not isinstance(getattr(asset, "content", None), bytes)
+    ):
+        raise PlannerRuntimeError("Planner parameters Asset authority drifted")
+    try:
+        parsed = parse_json_bytes(asset.content)
+    except Exception as exc:
+        raise PlannerRuntimeError("Planner parameters Asset is not JSON") from exc
+    if not isinstance(parsed, Mapping) or canonical_bytes(parsed) != asset.content:
+        raise PlannerRuntimeError("Planner parameters Asset is not canonical JSON")
+    value = _production_mapping(
+        parsed,
+        fields={
+            "schema",
+            "run_snapshot",
+            "execution",
+            "selection",
+            "generated",
+            "targets",
+            "source_refs",
+        },
+        label="Planner runtime input",
+    )
+    if value["schema"] != _RUNTIME_INPUT_SCHEMA:
+        raise PlannerRuntimeError("Planner runtime input schema is invalid")
+    return value, identity, snapshot
+
+
+def prepare_planner_from_worker_context(context: Any) -> PreparedPlannerProposal:
+    """Materialize one Planner proposal only after full identity fencing.
+
+    ``context.identity.operation_id`` is the only P2/Core-carried worker-run
+    identity available to a plugin worker.  This function does not derive or
+    replace it; its caller passes that exact value through terminal completion.
+    """
+
+    value, identity, snapshot = _bound_runtime_input(context)
+    snapshot_binding = _production_mapping(
+        value["run_snapshot"],
+        fields={
+            "asset_id",
+            "snapshot_id",
+            "workspace_id",
+            "parameters_asset_id",
+        },
+        label="Planner runtime RunSnapshot binding",
+    )
+    parameters_asset_id = snapshot["parameters_asset_id"]
+    parameter_hashes = [
+        item["sha256"]
+        for item in snapshot["asset_hashes"]
+        if item["asset_id"] == parameters_asset_id
+    ]
+    if len(parameter_hashes) != 1:
+        raise PlannerRuntimeError("Planner parameters Asset hash binding drifted")
+    expected_snapshot_binding = {
+        "asset_id": identity.run_snapshot_asset_id,
+        "snapshot_id": identity.run_snapshot_id,
+        "workspace_id": identity.workspace_id,
+        "parameters_asset_id": parameters_asset_id,
+    }
+    if dict(snapshot_binding) != expected_snapshot_binding:
+        raise PlannerRuntimeError("Planner runtime input crosses its RunSnapshot")
+
+    execution = _production_mapping(
+        value["execution"],
+        fields={
+            "plugin_id",
+            "release_id",
+            "package_hash",
+            "data_generation_id",
+            "capability_id",
+            "job_id",
+            "step_id",
+            "attempt_id",
+            "lease_epoch",
+            "worker_run_id",
+        },
+        label="Planner execution binding",
+    )
+    expected_execution = {
+        "plugin_id": PLANNER_PLUGIN_ID,
+        "release_id": identity.plugin_release_id,
+        "package_hash": identity.package_hash,
+        "data_generation_id": identity.data_generation_id,
+        "capability_id": PLANNER_CAPABILITY_ID,
+        "job_id": identity.job_id,
+        "step_id": identity.step_id,
+        "attempt_id": identity.attempt_id,
+        "lease_epoch": identity.lease_epoch,
+        "worker_run_id": identity.operation_id,
+    }
+    if type(execution["lease_epoch"]) is not int or dict(execution) != expected_execution:
+        raise PlannerRuntimeError("Planner execution Attempt binding drifted")
+
+    selection_value = _production_mapping(
+        value["selection"],
+        fields={
+            "prompt_skill_id",
+            "prompt_release_id",
+            "planner_release_id",
+            "planner_settings_revision_id",
+            "plan_revision_id",
+            "model_profile_revision_id",
+        },
+        label="Planner selection",
+    )
+    selection = PlannerBindingSelection(**dict(selection_value))
+    if selection.planner_release_id != identity.plugin_release_id:
+        raise PlannerRuntimeError("Planner selection release differs from the Attempt")
+    frozen = freeze_planner_run(snapshot, selection)
+    if (
+        frozen.workspace_id != identity.workspace_id
+        or frozen.snapshot_id != identity.run_snapshot_id
+        or frozen.snapshot_hash != identity.run_snapshot_hash
+        or frozen.planner_package_hash != identity.package_hash
+        or frozen.planner_release_id != identity.plugin_release_id
+    ):
+        raise PlannerRuntimeError("Planner frozen binding differs from the Attempt")
+
+    generated = _production_mapping(
+        value["generated"],
+        fields=set(PLANNER_CANDIDATE_ROLES),
+        label="Planner generated values",
+    )
+    targets_value = _production_mapping(
+        value["targets"],
+        fields=set(PLANNER_CANDIDATE_ROLES),
+        label="Planner targets",
+    )
+    targets: dict[str, PlannerDocumentTarget] = {}
+    for role in PLANNER_CANDIDATE_ROLES:
+        target = _production_mapping(
+            targets_value[role],
+            fields={"workspace_id", "document_id", "revision_id", "content_hash"},
+            label=f"Planner {role} target",
+        )
+        targets[role] = PlannerDocumentTarget(role=role, **dict(target))
+
+    refs_value = _production_mapping(
+        value["source_refs"],
+        fields=set(PLANNER_CANDIDATE_ROLES),
+        label="Planner source references",
+    )
+    source_refs: dict[str, Sequence[Mapping[str, Any]]] = {}
+    for role in PLANNER_CANDIDATE_ROLES:
+        refs = _production_sequence(refs_value[role], label=f"Planner {role} source_refs")
+        if not all(isinstance(item, Mapping) for item in refs):
+            raise PlannerRuntimeError(f"Planner {role} source_refs contain a non-object")
+        source_refs[role] = tuple(dict(item) for item in refs)
+
+    operation_key = planner_prepare_operation_key(
+        frozen,
+        generated,
+        targets,
+        attempt_id=identity.attempt_id,
+        source_refs=source_refs,
+    )
+    proposal = prepare_planner_run(
+        frozen,
+        generated,
+        targets,
+        attempt_id=identity.attempt_id,
+        operation_key=operation_key,
+        source_refs=source_refs,
+    )
+    if proposal.attempt_id != identity.attempt_id:
+        raise PlannerRuntimeError("Planner proposal Attempt binding drifted")
+    return proposal
+
+
 __all__ = [
     "PLANNER_CANDIDATE_ROLES",
     "PLANNER_CAPABILITY_ID",
@@ -737,5 +977,6 @@ __all__ = [
     "freeze_planner_run",
     "planner_candidate_items",
     "planner_prepare_operation_key",
+    "prepare_planner_from_worker_context",
     "prepare_planner_run",
 ]
