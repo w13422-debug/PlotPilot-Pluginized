@@ -29,7 +29,6 @@ from backend.plotpilot_core.jobs.chapter_runtime import ChapterJobRuntime
 from backend.plotpilot_core.jobs.checkpoint_adapter import DurableCheckpointAdapter
 from backend.plotpilot_core.jobs.http_rpc.chapter_handlers import (
     CHAPTER_HOST_METHODS,
-    StreamCommitPolicy,
     build_chapter_host_handlers,
 )
 from backend.plotpilot_core.jobs.http_rpc.dispatcher import (
@@ -102,21 +101,6 @@ class _ControlResolverBinding:
 
     def resolve_control(self, command: Mapping[str, Any]):
         return self._method(command)
-
-
-class _MissingStreamCommitPolicy:
-    """Fail closed instead of inventing progress or provider replay semantics."""
-
-    @staticmethod
-    def resolve_stream_commit_policy(
-        _request: Mapping[str, Any],
-        _stream_prefix: Mapping[str, Any],
-        _attempt: AttemptStartBinding,
-    ) -> StreamCommitPolicy:
-        raise ContractError(
-            ErrorCode.INVALID_TRANSITION,
-            "stream commit policy resolver is not composed",
-        )
 
 
 class _AttemptBoundHandler:
@@ -290,12 +274,16 @@ def _select_stream_policy_resolver(
     start_resolver: Any,
     control_resolver: Any,
 ) -> Any:
-    if explicit is not None:
+    explicit_method = getattr(explicit, "resolve_stream_commit_policy", None)
+    if callable(explicit_method) or callable(explicit):
         return explicit
     for candidate in (start_resolver, control_resolver):
         if callable(getattr(candidate, "resolve_stream_commit_policy", None)):
             return candidate
-    return _MissingStreamCommitPolicy()
+    raise TypeError(
+        "stream_commit_policy_resolver must be supplied or exposed by "
+        "start_resolver or control_resolver"
+    )
 
 
 def compose_job_runtime(
@@ -325,6 +313,7 @@ def compose_job_runtime(
         "_peek_host_events",
         "_dispose_host_event",
         "bind_attempt",
+        "interrupt_attempt",
         "unbind_attempt",
         "send_worker_request",
         "take_worker_response",

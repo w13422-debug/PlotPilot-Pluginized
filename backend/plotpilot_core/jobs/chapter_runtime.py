@@ -44,6 +44,10 @@ class AttemptLifecyclePort(Protocol):
 
     def bind_attempt(self, ticket: WorkerTicket, fence: AttemptFence) -> None: ...
 
+    def interrupt_attempt(
+        self, ticket: WorkerTicket, fence: AttemptFence, reason: str
+    ) -> None: ...
+
     def unbind_attempt(self, ticket: WorkerTicket, fence: AttemptFence) -> None: ...
 
     def send_worker_request(
@@ -85,6 +89,7 @@ class ChapterJobRuntime:
         if attempt_lifecycle is not None:
             required = (
                 "bind_attempt",
+                "interrupt_attempt",
                 "unbind_attempt",
                 "send_worker_request",
                 "take_worker_response",
@@ -221,11 +226,23 @@ class ChapterJobRuntime:
                 binding.lease_epoch,
                 ticket.lifecycle_id,
             )
-            if self.attempt_lifecycle is not None:
-                self.attempt_lifecycle.bind_attempt(ticket, fence)
         except BaseException:
             self.job_control.release_worker(ticket)
             raise
+        if self.attempt_lifecycle is not None:
+            try:
+                self.attempt_lifecycle.bind_attempt(ticket, fence)
+            except BaseException as bind_error:
+                try:
+                    self.attempt_lifecycle.interrupt_attempt(
+                        ticket,
+                        fence,
+                        "P2 bind_attempt failed after P1 start_attempt committed",
+                    )
+                except BaseException as compensation_error:
+                    raise compensation_error from bind_error
+                self.job_control.release_worker(ticket)
+                raise
         return StartedChapterAttempt(ticket=ticket, binding=binding, fence=fence)
 
     def release_worker(self, started: StartedChapterAttempt) -> None:

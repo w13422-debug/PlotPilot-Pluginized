@@ -45,6 +45,9 @@ class SupervisorStub:
     def bind_attempt(self, ticket, fence):
         del ticket, fence
 
+    def interrupt_attempt(self, ticket, fence, reason):
+        del ticket, fence, reason
+
     def unbind_attempt(self, ticket, fence):
         del ticket, fence
 
@@ -64,8 +67,27 @@ class SupervisorStub:
         self.responses.append((request_id, error))
 
 
+class SupervisorWithoutInterrupt(SupervisorStub):
+    interrupt_attempt = None
+
+
 def _never_called(*_args, **_kwargs):
     raise AssertionError("resolver should not run during composition")
+
+
+class _StreamCommitPolicyResolver:
+    def resolve_stream_commit_policy(self, _request, _stream_prefix, _attempt):
+        raise AssertionError("stream policy resolver should not run during composition")
+
+
+class _StartResolverWithStreamCommitPolicy(_StreamCommitPolicyResolver):
+    def resolve_start(self, _command):
+        raise AssertionError("start resolver should not run during composition")
+
+
+class _ControlResolverWithStreamCommitPolicy(_StreamCommitPolicyResolver):
+    def resolve_control(self, _command):
+        raise AssertionError("control resolver should not run during composition")
 
 
 def test_one_production_composition_reuses_every_authority(tmp_path):
@@ -80,6 +102,7 @@ def test_one_production_composition_reuses_every_authority(tmp_path):
             start_resolver=_never_called,
             control_resolver=_never_called,
             provenance_receipt_resolver=_never_called,
+            stream_commit_policy_resolver=_StreamCommitPolicyResolver(),
         )
 
         assert isinstance(composition, JobRuntimeComposition)
@@ -116,6 +139,81 @@ def test_composition_has_no_implicit_resolver_or_fake_authority(tmp_path):
     try:
         with pytest.raises(TypeError):
             compose_job_runtime(authority, SupervisorStub())
+    finally:
+        repository.close()
+
+
+def test_composition_rejects_supervisor_without_attempt_interrupt_port(tmp_path):
+    repository = CoreAuthorityRepository(tmp_path / "core.db")
+    assets = AssetStore(tmp_path / "assets")
+    authority = ExecutionAuthority(repository, assets)
+    try:
+        with pytest.raises(TypeError, match="accepted P2 Job ports"):
+            compose_job_runtime(
+                authority,
+                SupervisorWithoutInterrupt(),
+                start_resolver=_never_called,
+                control_resolver=_never_called,
+                provenance_receipt_resolver=_never_called,
+                stream_commit_policy_resolver=_StreamCommitPolicyResolver(),
+            )
+    finally:
+        repository.close()
+
+
+def test_composition_rejects_absent_stream_commit_policy(tmp_path):
+    repository = CoreAuthorityRepository(tmp_path / "core.db")
+    assets = AssetStore(tmp_path / "assets")
+    authority = ExecutionAuthority(repository, assets)
+    try:
+        with pytest.raises(TypeError, match="stream_commit_policy_resolver"):
+            compose_job_runtime(
+                authority,
+                SupervisorStub(),
+                start_resolver=_never_called,
+                control_resolver=_never_called,
+                provenance_receipt_resolver=_never_called,
+            )
+    finally:
+        repository.close()
+
+
+def test_composition_selects_explicit_or_resolver_stream_policy(tmp_path):
+    repository = CoreAuthorityRepository(tmp_path / "core.db")
+    assets = AssetStore(tmp_path / "assets")
+    authority = ExecutionAuthority(repository, assets)
+    explicit = _StreamCommitPolicyResolver()
+    start = _StartResolverWithStreamCommitPolicy()
+    control = _ControlResolverWithStreamCommitPolicy()
+    try:
+        explicit_composition = compose_job_runtime(
+            authority,
+            SupervisorStub(),
+            start_resolver=start,
+            control_resolver=control,
+            provenance_receipt_resolver=_never_called,
+            stream_commit_policy_resolver=explicit,
+        )
+        assert explicit_composition.handlers._stream_policy_resolver is explicit
+
+        fallback_composition = compose_job_runtime(
+            authority,
+            SupervisorStub(),
+            start_resolver=start,
+            control_resolver=control,
+            provenance_receipt_resolver=_never_called,
+            stream_commit_policy_resolver=object(),
+        )
+        assert fallback_composition.handlers._stream_policy_resolver is start
+
+        control_composition = compose_job_runtime(
+            authority,
+            SupervisorStub(),
+            start_resolver=_never_called,
+            control_resolver=control,
+            provenance_receipt_resolver=_never_called,
+        )
+        assert control_composition.handlers._stream_policy_resolver is control
     finally:
         repository.close()
 
@@ -174,6 +272,7 @@ def test_composed_dispatcher_resolves_attempt_from_durable_authority(tmp_path):
             start_resolver=_never_called,
             control_resolver=_never_called,
             provenance_receipt_resolver=_never_called,
+            stream_commit_policy_resolver=_StreamCommitPolicyResolver(),
         )
         request = build_request(
             "host.job.event/v1",

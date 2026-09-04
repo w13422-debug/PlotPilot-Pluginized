@@ -848,6 +848,69 @@ class PluginProcessSupervisor:
             record.last_heartbeat = self._clock.monotonic()
             record.idle_since = None
 
+    def interrupt_attempt(
+        self, ticket: WorkerTicket, fence: AttemptFence, reason: str
+    ) -> None:
+        """Fence an exact Attempt into the existing bounded reconciliation path."""
+
+        if not isinstance(ticket, WorkerTicket) or not isinstance(fence, AttemptFence):
+            raise ContractError(
+                ErrorCode.RESULT_CONTRACT_MISMATCH,
+                "Attempt interruption requires exact worker and Attempt fences",
+            )
+        if fence.owner_id != ticket.lifecycle_id:
+            raise ContractError(
+                ErrorCode.STALE_LEASE,
+                "Attempt interruption belongs to another worker lifecycle",
+            )
+        if not isinstance(reason, str) or not reason.strip():
+            raise ContractError(
+                ErrorCode.RESULT_CONTRACT_MISMATCH,
+                "Attempt interruption requires a non-empty reason",
+            )
+
+        reason = reason.strip()
+        key = self._key(ticket.worker_id, ticket.lifecycle_id)
+        with self._lock:
+            record = self._records.get(key)
+            if record is None or not self._matches_lifecycle(record, ticket):
+                raise ContractError(
+                    ErrorCode.STALE_LEASE,
+                    "Attempt interruption belongs to an unknown worker lifecycle",
+                )
+
+        with record.cleanup_lock, self._lock:
+            current = self._records.get(key)
+            if current is not record or not self._matches_lifecycle(record, ticket):
+                raise ContractError(
+                    ErrorCode.STALE_LEASE,
+                    "Attempt interruption raced worker cleanup",
+                )
+            if record.claim_released:
+                if record.attempt_fence == fence and record.attempt_reconciled:
+                    return
+                raise ContractError(
+                    ErrorCode.STALE_LEASE,
+                    "worker claim was released before Attempt interruption",
+                )
+            if record.attempt_fence not in {None, fence}:
+                raise ContractError(
+                    ErrorCode.STALE_LEASE,
+                    "worker lifecycle is bound to another Attempt",
+                )
+            record.attempt_fence = fence
+            record.attempt_reconcile_required = True
+            record.attempt_reconciled = False
+            record.reconcile_reason = reason
+
+        self._begin_termination(
+            key,
+            WorkerState.FENCED,
+            reason,
+            reconcile_attempt=True,
+        )
+        self._reconcile_and_release(key)
+
     def unbind_attempt(self, ticket: WorkerTicket, fence: AttemptFence) -> None:
         record = self._ticket_record(
             ticket,
