@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import base64
-import copy
-import json
+from collections import deque
+from collections.abc import Mapping
+from dataclasses import dataclass, replace
 from hashlib import sha256
 
 import pytest
@@ -10,218 +10,352 @@ from plotpilot_autopilot import (
     AutopilotIdentity,
     AutopilotRuntime,
     AutopilotRuntimeError,
+    CheckpointState,
     DurableStage,
+    StageEffect,
+    build_checkpoint_envelope,
     build_durable_dag,
 )
 
 RELEASE = "a" * 64
+SNAPSHOT_HASH = "b" * 64
+CREATED_AT = "2026-09-04T00:00:00Z"
 
 
-class CrashHost:
-    """Small strict Host fixture for acknowledgement-loss recovery cases."""
+@dataclass(frozen=True, slots=True)
+class MemoryAsset:
+    asset_id: str
+    content: bytes
+    sha256: str
+
+
+class MemoryAssets:
+    def __init__(self) -> None:
+        self._assets: dict[str, MemoryAsset] = {}
+        self.reads: list[str] = []
+
+    def put(self, asset_id: str, content: bytes) -> None:
+        self._assets[asset_id] = MemoryAsset(
+            asset_id,
+            content,
+            sha256(content).hexdigest(),
+        )
+
+    def read(self, asset_id: str) -> MemoryAsset:
+        self.reads.append(asset_id)
+        return self._assets[asset_id]
+
+    def create(
+        self,
+        _content: bytes | str,
+        *,
+        operation_key: str,
+        mime: str = "application/json",
+    ) -> MemoryAsset:
+        raise AssertionError(f"unexpected Asset create: {operation_key} ({mime})")
+
+
+class NoHost:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, dict[str, object]]] = []
+
+    def call(
+        self, method: str, params: Mapping[str, object]
+    ) -> Mapping[str, object]:
+        self.calls.append((method, dict(params)))
+        raise AssertionError(f"recovered completed DAG called Host: {method}")
+
+
+class ReplayHost:
+    """Models the accepted Host idempotent child-invocation seam only."""
 
     def __init__(self) -> None:
-        self.assets: dict[str, bytes] = {}
         self.calls: list[tuple[str, dict[str, object]]] = []
-        self.committed_checkpoint_asset_ids: list[str] = []
-        self.last_checkpoint_asset_id: str | None = None
-        self.crash_before_commit = 0
-        self.crash_after_commit_ack = 0
-        self.stage_operation_keys: list[str] = []
-        self._operations: dict[tuple[str, str], tuple[str, dict[str, object]]] = {}
+        self.invoke_keys: list[str] = []
         self._children: dict[str, dict[str, object]] = {}
+        self._polls = deque(
+            [
+                {
+                    "job_snapshot_asset_id": "asset-child-job-1",
+                    "job_event_page_asset_id": "asset-child-events-1",
+                    "next_job_event_seq": 0,
+                    "terminal": False,
+                    "result_bundle_asset_id": None,
+                    "provenance_receipt_id": None,
+                },
+                {
+                    "job_snapshot_asset_id": "asset-child-job-1",
+                    "job_event_page_asset_id": "asset-child-events-1",
+                    "next_job_event_seq": 1,
+                    "terminal": True,
+                    "result_bundle_asset_id": "asset-child-result-1",
+                    "provenance_receipt_id": "receipt-child-1",
+                },
+            ]
+        )
 
-    def _once(self, method: str, params: dict[str, object], build) -> dict[str, object]:
-        operation_key = params.get("operation_key")
-        if not isinstance(operation_key, str):
-            raise TypeError("operation key is absent")
-        key = (method, operation_key)
-        fingerprint = json.dumps(params, sort_keys=True, separators=(",", ":"))
-        previous = self._operations.get(key)
-        if previous is not None:
-            if previous[0] != fingerprint:
-                raise ValueError("idempotency payload drift")
-            return copy.deepcopy(previous[1])
-        result = build()
-        self._operations[key] = (fingerprint, copy.deepcopy(result))
-        return result
-
-    def call(self, method: str, params: dict[str, object]) -> dict[str, object]:
-        self.calls.append((method, dict(params)))
-        if method == "host.asset.create/v1":
-            return self._once(method, params, lambda: self._create(params))
-        if method == "host.asset.read/v1":
-            asset_id = params["asset_id"]
-            if not isinstance(asset_id, str):
-                raise ValueError("invalid asset id")
-            content = self.assets[asset_id]
-            offset = int(params["offset"])
-            chunk = content[offset : offset + int(params["length"])]
-            return {
-                "base64_chunk": base64.b64encode(chunk).decode("ascii"),
-                "next_offset": None
-                if offset + len(chunk) == len(content)
-                else offset + len(chunk),
-                "content_hash": sha256(chunk).hexdigest(),
-            }
+    def call(
+        self, method: str, params: Mapping[str, object]
+    ) -> Mapping[str, object]:
+        copied = dict(params)
+        self.calls.append((method, copied))
         if method == "host.capability.invoke/v1":
-            return self._once(method, params, lambda: self._invoke(params))
+            return self._invoke(copied)
         if method == "host.capability.poll/v1":
-            return self._poll(params)
-        if method == "host.checkpoint.commit/v1":
-            if self.crash_before_commit:
-                self.crash_before_commit -= 1
-                raise RuntimeError("simulated crash before checkpoint acknowledgement")
-            result = self._once(method, params, lambda: self._commit(params))
-            if self.crash_after_commit_ack:
-                self.crash_after_commit_ack -= 1
-                raise RuntimeError("simulated crash after checkpoint acknowledgement")
-            return result
-        raise AssertionError(method)
-
-    def _create(self, params: dict[str, object]) -> dict[str, object]:
-        chunk = base64.b64decode(str(params["base64_chunk"]), validate=True)
-        if (
-            params["offset"] != 0
-            or params["final"] is not True
-            or params["total_size"] != len(chunk)
-            or sha256(chunk).hexdigest() != params["expected_hash"]
-            or sha256(chunk).hexdigest() != params["chunk_hash"]
-        ):
-            raise ValueError("invalid one-page fixture upload")
-        asset_id = "asset-" + sha256(chunk).hexdigest()[:48]
-        self.assets[asset_id] = chunk
-        return {
-            "upload_id": params["upload_id"],
-            "accepted_bytes": len(chunk),
-            "completed": True,
-            "asset_id": asset_id,
-        }
+            return dict(self._polls.popleft())
+        raise AssertionError(f"unexpected Host method: {method}")
 
     def _invoke(self, params: dict[str, object]) -> dict[str, object]:
-        ordinal = len(self._children) + 1
-        child_job_id = f"child-job-{ordinal}"
-        self.stage_operation_keys.append(str(params["operation_key"]))
-        result = {
+        operation_key = params["operation_key"]
+        assert isinstance(operation_key, str)
+        self.invoke_keys.append(operation_key)
+        existing = self._children.get(operation_key)
+        if existing is not None:
+            return dict(existing)
+        child = {
             "accepted": True,
-            "child_job_id": child_job_id,
-            "child_step_id": f"child-step-{ordinal}",
-            "child_run_snapshot_asset_id": f"asset-child-snapshot-{ordinal}",
-            "child_run_snapshot_hash": sha256(
-                str(params["operation_key"]).encode()
-            ).hexdigest(),
-            "child_result_contract": params["expected_result_contract"],
+            "child_job_id": "child-job-1",
+            "child_step_id": "child-step-1",
+            "child_run_snapshot_asset_id": "asset-child-snapshot-1",
+            "child_run_snapshot_hash": "c" * 64,
+            "child_result_contract": "candidate-batch/v1",
             "child_job_event_seq": 0,
         }
-        self._children[child_job_id] = result
-        return result
-
-    def _poll(self, params: dict[str, object]) -> dict[str, object]:
-        child = self._children[str(params["child_job_id"])]
-        ordinal = str(child["child_job_id"]).rsplit("-", 1)[1]
-        return {
-            "job_snapshot_asset_id": f"asset-child-job-{ordinal}",
-            "job_event_page_asset_id": f"asset-child-events-{ordinal}",
-            "next_job_event_seq": 1,
-            "terminal": True,
-            "result_bundle_asset_id": f"asset-child-result-{ordinal}",
-            "provenance_receipt_id": f"receipt-child-{ordinal}",
-        }
-
-    def _commit(self, params: dict[str, object]) -> dict[str, object]:
-        checkpoint_asset_id = params["checkpoint_asset_id"]
-        if not isinstance(checkpoint_asset_id, str):
-            raise TypeError("invalid checkpoint asset")
-        checkpoint = json.loads(self.assets[checkpoint_asset_id].decode("utf-8"))
-        self.committed_checkpoint_asset_ids.append(checkpoint_asset_id)
-        self.last_checkpoint_asset_id = checkpoint_asset_id
-        return {
-            "accepted": True,
-            "checkpoint_id": checkpoint["checkpoint_id"],
-            "completed_units": checkpoint["completed_units"],
-            "total_units": checkpoint["total_units"],
-            "job_event_seq": len(self.committed_checkpoint_asset_ids),
-        }
+        self._children[operation_key] = child
+        return dict(child)
 
 
-def identity() -> AutopilotIdentity:
+def identity(
+    *,
+    attempt_id: str = "attempt-source",
+    lease_epoch: int = 1,
+    workspace_id: str = "workspace-1",
+    job_id: str = "job-1",
+    step_id: str = "step-1",
+    plugin_release_id: str = RELEASE,
+    run_snapshot_hash: str = SNAPSHOT_HASH,
+) -> AutopilotIdentity:
     return AutopilotIdentity(
-        workspace_id="workspace-1",
-        job_id="job-1",
-        step_id="step-1",
-        attempt_id="attempt-1",
-        lease_epoch=1,
-        plugin_release_id=RELEASE,
-        run_snapshot_hash="b" * 64,
-        created_at="2026-09-04T00:00:00Z",
+        workspace_id=workspace_id,
+        job_id=job_id,
+        step_id=step_id,
+        attempt_id=attempt_id,
+        lease_epoch=lease_epoch,
+        plugin_release_id=plugin_release_id,
+        run_snapshot_hash=run_snapshot_hash,
+        created_at=CREATED_AT,
     )
 
 
-def dag(*stage_ids: str):
+def one_stage_dag():
     return build_durable_dag(
-        tuple(
+        (
             DurableStage(
-                stage_id=stage_id,
-                binding_id=f"binding-{stage_id}",
-                input_asset_id=f"asset-input-{stage_id}",
-                depends_on=() if index == 0 else (stage_ids[index - 1],),
-            )
-            for index, stage_id in enumerate(stage_ids)
+                stage_id="plan",
+                binding_id="binding-plan",
+                input_asset_id="asset-input-plan",
+            ),
         )
     )
 
 
-def _stage_call_keys(host: CrashHost) -> list[str]:
-    return [
-        str(params["operation_key"])
-        for method, params in host.calls
-        if method == "host.capability.invoke/v1"
-    ]
+def _stage_operation_key(
+    value: AutopilotIdentity,
+    *,
+    dag_hash: str,
+    payload_hash: str,
+) -> str:
+    parts = (
+        "stage",
+        value.workspace_id,
+        value.job_id,
+        value.step_id,
+        value.plugin_release_id,
+        value.run_snapshot_hash,
+        dag_hash,
+        payload_hash,
+        "plan",
+    )
+    return "autopilot-stage-" + sha256("\n".join(parts).encode("utf-8")).hexdigest()[:48]
 
 
-def test_crash_before_checkpoint_ack_replays_the_same_stage_operation_key() -> None:
-    host = CrashHost()
-    host.crash_before_commit = 1
-    plan = dag("plan")
+def checkpoint_fixture(
+    source: AutopilotIdentity,
+    *,
+    dag_hash: str,
+    payload_hash: str,
+) -> tuple[MemoryAssets, str, StageEffect]:
+    effect = StageEffect(
+        stage_id="plan",
+        operation_key=_stage_operation_key(
+            source,
+            dag_hash=dag_hash,
+            payload_hash=payload_hash,
+        ),
+        child_job_id="child-job-1",
+        child_step_id="child-step-1",
+        child_run_snapshot_asset_id="asset-child-snapshot-1",
+        child_run_snapshot_hash="c" * 64,
+        result_bundle_asset_id="asset-child-result-1",
+        provenance_receipt_id="receipt-child-1",
+        child_result_contract="candidate-batch/v1",
+    )
+    state = CheckpointState.build(
+        source,
+        dag_hash=dag_hash,
+        previous_checkpoint_hash=None,
+        completed_stages=(effect,),
+    )
+    envelope = build_checkpoint_envelope(
+        state,
+        state_asset_id="asset-runtime-state-1",
+        total_units=1,
+    )
+    assets = MemoryAssets()
+    assets.put("asset-runtime-state-1", state.json_bytes)
+    assets.put("asset-checkpoint-current-1", envelope.json_bytes)
+    return assets, "asset-checkpoint-current-1", effect
 
-    with pytest.raises(AutopilotRuntimeError, match="checkpoint.commit"):
-        AutopilotRuntime(host, plugin_release_id=RELEASE).run(identity(), plan)
 
-    assert host.committed_checkpoint_asset_ids == []
-    assert len(host.stage_operation_keys) == 1
-    first_stage_key = _stage_call_keys(host)[0]
+def test_resume_reads_only_the_current_core_selected_checkpoint_and_direct_source() -> None:
+    dag = one_stage_dag()
+    source = identity()
+    current = identity(attempt_id="attempt-current", lease_epoch=2)
+    assets, checkpoint_asset_id, effect = checkpoint_fixture(
+        source,
+        dag_hash=dag.dag_hash,
+        payload_hash=dag.dag_hash,
+    )
+    host = NoHost()
+    runtime = AutopilotRuntime(host, plugin_release_id=RELEASE, assets=assets)
 
-    resumed = AutopilotRuntime(host, plugin_release_id=RELEASE).run(identity(), plan)
+    with pytest.raises(AutopilotRuntimeError, match="direct lineage"):
+        runtime.run(source, dag, checkpoint_asset_id=checkpoint_asset_id)
 
-    assert resumed.completed_stage_ids == ("plan",)
-    assert len(host.stage_operation_keys) == 1
-    assert _stage_call_keys(host) == [first_stage_key, first_stage_key]
-    assert len(host.committed_checkpoint_asset_ids) == 1
-
-
-def test_crash_after_checkpoint_ack_resumes_without_skipping_or_duplicating_effects() -> (
-    None
-):
-    host = CrashHost()
-    host.crash_after_commit_ack = 1
-    plan = dag("plan", "draft")
-
-    with pytest.raises(AutopilotRuntimeError, match="checkpoint.commit"):
-        AutopilotRuntime(host, plugin_release_id=RELEASE).run(identity(), plan)
-
-    checkpoint_asset_id = host.last_checkpoint_asset_id
-    assert checkpoint_asset_id is not None
-    assert len(host.committed_checkpoint_asset_ids) == 1
-    assert len(host.stage_operation_keys) == 1
-    first_stage_key = host.stage_operation_keys[0]
-
-    resumed = AutopilotRuntime(host, plugin_release_id=RELEASE).run(
-        identity(), plan, checkpoint_asset_id=checkpoint_asset_id
+    result = runtime.run(
+        current,
+        dag,
+        checkpoint_asset_id=checkpoint_asset_id,
+        resume_of_attempt_id=source.attempt_id,
     )
 
-    assert resumed.completed_stage_ids == ("plan", "draft")
-    assert len(host.committed_checkpoint_asset_ids) == 2
-    assert len(host.stage_operation_keys) == 2
-    assert host.stage_operation_keys[0] == first_stage_key
-    assert _stage_call_keys(host).count(first_stage_key) == 1
-    assert [method for method, _ in host.calls].count("host.asset.read/v1") == 2
+    assert result.completed_stage_ids == ("plan",)
+    assert result.stage_effects == (effect,)
+    assert result.checkpoint_asset_id == checkpoint_asset_id
+    assert assets.reads == [checkpoint_asset_id, "asset-runtime-state-1"]
+    assert host.calls == []
+
+
+def test_resume_rejects_an_older_checkpoint_not_on_the_direct_attempt_edge() -> None:
+    dag = one_stage_dag()
+    source = identity(attempt_id="attempt-1")
+    current = identity(attempt_id="attempt-3", lease_epoch=3)
+    assets, checkpoint_asset_id, _effect = checkpoint_fixture(
+        source,
+        dag_hash=dag.dag_hash,
+        payload_hash=dag.dag_hash,
+    )
+
+    with pytest.raises(AutopilotRuntimeError, match="direct lineage"):
+        AutopilotRuntime(NoHost(), plugin_release_id=RELEASE, assets=assets).run(
+            current,
+            dag,
+            checkpoint_asset_id=checkpoint_asset_id,
+            resume_of_attempt_id="attempt-2",
+        )
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("workspace_id", "workspace-2"),
+        ("job_id", "job-2"),
+        ("step_id", "step-2"),
+        ("plugin_release_id", "d" * 64),
+        ("run_snapshot_hash", "e" * 64),
+    ],
+)
+def test_resume_rejects_stable_identity_drift(field: str, value: str) -> None:
+    dag = one_stage_dag()
+    source = identity()
+    current = replace(
+        identity(attempt_id="attempt-current", lease_epoch=2),
+        **{field: value},
+    )
+    assets, checkpoint_asset_id, _effect = checkpoint_fixture(
+        source,
+        dag_hash=dag.dag_hash,
+        payload_hash=dag.dag_hash,
+    )
+
+    with pytest.raises(AutopilotRuntimeError, match="identity drifted"):
+        AutopilotRuntime(
+            NoHost(),
+            plugin_release_id=current.plugin_release_id,
+            assets=assets,
+        ).run(
+            current,
+            dag,
+            checkpoint_asset_id=checkpoint_asset_id,
+            resume_of_attempt_id=source.attempt_id,
+        )
+
+
+def test_resume_rejects_checkpoint_effects_bound_to_another_payload_hash() -> None:
+    dag = one_stage_dag()
+    source = identity()
+    current = identity(attempt_id="attempt-current", lease_epoch=2)
+    assets, checkpoint_asset_id, _effect = checkpoint_fixture(
+        source,
+        dag_hash=dag.dag_hash,
+        payload_hash=dag.dag_hash,
+    )
+
+    with pytest.raises(AutopilotRuntimeError, match="payload"):
+        AutopilotRuntime(NoHost(), plugin_release_id=RELEASE, assets=assets).run(
+            current,
+            dag,
+            checkpoint_asset_id=checkpoint_asset_id,
+            resume_of_attempt_id=source.attempt_id,
+            payload_hash="f" * 64,
+        )
+
+
+def test_pending_retry_reuses_the_same_stage_operation_key_across_attempts() -> None:
+    host = ReplayHost()
+    dag = one_stage_dag()
+    first = AutopilotRuntime(
+        host,
+        plugin_release_id=RELEASE,
+        assets=MemoryAssets(),
+        max_stage_polls=1,
+        poll_budget_seconds=1.0,
+        initial_backoff_seconds=0.01,
+        max_backoff_seconds=0.1,
+        monotonic=lambda: 0.0,
+        sleeper=lambda *_args: False,
+    ).run(identity(attempt_id="attempt-1", lease_epoch=1), dag)
+
+    second = AutopilotRuntime(
+        host,
+        plugin_release_id=RELEASE,
+        assets=MemoryAssets(),
+        max_stage_polls=1,
+        poll_budget_seconds=1.0,
+        initial_backoff_seconds=0.01,
+        max_backoff_seconds=0.1,
+        monotonic=lambda: 0.0,
+        sleeper=lambda *_args: False,
+    ).run(identity(attempt_id="attempt-2", lease_epoch=2), dag)
+
+    assert first.pending is True
+    assert first.stage_effects == ()
+    assert second.completed_stage_ids == ("plan",)
+    assert host.invoke_keys[0] == host.invoke_keys[1]
+    assert len(host._children) == 1
+    assert [method for method, _ in host.calls] == [
+        "host.capability.invoke/v1",
+        "host.capability.poll/v1",
+        "host.capability.invoke/v1",
+        "host.capability.poll/v1",
+    ]

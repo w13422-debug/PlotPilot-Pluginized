@@ -1,9 +1,9 @@
-"""Pure checkpoint envelopes for the P3-owned durable checkpoint authority.
+"""Pure checkpoint envelopes for the Core-owned durable checkpoint authority.
 
 This module only builds and verifies immutable checkpoint Assets.  It has no
-filesystem, database, cache, or process-local replay ledger.  The Host commits
-and returns these bytes through ``host.checkpoint.commit/v1``; recovery always
-re-reads Host-owned assets.
+filesystem, database, cache, or process-local replay ledger.  Recovery accepts
+only the exact checkpoint locator selected by ``job.resume`` and validates its
+direct source Attempt edge; it never discovers a checkpoint on its own.
 """
 
 from __future__ import annotations
@@ -593,6 +593,49 @@ def build_checkpoint_envelope(
     )
 
 
+def _validate_resume_identity(
+    source: AutopilotIdentity,
+    current: AutopilotIdentity,
+    *,
+    resume_of_attempt_id: str,
+) -> None:
+    """Fence a checkpoint to the one direct Core-authoritative resume edge.
+
+    Generation/package/capability and the current RunSnapshot are already
+    bound by the shared worker before this pure parser runs.  The checkpoint
+    itself closes over the stable workspace/job/step/release/snapshot/DAG
+    identity and must name the exact prior Attempt supplied by ``job.resume``.
+    """
+
+    validate_identifier(resume_of_attempt_id, "resume_of_attempt_id")
+    if current.attempt_id == resume_of_attempt_id:
+        raise AutopilotCheckpointError(
+            "job.resume must name a distinct direct source Attempt"
+        )
+    if source.attempt_id != resume_of_attempt_id:
+        raise AutopilotCheckpointError(
+            "checkpoint source Attempt is not job.resume direct lineage"
+        )
+    source_stable = (
+        source.workspace_id,
+        source.job_id,
+        source.step_id,
+        source.plugin_release_id,
+        source.run_snapshot_hash,
+    )
+    current_stable = (
+        current.workspace_id,
+        current.job_id,
+        current.step_id,
+        current.plugin_release_id,
+        current.run_snapshot_hash,
+    )
+    if source_stable != current_stable:
+        raise AutopilotCheckpointError(
+            "checkpoint direct resume identity drifted"
+        )
+
+
 def recover_checkpoint_envelope(
     checkpoint: dict[str, object],
     runtime_state: Mapping[str, object],
@@ -602,17 +645,23 @@ def recover_checkpoint_envelope(
     identity: AutopilotIdentity,
     dag_hash: str,
     total_units: int,
+    resume_of_attempt_id: str,
 ) -> CheckpointEnvelope:
-    """Fail closed unless a Host-provided checkpoint exactly matches this run."""
+    """Fail closed unless a current Host-selected checkpoint matches this run.
+
+    The parsed Asset is bound to exactly one direct Core ``job.resume`` edge;
+    this pure parser never accepts a same-Attempt or discovered checkpoint.
+    """
     validate_identifier(state_asset_id, "state_asset_id")
     if checkpoint_asset_id is not None:
         validate_identifier(checkpoint_asset_id, "checkpoint_asset_id")
     expected_total = _nonnegative_int(total_units, "total_units")
     state = CheckpointState.from_dict(runtime_state)
-    if state.identity != identity:
-        raise AutopilotCheckpointError(
-            "checkpoint runtime identity is stale or belongs to another release"
-        )
+    _validate_resume_identity(
+        state.identity,
+        identity,
+        resume_of_attempt_id=resume_of_attempt_id,
+    )
     if state.dag_hash != dag_hash:
         raise AutopilotCheckpointError("checkpoint belongs to a different durable DAG")
     if len(state.completed_stages) > expected_total:
