@@ -7,16 +7,14 @@ runtime slices have been composed over the active P1 authority.
 
 from __future__ import annotations
 
-import hashlib
 import re
-from collections.abc import Iterable, Iterator, Mapping
+from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from ..assets import AssetStore
 from ..jobs.backup import JobRuntimeBackupContributor
 from ..plugins.backup import GenerationBackupContributor
 from .adapters import SqliteCoreSnapshotAdapter
@@ -31,169 +29,32 @@ from .models import (
 from .ports import PluginDataBackupPort
 
 _HASH = re.compile(r"^[0-9a-f]{64}$")
+_BACKUP_STAGE = re.compile(r"^\.b-[0-9a-f]{32}\.stage$")
 
 
 class BackupRuntimePortError(RuntimeError):
     """A composed runtime port is absent, stale, or crosses an authority."""
 
 
-@dataclass(slots=True)
-class _AssetMutation:
-    files: dict[Path, bytes] = field(default_factory=dict)
-    directories: set[Path] = field(default_factory=set)
-
-
-class _AssetMutationJournal:
-    """Remove only state Assets created by the current held backup barrier.
-
-    ``SqliteCoreSnapshotAdapter`` materializes deterministic aggregate state in
-    an ``AssetStore``.  Those Assets are needed until the data plane copies its
-    closure, but a backup operation must not leave the active root changed.
-    The journal records only paths that did not exist before the exact ``put``
-    and removes them while the P3 writer barrier is still held.
-    """
-
-    def __init__(self, store: AssetStore) -> None:
-        self.store = store
-        self._active: ContextVar[_AssetMutation | None] = ContextVar(
-            f"plotpilot_backup_asset_mutation_{id(self)}", default=None
-        )
-
-    def current(self) -> _AssetMutation:
-        mutation = self._active.get()
-        if mutation is None:
-            raise BackupRuntimePortError(
-                "Core snapshot Asset write occurred outside the held backup barrier"
-            )
-        return mutation
-
-    @contextmanager
-    def operation(self) -> Iterator[None]:
-        if self._active.get() is not None:
-            raise BackupRuntimePortError("nested backup Asset mutation journal")
-        mutation = _AssetMutation()
-        token = self._active.set(mutation)
-        try:
-            yield
-        finally:
-            try:
-                self._rollback(mutation)
-            finally:
-                self._active.reset(token)
-
-    @staticmethod
-    def _missing_parents(path: Path, root: Path) -> set[Path]:
-        result: set[Path] = set()
-        current = path.parent
-        while current != root and current.is_relative_to(root):
-            if current.exists():
-                break
-            result.add(current)
-            current = current.parent
-        return result
-
-    def record_after_put(
-        self,
-        *,
-        paths: tuple[Path, ...],
-        existed: Mapping[Path, bool],
-        missing_directories: set[Path],
-    ) -> None:
-        mutation = self.current()
-        for path in paths:
-            if not existed[path] and path.is_file():
-                mutation.files.setdefault(path, path.read_bytes())
-        mutation.directories.update(
-            path for path in missing_directories if path.is_dir()
-        )
-
-    @staticmethod
-    def _rollback(mutation: _AssetMutation) -> None:
-        failures: list[str] = []
-        for path, expected in sorted(
-            mutation.files.items(), key=lambda item: len(item[0].parts), reverse=True
-        ):
-            try:
-                if not path.exists():
-                    continue
-                if not path.is_file() or path.read_bytes() != expected:
-                    failures.append(f"created Asset changed before cleanup: {path}")
-                    continue
-                path.unlink()
-            except OSError as exc:
-                failures.append(f"could not remove created Asset {path}: {exc}")
-        for path in sorted(
-            mutation.directories, key=lambda item: len(item.parts), reverse=True
-        ):
-            try:
-                if path.is_dir() and not any(path.iterdir()):
-                    path.rmdir()
-            except OSError as exc:
-                failures.append(
-                    f"could not remove created Asset directory {path}: {exc}"
-                )
-        if failures:
-            raise BackupRuntimePortError("; ".join(failures))
-
-
-class _JournaledAssetStore:
-    """The exact active AssetStore with operation-owned ``put`` tracking."""
-
-    def __init__(self, store: AssetStore, journal: _AssetMutationJournal) -> None:
-        self._store = store
-        self._journal = journal
-        self.root = store.root
-        self.objects = store.objects
-        self.metadata = store.metadata
-
-    def put(
-        self,
-        content: bytes | Any,
-        *,
-        mime: str,
-        logical_role: str,
-        provenance: str,
-        rebuildable: bool = False,
-    ) -> Any:
-        self._journal.current()
-        data = (
-            bytes(content)
-            if isinstance(content, (bytes, bytearray))
-            else content.read()
-        )
-        if not isinstance(data, bytes):
-            raise TypeError("asset stream must return bytes")
-        digest = hashlib.sha256(data).hexdigest()
-        object_path = self.objects / digest[:2] / digest
-        metadata_path = self.metadata / f"{digest}.json"
-        paths = (object_path, metadata_path)
-        existed = {path: path.exists() for path in paths}
-        missing_directories = set().union(
-            *(self._journal._missing_parents(path, self.root) for path in paths)
-        )
-        try:
-            return self._store.put(
-                data,
-                mime=mime,
-                logical_role=logical_role,
-                provenance=provenance,
-                rebuildable=rebuildable,
-            )
-        finally:
-            self._journal.record_after_put(
-                paths=paths,
-                existed=existed,
-                missing_directories=missing_directories,
-            )
-
-
 class RuntimeCoreSnapshotPort:
-    """P1 snapshot adapter whose transient state Assets are source-neutral."""
+    """Materialize transient Core state only in the operation-owned stage."""
 
-    def __init__(self, assets: AssetStore, journal: _AssetMutationJournal) -> None:
-        self.assets = assets
-        self._delegate = SqliteCoreSnapshotAdapter(assets.root)
-        self._delegate.asset_store = _JournaledAssetStore(assets, journal)  # type: ignore[assignment]
+    @staticmethod
+    def _stage_asset_root(core_database: Path) -> Path:
+        database = Path(core_database)
+        stage = database.parent.parent
+        if (
+            not database.is_absolute()
+            or database.name != "core.db"
+            or database.parent.name != "core"
+            or _BACKUP_STAGE.fullmatch(stage.name) is None
+            or not stage.is_dir()
+            or not database.is_file()
+        ):
+            raise BackupRuntimePortError(
+                "Core snapshot database is not inside an operation-owned backup stage"
+            )
+        return stage / "assets"
 
     def capture_for_backup(
         self,
@@ -205,7 +66,8 @@ class RuntimeCoreSnapshotPort:
         mode: BackupMode,
         workspace_ids: tuple[str, ...],
     ) -> CoreSnapshotCapture:
-        return self._delegate.capture_for_backup(
+        delegate = SqliteCoreSnapshotAdapter(self._stage_asset_root(core_database))
+        return delegate.capture_for_backup(
             barrier=barrier,
             core_database=core_database,
             database_sha256=database_sha256,
@@ -224,13 +86,8 @@ class _BarrierBinding:
 class RuntimeBackupBarrierPort:
     """Expose P3's real Job barrier in the data plane's import namespace."""
 
-    def __init__(
-        self,
-        jobs: JobRuntimeBackupContributor,
-        journal: _AssetMutationJournal,
-    ) -> None:
+    def __init__(self, jobs: JobRuntimeBackupContributor) -> None:
         self.jobs = jobs
-        self._journal = journal
         self._binding: ContextVar[_BarrierBinding | None] = ContextVar(
             f"plotpilot_backup_barrier_{id(self)}", default=None
         )
@@ -284,9 +141,7 @@ class RuntimeBackupBarrierPort:
                 )
             token = self._binding.set(_BarrierBinding(public, native))
             try:
-                # The journal exits before P3 releases the sole Core writer.
-                with self._journal.operation():
-                    yield public
+                yield public
             finally:
                 self._binding.reset(token)
 
@@ -297,49 +152,6 @@ class RuntimeBackupBarrierPort:
                 "P3 contributor received a stale or foreign backup barrier"
             )
         return binding.native
-
-
-class _GenerationStateBridge:
-    """Normalize the repository's dual source/import spelling for P2."""
-
-    def __init__(self, source: Any, state_type: type[Any]) -> None:
-        self.source = source
-        self._state_type = state_type
-
-    def generation_state(self) -> Any:
-        value = self.source.generation_state()
-        if isinstance(value, self._state_type):
-            return value
-        try:
-            return self._state_type(
-                current=value.current,
-                lkg=value.lkg,
-                safe_mode=value.safe_mode,
-                rollback_consumed=value.rollback_consumed,
-            )
-        except (AttributeError, TypeError) as exc:
-            raise BackupRuntimePortError(
-                "P2 generation source returned an untyped state"
-            ) from exc
-
-
-def _method_global(instance: Any, name: str, global_name: str) -> Any | None:
-    method = getattr(type(instance), name, None)
-    globals_map = getattr(method, "__globals__", None)
-    if isinstance(globals_map, dict):
-        return globals_map.get(global_name)
-    return None
-
-
-def _barrier_for(value: BackupBarrier, target_type: type[Any] | None) -> Any:
-    if target_type is None or isinstance(value, target_type):
-        return value
-    return target_type(
-        token=value.token,
-        backup_epoch=value.backup_epoch,
-        core_event_high_water=value.core_event_high_water,
-        created_at=value.created_at,
-    )
 
 
 def _backup_file(value: Any) -> PluginBackupFile:
@@ -363,28 +175,53 @@ class RuntimeGenerationBackupPort:
     """Run the accepted P2 contributor and normalize its immutable result."""
 
     def __init__(self, source_or_contributor: Any) -> None:
+        try:
+            source_binding = source_or_contributor.core_authority_binding
+        except AttributeError as exc:
+            raise BackupRuntimePortError(
+                "P2 source has no public Core authority binding"
+            ) from exc
+        if source_binding is None:
+            raise BackupRuntimePortError("P2 source Core authority binding is null")
         capture = getattr(source_or_contributor, "capture_for_backup", None)
         if callable(capture):
-            self.source = getattr(source_or_contributor, "_generations", None)
+            self.source = source_or_contributor
             self.contributor = source_or_contributor
         else:
             state_reader = getattr(source_or_contributor, "generation_state", None)
             if not callable(state_reader):
                 raise TypeError("generation source must expose generation_state")
-            probe = GenerationBackupContributor(source_or_contributor)
-            state_type = _method_global(probe, "capture_for_backup", "GenerationState")
-            if not isinstance(state_type, type):
-                raise BackupRuntimePortError(
-                    "accepted P2 contributor does not expose GenerationState"
-                )
             self.source = source_or_contributor
-            self.contributor = GenerationBackupContributor(
-                _GenerationStateBridge(source_or_contributor, state_type)
+            self.contributor = GenerationBackupContributor(source_or_contributor)
+        try:
+            contributor_binding = self.contributor.core_authority_binding
+        except AttributeError as exc:
+            raise BackupRuntimePortError(
+                "P2 contributor has no public Core authority binding"
+            ) from exc
+        if contributor_binding is not source_binding:
+            raise BackupRuntimePortError(
+                "P2 contributor changed the Core authority binding"
             )
-        barrier_type = _method_global(
-            self.contributor, "capture_for_backup", "BackupBarrier"
-        )
-        self._barrier_type = barrier_type if isinstance(barrier_type, type) else None
+        self.core_authority_binding = contributor_binding
+
+    def require_core_authority_binding(self) -> None:
+        """Recheck the public object identity immediately before an attempt."""
+
+        try:
+            source_binding = self.source.core_authority_binding
+            contributor_binding = self.contributor.core_authority_binding
+        except AttributeError as exc:
+            raise BackupRuntimePortError(
+                "P2 authority binding disappeared after composition"
+            ) from exc
+        if (
+            source_binding is not self.core_authority_binding
+            or contributor_binding is not self.core_authority_binding
+        ):
+            raise BackupRuntimePortError(
+                "P2 authority binding changed after composition"
+            )
 
     def capture_for_backup(
         self,
@@ -396,7 +233,7 @@ class RuntimeGenerationBackupPort:
         workspace_ids: tuple[str, ...],
     ) -> GenerationSnapshot:
         value = self.contributor.capture_for_backup(
-            barrier=_barrier_for(barrier, self._barrier_type),
+            barrier=barrier,
             core_database=core_database,
             core_snapshot_hash=core_snapshot_hash,
             mode=mode,

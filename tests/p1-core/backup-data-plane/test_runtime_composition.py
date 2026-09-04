@@ -22,6 +22,7 @@ from backend.plotpilot_core.backup import (
 from backend.plotpilot_core.backup.models import PluginDataSnapshot
 from backend.plotpilot_core.domain import Document, Workspace
 from backend.plotpilot_core.jobs.backup import JobRuntimeBackupContributor
+from backend.plotpilot_core.plugins.backup import GenerationBackupContributor
 from backend.plotpilot_core.plugins.generation import GenerationState
 from backend.plotpilot_core.plugins.lifecycle import LifecycleRepository
 from backend.plotpilot_core.repositories import CoreAuthorityRepository
@@ -34,6 +35,7 @@ COMPLETED_AT = "2026-09-04T00:00:02Z"
 @dataclass
 class StaticGenerationSource:
     state: GenerationState
+    core_authority_binding: object | None
     failure: BaseException | None = None
 
     def generation_state(self) -> GenerationState:
@@ -47,7 +49,7 @@ class RuntimeStack:
     source_root: Path
     repository: CoreAuthorityRepository
     assets: AssetStore
-    generations: StaticGenerationSource
+    generations: Any
     runtime: Any
 
 
@@ -117,7 +119,7 @@ def _stack(
                 revision_id="revision-1",
             )
         state = GenerationState() if state_builder is None else state_builder(assets)
-        generations = StaticGenerationSource(state, failure)
+        generations = StaticGenerationSource(state, repository, failure)
         runtime = compose_backup_runtime(
             repository,
             assets,
@@ -190,6 +192,8 @@ def _active_proof(stack: RuntimeStack) -> tuple[Any, ...]:
     return (
         stack.source_root.resolve(),
         _workspace_rows(stack.repository),
+        Path(stack.repository.database).read_bytes(),
+        _root_tree(stack.assets.root),
         _root_tree(stack.source_root),
     )
 
@@ -217,6 +221,11 @@ def test_real_runtime_composes_one_barrier_and_restores_without_switching(
         assert runtime.job_backup.repository is stack.repository
         assert runtime.barrier_port.jobs is runtime.job_backup
         assert runtime.plugin_data_port.jobs is runtime.job_backup
+        assert runtime.generation_port.core_authority_binding is stack.repository
+        assert (
+            runtime.generation_port.contributor.core_authority_binding
+            is stack.repository
+        )
         assert runtime.backup.barrier_port is runtime.barrier_port
         assert runtime.backup.core_snapshot_port is runtime.core_snapshot_port
         assert runtime.backup.generation_port is runtime.generation_port
@@ -225,7 +234,7 @@ def test_real_runtime_composes_one_barrier_and_restores_without_switching(
         status = runtime.api.status()
         assert runtime.api.status() == status
         assert status.current_root == stack.source_root.resolve()
-        assert not hasattr(runtime.api, "switch_root")
+        assert "switch_root" not in dir(runtime.api)
         before = _active_proof(stack)
 
         bundle = runtime.api.create_backup(tmp_path / "bundle", _backup_request())
@@ -294,12 +303,13 @@ def test_durable_p2_repository_uses_same_p1_transaction_and_restores(
     assets = AssetStore(source_root / "assets")
     try:
         repository.create_workspace(Workspace("workspace-1", "Novel"))
-        LifecycleRepository.initialize_standalone_schema_for_tests(
-            repository._connection
-        )
-        lifecycle = LifecycleRepository(
-            repository._connection, transaction_factory=repository.transaction
-        )
+        with repository.read_connection() as connection:
+            LifecycleRepository.initialize_standalone_schema_for_tests(connection)
+            lifecycle = LifecycleRepository(
+                connection,
+                transaction_factory=repository.transaction,
+                core_authority_binding=repository,
+            )
         state = _generation(assets)
         assert state.current is not None
         lifecycle.put_generation(state.current)
@@ -328,9 +338,12 @@ def test_durable_p2_repository_uses_same_p1_transaction_and_restores(
         )
         reopened = CoreAuthorityRepository(restored.target_root / "core" / "core.db")
         try:
-            restored_lifecycle = LifecycleRepository(
-                reopened._connection, transaction_factory=reopened.transaction
-            )
+            with reopened.read_connection() as connection:
+                restored_lifecycle = LifecycleRepository(
+                    connection,
+                    transaction_factory=reopened.transaction,
+                    core_authority_binding=reopened,
+                )
             assert (
                 restored_lifecycle.generation_state().current["generation_id"]
                 == "generation-current"
@@ -589,7 +602,7 @@ def test_composition_rejects_job_port_from_another_core_authority(
             compose_backup_runtime(
                 repository,
                 assets,
-                StaticGenerationSource(GenerationState()),
+                StaticGenerationSource(GenerationState(), repository),
                 source_root=source_root,
                 library_root_id="root-active",
                 job_runtime=JobRuntimeBackupContributor(other),
@@ -597,3 +610,122 @@ def test_composition_rejects_job_port_from_another_core_authority(
     finally:
         repository.close()
         other.close()
+
+
+class GenerationOnlyFacade:
+    def generation_state(self) -> GenerationState:
+        return GenerationState()
+
+
+class EffectSentinelJobRuntime:
+    def __init__(self) -> None:
+        self.accesses = 0
+
+    @property
+    def backup(self) -> Any:
+        self.accesses += 1
+        raise AssertionError("authority rejection happened after runtime access")
+
+
+@pytest.mark.parametrize(
+    "case",
+    ["missing", "generation_only", "null", "foreign", "same_database"],
+)
+def test_generation_authority_is_rejected_before_any_dependent_effect(
+    tmp_path: Path, case: str
+) -> None:
+    source_root = tmp_path / "active-root"
+    (source_root / "core").mkdir(parents=True)
+    repository = CoreAuthorityRepository(source_root / "core" / "core.db")
+    assets = AssetStore(source_root / "assets")
+    other: CoreAuthorityRepository | None = None
+    sentinel = EffectSentinelJobRuntime()
+    try:
+        if case == "missing":
+            generation_source: Any = object()
+        elif case == "generation_only":
+            generation_source = GenerationOnlyFacade()
+        elif case == "null":
+            generation_source = StaticGenerationSource(GenerationState(), None)
+        elif case == "foreign":
+            other_root = tmp_path / "foreign-root"
+            (other_root / "core").mkdir(parents=True)
+            other = CoreAuthorityRepository(other_root / "core" / "core.db")
+            generation_source = StaticGenerationSource(GenerationState(), other)
+        else:
+            other = CoreAuthorityRepository(source_root / "core" / "core.db")
+            generation_source = StaticGenerationSource(GenerationState(), other)
+        before = _root_tree(source_root)
+
+        with pytest.raises(ValueError, match="Core authority binding|exact Core"):
+            compose_backup_runtime(
+                repository,
+                assets,
+                generation_source,
+                source_root=source_root,
+                library_root_id="root-active",
+                job_runtime=sentinel,
+            )
+
+        assert sentinel.accesses == 0
+        assert _root_tree(source_root) == before
+        assert not list(tmp_path.glob(".b-*.stage"))
+    finally:
+        if other is not None:
+            other.close()
+        repository.close()
+
+
+def test_accepted_generation_contributor_forwards_exact_authority_identity(
+    tmp_path: Path,
+) -> None:
+    source_root = tmp_path / "active-root"
+    (source_root / "core").mkdir(parents=True)
+    repository = CoreAuthorityRepository(source_root / "core" / "core.db")
+    assets = AssetStore(source_root / "assets")
+    try:
+        source = StaticGenerationSource(GenerationState(), repository)
+        contributor = GenerationBackupContributor(source)
+
+        runtime = compose_backup_runtime(
+            repository,
+            assets,
+            contributor,
+            source_root=source_root,
+            library_root_id="root-active",
+        )
+
+        assert runtime.generation_source is contributor
+        assert runtime.generation_port.source is contributor
+        assert runtime.generation_port.contributor is contributor
+        assert runtime.generation_port.core_authority_binding is repository
+        assert contributor.core_authority_binding is repository
+    finally:
+        repository.close()
+
+
+def test_changed_public_authority_is_rejected_before_stage_or_barrier(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    with _stack(tmp_path) as stack:
+        before = _active_proof(stack)
+        barrier_entries: list[bool] = []
+
+        @contextmanager
+        def unexpected_barrier(**_kwargs: Any) -> Iterator[None]:
+            barrier_entries.append(True)
+            yield
+
+        monkeypatch.setattr(
+            stack.runtime.job_backup, "hold_for_backup", unexpected_barrier
+        )
+        stack.generations.core_authority_binding = object()
+        destination = tmp_path / "changed-authority"
+
+        with pytest.raises(BackupRuntimePortError, match="changed after composition"):
+            stack.runtime.api.create_backup(destination, _backup_request())
+
+        assert barrier_entries == []
+        assert not destination.exists()
+        assert not list(tmp_path.glob(".b-*.stage"))
+        assert _active_proof(stack) == before

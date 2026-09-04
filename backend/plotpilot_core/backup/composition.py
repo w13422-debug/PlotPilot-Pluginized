@@ -18,7 +18,6 @@ from .runtime_ports import (
     RuntimeBackupBarrierPort,
     RuntimeCoreSnapshotPort,
     RuntimeGenerationBackupPort,
-    _AssetMutationJournal,
 )
 from .service import BackupDataPlane
 
@@ -69,23 +68,17 @@ def _job_backup_port(
 def _require_generation_barrier_binding(
     repository: CoreAuthorityRepository, generation_source: Any
 ) -> None:
-    """Reject a durable P2 repository that can write outside P3's barrier.
+    """Require P2's accepted public binding to the exact P1 authority object."""
 
-    Protocol-only immutable readers have no ``connection`` attribute.  The
-    accepted durable lifecycle repository does, and in production it must use
-    the exact P1 connection plus ``CoreAuthorityRepository.transaction``.
-    """
-
-    if not hasattr(generation_source, "connection"):
-        return
-    if generation_source.connection is not repository._connection:
+    try:
+        authority = generation_source.core_authority_binding
+    except AttributeError as exc:
         raise ValueError(
-            "generation source must use the exact CoreAuthorityRepository connection"
-        )
-    transaction_factory = getattr(generation_source, "_transaction_factory", None)
-    if getattr(transaction_factory, "__self__", None) is not repository:
+            "generation source must expose its public Core authority binding"
+        ) from exc
+    if authority is not repository:
         raise ValueError(
-            "generation source writes must use the CoreAuthorityRepository transaction"
+            "generation source must bind the exact CoreAuthorityRepository object"
         )
 
 
@@ -107,16 +100,23 @@ def compose_backup_runtime(
         raise TypeError("assets must be AssetStore")
     if not isinstance(library_root_id, str) or _ID.fullmatch(library_root_id) is None:
         raise ValueError("library_root_id is not a closed identifier")
-    if not callable(getattr(generation_source, "generation_state", None)):
-        raise TypeError("generation_source must expose generation_state")
     _require_generation_barrier_binding(repository, generation_source)
+    if not callable(
+        getattr(generation_source, "generation_state", None)
+    ) and not callable(getattr(generation_source, "capture_for_backup", None)):
+        raise TypeError(
+            "generation_source must expose generation_state or capture_for_backup"
+        )
 
     job_backup = _job_backup_port(repository, job_runtime)
     contributors = tuple(plugin_data_contributors)
-    journal = _AssetMutationJournal(assets)
-    barrier = RuntimeBackupBarrierPort(job_backup, journal)
-    core_snapshot = RuntimeCoreSnapshotPort(assets, journal)
+    barrier = RuntimeBackupBarrierPort(job_backup)
+    core_snapshot = RuntimeCoreSnapshotPort()
     generation = RuntimeGenerationBackupPort(generation_source)
+    if generation.core_authority_binding is not repository:
+        raise ValueError(
+            "P2 backup contributor must bind the exact CoreAuthorityRepository object"
+        )
     plugin_data = JobRuntimePluginDataPort(job_backup, barrier, contributors)
     backup = BackupDataPlane(
         source_root=source_root,
@@ -126,6 +126,7 @@ def compose_backup_runtime(
         core_snapshot_port=core_snapshot,
         generation_port=generation,
         plugin_data_port=plugin_data,
+        authority_preflight=generation.require_core_authority_binding,
     )
     api = CoreBackupAdapter(backup, library_root_id)
     return BackupRuntimeComposition(

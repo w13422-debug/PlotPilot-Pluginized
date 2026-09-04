@@ -23,7 +23,7 @@ from backend.plotpilot_plugin_sdk.verifier import (
     verify_restore_report,
 )
 
-from ..assets import AssetMetadata, AssetStore
+from ..assets import AssetMetadata
 from ..plugins.package import verify_package
 from .adapters import SqliteWorkspaceDatabaseProjector
 from .models import (
@@ -106,7 +106,9 @@ def _sha256(data: bytes) -> str:
 
 
 def _is_hex64(value: object) -> bool:
-    return isinstance(value, str) and len(value) == 64 and all(ch in _HEX for ch in value)
+    return (
+        isinstance(value, str) and len(value) == 64 and all(ch in _HEX for ch in value)
+    )
 
 
 def _canonical_json(value: Mapping[str, object]) -> bytes:
@@ -116,14 +118,18 @@ def _canonical_json(value: Mapping[str, object]) -> bytes:
 def _read_canonical_json(path: Path) -> dict[str, Any]:
     _assert_no_reparse_components(path)
     if _is_reparse_point(path):
-        raise BackupValidationError(f"JSON control file cannot be a reparse point: {path.name}")
+        raise BackupValidationError(
+            f"JSON control file cannot be a reparse point: {path.name}"
+        )
     try:
         raw = path.read_bytes()
         value = parse_json_bytes(raw)
     except Exception as exc:
         raise BackupValidationError(f"invalid JSON file: {path.name}") from exc
     if not isinstance(value, dict) or raw != _canonical_json(value):
-        raise BackupValidationError(f"JSON file is not deterministic canonical bytes: {path.name}")
+        raise BackupValidationError(
+            f"JSON file is not deterministic canonical bytes: {path.name}"
+        )
     return value
 
 
@@ -143,9 +149,21 @@ def _lexical_identity(path: str | Path) -> str:
     return os.path.normcase(os.path.normpath(os.fspath(_lexical_absolute(path))))
 
 
+def _path_entry_exists(path: Path) -> bool:
+    try:
+        path.lstat()
+    except FileNotFoundError:
+        return False
+    except OSError as exc:
+        raise BackupValidationError(f"cannot inspect path boundary: {path}") from exc
+    return True
+
+
 def _lexically_contained(path: Path, root: Path) -> bool:
     try:
-        return os.path.commonpath((_lexical_identity(path), _lexical_identity(root))) == _lexical_identity(root)
+        return os.path.commonpath(
+            (_lexical_identity(path), _lexical_identity(root))
+        ) == _lexical_identity(root)
     except ValueError:
         return False
 
@@ -164,9 +182,13 @@ def _assert_no_reparse_components(path: str | Path) -> None:
         except FileNotFoundError:
             continue
         except OSError as exc:
-            raise BackupValidationError(f"cannot inspect path boundary: {current}") from exc
+            raise BackupValidationError(
+                f"cannot inspect path boundary: {current}"
+            ) from exc
         if _is_reparse_point(current):
-            raise BackupValidationError(f"reparse point is forbidden in path boundary: {current}")
+            raise BackupValidationError(
+                f"reparse point is forbidden in path boundary: {current}"
+            )
 
 
 def _disjoint(left: Path, right: Path) -> bool:
@@ -210,9 +232,13 @@ def _copy_expected(source: Path, destination: Path, *, digest: str, size: int) -
     try:
         data = source.read_bytes()
     except OSError as exc:
-        raise BackupValidationError(f"required source file is unavailable: {source}") from exc
+        raise BackupValidationError(
+            f"required source file is unavailable: {source}"
+        ) from exc
     if len(data) != size or _sha256(data) != digest:
-        raise BackupValidationError(f"source file changed or failed hash validation: {source}")
+        raise BackupValidationError(
+            f"source file changed or failed hash validation: {source}"
+        )
     _write_new(destination, data)
 
 
@@ -227,11 +253,15 @@ def _verify_database(path: Path) -> None:
         try:
             row = connection.execute("PRAGMA integrity_check").fetchone()
             if row is None or row[0] != "ok":
-                raise BackupValidationError(f"SQLite integrity_check failed for {path.name}")
+                raise BackupValidationError(
+                    f"SQLite integrity_check failed for {path.name}"
+                )
             connection.execute("PRAGMA foreign_keys=ON")
             violation = connection.execute("PRAGMA foreign_key_check").fetchone()
             if violation is not None:
-                raise BackupValidationError(f"SQLite foreign_key_check failed for {path.name}")
+                raise BackupValidationError(
+                    f"SQLite foreign_key_check failed for {path.name}"
+                )
         finally:
             connection.close()
     except BackupValidationError:
@@ -268,6 +298,20 @@ def _is_reparse_point(path: Path) -> bool:
     return stat.S_ISLNK(info.st_mode) or bool(attributes & 0x400)
 
 
+def _assert_tree_has_no_reparse_points(root: Path) -> None:
+    if _is_reparse_point(root):
+        raise BackupValidationError(f"reparse restore target is forbidden: {root}")
+    try:
+        entries = list(root.rglob("*"))
+    except OSError as exc:
+        raise BackupValidationError(
+            f"cannot inspect restore target tree: {root}"
+        ) from exc
+    for entry in entries:
+        if _is_reparse_point(entry):
+            raise BackupValidationError(f"reparse restore target is forbidden: {entry}")
+
+
 def _walk_asset_values(value: object) -> Iterable[str]:
     if isinstance(value, str):
         if value.startswith(_ASSET_PREFIX):
@@ -299,7 +343,10 @@ class SqliteAssetReferenceScanner:
             ]
             for table in tables:
                 quoted_table = '"' + table.replace('"', '""') + '"'
-                columns = [row[1] for row in connection.execute(f"PRAGMA table_info({quoted_table})")]
+                columns = [
+                    row[1]
+                    for row in connection.execute(f"PRAGMA table_info({quoted_table})")
+                ]
                 candidates = [
                     column
                     for column in columns
@@ -309,18 +356,26 @@ class SqliteAssetReferenceScanner:
                 ]
                 if not candidates:
                     continue
-                selection = ",".join('"' + column.replace('"', '""') + '"' for column in candidates)
-                for row in connection.execute(f"SELECT {selection} FROM {quoted_table}"):
+                selection = ",".join(
+                    '"' + column.replace('"', '""') + '"' for column in candidates
+                )
+                for row in connection.execute(
+                    f"SELECT {selection} FROM {quoted_table}"
+                ):
                     for column, raw in zip(candidates, row):
                         if raw is None:
                             continue
                         if not isinstance(raw, str):
-                            raise BackupValidationError(f"Asset-bearing column {table}.{column} is not text")
+                            raise BackupValidationError(
+                                f"Asset-bearing column {table}.{column} is not text"
+                            )
                         if column.lower().endswith("_json"):
                             try:
                                 decoded = parse_json_bytes(raw.encode("utf-8"))
                             except Exception as exc:
-                                raise BackupValidationError(f"invalid structured JSON in {table}.{column}") from exc
+                                raise BackupValidationError(
+                                    f"invalid structured JSON in {table}.{column}"
+                                ) from exc
                             found.update(_walk_asset_values(decoded))
                         else:
                             _asset_digest(raw)
@@ -341,17 +396,26 @@ def _parse_asset_metadata(
     except Exception as exc:
         raise BackupValidationError(f"invalid Asset metadata for {asset_id}") from exc
     if not isinstance(value, Mapping) or set(value) != _ASSET_METADATA_FIELDS:
-        raise BackupValidationError(f"Asset metadata schema is not closed for {asset_id}")
+        raise BackupValidationError(
+            f"Asset metadata schema is not closed for {asset_id}"
+        )
     if (
-        any(type(value[name]) is not str for name in ("asset_id", "sha256", "mime", "logical_role", "provenance"))
+        any(
+            type(value[name]) is not str
+            for name in ("asset_id", "sha256", "mime", "logical_role", "provenance")
+        )
         or type(value["size"]) is not int
         or type(value["rebuildable"]) is not bool
     ):
-        raise BackupValidationError(f"Asset metadata field type is invalid for {asset_id}")
+        raise BackupValidationError(
+            f"Asset metadata field type is invalid for {asset_id}"
+        )
     try:
         metadata = AssetMetadata(**dict(value))
     except (TypeError, ValueError) as exc:
-        raise BackupValidationError(f"Asset metadata shape is invalid for {asset_id}") from exc
+        raise BackupValidationError(
+            f"Asset metadata shape is invalid for {asset_id}"
+        ) from exc
     digest = _asset_digest(asset_id)
     if (
         metadata.asset_id != asset_id
@@ -381,6 +445,7 @@ class BackupDataPlane:
         on_backup_progress: Callable[[int, int, int], None] | None = None,
         on_core_snapshot_copied: Callable[[Path], None] | None = None,
         on_restore_stage: Callable[[str, Path], None] | None = None,
+        authority_preflight: Callable[[], None] | None = None,
     ) -> None:
         _assert_no_reparse_components(source_root)
         _assert_no_reparse_components(core_database)
@@ -390,17 +455,27 @@ class BackupDataPlane:
         self.asset_root = Path(asset_root).resolve()
         if not self.source_root.is_dir():
             raise BackupValidationError("source root does not exist")
-        if not self.core_database.is_file() or not _contained(self.core_database, self.source_root):
-            raise BackupValidationError("Core database must be an existing file inside source root")
-        if not self.asset_root.is_dir() or not _contained(self.asset_root, self.source_root):
-            raise BackupValidationError("Asset root must be an existing directory inside source root")
+        if not self.core_database.is_file() or not _contained(
+            self.core_database, self.source_root
+        ):
+            raise BackupValidationError(
+                "Core database must be an existing file inside source root"
+            )
+        if not self.asset_root.is_dir() or not _contained(
+            self.asset_root, self.source_root
+        ):
+            raise BackupValidationError(
+                "Asset root must be an existing directory inside source root"
+            )
         if (
             barrier_port is None
             or core_snapshot_port is None
             or generation_port is None
             or plugin_data_port is None
         ):
-            raise BackupValidationError("barrier, Core snapshot, P2, and P3 ports must be injected")
+            raise BackupValidationError(
+                "barrier, Core snapshot, P2, and P3 ports must be injected"
+            )
         if backup_pages < 1 or backup_sleep < 0:
             raise ValueError("invalid SQLite backup tuning")
         self.barrier_port = barrier_port
@@ -413,6 +488,7 @@ class BackupDataPlane:
         self.on_backup_progress = on_backup_progress
         self.on_core_snapshot_copied = on_core_snapshot_copied
         self.on_restore_stage = on_restore_stage
+        self.authority_preflight = authority_preflight
 
     @staticmethod
     def _new_stage_path(target: Path, operation: str) -> tuple[Path, str]:
@@ -436,7 +512,9 @@ class BackupDataPlane:
                 sleep=self.backup_sleep,
             )
         except sqlite3.Error as exc:
-            raise BackupValidationError(f"SQLite online backup failed: {source.name}") from exc
+            raise BackupValidationError(
+                f"SQLite online backup failed: {source.name}"
+            ) from exc
         finally:
             destination_connection.close()
             source_connection.close()
@@ -489,10 +567,13 @@ class BackupDataPlane:
             _lexical_identity(stage) != _lexical_identity(expected_stage)
             or _lexical_identity(stage) == _lexical_identity(target)
             or _is_reparse_point(stage)
-            or _lexical_identity(stage.parent) != str(expected.get("target_parent_id", ""))
+            or _lexical_identity(stage.parent)
+            != str(expected.get("target_parent_id", ""))
             or not self._marker_matches(stage, expected)
         ):
-            raise BackupConflictError(f"refusing to remove unowned or altered staging directory: {stage}")
+            raise BackupConflictError(
+                f"refusing to remove unowned or altered staging directory: {stage}"
+            )
         for entry in stage.rglob("*"):
             if _is_reparse_point(entry):
                 raise BackupConflictError(
@@ -503,7 +584,9 @@ class BackupDataPlane:
     def _prepare_stage(self, stage: Path, marker: Mapping[str, object]) -> None:
         _assert_no_reparse_components(stage)
         if stage.exists():
-            raise BackupConflictError(f"unique staging generation already exists: {stage}")
+            raise BackupConflictError(
+                f"unique staging generation already exists: {stage}"
+            )
         stage.mkdir(parents=False, exist_ok=False)
         _write_new(stage / _STAGE_MARKER, _canonical_json(marker))
 
@@ -586,7 +669,11 @@ class BackupDataPlane:
     ) -> dict[str, Any]:
         marker = _read_canonical_json(root / _STAGE_MARKER)
         generation_id = marker.get("generation_id")
-        if not isinstance(generation_id, str) or len(generation_id) != 32:
+        if (
+            not isinstance(generation_id, str)
+            or len(generation_id) != 32
+            or any(character not in _HEX for character in generation_id)
+        ):
             raise BackupValidationError("publication marker generation is invalid")
         expected = self._stage_marker(
             operation=operation,
@@ -600,11 +687,118 @@ class BackupDataPlane:
             raise BackupValidationError("publication marker binding mismatch")
         return marker
 
+    @staticmethod
+    def _record_secondary_failure(
+        primary: BaseException, *, action: str, secondary: BaseException
+    ) -> None:
+        try:
+            primary.add_note(f"{action}: {type(secondary).__name__}: {secondary}")
+        except (AttributeError, TypeError):
+            pass
+
+    def _validate_published_restore(
+        self,
+        target: Path,
+        *,
+        request: RestoreRequest,
+        source_manifest: Mapping[str, object],
+        source_receipt: Mapping[str, object],
+        expected_report: Mapping[str, object],
+    ) -> dict[str, Any]:
+        binding = str(source_manifest["bundle_hash"])
+        marker = self._require_publication_marker(
+            target,
+            operation="restore",
+            operation_id=request.restore_id,
+            target=target,
+            binding=binding,
+        )
+        _assert_tree_has_no_reparse_points(target)
+        report = _read_canonical_json(_join(target, _RESTORE_REPORT))
+        try:
+            verify_restore_report(report)
+        except Exception as exc:
+            raise BackupValidationError(
+                "published restore report failed verification"
+            ) from exc
+        target_manifest, target_receipt = self._verify_bundle(
+            target, allowed_extras={_RESTORE_REPORT}
+        )
+        final_marker = self._require_publication_marker(
+            target,
+            operation="restore",
+            operation_id=request.restore_id,
+            target=target,
+            binding=binding,
+        )
+        if final_marker != marker:
+            raise BackupValidationError(
+                "restore publication identity changed during verification"
+            )
+        if (
+            report != expected_report
+            or target_manifest.get("bundle_hash") != source_manifest.get("bundle_hash")
+            or target_receipt != source_receipt
+        ):
+            raise BackupValidationError(
+                "published restore differs from its request or source bundle"
+            )
+        return report
+
+    def _quarantine_invalid_restore_target(
+        self,
+        target: Path,
+        *,
+        request: RestoreRequest,
+        bundle_hash: str,
+    ) -> Path:
+        marker = self._require_publication_marker(
+            target,
+            operation="restore",
+            operation_id=request.restore_id,
+            target=target,
+            binding=bundle_hash,
+        )
+        _assert_tree_has_no_reparse_points(target)
+        generation_id = str(marker["generation_id"])
+        quarantine = target.with_name(f".r-{generation_id}.quarantine")
+        if _lexical_identity(quarantine.parent) != _lexical_identity(target.parent):
+            raise BackupConflictError("restore quarantine escaped the target parent")
+        _assert_no_reparse_components(quarantine)
+        if _path_entry_exists(quarantine):
+            raise BackupConflictError(
+                f"restore quarantine already exists: {quarantine}"
+            )
+        final_marker = self._require_publication_marker(
+            target,
+            operation="restore",
+            operation_id=request.restore_id,
+            target=target,
+            binding=bundle_hash,
+        )
+        if final_marker != marker:
+            raise BackupConflictError(
+                "restore publication identity changed before quarantine"
+            )
+        _assert_tree_has_no_reparse_points(target)
+        try:
+            target.rename(quarantine)
+        except OSError as exc:
+            raise BackupConflictError(
+                "could not quarantine invalid restore without replacement"
+            ) from exc
+        if not self._marker_matches(quarantine, marker):
+            raise BackupConflictError(
+                "quarantined restore lost its publication marker binding"
+            )
+        return quarantine
+
     def _copy_asset_closure(
         self, *, root_asset_ids: Iterable[str], stage: Path
     ) -> tuple[list[dict[str, object]], tuple[str, ...], str]:
-        store = AssetStore(self.asset_root)
-        pending = deque(sorted(set(root_asset_ids), key=lambda value: value.encode("utf-8")))
+        pending = deque(
+            sorted(set(root_asset_ids), key=lambda value: value.encode("utf-8"))
+        )
         seen: set[str] = set()
         files: list[dict[str, object]] = []
         closure: list[dict[str, object]] = []
@@ -614,28 +808,65 @@ class BackupDataPlane:
                 continue
             seen.add(asset_id)
             digest = _asset_digest(asset_id)
+            object_relative = f"assets/objects/{digest[:2]}/{digest}"
+            metadata_relative = f"assets/metadata/{digest}.json"
+            stage_object = _join(stage, object_relative)
+            stage_metadata = _join(stage, metadata_relative)
+            stage_object_exists = _path_entry_exists(stage_object)
+            stage_metadata_exists = _path_entry_exists(stage_metadata)
+            if stage_object_exists != stage_metadata_exists:
+                raise BackupValidationError(
+                    f"stage-local Asset pair is incomplete: {asset_id}"
+                )
+            copy_from_active = not stage_object_exists
+            if copy_from_active:
+                active_object = self.asset_root / "objects" / digest[:2] / digest
+                active_metadata = self.asset_root / "metadata" / f"{digest}.json"
+                _assert_no_reparse_components(active_object)
+                _assert_no_reparse_components(active_metadata)
+                active_object_exists = _path_entry_exists(active_object)
+                active_metadata_exists = _path_entry_exists(active_metadata)
+                if not active_object_exists or not active_metadata_exists:
+                    raise BackupValidationError(
+                        f"required Asset pair is missing from active store: {asset_id}"
+                    )
+                object_path = active_object
+                metadata_path = active_metadata
+            else:
+                object_path = stage_object
+                metadata_path = stage_metadata
             try:
-                metadata_path = store.metadata / f"{digest}.json"
+                content = object_path.read_bytes()
                 metadata_bytes = metadata_path.read_bytes()
                 metadata = _parse_asset_metadata(
                     metadata_bytes,
                     asset_id=asset_id,
-                    object_size=len(store.read(asset_id)),
+                    object_size=len(content),
                 )
-                described = store.describe(asset_id)
-                content = store.read(asset_id)
             except (OSError, TypeError, ValueError) as exc:
-                raise BackupValidationError(f"required Asset is missing or invalid: {asset_id}") from exc
-            if described != metadata or described.sha256 != digest or described.size != len(content):
-                raise BackupValidationError(f"Asset metadata does not bind content: {asset_id}")
-            object_relative = f"assets/objects/{digest[:2]}/{digest}"
-            metadata_relative = f"assets/metadata/{digest}.json"
-            _write_new(_join(stage, object_relative), content)
-            _write_new(_join(stage, metadata_relative), metadata_bytes)
+                raise BackupValidationError(
+                    f"required Asset is missing or invalid: {asset_id}"
+                ) from exc
+            if (
+                _sha256(content) != digest
+                or metadata.sha256 != digest
+                or metadata.size != len(content)
+            ):
+                raise BackupValidationError(
+                    f"Asset metadata does not bind content: {asset_id}"
+                )
+            if copy_from_active:
+                _write_new(stage_object, content)
+                _write_new(stage_metadata, metadata_bytes)
             metadata_digest = _sha256(metadata_bytes)
             files.extend(
                 [
-                    {"path": object_relative, "size": len(content), "sha256": digest, "role": "asset"},
+                    {
+                        "path": object_relative,
+                        "size": len(content),
+                        "sha256": digest,
+                        "role": "asset",
+                    },
                     {
                         "path": metadata_relative,
                         "size": len(metadata_bytes),
@@ -653,7 +884,11 @@ class BackupDataPlane:
                 }
             )
         closure.sort(key=lambda item: str(item["asset_id"]).encode("utf-8"))
-        return files, tuple(str(item["asset_id"]) for item in closure), hash_jcs("plotpilot-asset-closure/v1", closure)
+        return (
+            files,
+            tuple(str(item["asset_id"]) for item in closure),
+            hash_jcs("plotpilot-asset-closure/v1", closure),
+        )
 
     @staticmethod
     def _workspace_rows(database: Path) -> tuple[str, ...]:
@@ -731,7 +966,9 @@ class BackupDataPlane:
                 )
         elif mode in {"full", "data"}:
             if scoped_workspace is not None or workspace_snapshot_hash is not None:
-                raise BackupValidationError("unscoped backup claims a workspace CoreSnapshot")
+                raise BackupValidationError(
+                    "unscoped backup claims a workspace CoreSnapshot"
+                )
         else:
             raise BackupValidationError("backup mode is invalid")
         return database_workspaces
@@ -779,9 +1016,13 @@ class BackupDataPlane:
         try:
             verify_core_snapshot(snapshot)
         except Exception as exc:
-            raise BackupValidationError("CoreSnapshotPort returned an invalid core-snapshot/v1") from exc
+            raise BackupValidationError(
+                "CoreSnapshotPort returned an invalid core-snapshot/v1"
+            ) from exc
         if snapshot.get("core_event_high_water") != barrier.core_event_high_water:
-            raise BackupValidationError("Core snapshot high-water differs from the durable barrier")
+            raise BackupValidationError(
+                "Core snapshot high-water differs from the durable barrier"
+            )
         self._validate_state_bindings(snapshot)
         self._validate_snapshot_scope(
             database=_join(stage, _CORE_DATABASE),
@@ -791,7 +1032,9 @@ class BackupDataPlane:
             workspace_snapshot_hash=capture.workspace_snapshot_hash,
         )
         if snapshot["created_at"] != barrier.created_at:
-            raise BackupValidationError("Core snapshot timestamp is not bound to the backup barrier")
+            raise BackupValidationError(
+                "Core snapshot timestamp is not bound to the backup barrier"
+            )
         raw = _canonical_json(snapshot)
         _write_new(_join(stage, _CORE_SNAPSHOT), raw)
         return capture, snapshot, raw
@@ -842,29 +1085,42 @@ class BackupDataPlane:
         plugin_databases: list[Path] = []
         for item in files:
             if not isinstance(item, PluginBackupFile):
-                raise BackupValidationError(f"{contributor} returned an invalid file descriptor")
+                raise BackupValidationError(
+                    f"{contributor} returned an invalid file descriptor"
+                )
             relative = _safe_relative_path(item.path)
-            if relative in occupied or relative in {_BACKUP_MANIFEST, _BACKUP_RECEIPT, _STAGE_MARKER, _RESTORE_REPORT}:
-                raise BackupValidationError(f"duplicate or reserved backup path: {relative}")
+            if relative in occupied or relative in {
+                _BACKUP_MANIFEST,
+                _BACKUP_RECEIPT,
+                _STAGE_MARKER,
+                _RESTORE_REPORT,
+            }:
+                raise BackupValidationError(
+                    f"duplicate or reserved backup path: {relative}"
+                )
             if contributor == "P2" and item.role != "package":
                 raise BackupValidationError("P2 may contribute only package files")
             if contributor == "P3" and item.role not in {"plugin_db", "metadata"}:
-                raise BackupValidationError("P3 may contribute only plugin_db or metadata files")
+                raise BackupValidationError(
+                    "P3 may contribute only plugin_db or metadata files"
+                )
             if mode == "workspace" and item.role in {"package", "plugin_db"}:
-                raise BackupValidationError("workspace backup cannot contain package or plugin DB files")
+                raise BackupValidationError(
+                    "workspace backup cannot contain package or plugin DB files"
+                )
             if mode == "data" and item.role == "package":
                 raise BackupValidationError("data backup cannot contain package files")
             if item.role == "package":
-                if (
-                    item.release_id is None
-                    or item.package_hash is None
-                ):
+                if item.release_id is None or item.package_hash is None:
                     raise BackupValidationError(
                         "package descriptor must bind release_id and semantic package_hash"
                     )
                 destination = _join(stage, relative)
                 _copy_expected(
-                    Path(item.source_path), destination, digest=item.sha256, size=item.size
+                    Path(item.source_path),
+                    destination,
+                    digest=item.sha256,
+                    size=item.size,
                 )
                 try:
                     verified = verify_package(
@@ -886,7 +1142,9 @@ class BackupDataPlane:
                     }
                 )
             elif item.release_id is not None or item.package_hash is not None:
-                raise BackupValidationError("non-package file cannot claim a package identity")
+                raise BackupValidationError(
+                    "non-package file cannot claim a package identity"
+                )
             occupied.add(relative)
             if item.role != "package":
                 _copy_expected(
@@ -898,10 +1156,18 @@ class BackupDataPlane:
             if item.role == "plugin_db":
                 _verify_database(_join(stage, relative))
                 plugin_databases.append(_join(stage, relative))
-            result.append({"path": relative, "size": item.size, "sha256": item.sha256, "role": item.role})
+            result.append(
+                {
+                    "path": relative,
+                    "size": item.size,
+                    "sha256": item.sha256,
+                    "role": item.role,
+                }
+            )
         package_bindings.sort(
             key=lambda item: (
-                item["plugin_id"].encode("utf-8"), item["release_id"].encode("utf-8")
+                item["plugin_id"].encode("utf-8"),
+                item["release_id"].encode("utf-8"),
             )
         )
         return result, package_bindings, tuple(plugin_databases)
@@ -917,23 +1183,31 @@ class BackupDataPlane:
         for release in plugin_releases:
             release_id = release.get("release_id")
             if not isinstance(release_id, str) or release_id in releases:
-                raise BackupValidationError("plugin releases must have unique release IDs")
+                raise BackupValidationError(
+                    "plugin releases must have unique release IDs"
+                )
             releases[release_id] = release
         bindings: dict[str, dict[str, str]] = {}
         for binding in package_bindings:
             release_id = binding["release_id"]
             if release_id in bindings:
-                raise BackupValidationError("a release cannot have multiple package files")
+                raise BackupValidationError(
+                    "a release cannot have multiple package files"
+                )
             bindings[release_id] = binding
         if mode != "full" and bindings:
             raise BackupValidationError("only full backups may contain package files")
         for release_id, release in releases.items():
             present = release.get("package_present")
             if not isinstance(present, bool):
-                raise BackupValidationError("plugin release package_present must be boolean")
+                raise BackupValidationError(
+                    "plugin release package_present must be boolean"
+                )
             binding = bindings.get(release_id)
             if mode != "full" and present:
-                raise BackupValidationError("non-full backup cannot claim a present package")
+                raise BackupValidationError(
+                    "non-full backup cannot claim a present package"
+                )
             if present:
                 if (
                     binding is None
@@ -944,7 +1218,9 @@ class BackupDataPlane:
                         f"release package is missing or has the wrong hash: {release_id}"
                     )
             elif binding is not None:
-                raise BackupValidationError(f"package file is orphaned from release: {release_id}")
+                raise BackupValidationError(
+                    f"package file is orphaned from release: {release_id}"
+                )
         orphaned = set(bindings) - set(releases)
         if orphaned:
             raise BackupValidationError("package file references an unknown release")
@@ -964,11 +1240,15 @@ class BackupDataPlane:
             or barrier.core_event_high_water < 0
             or barrier.created_at != request.created_at
         ):
-            raise BackupValidationError("backup barrier did not bind the requested durable epoch")
+            raise BackupValidationError(
+                "backup barrier did not bind the requested durable epoch"
+            )
         database_target = _join(stage, _CORE_DATABASE)
         if request.mode == "workspace":
             if len(workspace_ids) != 1:
-                raise BackupValidationError("workspace backup requires exactly one selected workspace")
+                raise BackupValidationError(
+                    "workspace backup requires exactly one selected workspace"
+                )
             frozen_database = _join(stage, "core/.workspace-source.db")
             self._online_backup(self.core_database, frozen_database)
             if self.on_core_snapshot_copied is not None:
@@ -1089,7 +1369,9 @@ class BackupDataPlane:
             mode=request.mode,
         )
         if p2_databases:
-            raise BackupValidationError("P2 package authority cannot contribute plugin databases")
+            raise BackupValidationError(
+                "P2 package authority cannot contribute plugin databases"
+            )
         p3_files, p3_package_bindings, plugin_databases = self._copy_contributor_files(
             plugin_data.files,
             stage,
@@ -1134,9 +1416,7 @@ class BackupDataPlane:
             "plugin_databases": list(plugin_database_asset_ids),
         }
         root_asset_ids = {
-            asset_id
-            for values in asset_roots.values()
-            for asset_id in values
+            asset_id for values in asset_roots.values() for asset_id in values
         }
         asset_files, asset_ids, asset_root = self._copy_asset_closure(
             root_asset_ids=root_asset_ids,
@@ -1209,9 +1489,13 @@ class BackupDataPlane:
         _write_new(stage / _BACKUP_RECEIPT, _canonical_json(receipt))
         return manifest, receipt
 
-    def create_backup(self, destination: str | Path, request: BackupRequest) -> BackupResult:
+    def create_backup(
+        self, destination: str | Path, request: BackupRequest
+    ) -> BackupResult:
         if not isinstance(request, BackupRequest):
             raise TypeError("request must be BackupRequest")
+        if self.authority_preflight is not None:
+            self.authority_preflight()
         if request.core_contract_version != _CORE_CONTRACT_VERSION:
             raise BackupValidationError(
                 f"unsupported Core contract version: {request.core_contract_version}"
@@ -1219,15 +1503,21 @@ class BackupDataPlane:
         _assert_no_reparse_components(destination)
         destination = _lexical_absolute(destination)
         if not _disjoint(destination, self.source_root):
-            raise BackupValidationError("backup destination must be disjoint from the live source root")
-        workspace_ids = tuple(sorted(set(request.workspace_ids), key=lambda value: value.encode("utf-8")))
+            raise BackupValidationError(
+                "backup destination must be disjoint from the live source root"
+            )
+        workspace_ids = tuple(
+            sorted(set(request.workspace_ids), key=lambda value: value.encode("utf-8"))
+        )
         if workspace_ids != request.workspace_ids:
             raise BackupValidationError("workspace IDs must be a sorted unique tuple")
         if destination.exists():
             try:
                 existing = self.verify_backup(destination)
             except BackupDataError as exc:
-                raise BackupConflictError("backup destination already exists and is not reusable") from exc
+                raise BackupConflictError(
+                    "backup destination already exists and is not reusable"
+                ) from exc
             manifest = existing.manifest
             verification = manifest.get("verification")
             expected = (
@@ -1236,13 +1526,16 @@ class BackupDataPlane:
                 and manifest.get("backup_epoch") == request.backup_epoch
                 and manifest.get("mode") == request.mode
                 and manifest.get("workspace_ids") == list(request.workspace_ids)
-                and manifest.get("core_contract_version") == request.core_contract_version
+                and manifest.get("core_contract_version")
+                == request.core_contract_version
                 and manifest.get("created_at") == request.created_at
                 and isinstance(verification, Mapping)
                 and verification.get("verified_at") == request.verified_at
             )
             if not expected:
-                raise BackupConflictError("backup destination belongs to a different request")
+                raise BackupConflictError(
+                    "backup destination belongs to a different request"
+                )
             return existing
         stage, generation_id = self._new_stage_path(destination, "backup")
         marker = self._stage_marker(
@@ -1289,7 +1582,9 @@ class BackupDataPlane:
             try:
                 stage.rename(destination)
             except OSError as exc:
-                raise BackupConflictError("could not publish backup without replacement") from exc
+                raise BackupConflictError(
+                    "could not publish backup without replacement"
+                ) from exc
             self._require_publication_marker(
                 destination,
                 operation="backup",
@@ -1298,17 +1593,30 @@ class BackupDataPlane:
                 binding=str(request.backup_epoch),
             )
             return BackupResult(destination, manifest, receipt)
-        except Exception:
-            self._remove_owned_stage(stage, marker)
+        except Exception as primary:
+            try:
+                self._remove_owned_stage(stage, marker)
+            except Exception as cleanup:  # noqa: BLE001 - preserve the primary failure
+                self._record_secondary_failure(
+                    primary,
+                    action="backup stage cleanup failed",
+                    secondary=cleanup,
+                )
             raise
 
     @staticmethod
-    def _verify_receipt(receipt: Mapping[str, object], manifest: Mapping[str, object], manifest_raw: bytes) -> None:
+    def _verify_receipt(
+        receipt: Mapping[str, object],
+        manifest: Mapping[str, object],
+        manifest_raw: bytes,
+    ) -> None:
         if set(receipt) != _RECEIPT_FIELDS:
             raise BackupValidationError("backup receipt schema is not closed")
         evidence = receipt.get("compatibility_evidence")
         if not isinstance(evidence, Mapping) or set(evidence) != _COMPATIBILITY_FIELDS:
-            raise BackupValidationError("backup compatibility evidence schema is not closed")
+            raise BackupValidationError(
+                "backup compatibility evidence schema is not closed"
+            )
         if (
             not all(
                 _is_hex64(receipt.get(name))
@@ -1327,7 +1635,9 @@ class BackupDataPlane:
             or not isinstance(receipt.get("asset_roots"), Mapping)
             or not isinstance(receipt.get("package_bindings"), list)
             or not isinstance(receipt.get("verified_files"), list)
-            or not all(isinstance(item, str) for item in receipt.get("verified_files", []))  # type: ignore[union-attr]
+            or not all(
+                isinstance(item, str) for item in receipt.get("verified_files", [])
+            )  # type: ignore[union-attr]
             or not isinstance(receipt.get("created_at"), str)
         ):
             raise BackupValidationError("backup receipt field type is invalid")
@@ -1349,14 +1659,18 @@ class BackupDataPlane:
             raise BackupValidationError("backup receipt is not bound to manifest")
         if (
             evidence.get("core_contract_version") != _CORE_CONTRACT_VERSION
-            or evidence.get("core_contract_version") != manifest.get("core_contract_version")
-            or evidence.get("workspace_snapshot_hash") != manifest.get("workspace_snapshot_hash")
+            or evidence.get("core_contract_version")
+            != manifest.get("core_contract_version")
+            or evidence.get("workspace_snapshot_hash")
+            != manifest.get("workspace_snapshot_hash")
             or evidence.get("core_compatible") is not True
             or evidence.get("generation_compatible") is not True
             or evidence.get("plugin_data_compatible") is not True
             or manifest.get("verification", {}).get("compatible") is not True  # type: ignore[union-attr]
         ):
-            raise BackupValidationError("backup compatibility evidence is missing or inconsistent")
+            raise BackupValidationError(
+                "backup compatibility evidence is missing or inconsistent"
+            )
 
     @classmethod
     def _verify_package_bindings(
@@ -1379,7 +1693,9 @@ class BackupDataPlane:
             if not isinstance(raw, Mapping) or set(raw) != fields:
                 raise BackupValidationError("backup receipt package binding is invalid")
             if not all(isinstance(raw[key], str) for key in fields):
-                raise BackupValidationError("backup receipt package binding type is invalid")
+                raise BackupValidationError(
+                    "backup receipt package binding type is invalid"
+                )
             binding = {key: str(raw[key]) for key in fields}
             item = file_map.get(binding["path"])
             if (
@@ -1389,7 +1705,9 @@ class BackupDataPlane:
                 or not _is_hex64(binding["package_hash"])
                 or not _is_hex64(binding["release_id"])
             ):
-                raise BackupValidationError("package binding does not match a package file")
+                raise BackupValidationError(
+                    "package binding does not match a package file"
+                )
             try:
                 verified = verify_package(
                     _join(root, binding["path"]),
@@ -1397,18 +1715,25 @@ class BackupDataPlane:
                     expected_release_id=binding["release_id"],
                 )
             except Exception as exc:
-                raise BackupValidationError("packaged archive failed semantic verification") from exc
+                raise BackupValidationError(
+                    "packaged archive failed semantic verification"
+                ) from exc
             if verified.plugin_id != binding["plugin_id"]:
-                raise BackupValidationError("package plugin identity does not match receipt")
+                raise BackupValidationError(
+                    "package plugin identity does not match receipt"
+                )
             bindings.append(binding)
         expected_order = sorted(
             bindings,
             key=lambda item: (
-                item["plugin_id"].encode("utf-8"), item["release_id"].encode("utf-8")
+                item["plugin_id"].encode("utf-8"),
+                item["release_id"].encode("utf-8"),
             ),
         )
         if bindings != expected_order:
-            raise BackupValidationError("package bindings are not deterministically sorted")
+            raise BackupValidationError(
+                "package bindings are not deterministically sorted"
+            )
         cls._validate_release_packages(
             mode=str(manifest.get("mode")),  # type: ignore[arg-type]
             plugin_releases=releases,
@@ -1421,7 +1746,9 @@ class BackupDataPlane:
             if item.get("role") == "package"
         }
         if bound_paths != package_paths:
-            raise BackupValidationError("package files and release bindings are not a bijection")
+            raise BackupValidationError(
+                "package files and release bindings are not a bijection"
+            )
 
     def _verify_asset_closure(
         self, root: Path, manifest: Mapping[str, object], receipt: Mapping[str, object]
@@ -1435,9 +1762,15 @@ class BackupDataPlane:
             if len(pure.parts) == 4 and pure.parts[:2] == ("assets", "objects"):
                 digest = pure.parts[-1]
                 if pure.parts[-2] != digest[:2]:
-                    raise BackupValidationError("Asset object path does not match digest")
+                    raise BackupValidationError(
+                        "Asset object path does not match digest"
+                    )
                 packaged.setdefault(digest, {})["object"] = item
-            elif len(pure.parts) == 3 and pure.parts[:2] == ("assets", "metadata") and pure.name.endswith(".json"):
+            elif (
+                len(pure.parts) == 3
+                and pure.parts[:2] == ("assets", "metadata")
+                and pure.name.endswith(".json")
+            ):
                 packaged.setdefault(pure.name[:-5], {})["metadata"] = item
             else:
                 raise BackupValidationError(f"unexpected Asset closure path: {path}")
@@ -1455,11 +1788,19 @@ class BackupDataPlane:
         asset_roots: dict[str, tuple[str, ...]] = {}
         for name in sorted(root_names):
             value = raw_roots[name]
-            if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
-                raise BackupValidationError(f"backup receipt {name} Asset roots are invalid")
+            if not isinstance(value, list) or not all(
+                isinstance(item, str) for item in value
+            ):
+                raise BackupValidationError(
+                    f"backup receipt {name} Asset roots are invalid"
+                )
             asset_roots[name] = _sorted_asset_ids(value, label=f"receipt {name}")
-        if asset_roots["core_database"] != self.asset_scanner.scan(_join(root, _CORE_DATABASE)):
-            raise BackupValidationError("Core database Asset roots do not match the frozen database")
+        if asset_roots["core_database"] != self.asset_scanner.scan(
+            _join(root, _CORE_DATABASE)
+        ):
+            raise BackupValidationError(
+                "Core database Asset roots do not match the frozen database"
+            )
         snapshot = _read_canonical_json(_join(root, _CORE_SNAPSHOT))
         snapshot_assets = tuple(
             sorted(
@@ -1473,23 +1814,27 @@ class BackupDataPlane:
         for asset_id in snapshot_assets:
             _asset_digest(asset_id)
         if asset_roots["core_snapshot"] != snapshot_assets:
-            raise BackupValidationError("CoreSnapshot state Assets do not match receipt roots")
+            raise BackupValidationError(
+                "CoreSnapshot state Assets do not match receipt roots"
+            )
         plugin_database_assets = tuple(
             sorted(
                 {
                     asset_id
                     for item in manifest["files"]  # type: ignore[index]
                     if item["role"] == "plugin_db"
-                    for asset_id in self.asset_scanner.scan(_join(root, str(item["path"])))
+                    for asset_id in self.asset_scanner.scan(
+                        _join(root, str(item["path"]))
+                    )
                 },
                 key=lambda value: value.encode("utf-8"),
             )
         )
         if asset_roots["plugin_databases"] != plugin_database_assets:
-            raise BackupValidationError("plugin database Asset roots do not match frozen files")
-        reachable = {
-            asset_id for values in asset_roots.values() for asset_id in values
-        }
+            raise BackupValidationError(
+                "plugin database Asset roots do not match frozen files"
+            )
+        reachable = {asset_id for values in asset_roots.values() for asset_id in values}
         pending = deque(sorted(reachable))
         closure: list[dict[str, object]] = []
         visited: set[str] = set()
@@ -1501,7 +1846,9 @@ class BackupDataPlane:
             digest = _asset_digest(asset_id)
             pair = packaged.get(digest)
             if pair is None or set(pair) != {"object", "metadata"}:
-                raise BackupValidationError(f"Asset closure is missing files for {asset_id}")
+                raise BackupValidationError(
+                    f"Asset closure is missing files for {asset_id}"
+                )
             object_item = pair["object"]
             metadata_item = pair["metadata"]
             if object_item["sha256"] != digest:
@@ -1517,13 +1864,17 @@ class BackupDataPlane:
                     object_size=int(object_item["size"]),
                 )
             except (OSError, TypeError, ValueError) as exc:
-                raise BackupValidationError(f"invalid Asset metadata for {asset_id}") from exc
+                raise BackupValidationError(
+                    f"invalid Asset metadata for {asset_id}"
+                ) from exc
             if (
                 metadata.asset_id != asset_id
                 or metadata.sha256 != digest
                 or metadata.size != object_item["size"]
             ):
-                raise BackupValidationError(f"Asset metadata identity mismatch for {asset_id}")
+                raise BackupValidationError(
+                    f"Asset metadata identity mismatch for {asset_id}"
+                )
             closure.append(
                 {
                     "asset_id": asset_id,
@@ -1533,9 +1884,14 @@ class BackupDataPlane:
                 }
             )
         if set(packaged) != {_asset_digest(asset_id) for asset_id in visited}:
-            raise BackupValidationError("backup contains Assets outside the exact reachable closure")
+            raise BackupValidationError(
+                "backup contains Assets outside the exact reachable closure"
+            )
         closure.sort(key=lambda item: str(item["asset_id"]).encode("utf-8"))
-        if hash_jcs("plotpilot-asset-closure/v1", closure) != manifest["asset_closure_root"]:
+        if (
+            hash_jcs("plotpilot-asset-closure/v1", closure)
+            != manifest["asset_closure_root"]
+        ):
             raise BackupValidationError("Asset closure root mismatch")
         if list(receipt.get("asset_ids", [])) != [item["asset_id"] for item in closure]:
             raise BackupValidationError("backup receipt Asset IDs do not match closure")
@@ -1559,7 +1915,11 @@ class BackupDataPlane:
         entries = manifest.get("files")
         if not isinstance(entries, list):
             raise BackupValidationError("backup manifest files are invalid")
-        expected = {_BACKUP_MANIFEST, _BACKUP_RECEIPT, *(str(item["path"]) for item in entries)}
+        expected = {
+            _BACKUP_MANIFEST,
+            _BACKUP_RECEIPT,
+            *(str(item["path"]) for item in entries),
+        }
         expected.update({_STAGE_MARKER, *(allowed_extras or set())})
         walked = list(root.rglob("*"))
         for path in walked:
@@ -1567,7 +1927,9 @@ class BackupDataPlane:
                 raise BackupValidationError(
                     f"backup tree cannot contain a reparse point: {path.relative_to(root)}"
                 )
-        actual = {path.relative_to(root).as_posix() for path in walked if path.is_file()}
+        actual = {
+            path.relative_to(root).as_posix() for path in walked if path.is_file()
+        }
         if actual != expected:
             raise BackupValidationError("backup file set differs from manifest closure")
         seen: set[str] = set()
@@ -1578,11 +1940,15 @@ class BackupDataPlane:
             seen.add(relative)
             path = _join(root, relative)
             if _is_reparse_point(path):
-                raise BackupValidationError(f"backup file cannot be a reparse point: {relative}")
+                raise BackupValidationError(
+                    f"backup file cannot be a reparse point: {relative}"
+                )
             try:
                 raw = path.read_bytes()
             except OSError as exc:
-                raise BackupValidationError(f"backup file is missing: {relative}") from exc
+                raise BackupValidationError(
+                    f"backup file is missing: {relative}"
+                ) from exc
             if len(raw) != item["size"] or _sha256(raw) != item["sha256"]:
                 raise BackupValidationError(f"backup file hash mismatch: {relative}")
             if item["role"] in {"core_db", "plugin_db"}:
@@ -1596,7 +1962,9 @@ class BackupDataPlane:
         if snapshot_hash != manifest["core_snapshot_hash"]:
             raise BackupValidationError("manifest is not bound to Core snapshot")
         if manifest.get("core_contract_version") != _CORE_CONTRACT_VERSION:
-            raise BackupValidationError("backup uses an unsupported Core contract version")
+            raise BackupValidationError(
+                "backup uses an unsupported Core contract version"
+            )
         self._validate_state_bindings(snapshot)
         self._validate_snapshot_scope(
             database=_join(root, _CORE_DATABASE),
@@ -1605,15 +1973,26 @@ class BackupDataPlane:
             workspace_ids=manifest.get("workspace_ids"),
             workspace_snapshot_hash=manifest.get("workspace_snapshot_hash"),
         )
-        core_database_entries = [item for item in entries if item.get("role") == "core_db"]
-        if len(core_database_entries) != 1 or core_database_entries[0].get("path") != _CORE_DATABASE:
-            raise BackupValidationError("backup must contain exactly one authoritative Core database")
-        database_item = next((item for item in entries if item["path"] == _CORE_DATABASE), None)
+        core_database_entries = [
+            item for item in entries if item.get("role") == "core_db"
+        ]
+        if (
+            len(core_database_entries) != 1
+            or core_database_entries[0].get("path") != _CORE_DATABASE
+        ):
+            raise BackupValidationError(
+                "backup must contain exactly one authoritative Core database"
+            )
+        database_item = next(
+            (item for item in entries if item["path"] == _CORE_DATABASE), None
+        )
         if (
             database_item is None
             or receipt.get("core_database_sha256") != database_item["sha256"]
         ):
-            raise BackupValidationError("Core snapshot receipt database binding mismatch")
+            raise BackupValidationError(
+                "Core snapshot receipt database binding mismatch"
+            )
         self._verify_package_bindings(root, manifest, receipt)
         self._verify_asset_closure(root, manifest, receipt)
         return manifest, receipt
@@ -1660,44 +2039,65 @@ class BackupDataPlane:
         if not isinstance(request, RestoreRequest):
             raise TypeError("request must be RestoreRequest")
         if request.source_root_id == request.target_root_id:
-            raise BackupValidationError("restore source and target root IDs must differ")
+            raise BackupValidationError(
+                "restore source and target root IDs must differ"
+            )
         _assert_no_reparse_components(bundle_root)
         _assert_no_reparse_components(target_root)
         bundle_root = _lexical_absolute(bundle_root)
         target_root = _lexical_absolute(target_root)
-        if not _disjoint(target_root, self.source_root) or not _disjoint(target_root, bundle_root):
-            raise BackupValidationError("restore target must be a new root disjoint from source and backup")
+        if not _disjoint(target_root, self.source_root) or not _disjoint(
+            target_root, bundle_root
+        ):
+            raise BackupValidationError(
+                "restore target must be a new root disjoint from source and backup"
+            )
         source = self.verify_backup(bundle_root)
         manifest = source.manifest
         source_receipt = source.receipt
         if request.source_root_id != manifest.get("library_root_id"):
-            raise BackupValidationError("restore source root ID differs from backup authority")
+            raise BackupValidationError(
+                "restore source root ID differs from backup authority"
+            )
         expected_report = self._restore_report_for(manifest, request)
-        if target_root.exists():
-            report_path = _join(target_root, _RESTORE_REPORT)
-            report = _read_canonical_json(report_path)
+        if _path_entry_exists(target_root):
+            _read_canonical_json(target_root / _STAGE_MARKER)
             try:
-                verify_restore_report(report)
-            except Exception as exc:
-                raise BackupConflictError("existing restore report is invalid") from exc
-            target_manifest, target_receipt = self._verify_bundle(
-                target_root, allowed_extras={_RESTORE_REPORT}
-            )
-            self._require_publication_marker(
-                target_root,
-                operation="restore",
-                operation_id=request.restore_id,
-                target=target_root,
-                binding=str(target_manifest["bundle_hash"]),
-            )
-            if (
-                report != expected_report
-                or target_manifest.get("bundle_hash") != manifest.get("bundle_hash")
-                or target_receipt != source_receipt
-            ):
+                self._require_publication_marker(
+                    target_root,
+                    operation="restore",
+                    operation_id=request.restore_id,
+                    target=target_root,
+                    binding=str(manifest["bundle_hash"]),
+                )
+            except BackupDataError as foreign:
                 raise BackupConflictError(
                     "restore target already exists with a different bundle, receipt, or report"
+                ) from foreign
+            try:
+                report = self._validate_published_restore(
+                    target_root,
+                    request=request,
+                    source_manifest=manifest,
+                    source_receipt=source_receipt,
+                    expected_report=expected_report,
                 )
+            except Exception as invalid:
+                try:
+                    self._quarantine_invalid_restore_target(
+                        target_root,
+                        request=request,
+                        bundle_hash=str(manifest["bundle_hash"]),
+                    )
+                except Exception as quarantine:  # noqa: BLE001 - target stays in place
+                    self._record_secondary_failure(
+                        invalid,
+                        action="restore target quarantine was not performed",
+                        secondary=quarantine,
+                    )
+                raise BackupConflictError(
+                    "restore target already exists with a different bundle, receipt, or report"
+                ) from invalid
             return RestoreResult(target_root, report, True)
         stage, generation_id = self._new_stage_path(target_root, "restore")
         marker = self._stage_marker(
@@ -1709,10 +2109,15 @@ class BackupDataPlane:
             state="staging",
         )
         self._prepare_stage(stage, marker)
+        published = False
         try:
             if self.on_restore_stage is not None:
                 self.on_restore_stage("prepared", stage)
-            copy_paths = [_BACKUP_MANIFEST, _BACKUP_RECEIPT, *(str(item["path"]) for item in manifest["files"])]
+            copy_paths = [
+                _BACKUP_MANIFEST,
+                _BACKUP_RECEIPT,
+                *(str(item["path"]) for item in manifest["files"]),
+            ]
             for relative in copy_paths:
                 source = _join(bundle_root, relative)
                 raw = source.read_bytes()
@@ -1723,7 +2128,9 @@ class BackupDataPlane:
             try:
                 verify_restore_report(report)
             except Exception as exc:
-                raise BackupValidationError("restore report violates the accepted contract") from exc
+                raise BackupValidationError(
+                    "restore report violates the accepted contract"
+                ) from exc
             _write_new(_join(stage, _RESTORE_REPORT), _canonical_json(report))
             if self.on_restore_stage is not None:
                 self.on_restore_stage("verified", stage)
@@ -1732,9 +2139,13 @@ class BackupDataPlane:
             try:
                 verify_restore_report(stored_report)
             except Exception as exc:
-                raise BackupValidationError("staged restore report failed final verification") from exc
+                raise BackupValidationError(
+                    "staged restore report failed final verification"
+                ) from exc
             if stored_report != report:
-                raise BackupValidationError("staged restore report changed before publication")
+                raise BackupValidationError(
+                    "staged restore report changed before publication"
+                )
             published_marker = self._stage_marker(
                 operation="restore",
                 operation_id=request.restore_id,
@@ -1756,7 +2167,10 @@ class BackupDataPlane:
             try:
                 stage.rename(target_root)
             except OSError as exc:
-                raise BackupConflictError("could not publish restore root without replacement") from exc
+                raise BackupConflictError(
+                    "could not publish restore root without replacement"
+                ) from exc
+            published = True
             self._require_publication_marker(
                 target_root,
                 operation="restore",
@@ -1766,17 +2180,44 @@ class BackupDataPlane:
             )
             if self.on_restore_stage is not None:
                 self.on_restore_stage("published", target_root)
-            final_manifest, final_receipt = self._verify_bundle(
-                target_root, allowed_extras={_RESTORE_REPORT}
+            final_report = self._validate_published_restore(
+                target_root,
+                request=request,
+                source_manifest=manifest,
+                source_receipt=source_receipt,
+                expected_report=report,
             )
-            final_report = _read_canonical_json(_join(target_root, _RESTORE_REPORT))
-            if (
-                final_manifest.get("bundle_hash") != manifest.get("bundle_hash")
-                or final_receipt != source_receipt
-                or final_report != report
-            ):
-                raise BackupValidationError("published restore root failed final verification")
-            return RestoreResult(target_root, report, False)
-        except Exception:
-            self._remove_owned_stage(stage, marker)
+            return RestoreResult(target_root, final_report, False)
+        except Exception as primary:
+            if published:
+                try:
+                    self._validate_published_restore(
+                        target_root,
+                        request=request,
+                        source_manifest=manifest,
+                        source_receipt=source_receipt,
+                        expected_report=expected_report,
+                    )
+                except Exception:  # noqa: BLE001 - classify the published result
+                    try:
+                        self._quarantine_invalid_restore_target(
+                            target_root,
+                            request=request,
+                            bundle_hash=str(manifest["bundle_hash"]),
+                        )
+                    except Exception as quarantine:  # noqa: BLE001 - preserve primary
+                        self._record_secondary_failure(
+                            primary,
+                            action="post-rename restore quarantine failed",
+                            secondary=quarantine,
+                        )
+            else:
+                try:
+                    self._remove_owned_stage(stage, marker)
+                except Exception as cleanup:  # noqa: BLE001 - preserve the primary failure
+                    self._record_secondary_failure(
+                        primary,
+                        action="restore stage cleanup failed",
+                        secondary=cleanup,
+                    )
             raise
