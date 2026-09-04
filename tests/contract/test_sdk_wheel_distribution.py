@@ -114,7 +114,7 @@ def _probe_script(expected_schema_names: list[str]) -> str:
         from pathlib import Path
 
         import plotpilot_plugin_sdk
-        from plotpilot_plugin_sdk.errors import ContractValidationError
+        from plotpilot_plugin_sdk.errors import ContractError, ContractValidationError
         from plotpilot_plugin_sdk.rpc import build_meta, build_request
         from plotpilot_plugin_sdk.verifier import SCHEMA_DIR, assert_valid, validate_rpc_request, validate_rpc_response
 
@@ -150,6 +150,79 @@ def _probe_script(expected_schema_names: list[str]) -> str:
         }}
         validate_rpc_response(response, request=request)
 
+        def _expect_rejected(action):
+            try:
+                action()
+            except ContractError:
+                pass
+            else:
+                raise AssertionError("invalid RPC success response was accepted")
+
+        def _job_request(method, request_id):
+            params = {{
+                "capability_id": "shared.worker.run/v1",
+                "run_snapshot_asset_id": "run-snapshot-asset",
+                "checkpoint_asset_id": None,
+                "secrets": [],
+            }}
+            if method == "job.resume":
+                params.update({{
+                    "resume_of_attempt_id": "attempt-previous",
+                    "resume_intent_id": "resume-intent-1",
+                    "resume_reason": "retry",
+                }})
+            return build_request(
+                method,
+                params,
+                build_meta(
+                    "attempt",
+                    generation_id="generation-wheel",
+                    plugin_release_id=release_id,
+                    deadline_at="2030-01-02T03:04:05Z",
+                    operation_id=method + "-operation",
+                    job_id="job-1",
+                    step_id="step-1",
+                    attempt_id="attempt-1",
+                    lease_epoch=1,
+                ),
+                request_id=request_id,
+            )
+
+        validated_job_methods = []
+        for method, request_id in (
+            ("job.start", "123e4567-e89b-42d3-a456-426614174001"),
+            ("job.resume", "123e4567-e89b-42d3-a456-426614174002"),
+        ):
+            job_request = _job_request(method, request_id)
+            validate_rpc_request(job_request)
+            job_response = {{
+                "jsonrpc": "2.0",
+                "id": job_request["id"],
+                "result": {{
+                    "accepted": True,
+                    "worker_run_id": "worker-run-1",
+                    "provenance_receipt_id": "receipt-1",
+                    "output_streams": [],
+                }},
+            }}
+            validate_rpc_response(job_response, request=job_request)
+            validated_job_methods.append(method)
+
+            _expect_rejected(lambda: validate_rpc_response(job_response))
+            other_method = "job.resume" if method == "job.start" else "job.start"
+            _expect_rejected(
+                lambda: validate_rpc_response(job_response, other_method, request=job_request)
+            )
+
+            wrong_fields = dict(job_response)
+            wrong_fields["result"] = dict(job_response["result"])
+            wrong_fields["result"]["unexpected"] = "value"
+            _expect_rejected(lambda: validate_rpc_response(wrong_fields, request=job_request))
+
+            malformed_id = dict(job_response)
+            malformed_id["id"] = "not-a-uuid"
+            _expect_rejected(lambda: validate_rpc_response(malformed_id, request=job_request))
+
         try:
             assert_valid("unknown-contract/v1", {{}})
         except ContractValidationError:
@@ -163,6 +236,7 @@ def _probe_script(expected_schema_names: list[str]) -> str:
                     "module_file": str(Path(plotpilot_plugin_sdk.__file__).resolve()),
                     "schema_dir": str(schema_dir),
                     "schema_names": actual,
+                    "validated_job_methods": validated_job_methods,
                 }},
                 sort_keys=True,
             )
@@ -242,5 +316,6 @@ def test_real_sdk_wheel_installs_authoritative_verifier_schemas() -> None:
         ).resolve()
         assert proof["schema_names"] == expected_schema_names
         assert Path(proof["module_file"]).resolve().is_relative_to(venv_root.resolve())
+        assert proof["validated_job_methods"] == ["job.start", "job.resume"]
     finally:
         shutil.rmtree(temp_root, ignore_errors=True)

@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from .canonical import canonical_bytes, parse_json_bytes, sha256_hex
-from .errors import ContractError, ContractValidationError, ErrorCode
+from .errors import ContractError, ErrorCode
 from .framing import FrameDecoder, encode_frame
 from .package import release_id as derive_release_id
 from .rpc import (
@@ -806,7 +806,7 @@ class FramedStdioWorker:
                     "runtime.shutdown cannot orphan pending Host calls",
                 )
             result = {"accepted": True}
-            self._validate_result(method, result, request=request)
+            validate_rpc_result(method, result, request=request)
             self._state = "shutdown"
             return result
         handler = self._handlers.get(method)
@@ -842,7 +842,7 @@ class FramedStdioWorker:
             "capabilities": sorted(self._domains),
             "worker_instance_id": self.worker_instance_id,
         }
-        self._validate_result(
+        validate_rpc_result(
             "runtime.handshake",
             result,
             request=request,
@@ -907,7 +907,7 @@ class FramedStdioWorker:
 
         bound_context = self._bind_run_snapshot(request, context, domain)
         result = self._invoke_handler(handler, params, bound_context)
-        self._validate_result(method, result, request=request)
+        validate_rpc_result(method, result, request=request)
         worker_run_id = _require_identifier(
             result["worker_run_id"],
             "worker_run_id",
@@ -1130,7 +1130,7 @@ class FramedStdioWorker:
             params,
             bound_context,
         )
-        self._validate_result(
+        validate_rpc_result(
             "job.cancel",
             result,
             request=request,
@@ -1394,22 +1394,6 @@ class FramedStdioWorker:
                     "stdio frame write failed",
                 ) from exc
 
-    @staticmethod
-    def _validate_result(
-        method: str,
-        result: Mapping[str, Any],
-        *,
-        request: Mapping[str, Any],
-    ) -> None:
-        try:
-            validate_rpc_result(method, result, request=request)
-        except ContractValidationError as exc:
-            if method not in {
-                "job.start",
-                "job.resume",
-            } or "is valid under each of" not in str(exc):
-                raise
-
     def _success_response(
         self,
         request: Mapping[str, Any],
@@ -1421,7 +1405,7 @@ class FramedStdioWorker:
                 "worker result is not an object",
             )
         value = dict(result)
-        self._validate_result(
+        validate_rpc_result(
             request["method"],
             value,
             request=request,
