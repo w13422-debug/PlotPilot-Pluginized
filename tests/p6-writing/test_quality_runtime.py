@@ -738,3 +738,55 @@ def test_quality_capability_descriptor_is_deterministic_and_candidate_scoped() -
     assert descriptor["deterministic"] is True
     with pytest.raises(QualityRuntimeError, match="release_id"):
         capability_descriptor(release_id="not-a-release")
+
+
+def test_quality_worker_framed_handshake_describe_shutdown_binds_release() -> None:
+    release = "b" * 64
+    session = QualityHostSession(assets={}, receipt_id="receipt-control")
+    handshake = _request(
+        "runtime.handshake",
+        {
+            "host_protocol": "1",
+            "generation_id": "generation-1",
+            "plugin_release_id": release,
+            "data_generation_id": None,
+        },
+        _meta("control", release=release, operation_id="handshake-1"),
+        "00000000-0000-4000-8000-000000000011",
+    )
+    describe = _request(
+        "capability.describe",
+        {"capability_id": CAPABILITY_ID},
+        _meta("control", release=release, operation_id="describe-1"),
+        "00000000-0000-4000-8000-000000000012",
+    )
+    shutdown = _request(
+        "runtime.shutdown",
+        {"reason": "test", "deadline_at": "2026-09-04T12:00:00Z"},
+        _meta("control", release=release, operation_id="shutdown-1"),
+        "00000000-0000-4000-8000-000000000013",
+    )
+    for message in (handshake, describe, shutdown):
+        session.queue(message)
+
+    worker = create_worker()
+    worker.serve(stdin=session, stdout=session)
+
+    handshake_response = _response_for(session.messages, handshake)
+    assert "error" not in handshake_response
+    assert handshake_response["result"]["release_id"] == release
+    assert handshake_response["result"]["capabilities"] == [CAPABILITY_ID]
+
+    describe_response = _response_for(session.messages, describe)
+    assert "error" not in describe_response
+    descriptor = describe_response["result"]["descriptor"]
+    assert descriptor["capability_id"] == CAPABILITY_ID
+    assert descriptor["provider"] == {
+        "plugin_id": "com.plotpilot.quality-suite",
+        "release_id": release,
+    }
+
+    shutdown_response = _response_for(session.messages, shutdown)
+    assert "error" not in shutdown_response
+    assert shutdown_response["result"] == {"accepted": True}
+    assert worker.state == "shutdown"

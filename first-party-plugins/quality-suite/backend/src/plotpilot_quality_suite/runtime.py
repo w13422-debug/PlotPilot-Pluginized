@@ -878,7 +878,7 @@ def create_worker() -> FramedStdioWorker:
     )
     worker.register_domain(
         CAPABILITY_ID,
-        descriptor=capability_descriptor,
+        descriptor=lambda release_id: capability_descriptor(release_id=release_id),
         operations=(CAPABILITY_ID,),
         start=_run_quality_job,
         resume=_run_quality_job,
