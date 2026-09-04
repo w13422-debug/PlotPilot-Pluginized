@@ -1,10 +1,10 @@
 # Exact, offline-only Python 3.12 runtime closure for the installable worker.
 # Every artifact is resolved from backend/wheels with --require-hashes.
-attrs==26.1.0 --hash=sha256:ef619faa51e446092512f9026dc8f03e370988635f3bca13a5464f3d196b9551
-jsonschema==4.26.0 --hash=sha256:6f3e27fd3e27051319195e2e9a42212413242ffef4f46d00356eba45993a5c77
-jsonschema-specifications==2025.9.1 --hash=sha256:71e4c4430d70c48f081d702cab84e5d8e3949fad23865932c06494e1b65da841
+attrs==26.1.0 --hash=sha256:c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309
+jsonschema==4.26.0 --hash=sha256:d489f15263b8d200f8387e64b4c3a75f06629559fb73deb8fdfb525f2dab50ce
+jsonschema-specifications==2025.9.1 --hash=sha256:98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe
 plotpilot-plugin-sdk==0.1.1 --hash=sha256:1ff12697c677bb24b04d3963eac953cd2bc3692695ef2fc77196419d4302a7c7
-referencing==0.37.0 --hash=sha256:731bdff179bde892adb919278c9292645006684ce96e67583087ee0b96aab52c
-rpds-py==2026.6.3 --hash=sha256:addd2e232ccd57e8cf520d3e3d8e6256561dd5e8de1a191d50a0e3df9a126afb
-rfc8785==0.1.4 --hash=sha256:ac4c0f2ba7fe3f4c05612bb35fc10fd3ef689cd32c13aaf7dc31e0315f10bb37
-typing-extensions==4.16.0 --hash=sha256:f12a230d3c7ecc72c766807836c26ef0d96df0e9fbb9e18b40e3f6385ec3cb64
+referencing==0.37.0 --hash=sha256:381329a9f99628c9069361716891d34ad94af76e461dcb0335825aecc7692231
+rpds-py==2026.6.3 --hash=sha256:2c958bf94822e9290a40aaf2a822d4bc5c88099093e3948ad6c571eca9272e5f
+rfc8785==0.1.4 --hash=sha256:520d690b448ecf0703691c76e1a34a24ddcd4fc5bc41d589cb7c58ec651bcd48
+typing-extensions==4.16.0 --hash=sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8

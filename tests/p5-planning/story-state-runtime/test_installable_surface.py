@@ -17,15 +17,15 @@ SDK_REQUIREMENT = f"plotpilot-plugin-sdk=={SDK_VERSION}"
 LOCK_ENTRIES = {
     "attrs": (
         "26.1.0",
-        "ef619faa51e446092512f9026dc8f03e370988635f3bca13a5464f3d196b9551",
+        "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309",
     ),
     "jsonschema": (
         "4.26.0",
-        "6f3e27fd3e27051319195e2e9a42212413242ffef4f46d00356eba45993a5c77",
+        "d489f15263b8d200f8387e64b4c3a75f06629559fb73deb8fdfb525f2dab50ce",
     ),
     "jsonschema-specifications": (
         "2025.9.1",
-        "71e4c4430d70c48f081d702cab84e5d8e3949fad23865932c06494e1b65da841",
+        "98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe",
     ),
     "plotpilot-plugin-sdk": (
         SDK_VERSION,
@@ -33,19 +33,19 @@ LOCK_ENTRIES = {
     ),
     "referencing": (
         "0.37.0",
-        "731bdff179bde892adb919278c9292645006684ce96e67583087ee0b96aab52c",
+        "381329a9f99628c9069361716891d34ad94af76e461dcb0335825aecc7692231",
     ),
     "rpds-py": (
         "2026.6.3",
-        "addd2e232ccd57e8cf520d3e3d8e6256561dd5e8de1a191d50a0e3df9a126afb",
+        "2c958bf94822e9290a40aaf2a822d4bc5c88099093e3948ad6c571eca9272e5f",
     ),
     "rfc8785": (
         "0.1.4",
-        "ac4c0f2ba7fe3f4c05612bb35fc10fd3ef689cd32c13aaf7dc31e0315f10bb37",
+        "520d690b448ecf0703691c76e1a34a24ddcd4fc5bc41d589cb7c58ec651bcd48",
     ),
     "typing-extensions": (
         "4.16.0",
-        "f12a230d3c7ecc72c766807836c26ef0d96df0e9fbb9e18b40e3f6385ec3cb64",
+        "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
     ),
 }
 
@@ -206,14 +206,19 @@ def test_source_package_identity_and_no_argument_entrypoint(
 def test_both_package_sources_bind_the_deterministic_sdk_wheel() -> None:
     roots: list[Path] = []
     lock_bytes: list[bytes] = []
+    parsed_locks: list[dict[str, tuple[str, str]]] = []
     for plugin in PLUGINS:
         root = plugin["root"]
         assert isinstance(root, Path)
         roots.append(root)
         lock_bytes.append((root / "backend" / "requirements.lock").read_bytes())
-        assert _parse_lock(root / "backend" / "requirements.lock") == LOCK_ENTRIES
+        parsed = _parse_lock(root / "backend" / "requirements.lock")
+        assert len(parsed) == 8
+        assert tuple(parsed.items()) == tuple(LOCK_ENTRIES.items())
+        parsed_locks.append(parsed)
     _assert_exact_sdk_pins(roots)
     assert len(set(lock_bytes)) == 1
+    assert parsed_locks[0] == parsed_locks[1]
 
 
 @pytest.mark.parametrize(
@@ -281,6 +286,9 @@ def test_sdk_pin_drift_is_rejected(tmp_path: Path, mutation: str) -> None:
     [
         "remove_dependency",
         "remove_hash",
+        "wrong_third_party_hash",
+        "duplicate_third_party",
+        "third_party_version_drift",
         "wrong_version",
         "wrong_wheel",
         "wrong_entrypoint",
@@ -322,6 +330,25 @@ def test_source_validation_rejects_package_identity_and_lock_drift(
                 lock.read_text(encoding="utf-8"),
                 count=1,
             ),
+            encoding="utf-8",
+        )
+    elif mutation == "wrong_third_party_hash":
+        lock = root / "backend" / "requirements.lock"
+        lock.write_text(
+            lock.read_text(encoding="utf-8").replace(
+                LOCK_ENTRIES["attrs"][1], "0" * 64
+            ),
+            encoding="utf-8",
+        )
+    elif mutation == "duplicate_third_party":
+        lock = root / "backend" / "requirements.lock"
+        version, digest = LOCK_ENTRIES["attrs"]
+        with lock.open("a", encoding="utf-8", newline="\n") as stream:
+            stream.write(f"attrs=={version} --hash=sha256:{digest}\n")
+    elif mutation == "third_party_version_drift":
+        lock = root / "backend" / "requirements.lock"
+        lock.write_text(
+            lock.read_text(encoding="utf-8").replace("attrs==26.1.0", "attrs==26.0.0"),
             encoding="utf-8",
         )
     elif mutation == "wrong_version":
