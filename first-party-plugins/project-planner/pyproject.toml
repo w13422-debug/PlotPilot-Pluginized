@@ -7,7 +7,7 @@ name = "plotpilot-project-planner"
 version = "1.0.0"
 description = "Installable PlotPilot Project Planner worker"
 requires-python = ">=3.12,<3.13"
-dependencies = ["plotpilot-plugin-sdk==0.1.0"]
+dependencies = ["plotpilot-plugin-sdk==0.1.1"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -10,6 +10,9 @@ import pytest
 import tomllib
 
 ROOT = Path(__file__).resolve().parents[3]
+SDK_VERSION = "0.1.1"
+SDK_HASH = "1ff12697c677bb24b04d3963eac953cd2bc3692695ef2fc77196419d4302a7c7"
+SDK_REQUIREMENT = f"plotpilot-plugin-sdk=={SDK_VERSION}"
 
 LOCK_ENTRIES = {
     "attrs": (
@@ -25,8 +28,8 @@ LOCK_ENTRIES = {
         "71e4c4430d70c48f081d702cab84e5d8e3949fad23865932c06494e1b65da841",
     ),
     "plotpilot-plugin-sdk": (
-        "0.1.0",
-        "61f61bc332a7b5dfe31a6209f15d296e9e4ce8d72e40cba591dfdb09aa1dc120",
+        SDK_VERSION,
+        SDK_HASH,
     ),
     "referencing": (
         "0.37.0",
@@ -108,6 +111,37 @@ def _assert_no_argument_entrypoint(source: Path, callable_name: str) -> None:
     assert required_keyword_only == 0, "entrypoint requires keyword-only arguments"
 
 
+def _read_sdk_pin(root: Path) -> tuple[str, str]:
+    pyproject = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+    dependencies = pyproject["project"]["dependencies"]
+    sdk_dependencies = [
+        dependency
+        for dependency in dependencies
+        if dependency.startswith("plotpilot-plugin-sdk")
+    ]
+    assert len(sdk_dependencies) == 1, "package metadata must declare the SDK once"
+    metadata_match = re.fullmatch(
+        r"plotpilot-plugin-sdk==(?P<version>[A-Za-z0-9][A-Za-z0-9._+!-]*)",
+        sdk_dependencies[0],
+    )
+    assert metadata_match is not None, "package metadata SDK dependency is not exact"
+
+    lock = _parse_lock(root / "backend" / "requirements.lock")
+    assert "plotpilot-plugin-sdk" in lock, "requirements lock omits the SDK"
+    lock_version, lock_hash = lock["plotpilot-plugin-sdk"]
+    metadata_version = metadata_match.group("version")
+    assert metadata_version == lock_version, "package metadata and SDK lock disagree"
+    return lock_version, lock_hash
+
+
+def _assert_exact_sdk_pins(roots: list[Path]) -> None:
+    pins = [_read_sdk_pin(root) for root in roots]
+    assert len(set(pins)) == 1, "Project Planner and Story State SDK pins disagree"
+    assert pins == [(SDK_VERSION, SDK_HASH)] * len(roots), (
+        "package SDK pin differs from the deterministic wheel authority"
+    )
+
+
 def _assert_plugin_source(plugin: dict[str, object]) -> None:
     root = plugin["root"]
     assert isinstance(root, Path)
@@ -133,7 +167,7 @@ def _assert_plugin_source(plugin: dict[str, object]) -> None:
     )
     assert manifest["plugin_id"] == plugin_id
     assert project["requires-python"] == ">=3.12,<3.13"
-    assert project["dependencies"] == ["plotpilot-plugin-sdk==0.1.0"]
+    assert project["dependencies"] == [SDK_REQUIREMENT]
     assert pyproject["tool"]["setuptools"]["packages"]["find"]["where"] == ["src"]
 
     entrypoint = backend["entrypoint"]
@@ -169,14 +203,77 @@ def test_source_package_identity_and_no_argument_entrypoint(
     _assert_plugin_source(plugin)
 
 
-def test_both_locks_are_byte_identical_to_the_accepted_offline_closure() -> None:
-    accepted = (
-        ROOT / "first-party-plugins" / "prompt-skill-runtime" / "requirements.lock"
-    ).read_bytes()
+def test_both_package_sources_bind_the_deterministic_sdk_wheel() -> None:
+    roots: list[Path] = []
+    lock_bytes: list[bytes] = []
     for plugin in PLUGINS:
         root = plugin["root"]
         assert isinstance(root, Path)
-        assert (root / "backend" / "requirements.lock").read_bytes() == accepted
+        roots.append(root)
+        lock_bytes.append((root / "backend" / "requirements.lock").read_bytes())
+        assert _parse_lock(root / "backend" / "requirements.lock") == LOCK_ENTRIES
+    _assert_exact_sdk_pins(roots)
+    assert len(set(lock_bytes)) == 1
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "sdk_0_1_0",
+        "unpinned_sdk",
+        "wrong_hash",
+        "duplicate_sdk",
+        "planner_story_disagreement",
+    ],
+)
+def test_sdk_pin_drift_is_rejected(tmp_path: Path, mutation: str) -> None:
+    roots: list[Path] = []
+    for plugin in PLUGINS:
+        source = plugin["root"]
+        assert isinstance(source, Path)
+        root = tmp_path / source.name
+        (root / "backend").mkdir(parents=True)
+        for relative in ("pyproject.toml", "backend/requirements.lock"):
+            (root / relative).write_bytes((source / relative).read_bytes())
+        roots.append(root)
+
+    planner, story = roots
+    target = planner
+    if mutation == "sdk_0_1_0":
+        for relative in ("pyproject.toml", "backend/requirements.lock"):
+            path = target / relative
+            path.write_text(
+                path.read_text(encoding="utf-8").replace("0.1.1", "0.1.0"),
+                encoding="utf-8",
+            )
+    elif mutation == "unpinned_sdk":
+        path = target / "pyproject.toml"
+        path.write_text(
+            path.read_text(encoding="utf-8").replace(
+                SDK_REQUIREMENT, "plotpilot-plugin-sdk>=0.1.1"
+            ),
+            encoding="utf-8",
+        )
+    elif mutation == "wrong_hash":
+        path = target / "backend" / "requirements.lock"
+        path.write_text(
+            path.read_text(encoding="utf-8").replace(SDK_HASH, "0" * 64),
+            encoding="utf-8",
+        )
+    elif mutation == "duplicate_sdk":
+        path = target / "backend" / "requirements.lock"
+        with path.open("a", encoding="utf-8", newline="\n") as stream:
+            stream.write(f"{SDK_REQUIREMENT} --hash=sha256:{SDK_HASH}\n")
+    else:
+        for relative in ("pyproject.toml", "backend/requirements.lock"):
+            path = story / relative
+            path.write_text(
+                path.read_text(encoding="utf-8").replace("0.1.1", "0.1.0"),
+                encoding="utf-8",
+            )
+
+    with pytest.raises(AssertionError):
+        _assert_exact_sdk_pins(roots)
 
 
 @pytest.mark.parametrize(
