@@ -7,7 +7,7 @@ name = "plotpilot-quality-suite"
 version = "1.0.0"
 description = "Deterministic Candidate-only PlotPilot quality runtime"
 requires-python = ">=3.12,<3.13"
-dependencies = []
+dependencies = ["plotpilot-plugin-sdk==0.1.2"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
