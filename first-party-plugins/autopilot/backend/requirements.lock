@@ -1,0 +1,2 @@
+# Source package has no third-party runtime dependencies.
+# The accepted P2 Host provides the RPC transport and the P1/P3 durable authority.

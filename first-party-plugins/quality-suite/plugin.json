@@ -1,0 +1,36 @@
+{
+  "schema": "plotpilot-plugin/v1",
+  "plugin_id": "com.plotpilot.quality-suite",
+  "version": "1.0.0",
+  "display_name": "Quality Suite",
+  "compatibility": {
+    "core_api": ">=1.0 <2.0",
+    "plugin_rpc": "1",
+    "ui_host": "1",
+    "python": "3.12.*"
+  },
+  "capabilities": [
+    {
+      "capability_id": "quality.review/v1",
+      "operations": ["run"],
+      "result_contract": "candidate-batch/v1"
+    }
+  ],
+  "settings": null,
+  "needs": [],
+  "kind": "code",
+  "backend": {
+    "entrypoint": "plotpilot_quality_suite.runtime:main",
+    "wheel": "backend/dist/plotpilot_quality_suite-1.0.0-py3-none-any.whl",
+    "requirements_lock": "backend/requirements.lock",
+    "wheelhouse": "backend/wheels",
+    "max_concurrency": 1
+  },
+  "storage": {
+    "schema_version": 1,
+    "migration_policy": "transactional-shadow",
+    "migration_manifest": "migrations/manifest.json"
+  },
+  "ui": null,
+  "data": null
+}

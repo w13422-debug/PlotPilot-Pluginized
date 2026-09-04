@@ -6,17 +6,18 @@ existing deterministic Finding scanner, and returns in-memory JSON bundles.
 There is no AssetStore, Revision, Candidate, Publication, database, or file
 write path in this module.
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass
-from hashlib import sha256
 import json
 import re
+from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
+from hashlib import sha256
 from types import MappingProxyType
-from typing import Any, Iterable, Mapping, TypeAlias
+from typing import Any, TypeAlias
 
 from .rules import Finding, scan_language_style
-
 
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _SEVERITIES = frozenset({"info", "warning", "error"})
@@ -33,7 +34,9 @@ class BundleValidationError(ValueError):
     """Raised when a generated bundle no longer matches its bytes or schema."""
 
 
-def canonical_json_bytes(value: Mapping[str, Any] | list[Any] | tuple[Any, ...]) -> bytes:
+def canonical_json_bytes(
+    value: Mapping[str, Any] | list[Any] | tuple[Any, ...],
+) -> bytes:
     """Serialize JSON with the repository's deterministic UTF-8 profile.
 
     The function intentionally does not add a newline, timestamp, UUID, or
@@ -73,7 +76,9 @@ def _required_hash(value: object, field: str) -> str:
     return value
 
 
-def _resolve_alias(primary: object, alias: object, field: str, alias_name: str) -> object:
+def _resolve_alias(
+    primary: object, alias: object, field: str, alias_name: str
+) -> object:
     if primary is not None and alias is not None and primary != alias:
         raise ProvenanceError(f"{field} and {alias_name} do not match")
     return primary if primary is not None else alias
@@ -123,7 +128,11 @@ class FrozenSource:
         if content_hash != expected_hash:
             raise ProvenanceError("content hash does not match the frozen content")
 
-        asset_hash = content_hash if self.asset_hash is None else _required_hash(self.asset_hash, "asset_hash")
+        asset_hash = (
+            content_hash
+            if self.asset_hash is None
+            else _required_hash(self.asset_hash, "asset_hash")
+        )
         if asset_hash != content_hash:
             raise ProvenanceError("asset provenance hash does not match content_hash")
 
@@ -146,18 +155,24 @@ class FrozenSource:
         content_hash: str | None = None,
         asset_hash: str | None = None,
         asset_sha256: str | None = None,
-    ) -> "FrozenSource":
+    ) -> FrozenSource:
         """Construct a source while accepting ``source_revision``/``asset_sha256`` aliases."""
 
-        resolved_revision = _resolve_alias(revision_id, source_revision, "revision_id", "source_revision")
-        resolved_asset_hash = _resolve_alias(asset_hash, asset_sha256, "asset_hash", "asset_sha256")
+        resolved_revision = _resolve_alias(
+            revision_id, source_revision, "revision_id", "source_revision"
+        )
+        resolved_asset_hash = _resolve_alias(
+            asset_hash, asset_sha256, "asset_hash", "asset_sha256"
+        )
         return cls(
             workspace_id=_required_identifier(workspace_id, "workspace_id"),
             revision_id=_required_identifier(resolved_revision, "revision_id"),
             asset_id=_required_identifier(asset_id, "asset_id"),
             content=content,
             content_hash=_required_hash(content_hash, "content_hash"),
-            asset_hash=resolved_asset_hash if resolved_asset_hash is None else _required_hash(resolved_asset_hash, "asset_hash"),
+            asset_hash=resolved_asset_hash
+            if resolved_asset_hash is None
+            else _required_hash(resolved_asset_hash, "asset_hash"),
         )
 
     @property
@@ -277,22 +292,36 @@ def freeze_source(
     if nested_schema is not None and nested_schema != "asset-metadata/v1":
         raise ProvenanceError("asset provenance schema is not asset-metadata/v1")
 
-    resolved_revision = _resolve_alias(revision_id, source_revision, "revision_id", "source_revision")
-    resolved_asset_hash = _resolve_alias(asset_hash, asset_sha256, "asset_hash", "asset_sha256")
+    resolved_revision = _resolve_alias(
+        revision_id, source_revision, "revision_id", "source_revision"
+    )
+    resolved_asset_hash = _resolve_alias(
+        asset_hash, asset_sha256, "asset_hash", "asset_sha256"
+    )
     frozen = FrozenSource.from_content(
         content,
         workspace_id=workspace_id,
         revision_id=resolved_revision if isinstance(resolved_revision, str) else None,
         asset_id=asset_id,
         content_hash=content_hash,
-        asset_hash=resolved_asset_hash if isinstance(resolved_asset_hash, str) else None,
+        asset_hash=resolved_asset_hash
+        if isinstance(resolved_asset_hash, str)
+        else None,
     )
 
     for key in ("size", "total_size"):
         value = nested.get(key)
-        if value is not None and (isinstance(value, bool) or not isinstance(value, int) or value != len(frozen.content_bytes)):
+        if value is not None and (
+            isinstance(value, bool)
+            or not isinstance(value, int)
+            or value != len(frozen.content_bytes)
+        ):
             raise ProvenanceError(f"asset provenance {key} does not match content size")
-    encodings = [(key, nested.get(key)) for key in ("encoding", "charset") if nested.get(key) is not None]
+    encodings = [
+        (key, nested.get(key))
+        for key in ("encoding", "charset")
+        if nested.get(key) is not None
+    ]
     if encodings and any(value != "utf-8" for _, value in encodings):
         raise ProvenanceError("asset provenance encoding must be utf-8")
     if encodings and len({value for _, value in encodings}) != 1:
@@ -313,7 +342,9 @@ def freeze_source(
 
 def _freeze(value: Any) -> Any:
     if isinstance(value, Mapping):
-        return MappingProxyType({str(key): _freeze(item) for key, item in value.items()})
+        return MappingProxyType(
+            {str(key): _freeze(item) for key, item in value.items()}
+        )
     if isinstance(value, list):
         return tuple(_freeze(item) for item in value)
     if isinstance(value, tuple):
@@ -446,7 +477,9 @@ def _coerce_source(source: BundleInput) -> FrozenSource:
     if isinstance(source, FrozenSource):
         return source
     if not isinstance(source, Mapping):
-        raise ProvenanceError("bundle input must be a FrozenSource or provenance mapping")
+        raise ProvenanceError(
+            "bundle input must be a FrozenSource or provenance mapping"
+        )
 
     root = source
     mappings: list[tuple[str, Mapping[str, object]]] = [("root", root)]
@@ -456,7 +489,11 @@ def _coerce_source(source: BundleInput) -> FrozenSource:
         if value is None:
             continue
         if not isinstance(value, Mapping):
-            label = "asset provenance" if container in {"asset", "asset_provenance"} else "bundle provenance"
+            label = (
+                "asset provenance"
+                if container in {"asset", "asset_provenance"}
+                else "bundle provenance"
+            )
             raise ProvenanceError(f"{label} must be a mapping")
         entry = (container, value)
         mappings.append(entry)
@@ -475,10 +512,12 @@ def _coerce_source(source: BundleInput) -> FrozenSource:
         for other_name, other_value in found[1:]:
             try:
                 matches = other_value == first_value
-            except Exception:  # pragma: no cover - hostile value implementation
+            except Exception:  # noqa: BLE001 - hostile mapping equality is an input boundary
                 matches = False
             if matches is not True:
-                raise ProvenanceError(f"conflicting {label}: {first_name} does not match {other_name}")
+                raise ProvenanceError(
+                    f"conflicting {label}: {first_name} does not match {other_name}"
+                )
         return first_value
 
     content = resolve("content", "text", label="content")
@@ -501,7 +540,11 @@ def _coerce_source(source: BundleInput) -> FrozenSource:
         value = resolve(*aliases, label=canonical)
         if value is not None:
             merged_asset[canonical] = value
-    schema_values = [mapping.get("schema") for _, mapping in asset_mappings if mapping.get("schema") is not None]
+    schema_values = [
+        mapping.get("schema")
+        for _, mapping in asset_mappings
+        if mapping.get("schema") is not None
+    ]
     if schema_values:
         if any(value != schema_values[0] for value in schema_values[1:]):
             raise ProvenanceError("conflicting asset schema")
@@ -537,15 +580,31 @@ def _coerce_finding(value: Finding | Mapping[str, object]) -> Finding:
         raise BundleValidationError(f"invalid Finding mapping: {exc}") from exc
 
 
-def _ordered_findings(source: FrozenSource, findings: Iterable[Finding] | None) -> tuple[tuple[str, Finding], ...]:
-    values = tuple(scan_language_style(source.content) if findings is None else (_coerce_finding(item) for item in findings))
+def _ordered_findings(
+    source: FrozenSource, findings: Iterable[Finding] | None
+) -> tuple[tuple[str, Finding], ...]:
+    values = tuple(
+        scan_language_style(source.content)
+        if findings is None
+        else (_coerce_finding(item) for item in findings)
+    )
     for finding in values:
         if finding.source_hash != source.content_hash:
-            raise ProvenanceError("Finding source_hash does not match the frozen content hash")
+            raise ProvenanceError(
+                "Finding source_hash does not match the frozen content hash"
+            )
         if finding.severity not in _SEVERITIES:
-            raise BundleValidationError(f"unsupported Finding severity: {finding.severity}")
-        if finding.start < 0 or finding.end < finding.start or finding.end > len(source.content):
-            raise BundleValidationError("Finding offsets are outside the frozen content")
+            raise BundleValidationError(
+                f"unsupported Finding severity: {finding.severity}"
+            )
+        if (
+            finding.start < 0
+            or finding.end < finding.start
+            or finding.end > len(source.content)
+        ):
+            raise BundleValidationError(
+                "Finding offsets are outside the frozen content"
+            )
         if finding.excerpt != source.content[finding.start : finding.end]:
             raise ProvenanceError("Finding excerpt does not match the frozen content")
 
@@ -577,7 +636,15 @@ def _ordered_findings(source: FrozenSource, findings: Iterable[Finding] | None) 
         identity = tuple(finding_dict.values())
         occurrence = occurrences.get(identity, 0)
         occurrences[identity] = occurrence + 1
-        item_hash = sha256_hex(canonical_json_bytes({"finding": finding_dict, "occurrence": occurrence, "source": source_dict}))
+        item_hash = sha256_hex(
+            canonical_json_bytes(
+                {
+                    "finding": finding_dict,
+                    "occurrence": occurrence,
+                    "source": source_dict,
+                }
+            )
+        )
         result.append((f"finding-{item_hash}", finding))
     return tuple(result)
 
@@ -602,7 +669,9 @@ def _source_refs(source: FrozenSource) -> list[dict[str, str]]:
     return [dict(ref) for ref in source.source_refs()]
 
 
-def _diagnostic_items(source: FrozenSource, findings: tuple[tuple[str, Finding], ...]) -> list[dict[str, object]]:
+def _diagnostic_items(
+    source: FrozenSource, findings: tuple[tuple[str, Finding], ...]
+) -> list[dict[str, object]]:
     return [
         {
             "code": finding.rule_id,
@@ -619,7 +688,9 @@ def _diagnostic_items(source: FrozenSource, findings: tuple[tuple[str, Finding],
     ]
 
 
-def _finding_items(source: FrozenSource, findings: tuple[tuple[str, Finding], ...]) -> list[dict[str, object]]:
+def _finding_items(
+    source: FrozenSource, findings: tuple[tuple[str, Finding], ...]
+) -> list[dict[str, object]]:
     return [
         {
             **_finding_dict(finding),
@@ -640,7 +711,9 @@ def _candidate_items(
     suggestions = suggestions or {}
     for key, value in suggestions.items():
         if not isinstance(key, str) or not isinstance(value, str) or not value.strip():
-            raise BundleValidationError("candidate suggestions must map non-blank strings to non-blank strings")
+            raise BundleValidationError(
+                "candidate suggestions must map non-blank strings to non-blank strings"
+            )
 
     items: list[dict[str, object]] = []
     for item_id, finding in findings:
@@ -713,14 +786,18 @@ def _make_bundle(
     return QualityBundle(payload)
 
 
-def build_diagnostic_bundle(source: BundleInput, findings: Iterable[Finding] | None = None) -> QualityBundle:
+def build_diagnostic_bundle(
+    source: BundleInput, findings: Iterable[Finding] | None = None
+) -> QualityBundle:
     """Build a deterministic diagnostic bundle from a frozen source."""
 
     frozen = _coerce_source(source)
     return _make_bundle("diagnostic", frozen, _ordered_findings(frozen, findings))
 
 
-def build_finding_bundle(source: BundleInput, findings: Iterable[Finding] | None = None) -> QualityBundle:
+def build_finding_bundle(
+    source: BundleInput, findings: Iterable[Finding] | None = None
+) -> QualityBundle:
     """Build a deterministic Finding bundle, including offsets and excerpts."""
 
     frozen = _coerce_source(source)
@@ -736,7 +813,9 @@ def build_candidate_bundle(
     """Build proposed, review-only suggestions without a mutation or publish path."""
 
     frozen = _coerce_source(source)
-    return _make_bundle("candidate", frozen, _ordered_findings(frozen, findings), suggestions)
+    return _make_bundle(
+        "candidate", frozen, _ordered_findings(frozen, findings), suggestions
+    )
 
 
 def build_quality_bundles(
@@ -762,7 +841,9 @@ generate_quality_bundles = build_quality_bundles
 def bundle_sha256(bundle: QualityBundle | bytes) -> str:
     """Recompute the digest of a bundle or canonical bytes."""
 
-    return sha256_hex(bundle.json_bytes if isinstance(bundle, QualityBundle) else bundle)
+    return sha256_hex(
+        bundle.json_bytes if isinstance(bundle, QualityBundle) else bundle
+    )
 
 
 def validate_bundle(bundle: QualityBundle) -> None:
@@ -776,34 +857,52 @@ def validate_bundle(bundle: QualityBundle) -> None:
     if sha256_hex(raw) != bundle.sha256:
         raise BundleValidationError("bundle sha256 does not match JSON bytes")
     if bundle.schema != "quality-bundle/v1":
-        raise BundleValidationError("bundle schema is not the private quality-bundle/v1 projection")
+        raise BundleValidationError(
+            "bundle schema is not the private quality-bundle/v1 projection"
+        )
     if bundle.bundle_type not in {"diagnostic", "finding", "candidate"}:
         raise BundleValidationError("unsupported Quality bundle type")
     if bundle.contract_id != f"{bundle.bundle_type}-bundle/v1":
         raise BundleValidationError("bundle contract_id does not match bundle_type")
     identity = bundle.to_dict()
     bundle_id = identity.pop("bundle_id", None)
-    expected_bundle_id = f"quality-{bundle.bundle_type}-{sha256_hex(canonical_json_bytes(identity))}"
+    expected_bundle_id = (
+        f"quality-{bundle.bundle_type}-{sha256_hex(canonical_json_bytes(identity))}"
+    )
     if bundle_id != expected_bundle_id:
-        raise BundleValidationError("bundle_id does not match the canonical bundle payload")
+        raise BundleValidationError(
+            "bundle_id does not match the canonical bundle payload"
+        )
     provenance = bundle.provenance
     required = {"asset_hash", "asset_id", "content_hash", "revision_id", "workspace_id"}
     if set(provenance) != required:
         raise BundleValidationError("bundle provenance fields are not closed")
     if bundle["workspace_id"] != provenance["workspace_id"]:
         raise BundleValidationError("bundle workspace does not match provenance")
-    if not all(isinstance(provenance[field], str) and provenance[field] for field in required):
-        raise BundleValidationError("bundle provenance values must be non-empty strings")
-    if not _SHA256_RE.fullmatch(provenance["content_hash"]) or not _SHA256_RE.fullmatch(provenance["asset_hash"]):
-        raise BundleValidationError("bundle provenance hashes are not lowercase SHA-256")
+    if not all(
+        isinstance(provenance[field], str) and provenance[field] for field in required
+    ):
+        raise BundleValidationError(
+            "bundle provenance values must be non-empty strings"
+        )
+    if not _SHA256_RE.fullmatch(provenance["content_hash"]) or not _SHA256_RE.fullmatch(
+        provenance["asset_hash"]
+    ):
+        raise BundleValidationError(
+            "bundle provenance hashes are not lowercase SHA-256"
+        )
     if provenance["asset_hash"] != provenance["content_hash"]:
         raise BundleValidationError("bundle asset/content provenance drift")
     expected_status = "proposed" if bundle.bundle_type == "candidate" else "complete"
     if bundle.status != expected_status:
-        raise BundleValidationError(f"{bundle.bundle_type} bundle has an invalid status")
+        raise BundleValidationError(
+            f"{bundle.bundle_type} bundle has an invalid status"
+        )
     if bundle.bundle_type == "candidate":
         if bundle["publication_eligibility"] != "none":
-            raise BundleValidationError("candidate bundle cannot be publication-eligible")
+            raise BundleValidationError(
+                "candidate bundle cannot be publication-eligible"
+            )
         candidate_fields = {
             "action",
             "candidate_id",
@@ -826,18 +925,28 @@ def validate_bundle(bundle: QualityBundle) -> None:
             if item["status"] != "proposed":
                 raise BundleValidationError("candidate items must remain proposed")
             if item["publication_eligibility"] != "none":
-                raise BundleValidationError("candidate items cannot be publication-eligible")
+                raise BundleValidationError(
+                    "candidate items cannot be publication-eligible"
+                )
             for field in ("candidate_id", "item_id", "source_finding_id", "suggestion"):
                 if not isinstance(item[field], str) or not item[field].strip():
-                    raise BundleValidationError(f"candidate item {field} must be a non-empty string")
+                    raise BundleValidationError(
+                        f"candidate item {field} must be a non-empty string"
+                    )
             target = item["target"]
             target_fields = {"asset_id", "content_hash", "revision_id", "workspace_id"}
             if not isinstance(target, Mapping) or set(target) != target_fields:
-                raise BundleValidationError("candidate item target fields are not closed")
+                raise BundleValidationError(
+                    "candidate item target fields are not closed"
+                )
             if any(target[field] != provenance[field] for field in target_fields):
-                raise BundleValidationError("candidate item target does not match provenance")
+                raise BundleValidationError(
+                    "candidate item target does not match provenance"
+                )
     elif "publication_eligibility" in bundle:
-        raise BundleValidationError("non-candidate bundle cannot carry publication eligibility")
+        raise BundleValidationError(
+            "non-candidate bundle cannot carry publication eligibility"
+        )
 
 
 __all__ = [
@@ -864,3 +973,62 @@ __all__ = [
     "sha256_hex",
     "validate_bundle",
 ]
+
+
+_DOMAIN_RE = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
+
+
+@dataclass(frozen=True, slots=True)
+class CandidateOnlyBundle:
+    """Domain-attributed wrapper around an existing review-only Candidate bundle."""
+
+    domain: str
+    bundle: QualityBundle
+
+    def __post_init__(self) -> None:
+        if (
+            not isinstance(self.domain, str)
+            or _DOMAIN_RE.fullmatch(self.domain) is None
+        ):
+            raise BundleValidationError("candidate-only domain is invalid")
+        if not isinstance(self.bundle, QualityBundle):
+            raise BundleValidationError("candidate-only bundle must be a QualityBundle")
+        validate_bundle(self.bundle)
+        if self.bundle.bundle_type != "candidate" or self.bundle.status != "proposed":
+            raise BundleValidationError(
+                "candidate-only wrapper requires a proposed Candidate bundle"
+            )
+        if self.bundle["publication_eligibility"] != "none":
+            raise BundleValidationError(
+                "candidate-only wrapper cannot be publication-eligible"
+            )
+
+
+def coerce_quality_source(source: BundleInput) -> FrozenSource:
+    """Expose the existing strict source coercion to the Candidate-only runtime."""
+    return _coerce_source(source)
+
+
+def build_candidate_only_bundle(
+    source: BundleInput,
+    *,
+    domain: str,
+    findings: Iterable[Finding],
+    suggestions: Mapping[str, str] | None = None,
+) -> CandidateOnlyBundle:
+    """Build one separately attributable review-only Candidate projection."""
+    if not isinstance(domain, str) or _DOMAIN_RE.fullmatch(domain) is None:
+        raise BundleValidationError("candidate-only domain is invalid")
+    frozen = _coerce_source(source)
+    values = tuple(findings)
+    if not values:
+        raise BundleValidationError(
+            "candidate-only bundle requires at least one finding"
+        )
+    bundle = build_candidate_bundle(frozen, values, suggestions=suggestions)
+    return CandidateOnlyBundle(domain=domain, bundle=bundle)
+
+
+__all__.extend(
+    ("CandidateOnlyBundle", "build_candidate_only_bundle", "coerce_quality_source")
+)
