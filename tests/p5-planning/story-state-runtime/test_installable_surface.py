@@ -10,8 +10,8 @@ import pytest
 import tomllib
 
 ROOT = Path(__file__).resolve().parents[3]
-SDK_VERSION = "0.1.1"
-SDK_HASH = "1ff12697c677bb24b04d3963eac953cd2bc3692695ef2fc77196419d4302a7c7"
+SDK_VERSION = "0.1.2"
+SDK_HASH = "37b0da17ec93ccaa3bfd9ccce3554de3154ff048f2da1f003d8ef063a1bd8388"
 SDK_REQUIREMENT = f"plotpilot-plugin-sdk=={SDK_VERSION}"
 
 LOCK_ENTRIES = {
@@ -224,7 +224,7 @@ def test_both_package_sources_bind_the_deterministic_sdk_wheel() -> None:
 @pytest.mark.parametrize(
     "mutation",
     [
-        "sdk_0_1_0",
+        "sdk_0_1_1",
         "unpinned_sdk",
         "wrong_hash",
         "duplicate_sdk",
@@ -244,18 +244,18 @@ def test_sdk_pin_drift_is_rejected(tmp_path: Path, mutation: str) -> None:
 
     planner, story = roots
     target = planner
-    if mutation == "sdk_0_1_0":
+    if mutation == "sdk_0_1_1":
         for relative in ("pyproject.toml", "backend/requirements.lock"):
             path = target / relative
             path.write_text(
-                path.read_text(encoding="utf-8").replace("0.1.1", "0.1.0"),
+                path.read_text(encoding="utf-8").replace("0.1.2", "0.1.1"),
                 encoding="utf-8",
             )
     elif mutation == "unpinned_sdk":
         path = target / "pyproject.toml"
         path.write_text(
             path.read_text(encoding="utf-8").replace(
-                SDK_REQUIREMENT, "plotpilot-plugin-sdk>=0.1.1"
+                SDK_REQUIREMENT, "plotpilot-plugin-sdk>=0.1.2"
             ),
             encoding="utf-8",
         )
@@ -273,7 +273,7 @@ def test_sdk_pin_drift_is_rejected(tmp_path: Path, mutation: str) -> None:
         for relative in ("pyproject.toml", "backend/requirements.lock"):
             path = story / relative
             path.write_text(
-                path.read_text(encoding="utf-8").replace("0.1.1", "0.1.0"),
+                path.read_text(encoding="utf-8").replace("0.1.2", "0.1.1"),
                 encoding="utf-8",
             )
 
