@@ -108,6 +108,34 @@ class WorkerResponseSupervisor(RecordingSupervisor):
         )
 
 
+class WorkerRequestSupervisor(RecordingSupervisor):
+    def __init__(self) -> None:
+        super().__init__()
+        self.worker_requests: list[
+            tuple[
+                WorkerTicket,
+                str,
+                dict[str, object],
+                dict[str, object],
+                str,
+            ]
+        ] = []
+
+    def send_worker_request(
+        self, ticket: WorkerTicket, method: str, params, meta, *, request_id: str
+    ) -> str:
+        self.worker_requests.append(
+            (
+                ticket,
+                method,
+                dict(params),
+                dict(meta),
+                request_id,
+            )
+        )
+        return request_id
+
+
 class InjectedBindFailure(RuntimeError):
     pass
 
@@ -273,6 +301,109 @@ def test_attempt_start_reads_the_same_authority_row_and_runtime_uses_snapshot_wo
         encoding="utf-8"
     )
     assert "repository._connection" not in source
+
+
+@pytest.mark.parametrize("method", ["job.start", "job.resume"])
+@pytest.mark.parametrize(
+    ("operation_id", "accepted"),
+    [
+        pytest.param("worker-run-1", True, id="exact"),
+        pytest.param(None, False, id="absent"),
+        pytest.param("foreign-worker-run", False, id="foreign"),
+        pytest.param("worker-run-stale", False, id="stale"),
+        pytest.param("worker-derived", False, id="worker-derived"),
+    ],
+)
+def test_worker_start_and_resume_require_active_p2_lifecycle_before_send(
+    tmp_path, method, operation_id, accepted
+):
+    _, _, repository, authority, snapshot = _authority(tmp_path)
+    supervisor = WorkerRequestSupervisor()
+    runtime = ChapterJobRuntime(
+        authority,
+        job_control=JobControl(supervisor),
+        checkpoints=DurableCheckpointAdapter(authority),
+        attempt_lifecycle=supervisor,
+    )
+    worker = RunSnapshotWorker(
+        run_snapshot_id=snapshot["snapshot_id"],
+        worker_id="worker-1",
+        plugin_id="com.plotpilot.demo",
+        generation_id="generation-1",
+        release_id=RELEASE,
+    )
+    started = runtime.start_attempt(
+        run_snapshot_worker=worker,
+        job_id="job-1",
+        step_id="step-1",
+        attempt_id="attempt-1",
+        package_hash=PACKAGE,
+        capability_id="writing.chapter.draft/v1",
+        preallocated_receipt_id="receipt-1",
+        expected_result_contract="candidate-batch/v1",
+    )
+    params = {
+        "capability_id": "writing.chapter.draft/v1",
+        "run_snapshot_asset_id": "asset-snapshot",
+        "checkpoint_asset_id": None,
+        "secrets": [],
+    }
+    if method == "job.resume":
+        params.update(
+            resume_of_attempt_id="attempt-0",
+            resume_intent_id="resume-1",
+            resume_reason="retry",
+        )
+    meta = {
+        "protocol_version": "1",
+        "generation_id": "generation-1",
+        "plugin_release_id": RELEASE,
+        "deadline_at": "2026-09-04T13:00:00Z",
+        "context": "attempt",
+        "job_id": started.binding.job_id,
+        "step_id": started.binding.step_id,
+        "attempt_id": started.binding.attempt_id,
+        "lease_epoch": started.binding.lease_epoch,
+    }
+    if operation_id is not None:
+        meta["operation_id"] = operation_id
+    request_id = (
+        "00000000-0000-4000-8000-000000000101"
+        if method == "job.start"
+        else "00000000-0000-4000-8000-000000000102"
+    )
+
+    if accepted:
+        assert (
+            runtime.send_worker_request(
+                started,
+                method,
+                params,
+                meta,
+                request_id=request_id,
+            )
+            == request_id
+        )
+        assert supervisor.worker_requests == [
+            (started.ticket, method, params, meta, request_id)
+        ]
+        assert supervisor.worker_requests[0][3]["operation_id"] == (
+            started.ticket.lifecycle_id
+        )
+    else:
+        with pytest.raises(ContractError) as exc_info:
+            runtime.send_worker_request(
+                started,
+                method,
+                params,
+                meta,
+                request_id=request_id,
+            )
+        assert exc_info.value.code == int(ErrorCode.STALE_LEASE)
+        assert supervisor.worker_requests == []
+
+    runtime.release_worker(started)
+    repository.close()
 
 
 @pytest.mark.parametrize(

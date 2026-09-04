@@ -293,6 +293,14 @@ class ChapterJobRuntime:
                 "worker request requires a composed and bound Attempt lifecycle",
             )
         self._require_authoritative_owner(started)
+        if (
+            method in {"job.start", "job.resume"}
+            and meta.get("operation_id") != started.ticket.lifecycle_id
+        ):
+            raise ContractError(
+                ErrorCode.STALE_LEASE,
+                "Worker start/resume request is not owned by the active P2 lifecycle",
+            )
         return self.attempt_lifecycle.send_worker_request(
             started.ticket,
             method,

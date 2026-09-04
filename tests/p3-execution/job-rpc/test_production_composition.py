@@ -414,6 +414,7 @@ def test_composed_dispatcher_resolves_attempt_from_durable_authority(tmp_path):
                 generation_id="generation-1",
                 plugin_release_id=RELEASE,
                 deadline_at="2026-09-04T13:00:00Z",
+                operation_id="host-event-operation-1",
                 job_id="job-1",
                 step_id="step-1",
                 attempt_id="attempt-1",
@@ -422,6 +423,7 @@ def test_composed_dispatcher_resolves_attempt_from_durable_authority(tmp_path):
             request_id="00000000-0000-4000-8000-000000000001",
         )
         ticket = WorkerTicket("worker-1", "lifecycle-1", "retain-1", RELEASE, 1, 1)
+        assert request["meta"]["operation_id"] != ticket.lifecycle_id
 
         assert composition.dispatcher.dispatch_event(
             ticket, RpcEvent("host_request", request)
