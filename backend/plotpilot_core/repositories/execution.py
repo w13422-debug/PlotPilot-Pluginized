@@ -51,6 +51,7 @@ from .checkpoints import (
 )
 
 _INVOKE = "host.capability.invoke/v1"
+_CANDIDATE_STAGE = "host.candidate.stage/v1"
 _COMPLETE = "host.job.complete/v1"
 _DEFAULT_RPC_ID = "00000000-0000-4000-8000-000000000001"
 
@@ -599,6 +600,434 @@ class ExecutionAuthority:
         with self.repository.transaction() as connection:
             self._validate_attempt_row(connection, context)
 
+    @staticmethod
+    def _candidate_stage_payload_hash(
+        *,
+        attempt: sqlite3.Row,
+        context_identity: str,
+        operation_key: str,
+        worker_run_id: str,
+        input_snapshot_hash: str,
+        bundle: Mapping[str, Any],
+    ) -> str:
+        """Bind one stable stage key to its complete durable identity and payload."""
+        return sha256_hex(
+            canonical_bytes(
+                {
+                    "schema": "execution-candidate-stage-operation/v1",
+                    "context_identity": context_identity,
+                    "workspace_id": attempt["workspace_id"],
+                    "job_id": attempt["job_id"],
+                    "step_id": attempt["step_id"],
+                    "attempt_id": attempt["attempt_id"],
+                    "lease_epoch": attempt["lease_epoch"],
+                    "worker_run_id": worker_run_id,
+                    "operation_key": operation_key,
+                    "input_snapshot_hash": input_snapshot_hash,
+                    "result_bundle": dict(bundle),
+                }
+            )
+        )
+
+    @staticmethod
+    def _candidate_stage_scoped_key(context_identity: str, operation_key: str) -> str:
+        # Candidate rows keep the accepted terminal namespace so existing
+        # publication/backup closure can prove that completion consumed them.
+        # Only stable identity enters this key; payload drift belongs in the
+        # durable candidate_batch_operation.payload_hash conflict binding.
+        return hashlib.sha256(
+            (
+                "candidate-operation/v1\n"
+                f"{context_identity}\n{_COMPLETE}\n{operation_key}"
+            ).encode()
+        ).hexdigest()
+
+    def _read_candidate_stage_bundle(
+        self,
+        connection: sqlite3.Connection,
+        attempt: sqlite3.Row,
+        *,
+        job_id: str,
+        step_id: str,
+        attempt_id: str,
+        lease_epoch: int,
+        result_bundle_asset_id: str,
+        input_snapshot_hash: str,
+    ) -> tuple[dict[str, Any], str]:
+        if input_snapshot_hash != attempt["run_snapshot_hash"]:
+            raise ContractError(
+                ErrorCode.RESULT_CONTRACT_MISMATCH,
+                "Candidate stage input Snapshot is not authoritative",
+            )
+        try:
+            bundle_bytes = self.assets.read(result_bundle_asset_id)
+            bundle = parse_json_bytes(bundle_bytes)
+            if not isinstance(bundle, dict):
+                raise ContractValidationError("result Bundle is not an object")
+            parent_ids = {
+                parent
+                for item in bundle.get("items", ())
+                if isinstance(item, Mapping)
+                for parent in item.get("parent_candidate_ids", ())
+                if isinstance(parent, str)
+            }
+            known_parent_ids: set[str] = set()
+            if parent_ids:
+                rows = connection.execute(
+                    f"SELECT candidate_id,status FROM candidate WHERE candidate_id IN ({','.join('?' for _ in parent_ids)})",
+                    tuple(parent_ids),
+                ).fetchall()
+                known_parent_ids = {
+                    row["candidate_id"]
+                    for row in rows
+                    if row["status"]
+                    not in {"prepared", "rejected", "deleted", "expired"}
+                }
+            verify_result_bundle(
+                bundle,
+                snapshot_hash_value=attempt["run_snapshot_hash"],
+                snapshot_workspace_id=attempt["workspace_id"],
+                known_parent_ids=known_parent_ids,
+            )
+        except ContractError:
+            raise
+        except Exception as exc:
+            raise ContractError(
+                ErrorCode.ASSET_ERROR, "Candidate stage result Bundle is invalid"
+            ) from exc
+
+        if (
+            bundle["contract_id"] != "candidate-batch/v1"
+            or attempt["expected_result_contract"] != "candidate-batch/v1"
+        ):
+            raise ContractError(
+                ErrorCode.RESULT_CONTRACT_MISMATCH,
+                "Candidate stage requires the frozen candidate Batch contract",
+            )
+        if bundle["input_snapshot_hash"] != input_snapshot_hash:
+            raise ContractError(
+                ErrorCode.RESULT_CONTRACT_MISMATCH,
+                "Candidate stage Bundle Snapshot binding drifted",
+            )
+        if any(
+            item.get("item_kind") == "incomplete_stream" for item in bundle["items"]
+        ):
+            raise ContractError(
+                ErrorCode.RESULT_CONTRACT_MISMATCH,
+                "plugin Bundle cannot claim Core incomplete_stream authority",
+            )
+        producer = bundle["producer"]
+        actual_producer = tuple(
+            producer[name]
+            for name in (
+                "job_id",
+                "step_id",
+                "attempt_id",
+                "lease_epoch",
+                "plugin_id",
+                "release_id",
+                "capability_id",
+            )
+        )
+        expected_producer = (
+            job_id,
+            step_id,
+            attempt_id,
+            lease_epoch,
+            attempt["plugin_id"],
+            attempt["release_id"],
+            attempt["capability_id"],
+        )
+        if actual_producer != expected_producer:
+            code = (
+                ErrorCode.STALE_LEASE
+                if producer["lease_epoch"] != lease_epoch
+                else ErrorCode.RESULT_CONTRACT_MISMATCH
+            )
+            raise ContractError(code, "Candidate stage producer identity drifted")
+        return bundle, hashlib.sha256(bundle_bytes).hexdigest()
+
+    def _load_candidate_stage_rows(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        attempt: sqlite3.Row,
+        context_identity: str,
+        operation_key: str,
+        worker_run_id: str,
+        input_snapshot_hash: str,
+        bundle: Mapping[str, Any],
+        allowed_statuses: set[str],
+        bindings: str,
+    ) -> list[tuple[str, str]]:
+        scoped_key = self._candidate_stage_scoped_key(context_identity, operation_key)
+        item_ids = [item["item_id"] for item in bundle["items"]]
+        item_ids_json = json.dumps(item_ids, ensure_ascii=False, separators=(",", ":"))
+        payload_hash = self._candidate_stage_payload_hash(
+            attempt=attempt,
+            context_identity=context_identity,
+            operation_key=operation_key,
+            worker_run_id=worker_run_id,
+            input_snapshot_hash=input_snapshot_hash,
+            bundle=bundle,
+        )
+        operation = connection.execute(
+            "SELECT workspace_id,payload_hash,item_ids_json "
+            "FROM candidate_batch_operation WHERE operation_key=?",
+            (scoped_key,),
+        ).fetchone()
+        if operation is None:
+            raise ContractError(
+                ErrorCode.INVALID_TRANSITION,
+                "Candidate completion requires its durable prepared stage",
+            )
+        if (
+            operation["workspace_id"] != attempt["workspace_id"]
+            or operation["payload_hash"] != payload_hash
+            or operation["item_ids_json"] != item_ids_json
+        ):
+            raise ContractError(
+                ErrorCode.DUPLICATE_REQUEST,
+                "Candidate stage key reused with identity or payload drift",
+            )
+
+        rows = connection.execute(
+            "SELECT candidate_id,item_id,item_hash,item_json,status "
+            "FROM candidate WHERE operation_key=?",
+            (scoped_key,),
+        ).fetchall()
+        candidates = {row["item_id"]: row for row in rows}
+        expected_candidate_ids = {
+            item["item_id"]
+            for item in bundle["items"]
+            if item["status"] not in {"failed", "skipped"}
+        }
+        if set(candidates) != expected_candidate_ids:
+            raise ContractError(
+                ErrorCode.ASSET_ERROR,
+                "durable Candidate stage item mapping is incomplete",
+            )
+
+        staged: list[tuple[str, str]] = []
+        for item in bundle["items"]:
+            item_id = item["item_id"]
+            candidate = candidates.get(item_id)
+            if candidate is None:
+                continue
+            try:
+                item_json, item_hash = self.candidates._canonical(item)
+                self.assets.require(
+                    item["payload_asset_id"],
+                    sha256=item["mutation"]["payload_hash"],
+                )
+            except Exception as exc:
+                raise ContractError(
+                    ErrorCode.ASSET_ERROR,
+                    "durable Candidate stage payload authority drifted",
+                ) from exc
+            if (
+                candidate["item_hash"] != item_hash
+                or candidate["item_json"] != item_json
+                or candidate["status"] not in allowed_statuses
+            ):
+                raise ContractError(
+                    ErrorCode.ASSET_ERROR,
+                    "durable Candidate stage mapping drifted",
+                )
+            publication = connection.execute(
+                "SELECT 1 FROM publication_receipt WHERE candidate_id=?",
+                (candidate["candidate_id"],),
+            ).fetchone()
+            binding = connection.execute(
+                "SELECT job_id,attempt_id,bundle_id,item_id,stage_operation_key "
+                "FROM execution_candidate_binding WHERE candidate_id=?",
+                (candidate["candidate_id"],),
+            ).fetchone()
+            if bindings == "absent" and (
+                publication is not None or binding is not None
+            ):
+                raise ContractError(
+                    ErrorCode.ASSET_ERROR,
+                    "prepared Candidate already has a terminal binding",
+                )
+            if bindings == "committed" and (
+                binding is None
+                or tuple(binding)
+                != (
+                    attempt["job_id"],
+                    attempt["attempt_id"],
+                    bundle["bundle_id"],
+                    item_id,
+                    operation_key,
+                )
+            ):
+                raise ContractError(
+                    ErrorCode.ASSET_ERROR,
+                    "committed Candidate stage binding drifted",
+                )
+            staged.append((item_id, candidate["candidate_id"]))
+        return staged
+
+    def stage_candidate_batch(
+        self,
+        *,
+        job_id: str,
+        step_id: str,
+        attempt_id: str,
+        lease_epoch: int,
+        operation_key: str,
+        worker_run_id: str,
+        result_bundle_asset_id: str,
+        input_snapshot_hash: str,
+        operation_meta: Mapping[str, Any],
+    ) -> Mapping[str, Any]:
+        """Durably prepare one Candidate batch for exact terminal consumption."""
+        with self.repository.transaction() as connection:
+            context = CallerAttemptContext(job_id, step_id, attempt_id, lease_epoch)
+            attempt = self._validate_attempt_row(
+                connection, context, allow_terminal=True
+            )
+            if attempt["worker_run_id"] != worker_run_id:
+                raise ContractError(
+                    ErrorCode.STALE_LEASE, "worker run is not authoritative"
+                )
+            expected_meta = {
+                "context": "attempt",
+                "job_id": job_id,
+                "step_id": step_id,
+                "attempt_id": attempt_id,
+                "lease_epoch": lease_epoch,
+                "generation_id": attempt["generation_id"],
+                "plugin_release_id": attempt["release_id"],
+            }
+            if any(
+                operation_meta.get(name) != value
+                for name, value in expected_meta.items()
+            ):
+                code = (
+                    ErrorCode.STALE_LEASE
+                    if operation_meta.get("lease_epoch") != lease_epoch
+                    else ErrorCode.INCOMPATIBLE_GENERATION
+                )
+                raise ContractError(
+                    code,
+                    "RPC operation meta is not authoritative for this Attempt",
+                )
+            self._verify_replay_snapshot_profile(connection, attempt)
+            context_identity = derive_operation_context_identity(
+                operation_meta, expected_lease_epoch=attempt["lease_epoch"]
+            )
+            bundle, _bundle_hash = self._read_candidate_stage_bundle(
+                connection,
+                attempt,
+                job_id=job_id,
+                step_id=step_id,
+                attempt_id=attempt_id,
+                lease_epoch=lease_epoch,
+                result_bundle_asset_id=result_bundle_asset_id,
+                input_snapshot_hash=input_snapshot_hash,
+            )
+            scoped_key = self._candidate_stage_scoped_key(
+                context_identity, operation_key
+            )
+            existing = connection.execute(
+                "SELECT 1 FROM candidate_batch_operation WHERE operation_key=?",
+                (scoped_key,),
+            ).fetchone()
+            terminal = attempt["state"] in TERMINAL_STATES
+            if existing is None:
+                if terminal:
+                    raise ContractError(
+                        ErrorCode.INVALID_TRANSITION,
+                        "a terminal Attempt cannot prepare a new Candidate stage",
+                    )
+                if attempt["state"] != "running" or attempt["job_state"] != "running":
+                    raise ContractError(
+                        ErrorCode.CANCELLED,
+                        "cancellation prevents a new Candidate stage",
+                    )
+                item_ids = [item["item_id"] for item in bundle["items"]]
+                connection.execute(
+                    "INSERT INTO candidate_batch_operation"
+                    "(operation_key,workspace_id,payload_hash,item_ids_json,created_at) "
+                    "VALUES(?,?,?,?,?)",
+                    (
+                        scoped_key,
+                        attempt["workspace_id"],
+                        self._candidate_stage_payload_hash(
+                            attempt=attempt,
+                            context_identity=context_identity,
+                            operation_key=operation_key,
+                            worker_run_id=worker_run_id,
+                            input_snapshot_hash=input_snapshot_hash,
+                            bundle=bundle,
+                        ),
+                        json.dumps(
+                            item_ids,
+                            ensure_ascii=False,
+                            separators=(",", ":"),
+                        ),
+                        utc_now(),
+                    ),
+                )
+                try:
+                    for item in bundle["items"]:
+                        self.candidates.stage_in_transaction(
+                            connection,
+                            operation_key,
+                            item,
+                            initial_status="prepared",
+                            context_identity=context_identity,
+                            method=_COMPLETE,
+                            expected_workspace_id=attempt["workspace_id"],
+                        )
+                except CandidateError as exc:
+                    raise ContractError(
+                        ErrorCode.RESULT_CONTRACT_MISMATCH, str(exc)
+                    ) from exc
+
+            staged = self._load_candidate_stage_rows(
+                connection,
+                attempt=attempt,
+                context_identity=context_identity,
+                operation_key=operation_key,
+                worker_run_id=worker_run_id,
+                input_snapshot_hash=input_snapshot_hash,
+                bundle=bundle,
+                allowed_statuses=(
+                    {"staged", "published"} if terminal else {"prepared"}
+                ),
+                bindings="committed" if terminal else "absent",
+            )
+            candidates = dict(staged)
+            result = {
+                "accepted": True,
+                "staged_items": [
+                    {
+                        "item_id": item["item_id"],
+                        "candidate_id": candidates.get(item["item_id"]),
+                        "stage_status": (
+                            item["status"]
+                            if item["status"] in {"failed", "skipped"}
+                            else "created"
+                        ),
+                        "publication_eligibility": (
+                            "none"
+                            if item["status"] in {"failed", "skipped"}
+                            else (
+                                "eligible"
+                                if item["status"] == "complete"
+                                else "review_only"
+                            )
+                        ),
+                    }
+                    for item in bundle["items"]
+                ],
+                "job_event_seq": attempt["job_event_high_water"],
+            }
+            validate_rpc_result(_CANDIDATE_STAGE, result)
+            return result
+
     def stage_incomplete_stream(
         self,
         *,
@@ -1079,6 +1508,39 @@ class ExecutionAuthority:
                 or producer_identity != expected_producer_identity
             ):
                 raise ContractError(ErrorCode.ASSET_ERROR, "committed result Bundle closure drifted")
+            if bundle["contract_id"] == "candidate-batch/v1":
+                stage_bindings = connection.execute(
+                    "SELECT item_id,stage_operation_key FROM execution_candidate_binding "
+                    "WHERE attempt_id=? ORDER BY item_id",
+                    (previous["attempt_id"],),
+                ).fetchall()
+                stage_keys = {row["stage_operation_key"] for row in stage_bindings}
+                if len(stage_keys) != 1 or {
+                    row["item_id"] for row in stage_bindings
+                } != set(receipt["staged_items"]):
+                    raise ContractError(
+                        ErrorCode.ASSET_ERROR,
+                        "committed Candidate stage operation is ambiguous",
+                    )
+                stage_operation_key = next(iter(stage_keys))
+                staged = self._load_candidate_stage_rows(
+                    connection,
+                    attempt=attempt,
+                    context_identity=previous["context_identity"],
+                    operation_key=stage_operation_key,
+                    worker_run_id=attempt["worker_run_id"],
+                    input_snapshot_hash=bundle["input_snapshot_hash"],
+                    bundle=bundle,
+                    allowed_statuses={"staged", "published"},
+                    bindings="committed",
+                )
+                if [item_id for item_id, _candidate_id in staged] != list(
+                    receipt["staged_items"]
+                ):
+                    raise ContractError(
+                        ErrorCode.ASSET_ERROR,
+                        "committed Candidate stage receipt mapping drifted",
+                    )
         event = connection.execute(
             "SELECT event_json FROM execution_job_event WHERE job_id=? AND job_event_seq=? AND attempt_id=?",
             (previous["job_id"], result["job_event_seq"], previous["attempt_id"]),
@@ -1626,25 +2088,29 @@ class ExecutionAuthority:
                         ) from exc
 
             if contract_id == "candidate-batch/v1":
-                for item in bundle["items"]:  # type: ignore[index]
-                    try:
-                        item_result = self.candidates.stage_in_transaction(
-                            connection, candidate_stage_operation_key, item, initial_status="prepared",  # type: ignore[arg-type]
-                            context_identity=context_identity,
-                            method=_COMPLETE,
-                            expected_workspace_id=attempt["workspace_id"],
-                        )
-                    except CandidateError as exc:
-                        raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, str(exc)) from exc
-                    if item_result.candidate_id is not None:
-                        existing_pub = connection.execute("SELECT 1 FROM publication_receipt WHERE candidate_id=?", (item_result.candidate_id,)).fetchone()
-                        if existing_pub:
-                            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "candidate was published before terminal commit")
-                        staged.append((item_result.item_id, item_result.candidate_id))
-                if list(submitted_receipt["staged_items"]) != [item_id for item_id, _ in staged]:
-                    raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "receipt staged item mapping is incomplete")
+                staged = self._load_candidate_stage_rows(
+                    connection,
+                    attempt=attempt,
+                    context_identity=context_identity,
+                    operation_key=candidate_stage_operation_key,  # type: ignore[arg-type]
+                    worker_run_id=worker_run_id,
+                    input_snapshot_hash=bundle["input_snapshot_hash"],  # type: ignore[index]
+                    bundle=bundle,  # type: ignore[arg-type]
+                    allowed_statuses={"prepared"},
+                    bindings="absent",
+                )
+                if list(submitted_receipt["staged_items"]) != [
+                    item_id for item_id, _ in staged
+                ]:
+                    raise ContractError(
+                        ErrorCode.RESULT_CONTRACT_MISMATCH,
+                        "receipt staged item mapping is incomplete",
+                    )
             elif submitted_receipt["staged_items"]:
-                raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "non-candidate receipt cannot claim staged items")
+                raise ContractError(
+                    ErrorCode.RESULT_CONTRACT_MISMATCH,
+                    "non-candidate receipt cannot claim staged items",
+                )
 
             receipt = {
                 "schema": "provenance-receipt/v1",
@@ -1684,10 +2150,28 @@ class ExecutionAuthority:
                     (receipt_id, receipt["receipt_hash"], receipt_json, job_id, step_id, attempt_id, receipt["created_at"]),
                 )
             for item_id, candidate_id in staged:
-                connection.execute("UPDATE candidate SET status='staged' WHERE candidate_id=? AND status IN ('prepared','staged')", (candidate_id,))
+                if (
+                    connection.execute(
+                        "UPDATE candidate SET status='staged' "
+                        "WHERE candidate_id=? AND status='prepared'",
+                        (candidate_id,),
+                    ).rowcount
+                    != 1
+                ):
+                    raise ContractError(
+                        ErrorCode.INVALID_TRANSITION,
+                        "prepared Candidate changed before terminal commit",
+                    )
                 connection.execute(
                     "INSERT INTO execution_candidate_binding(job_id,attempt_id,bundle_id,item_id,candidate_id,stage_operation_key) VALUES(?,?,?,?,?,?)",
-                    (job_id, attempt_id, bundle["bundle_id"], item_id, candidate_id, candidate_stage_operation_key),
+                    (
+                        job_id,
+                        attempt_id,
+                        bundle["bundle_id"],
+                        item_id,
+                        candidate_id,
+                        candidate_stage_operation_key,
+                    ),
                 )
 
             job_event_seq = attempt["job_event_high_water"] + 1
