@@ -25,6 +25,20 @@ from backend.plotpilot_plugin_sdk.verifier import hash_without_field
 from support import PACKAGE, RELEASE, authority_rows, complete_kwargs, make_candidate_bundle
 
 
+def _prepare_candidate_stage(stack, completion):
+    stack["authority"].stage_candidate_batch(
+        job_id=completion["job_id"],
+        step_id=completion["step_id"],
+        attempt_id=completion["attempt_id"],
+        lease_epoch=completion["lease_epoch"],
+        operation_key=completion["candidate_stage_operation_key"],
+        worker_run_id=completion["worker_run_id"],
+        result_bundle_asset_id=completion["result_bundle_asset_id"],
+        input_snapshot_hash=stack["snapshot"]["snapshot_hash"],
+        operation_meta=completion["operation_meta"],
+    )
+
+
 def _replace_bundle(stack, bundle_asset, receipt, mutate):
     bundle = json.loads(stack["assets"].read(bundle_asset.asset_id))
     mutate(bundle)
@@ -241,7 +255,9 @@ def test_f007_core_materializes_receipt_and_rejects_unbound_parent(execution_sta
     with pytest.raises(ContractError):
         execution_stack["authority"].complete_attempt(**complete_kwargs(bundle_asset, forged))
     assert execution_stack["repository"]._connection.execute("SELECT count(*) FROM execution_receipt").fetchone()[0] == 0
-    execution_stack["authority"].complete_attempt(**complete_kwargs(bundle_asset, receipt))
+    completion = complete_kwargs(bundle_asset, receipt)
+    _prepare_candidate_stage(execution_stack, completion)
+    execution_stack["authority"].complete_attempt(**completion)
     stored = json.loads(execution_stack["repository"]._connection.execute("SELECT receipt_json FROM execution_receipt").fetchone()[0])
     assert stored["created_at"] != receipt["created_at"]
     assert stored["receipt_hash"] == hash_without_field(stored, "receipt_hash", "provenance-receipt/v1")
@@ -362,7 +378,9 @@ def test_f008_plugin_incomplete_stream_is_never_stageable(execution_stack):
 
 def test_f009_publication_requires_complete_execution_evidence(execution_stack):
     bundle_asset, receipt, _ = make_candidate_bundle(execution_stack)
-    execution_stack["authority"].complete_attempt(**complete_kwargs(bundle_asset, receipt))
+    completion = complete_kwargs(bundle_asset, receipt)
+    _prepare_candidate_stage(execution_stack, completion)
+    execution_stack["authority"].complete_attempt(**completion)
     connection = execution_stack["repository"]._connection
     candidate_id = connection.execute("SELECT candidate_id FROM candidate").fetchone()[0]
     connection.execute("PRAGMA foreign_keys=OFF")
@@ -399,7 +417,9 @@ def test_f009_attempt_identity_must_match_snapshot_release_before_terminal(execu
 
 def test_f009_publication_rechecks_snapshot_release_after_terminal_drift(execution_stack):
     bundle_asset, receipt, _ = make_candidate_bundle(execution_stack)
-    execution_stack["authority"].complete_attempt(**complete_kwargs(bundle_asset, receipt))
+    completion = complete_kwargs(bundle_asset, receipt)
+    _prepare_candidate_stage(execution_stack, completion)
+    execution_stack["authority"].complete_attempt(**completion)
     connection = execution_stack["repository"]._connection
     candidate_id = connection.execute("SELECT candidate_id FROM candidate").fetchone()[0]
     connection.execute("UPDATE execution_attempt SET generation_id='generation-drift' WHERE attempt_id='attempt-1'")
@@ -444,8 +464,12 @@ def test_f011_candidate_identity_is_scoped_by_attempt_and_bundle(execution_two_s
     execution_stack = execution_two_step_stack
     _start_second(execution_stack)
     first_asset, first_receipt, _ = make_candidate_bundle(execution_stack)
-    execution_stack["authority"].complete_attempt(**complete_kwargs(first_asset, first_receipt))
-    execution_stack["authority"].complete_attempt(**_second_candidate(execution_stack))
+    first_completion = complete_kwargs(first_asset, first_receipt)
+    _prepare_candidate_stage(execution_stack, first_completion)
+    execution_stack["authority"].complete_attempt(**first_completion)
+    second_completion = _second_candidate(execution_stack)
+    _prepare_candidate_stage(execution_stack, second_completion)
+    execution_stack["authority"].complete_attempt(**second_completion)
     rows = execution_stack["repository"]._connection.execute(
         "SELECT attempt_id,bundle_id,item_id,candidate_id FROM execution_candidate_binding ORDER BY attempt_id"
     ).fetchall()
@@ -457,11 +481,15 @@ def test_f012_existing_visible_parent_candidate_is_accepted(execution_two_step_s
     execution_stack = execution_two_step_stack
     _start_second(execution_stack)
     first_asset, first_receipt, _ = make_candidate_bundle(execution_stack)
-    execution_stack["authority"].complete_attempt(**complete_kwargs(first_asset, first_receipt))
+    first_completion = complete_kwargs(first_asset, first_receipt)
+    _prepare_candidate_stage(execution_stack, first_completion)
+    execution_stack["authority"].complete_attempt(**first_completion)
     parent = execution_stack["repository"]._connection.execute(
         "SELECT candidate_id FROM execution_candidate_binding WHERE attempt_id='attempt-1'"
     ).fetchone()[0]
-    execution_stack["authority"].complete_attempt(**_second_candidate(execution_stack, parent_ids=(parent,)))
+    second_completion = _second_candidate(execution_stack, parent_ids=(parent,))
+    _prepare_candidate_stage(execution_stack, second_completion)
+    execution_stack["authority"].complete_attempt(**second_completion)
     saved = json.loads(execution_stack["repository"]._connection.execute(
         "SELECT item_json FROM candidate WHERE candidate_id IN (SELECT candidate_id FROM execution_candidate_binding WHERE attempt_id='attempt-2')"
     ).fetchone()[0])
@@ -484,7 +512,9 @@ def test_f013_cancelling_wins_with_cancelled_code_and_zero_writes(execution_stac
 
 def test_f014_plugin_job_event_uses_current_plugin_namespace(execution_stack):
     bundle_asset, receipt, _ = make_candidate_bundle(execution_stack)
-    execution_stack["authority"].complete_attempt(**complete_kwargs(bundle_asset, receipt))
+    completion = complete_kwargs(bundle_asset, receipt)
+    _prepare_candidate_stage(execution_stack, completion)
+    execution_stack["authority"].complete_attempt(**completion)
     event = json.loads(execution_stack["repository"]._connection.execute(
         "SELECT event_json FROM execution_job_event"
     ).fetchone()[0])
@@ -494,6 +524,7 @@ def test_f014_plugin_job_event_uses_current_plugin_namespace(execution_stack):
 def test_f015_complete_replay_fails_closed_when_receipt_is_missing(execution_stack):
     bundle_asset, receipt, _ = make_candidate_bundle(execution_stack)
     kwargs = complete_kwargs(bundle_asset, receipt)
+    _prepare_candidate_stage(execution_stack, kwargs)
     execution_stack["authority"].complete_attempt(**kwargs)
     connection = execution_stack["repository"]._connection
     connection.execute("PRAGMA foreign_keys=OFF")
@@ -507,6 +538,7 @@ def test_f015_complete_replay_fails_closed_when_receipt_is_missing(execution_sta
 def test_f015_complete_replay_rejects_post_terminal_package_hash_drift(execution_stack):
     bundle_asset, receipt, _ = make_candidate_bundle(execution_stack)
     kwargs = complete_kwargs(bundle_asset, receipt)
+    _prepare_candidate_stage(execution_stack, kwargs)
     execution_stack["authority"].complete_attempt(**kwargs)
     connection = execution_stack["repository"]._connection
     connection.execute("UPDATE execution_attempt SET package_hash=? WHERE attempt_id='attempt-1'", ("b" * 64,))
