@@ -7,15 +7,18 @@ supervisor's private session.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from typing import Any, Callable, Protocol
+from typing import Any, Protocol
 
-from backend.plotpilot_core.supervisor.rpc import RpcEvent
 from backend.plotpilot_core.supervisor.models import WorkerTicket
+from backend.plotpilot_core.supervisor.rpc import RpcEvent
 from backend.plotpilot_plugin_sdk import ContractError, ErrorCode
 from backend.plotpilot_plugin_sdk.rpc import HOST_METHODS
-from backend.plotpilot_plugin_sdk.verifier import validate_rpc_request, validate_rpc_result
+from backend.plotpilot_plugin_sdk.verifier import (
+    validate_rpc_request,
+    validate_rpc_result,
+)
 
 
 class HostRpcHandler(Protocol):
@@ -30,6 +33,7 @@ class PreparedHostRpcResult:
 
     result: Mapping[str, Any]
     commit: Callable[[], None]
+    abort: Callable[[], None] = lambda: None
 
 
 class HostRpcSupervisorPort(Protocol):
@@ -38,6 +42,18 @@ class HostRpcSupervisorPort(Protocol):
         ticket: WorkerTicket,
         request_id: str,
         result: dict[str, object],
+    ) -> None: ...
+
+    def respond_host_error(
+        self,
+        ticket: WorkerTicket,
+        request_id: str,
+        *,
+        code: int,
+        message: str,
+        error_id: str,
+        retryable: bool = False,
+        details_asset_id: str | None = None,
     ) -> None: ...
 
 
@@ -83,22 +99,62 @@ class HostRpcApplicationDispatcher:
         if event.kind != "host_request":
             return False
         request = event.message
-        validate_rpc_request(request)
-        method = str(request.get("method", ""))
-        handler = self._handlers.get(method)
-        if handler is None:
-            raise ContractError(ErrorCode.INVALID_TRANSITION, f"Host RPC method is not composed: {method}")
-        prepared = handler(request)
-        if not isinstance(prepared, PreparedHostRpcResult):
-            raise ContractError(
-                ErrorCode.RESULT_CONTRACT_MISMATCH,
-                "Host RPC handler must return PreparedHostRpcResult",
+        prepared: PreparedHostRpcResult | None = None
+        committed = False
+        try:
+            validate_rpc_request(request)
+            method = str(request.get("method", ""))
+            handler = self._handlers.get(method)
+            if handler is None:
+                raise ContractError(
+                    ErrorCode.INVALID_TRANSITION,
+                    f"Host RPC method is not composed: {method}",
+                )
+            prepared = handler(request)
+            if not isinstance(prepared, PreparedHostRpcResult):
+                raise ContractError(
+                    ErrorCode.RESULT_CONTRACT_MISMATCH,
+                    "Host RPC handler must return PreparedHostRpcResult",
+                )
+            result = dict(prepared.result)
+            validate_rpc_result(method, result, request=request)
+            prepared.commit()
+            committed = True
+            self._supervisor.respond_host_request(ticket, str(request["id"]), result)
+            return True
+        except ContractError as exc:
+            if prepared is not None and not committed:
+                prepared.abort()
+            # A production supervisor can return a canonical protocol error on
+            # the same lifecycle/session.  Older test doubles intentionally do
+            # not expose this port; for them retain the historical fail-closed
+            # exception behavior rather than silently dropping the request.
+            responder = getattr(self._supervisor, "respond_host_error", None)
+            request_id = request.get("id")
+            if (
+                not callable(responder)
+                or not isinstance(request_id, str)
+                or not request_id
+            ):
+                raise
+            responder(
+                ticket,
+                request_id,
+                code=int(exc.code),
+                message=str(exc),
+                error_id=f"rpc-error-{request_id}",
+                retryable=int(exc.code)
+                in {
+                    int(ErrorCode.DEADLINE_EXCEEDED),
+                    int(ErrorCode.UNCERTAIN_EXTERNAL_EFFECT),
+                    int(ErrorCode.RELEASE_RETIRING),
+                },
             )
-        result = dict(prepared.result)
-        validate_rpc_result(method, result, request=request)
-        prepared.commit()
-        self._supervisor.respond_host_request(ticket, str(request["id"]), result)
-        return True
+            return True
+        except BaseException:
+            if prepared is not None and not committed:
+                prepared.abort()
+            raise
 
     def dispatch_pending(self, ticket: WorkerTicket) -> RpcDispatchBatch:
         """Handle a non-destructive P2 view and dispose only persisted success.

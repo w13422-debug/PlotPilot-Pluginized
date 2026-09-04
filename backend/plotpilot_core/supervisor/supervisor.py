@@ -1,4 +1,5 @@
 """Lease- and release-fenced lazy worker lifecycle."""
+
 from __future__ import annotations
 
 import math
@@ -28,7 +29,12 @@ from .models import (
 )
 from .rpc import FramedRpcSession, RpcEvent
 
-_TERMINAL = {WorkerState.STOPPED, WorkerState.CRASHED, WorkerState.FAILED, WorkerState.FENCED}
+_TERMINAL = {
+    WorkerState.STOPPED,
+    WorkerState.CRASHED,
+    WorkerState.FAILED,
+    WorkerState.FENCED,
+}
 _PROTOCOL_STATES = {WorkerState.STARTING, WorkerState.READY}
 _RELEASE_ID = re.compile(r"^[0-9a-f]{64}$")
 
@@ -126,7 +132,8 @@ class PluginProcessSupervisor:
         config: SupervisorConfig | None = None,
         id_factory: Callable[[], str] | None = None,
         retain_id_factory: Callable[[], str] | None = None,
-        durable_host_replay: Callable[[Mapping[str, object]], bytes | None] | None = None,
+        durable_host_replay: Callable[[Mapping[str, object]], bytes | None]
+        | None = None,
         utc_now: Callable[[], datetime] | None = None,
     ) -> None:
         self._authority = authority
@@ -160,7 +167,11 @@ class PluginProcessSupervisor:
 
     def _current_record_locked(self, worker_id: str) -> _Record | None:
         lifecycle_id = self._current.get(worker_id)
-        return None if lifecycle_id is None else self._records.get(self._key(worker_id, lifecycle_id))
+        return (
+            None
+            if lifecycle_id is None
+            else self._records.get(self._key(worker_id, lifecycle_id))
+        )
 
     def _record_locked(self, worker_id: str, lifecycle_id: str) -> _Record | None:
         return self._records.get(self._key(worker_id, lifecycle_id))
@@ -195,7 +206,11 @@ class PluginProcessSupervisor:
 
     @staticmethod
     def _is_busy(record: _Record) -> bool:
-        return bool(record.retains) or record.attempt_fence is not None or record.install_fence is not None
+        return (
+            bool(record.retains)
+            or record.attempt_fence is not None
+            or record.install_fence is not None
+        )
 
     def _mark_termination_locked(
         self,
@@ -220,7 +235,9 @@ class PluginProcessSupervisor:
         record.termination_target = target
         record.failure = failure
         record.stop_deadline = None
-        record.termination_deadline = self._clock.monotonic() + self._config.termination_timeout
+        record.termination_deadline = (
+            self._clock.monotonic() + self._config.termination_timeout
+        )
         return True
 
     def _begin_termination(
@@ -249,7 +266,9 @@ class PluginProcessSupervisor:
             with self._lock:
                 record = self._records.get(key)
                 if record is not None:
-                    record.failure = f"{record.failure or 'termination'}; terminate failed: {exc}"
+                    record.failure = (
+                        f"{record.failure or 'termination'}; terminate failed: {exc}"
+                    )
 
     def _defer_termination_for_terminal_ack(
         self,
@@ -275,14 +294,21 @@ class PluginProcessSupervisor:
                     and record.session.has_terminal_install_commit(install)
                 )
                 if not exact_commit:
-                    replay = record.session.stage_terminal_replay(attempt=attempt, install=install)
+                    replay = record.session.stage_terminal_replay(
+                        attempt=attempt, install=install
+                    )
                     exact_commit = replay is not None
                 pending = record.session.terminal_commit_write_pending()
             except ContractError:
                 return False
             with self._lock:
                 current = self._records.get(key)
-                if current is not record or record.state in _TERMINAL or not exact_commit or not pending:
+                if (
+                    current is not record
+                    or record.state in _TERMINAL
+                    or not exact_commit
+                    or not pending
+                ):
                     return False
                 self._mark_termination_locked(record, WorkerState.FENCED, failure)
                 record.deferred_terminal_ack = True
@@ -292,7 +318,9 @@ class PluginProcessSupervisor:
             try:
                 process.write(
                     frame,
-                    on_written=lambda: self._mark_host_frame_written(record, request_id, frame),
+                    on_written=lambda: self._mark_host_frame_written(
+                        record, request_id, frame
+                    ),
                 )
             except Exception as exc:  # noqa: BLE001 -- exact lifecycle is failed closed
                 with self._lock:
@@ -322,7 +350,9 @@ class PluginProcessSupervisor:
     def _holds_authority(self, fence: WorkerFence, lifecycle_id: str) -> bool:
         try:
             snapshot = self._authority.snapshot(fence.worker_id)
-            return fence.same_authority(snapshot) and self._authority.holds(fence, lifecycle_id)
+            return fence.same_authority(snapshot) and self._authority.holds(
+                fence, lifecycle_id
+            )
         except Exception:  # noqa: BLE001 -- fail closed at the authority boundary
             return False
 
@@ -353,12 +383,18 @@ class PluginProcessSupervisor:
             fence = record.fence
             lifecycle_id = record.lifecycle_id
             attempt = record.attempt_fence
-            reconcile = record.attempt_reconcile_required and not record.attempt_reconciled and attempt is not None
+            reconcile = (
+                record.attempt_reconcile_required
+                and not record.attempt_reconciled
+                and attempt is not None
+            )
             reason = record.reconcile_reason or "worker exited unexpectedly"
         if reconcile and attempt is not None:
             try:
                 held = self._authority.holds_attempt(fence, attempt, lifecycle_id)
-                reconciled = not held or self._authority.interrupt_attempt(fence, attempt, lifecycle_id, reason)
+                reconciled = not held or self._authority.interrupt_attempt(
+                    fence, attempt, lifecycle_id, reason
+                )
             except Exception:  # noqa: BLE001 -- retry exact reconciliation on tick
                 reconciled = False
             if not reconciled:
@@ -377,17 +413,25 @@ class PluginProcessSupervisor:
             if released and not self._is_current_locked(record):
                 self._records.pop(key, None)
 
-    def acquire(self, worker_id: str, *, expected_release_id: str | None = None) -> WorkerTicket:
+    def acquire(
+        self, worker_id: str, *, expected_release_id: str | None = None
+    ) -> WorkerTicket:
         """Lazy-start or retain the exact worker currently authorized by Core."""
 
         if expected_release_id is not None and (
-            not isinstance(expected_release_id, str) or _RELEASE_ID.fullmatch(expected_release_id) is None
+            not isinstance(expected_release_id, str)
+            or _RELEASE_ID.fullmatch(expected_release_id) is None
         ):
-            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "expected release is not lowercase SHA-256")
+            raise ContractError(
+                ErrorCode.RESULT_CONTRACT_MISMATCH,
+                "expected release is not lowercase SHA-256",
+            )
         with self._worker_lock(worker_id):
             current = self._authority.snapshot(worker_id)
             if expected_release_id is not None and (
-                current is None or not current.allowed or current.release_id != expected_release_id
+                current is None
+                or not current.allowed
+                or current.release_id != expected_release_id
             ):
                 raise ContractError(
                     ErrorCode.STALE_LEASE,
@@ -396,9 +440,15 @@ class PluginProcessSupervisor:
             reusable: _Record | None = None
             with self._lock:
                 old = self._current_record_locked(worker_id)
-                if old is not None and old.fence.same_authority(current) and old.state in _PROTOCOL_STATES:
+                if (
+                    old is not None
+                    and old.fence.same_authority(current)
+                    and old.state in _PROTOCOL_STATES
+                ):
                     reusable = old
-            if reusable is not None and self._holds_authority(reusable.fence, reusable.lifecycle_id):
+            if reusable is not None and self._holds_authority(
+                reusable.fence, reusable.lifecycle_id
+            ):
                 with self._lock:
                     old = self._current_record_locked(worker_id)
                     if old is reusable and old.state in _PROTOCOL_STATES:
@@ -431,9 +481,15 @@ class PluginProcessSupervisor:
             try:
                 fence = self._authority.claim(worker_id, lifecycle_id)
                 if fence is None or not fence.allowed:
-                    raise ContractError(ErrorCode.RELEASE_RETIRING, "Core authority rejected the worker pin")
+                    raise ContractError(
+                        ErrorCode.RELEASE_RETIRING,
+                        "Core authority rejected the worker pin",
+                    )
                 claimed = True
-                if expected_release_id is not None and fence.release_id != expected_release_id:
+                if (
+                    expected_release_id is not None
+                    and fence.release_id != expected_release_id
+                ):
                     self._release_or_enqueue(fence, lifecycle_id)
                     claimed = False
                     raise ContractError(
@@ -447,8 +503,12 @@ class PluginProcessSupervisor:
                     release_id=fence.release_id,
                     expected_capabilities=route.capabilities,
                     id_factory=self._id_factory,
-                    attempt_authority=lambda attempt: self._authority.holds_attempt(fence, attempt, lifecycle_id),
-                    install_authority=lambda install: self._authority.holds_install(fence, install, lifecycle_id),
+                    attempt_authority=lambda attempt: self._authority.holds_attempt(
+                        fence, attempt, lifecycle_id
+                    ),
+                    install_authority=lambda install: self._authority.holds_install(
+                        fence, install, lifecycle_id
+                    ),
                     durable_host_replay=self._durable_host_replay,
                     pending_limit=self._config.rpc_pending_limit,
                     inbound_limit=self._config.rpc_inbound_limit,
@@ -533,7 +593,10 @@ class PluginProcessSupervisor:
                 record.retain_sequence = 1
                 self._records[key] = record
                 self._current[worker_id] = lifecycle_id
-                if previous_lifecycle is not None and previous_lifecycle != lifecycle_id:
+                if (
+                    previous_lifecycle is not None
+                    and previous_lifecycle != lifecycle_id
+                ):
                     previous_key = self._key(worker_id, previous_lifecycle)
                     previous = self._records.get(previous_key)
                     if previous is not None and previous.claim_released:
@@ -546,13 +609,23 @@ class PluginProcessSupervisor:
                 dispatch(kind, payload)
             with self._lock:
                 live = self._records.get(key)
-                startup_committed = live is not None and live.state == WorkerState.STARTING
+                startup_committed = (
+                    live is not None and live.state == WorkerState.STARTING
+                )
             if not startup_committed:
-                raise ContractError(ErrorCode.INVALID_TRANSITION, "worker exited before startup committed")
+                raise ContractError(
+                    ErrorCode.INVALID_TRANSITION,
+                    "worker exited before startup committed",
+                )
             try:
                 process.write(handshake)
             except Exception as exc:
-                self._begin_termination(key, WorkerState.FAILED, f"handshake write failed: {exc}", reconcile_attempt=True)
+                self._begin_termination(
+                    key,
+                    WorkerState.FAILED,
+                    f"handshake write failed: {exc}",
+                    reconcile_attempt=True,
+                )
                 raise
             return self._ticket(record, retain_id)
 
@@ -563,7 +636,12 @@ class PluginProcessSupervisor:
             if record is None or record.state not in _PROTOCOL_STATES:
                 return
         if not self._current_authority(record):
-            self._begin_termination(key, WorkerState.FENCED, "Core authority fence changed", reconcile_attempt=True)
+            self._begin_termination(
+                key,
+                WorkerState.FENCED,
+                "Core authority fence changed",
+                reconcile_attempt=True,
+            )
             return
         failure: str | None = None
         replay_frames: list[tuple[str, bytes]] = []
@@ -571,7 +649,9 @@ class PluginProcessSupervisor:
             try:
                 events = record.session.feed(data)
                 replay_by_id = {
-                    str(event.message["id"]): record.session.host_replay_frame(str(event.message["id"]))
+                    str(event.message["id"]): record.session.host_replay_frame(
+                        str(event.message["id"])
+                    )
                     for event in events
                     if event.kind == "host_replay"
                 }
@@ -588,11 +668,15 @@ class PluginProcessSupervisor:
                 for event in events:
                     if event.kind == "handshake":
                         if record.state != WorkerState.STARTING:
-                            failure = "RPC protocol failure: late or duplicate handshake"
+                            failure = (
+                                "RPC protocol failure: late or duplicate handshake"
+                            )
                             break
                         record.state = WorkerState.READY
                         record.last_heartbeat = now
-                        record.worker_instance_id = str(event.message["result"]["worker_instance_id"])
+                        record.worker_instance_id = str(
+                            event.message["result"]["worker_instance_id"]
+                        )
                     elif event.kind == "heartbeat":
                         record.last_heartbeat = now
                     elif event.kind == "host_replay":
@@ -605,20 +689,29 @@ class PluginProcessSupervisor:
                             break
                         record.events.append(event)
         if failure is not None:
-            self._begin_termination(key, WorkerState.FAILED, failure, reconcile_attempt=True)
+            self._begin_termination(
+                key, WorkerState.FAILED, failure, reconcile_attempt=True
+            )
             return
         for request_id, frame in replay_frames:
             try:
                 record.process.write(
                     frame,
-                    on_written=lambda request_id=request_id, frame=frame: self._mark_host_frame_written(
-                        record,
-                        request_id,
-                        frame,
+                    on_written=lambda request_id=request_id, frame=frame: (
+                        self._mark_host_frame_written(
+                            record,
+                            request_id,
+                            frame,
+                        )
                     ),
                 )
             except Exception as exc:  # noqa: BLE001 -- isolate transport failure to this lifecycle
-                self._begin_termination(key, WorkerState.FAILED, f"Host replay write failed: {exc}", reconcile_attempt=True)
+                self._begin_termination(
+                    key,
+                    WorkerState.FAILED,
+                    f"Host replay write failed: {exc}",
+                    reconcile_attempt=True,
+                )
                 return
 
     def _on_stderr(self, worker_id: str, lifecycle_id: str, data: bytes) -> None:
@@ -631,7 +724,9 @@ class PluginProcessSupervisor:
             if overflow > 0:
                 del record.stderr_tail[:overflow]
 
-    def _on_transport_error(self, worker_id: str, lifecycle_id: str, error: str) -> None:
+    def _on_transport_error(
+        self, worker_id: str, lifecycle_id: str, error: str
+    ) -> None:
         self._begin_termination(
             self._key(worker_id, lifecycle_id),
             WorkerState.FAILED,
@@ -664,7 +759,9 @@ class PluginProcessSupervisor:
                 record.state = record.termination_target
             elif record.state == WorkerState.STOPPING:
                 record.state = WorkerState.STOPPED
-                record.failure = None if code == 0 else f"shutdown exited with code {code}"
+                record.failure = (
+                    None if code == 0 else f"shutdown exited with code {code}"
+                )
                 if code != 0 and record.attempt_fence is not None:
                     record.attempt_reconcile_required = True
                     record.reconcile_reason = record.failure
@@ -680,7 +777,10 @@ class PluginProcessSupervisor:
         with self._lock:
             record = self._record_locked(ticket.worker_id, ticket.lifecycle_id)
             if record is None or not self._matches_lifecycle(record, ticket):
-                raise ContractError(ErrorCode.STALE_LEASE, "late process bytes belong to an old lifecycle")
+                raise ContractError(
+                    ErrorCode.STALE_LEASE,
+                    "late process bytes belong to an old lifecycle",
+                )
         self._on_stdout(ticket.worker_id, ticket.lifecycle_id, data)
 
     def process_exited(self, ticket: WorkerTicket, code: int) -> None:
@@ -715,23 +815,101 @@ class PluginProcessSupervisor:
                 or not self._is_current_locked(record)
                 or record.state not in allowed_states
             ):
-                raise ContractError(ErrorCode.STALE_LEASE, "operation belongs to an old worker lifecycle")
+                raise ContractError(
+                    ErrorCode.STALE_LEASE,
+                    "operation belongs to an old worker lifecycle",
+                )
             return record
 
     def bind_attempt(self, ticket: WorkerTicket, fence: AttemptFence) -> None:
         record = self._ticket_record(ticket)
         if fence.owner_id != ticket.lifecycle_id or not self._current_authority(record):
-            raise ContractError(ErrorCode.STALE_LEASE, "Attempt binding belongs to an old worker")
+            raise ContractError(
+                ErrorCode.STALE_LEASE, "Attempt binding belongs to an old worker"
+            )
         if not self._authority.holds_attempt(record.fence, fence, record.lifecycle_id):
-            raise ContractError(ErrorCode.STALE_LEASE, "Core authority rejected the Attempt fence")
+            raise ContractError(
+                ErrorCode.STALE_LEASE, "Core authority rejected the Attempt fence"
+            )
         with record.rpc_lock, self._lock:
-            current = self._records.get(self._key(ticket.worker_id, ticket.lifecycle_id))
-            if current is not record or record.state != WorkerState.READY or not self._is_current_locked(record):
-                raise ContractError(ErrorCode.STALE_LEASE, "Attempt binding raced worker replacement")
+            current = self._records.get(
+                self._key(ticket.worker_id, ticket.lifecycle_id)
+            )
+            if (
+                current is not record
+                or record.state != WorkerState.READY
+                or not self._is_current_locked(record)
+            ):
+                raise ContractError(
+                    ErrorCode.STALE_LEASE, "Attempt binding raced worker replacement"
+                )
             record.session.bind_attempt(fence, authority_checked=True)
             record.attempt_fence = fence
             record.last_heartbeat = self._clock.monotonic()
             record.idle_since = None
+
+    def interrupt_attempt(
+        self, ticket: WorkerTicket, fence: AttemptFence, reason: str
+    ) -> None:
+        """Fence an exact Attempt into the existing bounded reconciliation path."""
+
+        if not isinstance(ticket, WorkerTicket) or not isinstance(fence, AttemptFence):
+            raise ContractError(
+                ErrorCode.RESULT_CONTRACT_MISMATCH,
+                "Attempt interruption requires exact worker and Attempt fences",
+            )
+        if fence.owner_id != ticket.lifecycle_id:
+            raise ContractError(
+                ErrorCode.STALE_LEASE,
+                "Attempt interruption belongs to another worker lifecycle",
+            )
+        if not isinstance(reason, str) or not reason.strip():
+            raise ContractError(
+                ErrorCode.RESULT_CONTRACT_MISMATCH,
+                "Attempt interruption requires a non-empty reason",
+            )
+
+        reason = reason.strip()
+        key = self._key(ticket.worker_id, ticket.lifecycle_id)
+        with self._lock:
+            record = self._records.get(key)
+            if record is None or not self._matches_lifecycle(record, ticket):
+                raise ContractError(
+                    ErrorCode.STALE_LEASE,
+                    "Attempt interruption belongs to an unknown worker lifecycle",
+                )
+
+        with record.cleanup_lock, self._lock:
+            current = self._records.get(key)
+            if current is not record or not self._matches_lifecycle(record, ticket):
+                raise ContractError(
+                    ErrorCode.STALE_LEASE,
+                    "Attempt interruption raced worker cleanup",
+                )
+            if record.claim_released:
+                if record.attempt_fence == fence and record.attempt_reconciled:
+                    return
+                raise ContractError(
+                    ErrorCode.STALE_LEASE,
+                    "worker claim was released before Attempt interruption",
+                )
+            if record.attempt_fence not in {None, fence}:
+                raise ContractError(
+                    ErrorCode.STALE_LEASE,
+                    "worker lifecycle is bound to another Attempt",
+                )
+            record.attempt_fence = fence
+            record.attempt_reconcile_required = True
+            record.attempt_reconciled = False
+            record.reconcile_reason = reason
+
+        self._begin_termination(
+            key,
+            WorkerState.FENCED,
+            reason,
+            reconcile_attempt=True,
+        )
+        self._reconcile_and_release(key)
 
     def unbind_attempt(self, ticket: WorkerTicket, fence: AttemptFence) -> None:
         record = self._ticket_record(
@@ -739,7 +917,9 @@ class PluginProcessSupervisor:
             allowed_states=frozenset({WorkerState.READY, WorkerState.TERMINATING}),
         )
         if not self._current_authority(record):
-            raise ContractError(ErrorCode.STALE_LEASE, "Attempt unbind belongs to an old worker")
+            raise ContractError(
+                ErrorCode.STALE_LEASE, "Attempt unbind belongs to an old worker"
+            )
         held = self._authority.holds_attempt(record.fence, fence, record.lifecycle_id)
         with record.rpc_lock, self._lock:
             terminal_commit = record.session.has_terminal_attempt_commit(fence)
@@ -749,19 +929,104 @@ class PluginProcessSupervisor:
                 or (not held and not terminal_commit)
                 or (record.state == WorkerState.TERMINATING and not terminal_commit)
             ):
-                raise ContractError(ErrorCode.STALE_LEASE, "Attempt unbind raced worker termination")
+                raise ContractError(
+                    ErrorCode.STALE_LEASE, "Attempt unbind raced worker termination"
+                )
             record.session.unbind_attempt(fence)
             record.attempt_fence = None
             if not self._is_busy(record):
                 record.idle_since = self._clock.monotonic()
 
+    def send_worker_request(
+        self,
+        ticket: WorkerTicket,
+        method: str,
+        params: Mapping[str, object],
+        meta: Mapping[str, object],
+        *,
+        request_id: str,
+    ) -> str:
+        """Write one canonical Worker RPC through the current lifecycle.
+
+        The existing :class:`FramedRpcSession` remains the sole framing,
+        identity and pending-response authority.  Retrying the same non-secret
+        request ID writes the exact retained frame; a one-shot secret request
+        fails closed as an uncertain external effect instead of replaying it.
+        """
+
+        record = self._ticket_record(ticket)
+        if not self._current_authority(record):
+            raise ContractError(
+                ErrorCode.STALE_LEASE, "Worker request belongs to an old lifecycle"
+            )
+        with record.rpc_lock, self._lock:
+            current = self._records.get(
+                self._key(ticket.worker_id, ticket.lifecycle_id)
+            )
+            if (
+                current is not record
+                or record.state != WorkerState.READY
+                or not self._is_current_locked(record)
+            ):
+                raise ContractError(
+                    ErrorCode.STALE_LEASE, "Worker request raced lifecycle replacement"
+                )
+            frame = record.session.build_worker_request(
+                method,
+                params,
+                meta,
+                request_id=request_id,
+            )
+            process = record.process
+        try:
+            process.write(frame)
+        except BufferError:
+            self._begin_termination(
+                self._key(ticket.worker_id, ticket.lifecycle_id),
+                WorkerState.FAILED,
+                "Worker request writer capacity exceeded",
+                reconcile_attempt=True,
+            )
+            raise
+        return request_id
+
+    def take_worker_response(
+        self, ticket: WorkerTicket, request_id: str
+    ) -> RpcEvent | None:
+        """Take one validated Worker response without draining Host events."""
+
+        with self._lock:
+            record = self._record_locked(ticket.worker_id, ticket.lifecycle_id)
+            if (
+                record is None
+                or not self._matches_lifecycle(record, ticket)
+                or not self._is_current_locked(record)
+                or record.state in _TERMINAL
+            ):
+                raise ContractError(
+                    ErrorCode.STALE_LEASE, "Worker response belongs to an old lifecycle"
+                )
+            for index, event in enumerate(record.events):
+                if (
+                    event.kind == "response"
+                    and str(event.message.get("id")) == request_id
+                ):
+                    return record.events.pop(index)
+            return None
+
     def bind_install(self, ticket: WorkerTicket, fence: InstallFence) -> None:
         record = self._ticket_record(ticket)
-        if not self._current_authority(record) or not self._authority.holds_install(record.fence, fence, record.lifecycle_id):
-            raise ContractError(ErrorCode.STALE_LEASE, "install binding belongs to an old worker")
+        if not self._current_authority(record) or not self._authority.holds_install(
+            record.fence, fence, record.lifecycle_id
+        ):
+            raise ContractError(
+                ErrorCode.STALE_LEASE, "install binding belongs to an old worker"
+            )
         with record.rpc_lock, self._lock:
             if record.state != WorkerState.READY or not self._is_current_locked(record):
-                raise ContractError(ErrorCode.STALE_LEASE, "install binding raced worker termination")
+                raise ContractError(
+                    ErrorCode.STALE_LEASE, "install binding raced worker termination"
+                )
             record.session.bind_install(fence, authority_checked=True)
             record.install_fence = fence
             record.idle_since = None
@@ -772,7 +1037,9 @@ class PluginProcessSupervisor:
             allowed_states=frozenset({WorkerState.READY, WorkerState.TERMINATING}),
         )
         if not self._current_authority(record):
-            raise ContractError(ErrorCode.STALE_LEASE, "install unbind belongs to an old worker")
+            raise ContractError(
+                ErrorCode.STALE_LEASE, "install unbind belongs to an old worker"
+            )
         held = self._authority.holds_install(record.fence, fence, record.lifecycle_id)
         with record.rpc_lock, self._lock:
             terminal_commit = record.session.has_terminal_install_commit(fence)
@@ -782,7 +1049,9 @@ class PluginProcessSupervisor:
                 or (not held and not terminal_commit)
                 or (record.state == WorkerState.TERMINATING and not terminal_commit)
             ):
-                raise ContractError(ErrorCode.STALE_LEASE, "install unbind raced worker termination")
+                raise ContractError(
+                    ErrorCode.STALE_LEASE, "install unbind raced worker termination"
+                )
             record.session.unbind_install(fence)
             record.install_fence = None
             if not self._is_busy(record):
@@ -799,11 +1068,15 @@ class PluginProcessSupervisor:
             key = self._key(fence.worker_id, lifecycle_id)
             with self._lock:
                 record = self._records.get(key)
-            cleanup_lock = record.cleanup_lock if record is not None else threading.Lock()
+            cleanup_lock = (
+                record.cleanup_lock if record is not None else threading.Lock()
+            )
             with cleanup_lock:
                 with self._lock:
                     record = self._records.get(key)
-                    if key not in self._pending_releases or (record is not None and record.claim_released):
+                    if key not in self._pending_releases or (
+                        record is not None and record.claim_released
+                    ):
                         continue
                 released = self._release_or_enqueue(fence, lifecycle_id)
                 if released:
@@ -815,7 +1088,9 @@ class PluginProcessSupervisor:
                         if not self._is_current_locked(record):
                             self._records.pop(key, None)
 
-    def _confirm_cleanup_exit(self, key: tuple[str, str], process: ManagedProcess) -> bool:
+    def _confirm_cleanup_exit(
+        self, key: tuple[str, str], process: ManagedProcess
+    ) -> bool:
         try:
             code = process.poll()
         except Exception:  # noqa: BLE001 -- a failed observation cannot release the live-process claim
@@ -854,17 +1129,28 @@ class PluginProcessSupervisor:
                 kill_sent = record.kill_sent
                 process = record.process
                 current = self._is_current_locked(record)
-                cleanup_poll_pending = record.claim_release_requires_poll and not record.exit_poll_confirmed
+                cleanup_poll_pending = (
+                    record.claim_release_requires_poll
+                    and not record.exit_poll_confirmed
+                )
             if cleanup_poll_pending and self._confirm_cleanup_exit(key, process):
                 continue
             if state in _TERMINAL:
                 self._reconcile_and_release(key)
                 continue
             if state == WorkerState.TERMINATING:
-                if termination_deadline is not None and now >= termination_deadline and not kill_sent:
+                if (
+                    termination_deadline is not None
+                    and now >= termination_deadline
+                    and not kill_sent
+                ):
                     with self._lock:
                         live = self._records.get(key)
-                        if live is None or live.state != WorkerState.TERMINATING or live.kill_sent:
+                        if (
+                            live is None
+                            or live.state != WorkerState.TERMINATING
+                            or live.kill_sent
+                        ):
                             continue
                         live.kill_sent = True
                     try:
@@ -876,14 +1162,21 @@ class PluginProcessSupervisor:
                                 live.failure = f"{live.failure or 'termination'}; kill failed: {exc}"
                 continue
             if not current or not self._current_authority(record):
-                self._begin_termination(key, WorkerState.FENCED, "Core authority fence changed", reconcile_attempt=True)
+                self._begin_termination(
+                    key,
+                    WorkerState.FENCED,
+                    "Core authority fence changed",
+                    reconcile_attempt=True,
+                )
                 continue
 
             attempt = record.attempt_fence
             install = record.install_fence
             if attempt is not None:
                 try:
-                    attempt_live = self._authority.holds_attempt(record.fence, attempt, record.lifecycle_id)
+                    attempt_live = self._authority.holds_attempt(
+                        record.fence, attempt, record.lifecycle_id
+                    )
                 except Exception:  # noqa: BLE001 -- fail closed
                     attempt_live = False
                 if not attempt_live:
@@ -893,11 +1186,18 @@ class PluginProcessSupervisor:
                         failure="Attempt lease fence changed",
                     ):
                         continue
-                    self._begin_termination(key, WorkerState.FENCED, "Attempt lease fence changed", reconcile_attempt=False)
+                    self._begin_termination(
+                        key,
+                        WorkerState.FENCED,
+                        "Attempt lease fence changed",
+                        reconcile_attempt=False,
+                    )
                     continue
             if install is not None:
                 try:
-                    install_live = self._authority.holds_install(record.fence, install, record.lifecycle_id)
+                    install_live = self._authority.holds_install(
+                        record.fence, install, record.lifecycle_id
+                    )
                 except Exception:  # noqa: BLE001 -- fail closed
                     install_live = False
                 if not install_live:
@@ -907,7 +1207,12 @@ class PluginProcessSupervisor:
                         failure="install lease fence changed",
                     ):
                         continue
-                    self._begin_termination(key, WorkerState.FENCED, "install lease fence changed", reconcile_attempt=True)
+                    self._begin_termination(
+                        key,
+                        WorkerState.FENCED,
+                        "install lease fence changed",
+                        reconcile_attempt=True,
+                    )
                     continue
 
             with self._lock:
@@ -915,7 +1220,10 @@ class PluginProcessSupervisor:
                 if record is None:
                     continue
                 state = record.state
-                if state == WorkerState.STARTING and now - record.started_at >= self._config.handshake_timeout:
+                if (
+                    state == WorkerState.STARTING
+                    and now - record.started_at >= self._config.handshake_timeout
+                ):
                     action = (WorkerState.FAILED, "runtime.handshake timeout", False)
                 elif (
                     state == WorkerState.READY
@@ -943,7 +1251,9 @@ class PluginProcessSupervisor:
                             live.attempt_reconcile_required = True
                             live.attempt_reconciled = interrupted
                             live.reconcile_reason = reason
-                self._begin_termination(key, target, reason, reconcile_attempt=reconcile)
+                self._begin_termination(
+                    key, target, reason, reconcile_attempt=reconcile
+                )
                 continue
 
             shutdown_frame: bytes | None = None
@@ -965,7 +1275,11 @@ class PluginProcessSupervisor:
                         record.state = WorkerState.STOPPING
                         record.stop_deadline = now + self._config.shutdown_timeout
                     except Exception as exc:  # noqa: BLE001 -- session boundary
-                        action = (WorkerState.FAILED, f"idle shutdown failed: {exc}", True)
+                        action = (
+                            WorkerState.FAILED,
+                            f"idle shutdown failed: {exc}",
+                            True,
+                        )
                     else:
                         action = None
                 elif (
@@ -980,9 +1294,16 @@ class PluginProcessSupervisor:
                 try:
                     process.write(shutdown_frame)
                 except Exception as exc:  # noqa: BLE001 -- isolate writer failure
-                    self._begin_termination(key, WorkerState.FAILED, f"idle shutdown failed: {exc}", reconcile_attempt=True)
+                    self._begin_termination(
+                        key,
+                        WorkerState.FAILED,
+                        f"idle shutdown failed: {exc}",
+                        reconcile_attempt=True,
+                    )
             elif action is not None:
-                self._begin_termination(key, action[0], action[1], reconcile_attempt=action[2])
+                self._begin_termination(
+                    key, action[0], action[1], reconcile_attempt=action[2]
+                )
 
     def _peek_host_events(self, ticket: WorkerTicket) -> tuple[RpcEvent, ...]:
         """View admitted Host RPCs without dropping a durable operation retry."""
@@ -995,11 +1316,15 @@ class PluginProcessSupervisor:
                 or not self._is_current_locked(record)
                 or record.state in _TERMINAL
             ):
-                raise ContractError(ErrorCode.STALE_LEASE, "Host event belongs to an old lifecycle")
-            return tuple(event for event in record.events if event.kind == "host_request")
+                raise ContractError(
+                    ErrorCode.STALE_LEASE, "Host event belongs to an old lifecycle"
+                )
+            return tuple(
+                event for event in record.events if event.kind == "host_request"
+            )
 
     def _dispose_host_event(self, ticket: WorkerTicket, request_id: str) -> None:
-        """Drop exactly one Host event after its durable success ACK is staged."""
+        """Drop exactly one Host event after a canonical response is staged."""
 
         with self._lock:
             record = self._record_locked(ticket.worker_id, ticket.lifecycle_id)
@@ -1009,38 +1334,55 @@ class PluginProcessSupervisor:
                 or not self._is_current_locked(record)
                 or record.state not in _PROTOCOL_STATES
             ):
-                raise ContractError(ErrorCode.STALE_LEASE, "Host event belongs to an old lifecycle")
+                raise ContractError(
+                    ErrorCode.STALE_LEASE, "Host event belongs to an old lifecycle"
+                )
         with record.rpc_lock, self._lock:
-            current = self._records.get(self._key(ticket.worker_id, ticket.lifecycle_id))
+            current = self._records.get(
+                self._key(ticket.worker_id, ticket.lifecycle_id)
+            )
             if (
                 current is not record
                 or not self._is_current_locked(record)
                 or record.state not in _PROTOCOL_STATES
             ):
-                raise ContractError(ErrorCode.STALE_LEASE, "Host event raced lifecycle termination")
+                raise ContractError(
+                    ErrorCode.STALE_LEASE, "Host event raced lifecycle termination"
+                )
             if not record.session.has_host_request(request_id):
-                raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "Host event id was not admitted")
-            if not record.session.has_staged_host_success(request_id):
+                raise ContractError(
+                    ErrorCode.RESULT_CONTRACT_MISMATCH, "Host event id was not admitted"
+                )
+            if not record.session.has_staged_host_response(request_id):
                 raise ContractError(
                     ErrorCode.RESULT_CONTRACT_MISMATCH,
-                    "Host event has no staged canonical success response",
+                    "Host event has no staged canonical response",
                 )
             for index, event in enumerate(record.events):
-                if event.kind == "host_request" and str(event.message.get("id")) == request_id:
+                if (
+                    event.kind == "host_request"
+                    and str(event.message.get("id")) == request_id
+                ):
                     record.events.pop(index)
                     return
-        raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "Host event is not pending disposition")
+        raise ContractError(
+            ErrorCode.RESULT_CONTRACT_MISMATCH, "Host event is not pending disposition"
+        )
 
     def drain_events(self, ticket: WorkerTicket) -> tuple[RpcEvent, ...]:
         with self._lock:
             record = self._record_locked(ticket.worker_id, ticket.lifecycle_id)
             if record is None or not self._matches_lifecycle(record, ticket):
-                raise ContractError(ErrorCode.STALE_LEASE, "event read belongs to an old lifecycle")
+                raise ContractError(
+                    ErrorCode.STALE_LEASE, "event read belongs to an old lifecycle"
+                )
             values = tuple(record.events)
             record.events.clear()
             return values
 
-    def respond_host_request(self, ticket: WorkerTicket, request_id: str, result: dict[str, object]) -> None:
+    def respond_host_request(
+        self, ticket: WorkerTicket, request_id: str, result: dict[str, object]
+    ) -> None:
         """Enqueue the canonical response produced by the durable Host dispatcher."""
 
         with self._lock:
@@ -1051,15 +1393,71 @@ class PluginProcessSupervisor:
                 or not self._is_current_locked(record)
                 or record.state in _TERMINAL
             ):
-                raise ContractError(ErrorCode.STALE_LEASE, "Host response belongs to an old lifecycle")
+                raise ContractError(
+                    ErrorCode.STALE_LEASE, "Host response belongs to an old lifecycle"
+                )
         if not self._current_authority(record):
-            raise ContractError(ErrorCode.STALE_LEASE, "Host response belongs to an old lifecycle")
+            raise ContractError(
+                ErrorCode.STALE_LEASE, "Host response belongs to an old lifecycle"
+            )
         with record.rpc_lock:
             frame = record.session.build_host_success(request_id, result)
+        self._write_host_response_frame(ticket, record, request_id, frame)
+
+    def respond_host_error(
+        self,
+        ticket: WorkerTicket,
+        request_id: str,
+        *,
+        code: int,
+        message: str,
+        error_id: str,
+        retryable: bool = False,
+        details_asset_id: str | None = None,
+    ) -> None:
+        """Write one validated canonical Host error through the same lifecycle."""
+
         with self._lock:
-            current = self._records.get(self._key(ticket.worker_id, ticket.lifecycle_id))
+            record = self._record_locked(ticket.worker_id, ticket.lifecycle_id)
+            if (
+                record is None
+                or not self._matches_lifecycle(record, ticket)
+                or not self._is_current_locked(record)
+                or record.state in _TERMINAL
+            ):
+                raise ContractError(
+                    ErrorCode.STALE_LEASE, "Host response belongs to an old lifecycle"
+                )
+        if not self._current_authority(record):
+            raise ContractError(
+                ErrorCode.STALE_LEASE, "Host response belongs to an old lifecycle"
+            )
+        with record.rpc_lock:
+            frame = record.session.build_host_error(
+                request_id,
+                code=code,
+                message=message,
+                error_id=error_id,
+                retryable=retryable,
+                details_asset_id=details_asset_id,
+            )
+        self._write_host_response_frame(ticket, record, request_id, frame)
+
+    def _write_host_response_frame(
+        self,
+        ticket: WorkerTicket,
+        record: _Record,
+        request_id: str,
+        frame: bytes,
+    ) -> None:
+        with self._lock:
+            current = self._records.get(
+                self._key(ticket.worker_id, ticket.lifecycle_id)
+            )
             if current is not record or record.state in _TERMINAL:
-                raise ContractError(ErrorCode.STALE_LEASE, "Host response raced worker termination")
+                raise ContractError(
+                    ErrorCode.STALE_LEASE, "Host response raced worker termination"
+                )
             process = record.process
         # A failed transport write leaves the canonical frame available for
         # exact retry. Capacity overflow is a local lifecycle failure instead
@@ -1067,7 +1465,9 @@ class PluginProcessSupervisor:
         try:
             process.write(
                 frame,
-                on_written=lambda: self._mark_host_frame_written(record, request_id, frame),
+                on_written=lambda: self._mark_host_frame_written(
+                    record, request_id, frame
+                ),
             )
         except BufferError:
             self._begin_termination(
@@ -1078,10 +1478,12 @@ class PluginProcessSupervisor:
             )
             raise
 
-    def _mark_host_frame_written(self, record: _Record, request_id: str, frame: bytes) -> None:
+    def _mark_host_frame_written(
+        self, record: _Record, request_id: str, frame: bytes
+    ) -> None:
         process: ManagedProcess | None = None
         with record.rpc_lock:
-            record.session.mark_host_success_written(request_id, frame)
+            record.session.mark_host_response_written(request_id, frame)
             with self._lock:
                 key = self._key(record.fence.worker_id, record.lifecycle_id)
                 if (
@@ -1097,7 +1499,9 @@ class PluginProcessSupervisor:
                 process.terminate()
             except Exception as exc:  # noqa: BLE001 -- injected process adapter boundary
                 with self._lock:
-                    current = self._records.get(self._key(record.fence.worker_id, record.lifecycle_id))
+                    current = self._records.get(
+                        self._key(record.fence.worker_id, record.lifecycle_id)
+                    )
                     if current is record:
                         record.failure = f"{record.failure or 'termination'}; terminate failed: {exc}"
 
