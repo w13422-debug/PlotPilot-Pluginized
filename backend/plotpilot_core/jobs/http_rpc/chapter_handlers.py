@@ -608,12 +608,10 @@ class DisposableAssetUploadBuffer:
 @dataclass(frozen=True, slots=True)
 class _PollCursor:
     high_water: int
-    request_cursor: int
-    result: Mapping[str, Any]
 
 
 class DisposablePollCursorBuffer:
-    """Bounded ACK replay/cursor guard; durable child state stays in P1/P3B."""
+    """Bounded monotonic cursor guard; durable child state stays in P1/P3B."""
 
     MAX_CHILDREN = 4096
 
@@ -633,8 +631,6 @@ class DisposablePollCursorBuffer:
             previous = self._entries.get(key)
             if previous is not None:
                 self._entries.move_to_end(key)
-                if after_job_event_seq == previous.request_cursor:
-                    return previous.result
                 if after_job_event_seq < previous.high_water:
                     raise ContractError(
                         ErrorCode.INVALID_TRANSITION,
@@ -654,9 +650,7 @@ class DisposablePollCursorBuffer:
                     after_job_event_seq,
                     next_cursor,
                     0 if previous is None else previous.high_water,
-                ),
-                after_job_event_seq,
-                result,
+                )
             )
             self._entries.move_to_end(key)
             while len(self._entries) > self.MAX_CHILDREN:

@@ -1225,49 +1225,74 @@ class ExecutionAuthority:
             "SELECT child_job_id,record_json FROM p3_broker_child_record WHERE json_extract(record_json,'$.parent_attempt_id')=? ORDER BY child_job_id",
             (attempt["attempt_id"],),
         ).fetchall()
-        rows_by_child = {str(row["child_job_id"]): row for row in direct_rows}
+        records_by_child = {
+            str(row["child_job_id"]): BrokerChildRecord.from_mapping(
+                _load(row["record_json"])
+            )
+            for row in direct_rows
+        }
         edge = self._direct_resume_source(connection, attempt)
         if edge is not None:
             source, _checkpoint = edge
             context_identity = _broker_context_identity(
                 attempt["job_id"], attempt["step_id"], attempt["attempt_id"]
             )
-            alias_rows = connection.execute(
-                "SELECT r.child_job_id,r.record_json,o.operation_key,"
-                "r.context_identity AS record_context_identity "
-                "FROM p3_broker_operation o "
-                "JOIN p3_broker_child_record r "
-                "ON r.child_job_id=json_extract(o.child_creation_json,'$.child_job_id') "
-                "WHERE o.context_identity=? AND o.method=?",
+            alias_operations = connection.execute(
+                "SELECT * FROM p3_broker_operation "
+                "WHERE context_identity=? AND method=? ORDER BY operation_key",
                 (context_identity, _INVOKE),
             ).fetchall()
-            source_identity = _broker_context_identity(
-                source["job_id"], source["step_id"], source["attempt_id"]
-            )
-            for row in alias_rows:
-                record = BrokerChildRecord.from_mapping(_load(row["record_json"]))
-                if (
-                    row["record_context_identity"] != source_identity
-                    or record.parent_attempt_id != source["attempt_id"]
-                    or record.invoke_operation_key != row["operation_key"]
-                ):
-                    raise ContractError(
-                        ErrorCode.RESULT_CONTRACT_MISMATCH,
-                        "direct resume terminal child alias drifted",
+            for operation in alias_operations:
+                try:
+                    creation = ChildCreationResult.from_mapping(
+                        _load(operation["child_creation_json"])
                     )
-                previous = rows_by_child.get(record.child_job_id)
-                if (
-                    previous is not None
-                    and previous["record_json"] != row["record_json"]
-                ):
+                except ContractError:
+                    raise
+                except Exception as exc:
+                    raise ContractError(
+                        ErrorCode.ASSET_ERROR,
+                        "terminal child operation identity is invalid",
+                    ) from exc
+                record_identity = connection.execute(
+                    "SELECT context_identity,operation_key "
+                    "FROM p3_broker_child_record WHERE child_job_id=?",
+                    (creation.child_job_id,),
+                ).fetchone()
+                if record_identity is None:
+                    raise ContractError(
+                        ErrorCode.ASSET_ERROR,
+                        "terminal child operation authority is missing",
+                    )
+                if record_identity["context_identity"] == context_identity:
+                    direct_record = records_by_child.get(creation.child_job_id)
+                    if (
+                        direct_record is None
+                        or record_identity["operation_key"]
+                        != operation["operation_key"]
+                        or direct_record.invoke_operation_key
+                        != operation["operation_key"]
+                    ):
+                        raise ContractError(
+                            ErrorCode.RESULT_CONTRACT_MISMATCH,
+                            "terminal direct child operation drifted",
+                        )
+                    continue
+                record = self._validate_persisted_direct_resume_alias_closure(
+                    connection,
+                    current=attempt,
+                    source=source,
+                    operation=operation,
+                )
+                previous = records_by_child.get(record.child_job_id)
+                if previous is not None and previous.to_dict() != record.to_dict():
                     raise ContractError(
                         ErrorCode.ASSET_ERROR,
                         "terminal child alias is ambiguous",
                     )
-                rows_by_child[record.child_job_id] = row
+                records_by_child[record.child_job_id] = record
         receipt_ids: list[str] = []
-        for row in (rows_by_child[key] for key in sorted(rows_by_child)):
-            record = BrokerChildRecord.from_mapping(_load(row["record_json"]))
+        for record in (records_by_child[key] for key in sorted(records_by_child)):
             child = connection.execute(
                 "SELECT job_state,result_bundle_asset_id,provenance_receipt_id FROM execution_job WHERE job_id=?",
                 (record.child_job_id,),
@@ -1753,6 +1778,154 @@ class ExecutionAuthority:
         source_value["parent_attempt_id"] = current.parent_attempt_id
         return source_value == current.to_dict()
 
+    def _validate_persisted_direct_resume_alias_closure(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        current: sqlite3.Row,
+        source: sqlite3.Row,
+        operation: sqlite3.Row,
+        expected_child_job_id: str | None = None,
+    ) -> BrokerChildRecord:
+        """Validate one persisted alias without leaving the caller transaction."""
+
+        current_identity = _broker_context_identity(
+            current["job_id"], current["step_id"], current["attempt_id"]
+        )
+        source_identity = _broker_context_identity(
+            source["job_id"], source["step_id"], source["attempt_id"]
+        )
+        if (
+            operation["context_identity"] != current_identity
+            or operation["method"] != _INVOKE
+            or any(
+                operation[name] is None
+                for name in ("envelope_asset_id", "child_creation_json", "response")
+            )
+        ):
+            raise ContractError(
+                ErrorCode.ASSET_ERROR,
+                "direct resume child alias is incomplete",
+            )
+        source_operation = connection.execute(
+            "SELECT * FROM p3_broker_operation "
+            "WHERE context_identity=? AND method=? AND operation_key=?",
+            (source_identity, _INVOKE, operation["operation_key"]),
+        ).fetchone()
+        try:
+            creation = ChildCreationResult.from_mapping(
+                _load(operation["child_creation_json"])
+            )
+            response = BrokerInvokeResult.from_mapping(
+                parse_json_bytes(bytes(operation["response"]))
+            )
+        except ContractError:
+            raise
+        except Exception as exc:
+            raise ContractError(
+                ErrorCode.ASSET_ERROR,
+                "direct resume child alias identity is invalid",
+            ) from exc
+        record_row = connection.execute(
+            "SELECT context_identity,operation_key,record_json "
+            "FROM p3_broker_child_record WHERE child_job_id=?",
+            (creation.child_job_id,),
+        ).fetchone()
+        if (
+            source_operation is None
+            or record_row is None
+            or any(
+                source_operation[name] is None
+                for name in ("envelope_asset_id", "child_creation_json", "response")
+            )
+        ):
+            raise ContractError(
+                ErrorCode.ASSET_ERROR,
+                "direct resume source child authority is missing",
+            )
+        try:
+            record = BrokerChildRecord.from_mapping(_load(record_row["record_json"]))
+            current_envelope_bytes = self.assets.read(operation["envelope_asset_id"])
+            source_envelope_bytes = self.assets.read(
+                source_operation["envelope_asset_id"]
+            )
+            current_envelope_value = parse_json_bytes(current_envelope_bytes)
+            source_envelope_value = parse_json_bytes(source_envelope_bytes)
+            if not isinstance(current_envelope_value, Mapping) or not isinstance(
+                source_envelope_value, Mapping
+            ):
+                raise ContractValidationError(
+                    "direct resume invocation Asset is not an object"
+                )
+            current_envelope = BrokerInvocationEnvelope.from_mapping(
+                current_envelope_value
+            )
+            source_envelope = BrokerInvocationEnvelope.from_mapping(
+                source_envelope_value
+            )
+        except ContractError:
+            raise
+        except Exception as exc:
+            raise ContractError(
+                ErrorCode.ASSET_ERROR,
+                "direct resume invocation Asset closure is invalid",
+            ) from exc
+        if (
+            (
+                expected_child_job_id is not None
+                and creation.child_job_id != expected_child_job_id
+            )
+            or source_operation["context_identity"] != source_identity
+            or source_operation["method"] != _INVOKE
+            or source_operation["operation_key"] != operation["operation_key"]
+            or source_operation["child_creation_json"]
+            != operation["child_creation_json"]
+            or bytes(source_operation["response"]) != bytes(operation["response"])
+            or source_operation["payload_hash"] != source_envelope.asset_hash
+            or operation["payload_hash"] != current_envelope.asset_hash
+            or sha256_hex(source_envelope_bytes) != source_envelope.asset_hash
+            or sha256_hex(current_envelope_bytes) != current_envelope.asset_hash
+            or not self._resume_equivalent_envelopes(source_envelope, current_envelope)
+            or source_envelope.parent_job_id != source["job_id"]
+            or source_envelope.parent_step_id != source["step_id"]
+            or source_envelope.parent_attempt_id != source["attempt_id"]
+            or current_envelope.parent_job_id != current["job_id"]
+            or current_envelope.parent_step_id != current["step_id"]
+            or current_envelope.parent_attempt_id != current["attempt_id"]
+            or source_envelope.invoke_operation_key != operation["operation_key"]
+            or record_row["context_identity"] != source_identity
+            or record_row["operation_key"] != operation["operation_key"]
+            or record.parent_job_id != source["job_id"]
+            or record.parent_step_id != source["step_id"]
+            or record.parent_attempt_id != source["attempt_id"]
+            or record.invoke_operation_key != operation["operation_key"]
+            or record.child_job_id != creation.child_job_id
+            or record.binding_id != source_envelope.binding_id
+            or record.broker_invocation_asset_id
+            != source_operation["envelope_asset_id"]
+            or record.broker_invocation_hash != source_envelope.asset_hash
+            or record.child_run_snapshot_asset_id
+            != creation.child_run_snapshot_asset_id
+            or record.child_run_snapshot_hash != creation.child_run_snapshot_hash
+            or record.result_contract != source_envelope.expected_result_contract
+            or record.required != source_envelope.required
+            or record.propagate_cancel != source_envelope.propagate_cancel
+            or creation.child_plugin_release_id != source["release_id"]
+            or response.accepted is not True
+            or response.child_job_id != creation.child_job_id
+            or response.child_step_id != creation.child_step_id
+            or response.child_run_snapshot_asset_id
+            != creation.child_run_snapshot_asset_id
+            or response.child_run_snapshot_hash != creation.child_run_snapshot_hash
+            or response.child_result_contract != record.result_contract
+            or response.child_job_event_seq != creation.child_job_event_seq
+        ):
+            raise ContractError(
+                ErrorCode.RESULT_CONTRACT_MISMATCH,
+                "direct resume child alias closure drifted",
+            )
+        return record
+
     def alias_direct_resume_invoke(
         self,
         *,
@@ -1989,92 +2162,13 @@ class ExecutionAuthority:
                     ErrorCode.ASSET_ERROR,
                     "direct resume child alias is ambiguous",
                 )
-            operation = rows[0]
-            if any(
-                operation[name] is None
-                for name in ("envelope_asset_id", "child_creation_json", "response")
-            ):
-                raise ContractError(
-                    ErrorCode.ASSET_ERROR,
-                    "direct resume child alias is incomplete",
-                )
-            creation = ChildCreationResult.from_mapping(
-                _load(operation["child_creation_json"])
+            return self._validate_persisted_direct_resume_alias_closure(
+                connection,
+                current=current,
+                source=source,
+                operation=rows[0],
+                expected_child_job_id=child_job_id,
             )
-            if creation.child_job_id != child_job_id:
-                raise ContractError(
-                    ErrorCode.RESULT_CONTRACT_MISMATCH,
-                    "direct resume alias names another child",
-                )
-            source_identity = _broker_context_identity(
-                source["job_id"], source["step_id"], source["attempt_id"]
-            )
-            record_row = connection.execute(
-                "SELECT context_identity,operation_key,record_json "
-                "FROM p3_broker_child_record WHERE child_job_id=?",
-                (child_job_id,),
-            ).fetchone()
-            source_operation = connection.execute(
-                "SELECT payload_hash,envelope_asset_id,child_creation_json,response "
-                "FROM p3_broker_operation "
-                "WHERE context_identity=? AND method=? AND operation_key=?",
-                (source_identity, _INVOKE, operation["operation_key"]),
-            ).fetchone()
-            if record_row is None or source_operation is None:
-                raise ContractError(
-                    ErrorCode.ASSET_ERROR,
-                    "direct resume source child authority is missing",
-                )
-            record = BrokerChildRecord.from_mapping(_load(record_row["record_json"]))
-            try:
-                current_envelope_bytes = self.assets.read(
-                    operation["envelope_asset_id"]
-                )
-                source_envelope_bytes = self.assets.read(
-                    source_operation["envelope_asset_id"]
-                )
-                current_envelope_value = parse_json_bytes(current_envelope_bytes)
-                source_envelope_value = parse_json_bytes(source_envelope_bytes)
-                if not isinstance(current_envelope_value, Mapping) or not isinstance(
-                    source_envelope_value, Mapping
-                ):
-                    raise ContractValidationError(
-                        "direct resume invocation Asset is not an object"
-                    )
-                current_envelope = BrokerInvocationEnvelope.from_mapping(
-                    current_envelope_value
-                )
-                source_envelope = BrokerInvocationEnvelope.from_mapping(
-                    source_envelope_value
-                )
-            except ContractError:
-                raise
-            except Exception as exc:
-                raise ContractError(
-                    ErrorCode.ASSET_ERROR,
-                    "direct resume invocation Asset closure is invalid",
-                ) from exc
-            if (
-                record_row["context_identity"] != source_identity
-                or record_row["operation_key"] != operation["operation_key"]
-                or record.parent_attempt_id != source["attempt_id"]
-                or record.child_job_id != child_job_id
-                or source_operation["child_creation_json"]
-                != operation["child_creation_json"]
-                or bytes(source_operation["response"]) != bytes(operation["response"])
-                or source_operation["payload_hash"] != source_envelope.asset_hash
-                or operation["payload_hash"] != current_envelope.asset_hash
-                or sha256_hex(source_envelope_bytes) != source_envelope.asset_hash
-                or sha256_hex(current_envelope_bytes) != current_envelope.asset_hash
-                or not self._resume_equivalent_envelopes(
-                    source_envelope, current_envelope
-                )
-            ):
-                raise ContractError(
-                    ErrorCode.RESULT_CONTRACT_MISMATCH,
-                    "direct resume child alias closure drifted",
-                )
-            return record
 
     def create_or_recover_child(self, request: ChildCreationRequest) -> ChildCreationResult:
         context_identity = _broker_context_identity(request.caller.parent_job_id, request.caller.parent_step_id, request.caller.parent_attempt_id)

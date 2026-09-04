@@ -13,6 +13,9 @@ from backend.plotpilot_core.broker.service import (
     CapabilityBroker,
 )
 from backend.plotpilot_core.domain import Document, Workspace
+from backend.plotpilot_core.jobs.http_rpc.chapter_handlers import (
+    DisposablePollCursorBuffer,
+)
 from backend.plotpilot_core.jobs.http_rpc.composition import (
     JobRuntimeComposition,
     compose_job_runtime,
@@ -122,6 +125,7 @@ class _BrokerExecution:
     def __init__(self, assets: AssetStore) -> None:
         self.poll_calls: list[tuple[str, int]] = []
         self.cancel_calls: list[tuple[str, str]] = []
+        self.terminal_receipt_id: str | None = None
         self.snapshot_asset_id = assets.create_asset(
             b"snapshot", mime="application/json"
         )
@@ -129,14 +133,15 @@ class _BrokerExecution:
 
     def poll(self, child_job_id: str, after_job_event_seq: int):
         self.poll_calls.append((child_job_id, after_job_event_seq))
+        terminal = self.terminal_receipt_id is not None
         return {
             "job_snapshot_asset_id": self.snapshot_asset_id,
             "job_event_page_asset_id": self.events_asset_id,
             "next_job_event_seq": max(1, after_job_event_seq),
-            "terminal": False,
+            "terminal": terminal,
             "result_bundle_asset_id": None,
-            "provenance_receipt_id": None,
-            "child_state": "queued",
+            "provenance_receipt_id": self.terminal_receipt_id,
+            "child_state": "cancelled" if terminal else "queued",
         }
 
     def cancel(self, operation_key: str, child_job_id: str):
@@ -147,6 +152,23 @@ class _BrokerExecution:
             "child_state": "cancelling",
             "child_job_event_seq": 1,
         }
+
+
+def test_f001_equal_cursor_repolls_pending_business_result():
+    cursors = DisposablePollCursorBuffer()
+    calls: list[int] = []
+    terminal = False
+
+    def broker_poll():
+        calls.append(7)
+        return {"next_job_event_seq": 7, "terminal": terminal}
+
+    pending = cursors.poll(("job", "step", "attempt", 1, "child"), 7, broker_poll)
+    assert pending["terminal"] is False
+    terminal = True
+    completed = cursors.poll(("job", "step", "attempt", 1, "child"), 7, broker_poll)
+    assert completed["terminal"] is True
+    assert calls == [7, 7]
 
 
 def _capability_broker(authority: ExecutionAuthority) -> CapabilityBroker:
@@ -634,6 +656,65 @@ def test_composed_dispatcher_resolves_attempt_from_durable_authority(tmp_path):
             )
         broker_execution = composition.capability_broker.execution
         assert broker_execution.cancel_calls == [("cancel-1", child_job_id)]
+
+        with repository.read_connection() as connection:
+            child_attempt = connection.execute(
+                "SELECT a.*,j.run_snapshot_hash FROM execution_attempt a "
+                "JOIN execution_job j ON j.job_id=a.job_id WHERE a.job_id=?",
+                (child_job_id,),
+            ).fetchone()
+        assert child_attempt is not None
+        terminal_receipt = {
+            "schema": "provenance-receipt/v1",
+            "receipt_id": child_attempt["preallocated_receipt_id"],
+            "plugin_id": child_attempt["plugin_id"],
+            "release_id": child_attempt["release_id"],
+            "package_hash": PACKAGE,
+            "capability_id": child_attempt["capability_id"],
+            "job_id": child_job_id,
+            "step_id": child_attempt["step_id"],
+            "attempt_id": child_attempt["attempt_id"],
+            "lease_epoch": child_attempt["lease_epoch"],
+            "run_snapshot_hash": child_attempt["run_snapshot_hash"],
+            "bundle_id": None,
+            "bundle_hash": None,
+            "parent_receipt_ids": [],
+            "model_receipt_ids": [],
+            "skill_chain_result_refs": [],
+            "staged_items": [],
+            "created_at": "2026-09-04T00:00:00Z",
+        }
+        terminal_receipt["receipt_hash"] = hash_without_field(
+            terminal_receipt,
+            "receipt_hash",
+            "provenance-receipt/v1",
+        )
+        composition.capability_broker.receipt_port = {
+            terminal_receipt["receipt_id"]: terminal_receipt
+        }
+        broker_execution.terminal_receipt_id = terminal_receipt["receipt_id"]
+        terminal_poll = build_request(
+            "host.capability.poll/v1",
+            {
+                "child_job_id": child_job_id,
+                "after_job_event_seq": 1,
+            },
+            shared_meta,
+            request_id="00000000-0000-4000-8000-000000000010",
+        )
+        assert composition.dispatcher.dispatch_event(
+            ticket, RpcEvent("host_request", terminal_poll)
+        )
+        assert supervisor.responses[-1][1]["terminal"] is True
+        assert (
+            supervisor.responses[-1][1]["provenance_receipt_id"]
+            == terminal_receipt["receipt_id"]
+        )
+        assert broker_execution.poll_calls == [
+            (child_job_id, 0),
+            (child_job_id, 1),
+            (child_job_id, 1),
+        ]
     finally:
         repository.close()
 
