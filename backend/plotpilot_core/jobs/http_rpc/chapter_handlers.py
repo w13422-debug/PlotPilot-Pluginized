@@ -15,11 +15,15 @@ owns no database, ledger, SQL, or Supervisor state.
 
 from __future__ import annotations
 
+import base64
+import binascii
 import hashlib
 import re
 import sys
+from collections import OrderedDict
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
+from threading import RLock
 from types import MappingProxyType
 from typing import Any, Protocol
 
@@ -27,7 +31,7 @@ from backend.plotpilot_core.api.v1.jobs.rpc import (
     AttemptStartBinding,
     JobCommandQueryAdapter,
 )
-from backend.plotpilot_core.broker.service import CallerAttemptContext
+from backend.plotpilot_core.broker.service import CallerAttemptContext, CapabilityBroker
 from backend.plotpilot_core.domain.entities import utc_now
 from backend.plotpilot_core.events.store import CoreEventStore, JobEventStore
 from backend.plotpilot_core.jobs.checkpoint_adapter import DurableCheckpointAdapter
@@ -41,6 +45,7 @@ from backend.plotpilot_plugin_sdk import (
     ContractError,
     ContractValidationError,
     ErrorCode,
+    assert_valid,
     canonical_bytes,
     parse_json_bytes,
     sha256_hex,
@@ -49,18 +54,39 @@ from backend.plotpilot_plugin_sdk import (
 )
 from backend.plotpilot_plugin_sdk.rpc import decode_frame, encode_frame
 from backend.plotpilot_plugin_sdk.verifier import (
+    hash_without_field,
     validate_rpc_request,
     validate_rpc_response,
     validate_rpc_result,
-    verify_provenance_receipt,
 )
 
 CHECKPOINT_COMMIT = "host.checkpoint.commit/v1"
 STREAM_COMMIT = "host.stream.commit/v1"
 JOB_EVENT = "host.job.event/v1"
 AWAIT_USER = "host.job.await_user/v1"
+ASSET_READ = "host.asset.read/v1"
+ASSET_CREATE = "host.asset.create/v1"
+CANDIDATE_STAGE = "host.candidate.stage/v1"
+CAPABILITY_INVOKE = "host.capability.invoke/v1"
+CAPABILITY_POLL = "host.capability.poll/v1"
+CAPABILITY_CANCEL = "host.capability.cancel/v1"
 JOB_COMPLETE = "host.job.complete/v1"
+SHARED_CORE_HOST_METHODS = (
+    ASSET_READ,
+    ASSET_CREATE,
+    CANDIDATE_STAGE,
+    CAPABILITY_INVOKE,
+    CAPABILITY_POLL,
+    CAPABILITY_CANCEL,
+    JOB_COMPLETE,
+)
 CHAPTER_HOST_METHODS = (
+    ASSET_READ,
+    ASSET_CREATE,
+    CANDIDATE_STAGE,
+    CAPABILITY_INVOKE,
+    CAPABILITY_POLL,
+    CAPABILITY_CANCEL,
     CHECKPOINT_COMMIT,
     STREAM_COMMIT,
     JOB_EVENT,
@@ -189,7 +215,20 @@ def _resolve_receipt(
             "provenance receipt resolver returned a non-object",
         )
     receipt = dict(value)
-    verify_provenance_receipt(receipt)
+    # The frozen schema defines ``staged_items`` as unique item-ID strings.
+    # Use that published schema directly here: the legacy convenience
+    # verifier still indexes each member as an object and cannot validate a
+    # contract-shaped Candidate receipt.
+    assert_valid("provenance-receipt/v1", receipt)
+    if (receipt["bundle_id"] is None) != (receipt["bundle_hash"] is None):
+        raise ContractValidationError(
+            "provenance Bundle ID/hash must be all-null or all-present"
+        )
+    if len(set(receipt["staged_items"])) != len(receipt["staged_items"]):
+        raise ContractValidationError("provenance staged item IDs must be unique")
+    expected_hash = hash_without_field(receipt, "receipt_hash", "provenance-receipt/v1")
+    if receipt["receipt_hash"] != expected_hash:
+        raise ContractValidationError("provenance receipt_hash mismatch")
     return receipt
 
 
@@ -268,6 +307,361 @@ class _CommitOnce:
         """Release the preparation gate without applying its mutation."""
 
         self._close()
+
+
+@dataclass(slots=True)
+class _DisposableUpload:
+    owner: tuple[str, str, str, int]
+    mime: str
+    total_size: int
+    expected_hash: str
+    content: bytearray
+    replies: dict[str, tuple[str, Mapping[str, Any]]]
+
+
+class DisposableAssetUploadBuffer:
+    """Bounded, restart-disposable bytes for frozen chunked Asset upload.
+
+    This object is deliberately not an authority or operation ledger.  A
+    completed upload is reconstructed from the immutable content-addressed
+    ``AssetStore``; only incomplete bytes and same-process chunk ACKs live
+    here.
+    """
+
+    MAX_ACTIVE_UPLOADS = 64
+    MAX_UPLOAD_BYTES = 64 * 1024 * 1024
+    MAX_CHUNKS_PER_UPLOAD = 4096
+
+    def __init__(self, assets: Any) -> None:
+        self._assets = assets
+        self._uploads: dict[str, _DisposableUpload] = {}
+        self._lock = RLock()
+
+    @staticmethod
+    def _asset_id(expected_hash: str) -> str:
+        return f"asset-sha256-{expected_hash}"
+
+    @staticmethod
+    def decode_chunk(encoded: str) -> bytes:
+        if not isinstance(encoded, str):
+            raise ContractValidationError("base64_chunk must be a string")
+        try:
+            return base64.b64decode(encoded.encode("ascii"), validate=True)
+        except (UnicodeEncodeError, binascii.Error, ValueError) as exc:
+            raise ContractValidationError("base64_chunk is not strict base64") from exc
+
+    def _completed_result(
+        self,
+        *,
+        upload_id: str,
+        offset: int,
+        chunk: bytes,
+        mime: str,
+        total_size: int,
+        expected_hash: str,
+        final: bool,
+    ) -> Mapping[str, Any] | None:
+        asset_id = self._asset_id(expected_hash)
+        try:
+            metadata = self._assets.require(
+                asset_id,
+                sha256=expected_hash,
+                mime=mime,
+            )
+        except (FileNotFoundError, OSError, ValueError):
+            return None
+        if metadata.size != total_size:
+            raise ContractError(
+                ErrorCode.DUPLICATE_REQUEST,
+                "completed upload size or MIME drifted",
+            )
+        if offset + len(chunk) > total_size:
+            raise ContractError(
+                ErrorCode.ASSET_ERROR, "upload chunk exceeds total_size"
+            )
+        try:
+            persisted = self._assets.read(asset_id, offset=offset, length=len(chunk))
+        except Exception as exc:
+            raise ContractError(
+                ErrorCode.ASSET_ERROR,
+                "completed upload Asset cannot be verified",
+            ) from exc
+        if persisted != chunk:
+            raise ContractError(
+                ErrorCode.DUPLICATE_REQUEST,
+                "completed upload chunk does not match the immutable Asset",
+            )
+        if final and offset + len(chunk) != total_size:
+            raise ContractError(
+                ErrorCode.ASSET_ERROR,
+                "final upload chunk does not end at total_size",
+            )
+        return MappingProxyType(
+            {
+                "upload_id": upload_id,
+                "accepted_bytes": total_size if final else offset + len(chunk),
+                "completed": final,
+                "asset_id": asset_id if final else None,
+            }
+        )
+
+    def prepare(
+        self,
+        *,
+        owner: tuple[str, str, str, int],
+        operation_key: str,
+        upload_id: str,
+        offset: int,
+        mime: str,
+        total_size: int,
+        expected_hash: str,
+        chunk_hash: str,
+        chunk: bytes,
+        final: bool,
+    ) -> tuple[Mapping[str, Any], Callable[[], Mapping[str, Any]]]:
+        if not isinstance(mime, str) or not mime:
+            raise ContractValidationError("mime must be non-empty")
+        if total_size > self.MAX_UPLOAD_BYTES:
+            raise ContractError(ErrorCode.ASSET_ERROR, "upload exceeds bounded buffer")
+        if sha256_hex(chunk) != chunk_hash:
+            raise ContractError(ErrorCode.ASSET_ERROR, "upload chunk hash mismatch")
+        request_hash = sha256_hex(
+            canonical_bytes(
+                {
+                    "owner": list(owner),
+                    "operation_key": operation_key,
+                    "upload_id": upload_id,
+                    "offset": offset,
+                    "mime": mime,
+                    "total_size": total_size,
+                    "expected_hash": expected_hash,
+                    "chunk_hash": chunk_hash,
+                    "base64_chunk": base64.b64encode(chunk).decode("ascii"),
+                    "final": final,
+                }
+            )
+        )
+        with self._lock:
+            completed = self._completed_result(
+                upload_id=upload_id,
+                offset=offset,
+                chunk=chunk,
+                mime=mime,
+                total_size=total_size,
+                expected_hash=expected_hash,
+                final=final,
+            )
+            if completed is not None:
+                return completed, lambda: completed
+
+            upload = self._uploads.get(upload_id)
+            if upload is None:
+                if offset != 0:
+                    raise ContractError(
+                        ErrorCode.ASSET_ERROR,
+                        "upload offset does not match buffered bytes",
+                    )
+                if len(self._uploads) >= self.MAX_ACTIVE_UPLOADS:
+                    raise ContractError(
+                        ErrorCode.ASSET_ERROR,
+                        "too many active disposable uploads",
+                    )
+                buffered = b""
+                replies: dict[str, tuple[str, Mapping[str, Any]]] = {}
+            else:
+                if (
+                    upload.owner != owner
+                    or upload.mime != mime
+                    or upload.total_size != total_size
+                    or upload.expected_hash != expected_hash
+                ):
+                    raise ContractError(
+                        ErrorCode.DUPLICATE_REQUEST,
+                        "upload identity or profile drifted",
+                    )
+                prior = upload.replies.get(operation_key)
+                if prior is not None:
+                    prior_hash, prior_result = prior
+                    if prior_hash != request_hash:
+                        raise ContractError(
+                            ErrorCode.DUPLICATE_REQUEST,
+                            "upload operation key payload drifted",
+                        )
+                    return prior_result, lambda: prior_result
+                buffered = bytes(upload.content)
+                replies = upload.replies
+                if len(replies) >= self.MAX_CHUNKS_PER_UPLOAD:
+                    raise ContractError(
+                        ErrorCode.ASSET_ERROR,
+                        "upload exceeds bounded chunk count",
+                    )
+                if offset != len(buffered):
+                    raise ContractError(
+                        ErrorCode.ASSET_ERROR,
+                        "upload offset does not match buffered bytes",
+                    )
+
+            accepted = offset + len(chunk)
+            if accepted > total_size:
+                raise ContractError(ErrorCode.ASSET_ERROR, "upload exceeds total_size")
+            complete_bytes = buffered + chunk
+            if final:
+                if accepted != total_size:
+                    raise ContractError(
+                        ErrorCode.ASSET_ERROR,
+                        "final upload does not match total_size",
+                    )
+                if sha256_hex(complete_bytes) != expected_hash:
+                    raise ContractError(
+                        ErrorCode.ASSET_ERROR, "upload content hash mismatch"
+                    )
+            result: Mapping[str, Any] = MappingProxyType(
+                {
+                    "upload_id": upload_id,
+                    "accepted_bytes": accepted,
+                    "completed": final,
+                    "asset_id": self._asset_id(expected_hash) if final else None,
+                }
+            )
+
+        def commit() -> Mapping[str, Any]:
+            with self._lock:
+                current = self._uploads.get(upload_id)
+                completed_now = self._completed_result(
+                    upload_id=upload_id,
+                    offset=offset,
+                    chunk=chunk,
+                    mime=mime,
+                    total_size=total_size,
+                    expected_hash=expected_hash,
+                    final=final,
+                )
+                if completed_now is not None:
+                    return completed_now
+                if current is None:
+                    if offset != 0:
+                        raise ContractError(
+                            ErrorCode.ASSET_ERROR,
+                            "upload buffer changed before commit",
+                        )
+                    current = _DisposableUpload(
+                        owner,
+                        mime,
+                        total_size,
+                        expected_hash,
+                        bytearray(),
+                        {},
+                    )
+                    self._uploads[upload_id] = current
+                if (
+                    current.owner != owner
+                    or current.mime != mime
+                    or current.total_size != total_size
+                    or current.expected_hash != expected_hash
+                ):
+                    raise ContractError(
+                        ErrorCode.DUPLICATE_REQUEST,
+                        "upload profile changed before commit",
+                    )
+                prior = current.replies.get(operation_key)
+                if prior is not None:
+                    if prior[0] != request_hash:
+                        raise ContractError(
+                            ErrorCode.DUPLICATE_REQUEST,
+                            "upload operation changed before commit",
+                        )
+                    return prior[1]
+                if len(current.content) != offset:
+                    raise ContractError(
+                        ErrorCode.ASSET_ERROR,
+                        "upload offset changed before commit",
+                    )
+                current.content.extend(chunk)
+                if final:
+                    try:
+                        metadata = self._assets.put(
+                            bytes(current.content),
+                            mime=mime,
+                            logical_role="plugin_upload",
+                            provenance=f"host:{owner[2]}",
+                            rebuildable=False,
+                        )
+                    except Exception as exc:
+                        del current.content[offset:]
+                        raise ContractError(
+                            ErrorCode.ASSET_ERROR,
+                            "upload could not publish immutable Asset",
+                        ) from exc
+                    if metadata.asset_id != result["asset_id"]:
+                        raise ContractError(
+                            ErrorCode.ASSET_ERROR,
+                            "published Asset identity does not match expected_hash",
+                        )
+                    self._uploads.pop(upload_id, None)
+                else:
+                    current.replies[operation_key] = (request_hash, result)
+                return result
+
+        return result, commit
+
+
+@dataclass(frozen=True, slots=True)
+class _PollCursor:
+    high_water: int
+    request_cursor: int
+    result: Mapping[str, Any]
+
+
+class DisposablePollCursorBuffer:
+    """Bounded ACK replay/cursor guard; durable child state stays in P1/P3B."""
+
+    MAX_CHILDREN = 4096
+
+    def __init__(self) -> None:
+        self._entries: OrderedDict[tuple[str, str, str, int, str], _PollCursor] = (
+            OrderedDict()
+        )
+        self._lock = RLock()
+
+    def poll(
+        self,
+        key: tuple[str, str, str, int, str],
+        after_job_event_seq: int,
+        action: Callable[[], Mapping[str, Any]],
+    ) -> Mapping[str, Any]:
+        with self._lock:
+            previous = self._entries.get(key)
+            if previous is not None:
+                self._entries.move_to_end(key)
+                if after_job_event_seq == previous.request_cursor:
+                    return previous.result
+                if after_job_event_seq < previous.high_water:
+                    raise ContractError(
+                        ErrorCode.INVALID_TRANSITION,
+                        "capability poll cursor regressed",
+                    )
+            result = MappingProxyType(dict(action()))
+            next_cursor = _require_nonnegative_int(
+                result.get("next_job_event_seq"), "next_job_event_seq"
+            )
+            if next_cursor < after_job_event_seq:
+                raise ContractError(
+                    ErrorCode.INVALID_TRANSITION,
+                    "capability poll projection moved backwards",
+                )
+            self._entries[key] = _PollCursor(
+                max(
+                    after_job_event_seq,
+                    next_cursor,
+                    0 if previous is None else previous.high_water,
+                ),
+                after_job_event_seq,
+                result,
+            )
+            self._entries.move_to_end(key)
+            while len(self._entries) > self.MAX_CHILDREN:
+                self._entries.popitem(last=False)
+            return result
 
 
 class ChapterDurableReplayResolver:
@@ -444,7 +838,7 @@ class ChapterDurableReplayResolver:
 
 
 class ChapterHostHandlerSet(Mapping[str, HostRpcHandler]):
-    """Five production handlers bound to one immutable running Attempt."""
+    """Production handlers bound to one immutable durable Attempt."""
 
     def __init__(
         self,
@@ -462,6 +856,9 @@ class ChapterHostHandlerSet(Mapping[str, HostRpcHandler]):
         ],
         checkpoints: DurableCheckpointAdapter | None = None,
         snapshot_reader: JobSnapshotReader | None = None,
+        asset_uploads: DisposableAssetUploadBuffer | None = None,
+        capability_broker: CapabilityBroker | None = None,
+        poll_cursors: DisposablePollCursorBuffer | None = None,
         clock: Callable[[], str] = utc_now,
     ) -> None:
         self.workspace_id = _require_id(workspace_id, "workspace_id")
@@ -512,11 +909,20 @@ class ChapterHostHandlerSet(Mapping[str, HostRpcHandler]):
         self._attempt = attempt
         self._receipt_resolver = provenance_receipt_resolver
         self._stream_policy_resolver = stream_commit_policy_resolver
+        self._asset_uploads = asset_uploads or DisposableAssetUploadBuffer(assets)
+        self._capability_broker = capability_broker
+        self._poll_cursors = poll_cursors or DisposablePollCursorBuffer()
         self._clock = clock
         self.durable_replay = ChapterDurableReplayResolver(
             authority, provenance_receipt_resolver
         )
         self._handlers: dict[str, HostRpcHandler] = {
+            ASSET_READ: self.asset_read,
+            ASSET_CREATE: self.asset_create,
+            CANDIDATE_STAGE: self.candidate_stage,
+            CAPABILITY_INVOKE: self.capability_invoke,
+            CAPABILITY_POLL: self.capability_poll,
+            CAPABILITY_CANCEL: self.capability_cancel,
             CHECKPOINT_COMMIT: self.checkpoint_commit,
             STREAM_COMMIT: self.stream_commit,
             JOB_EVENT: self.job_event,
@@ -787,6 +1193,174 @@ class ChapterHostHandlerSet(Mapping[str, HostRpcHandler]):
         prepared = dict(result)
         validate_rpc_result(method, prepared, request=request)
         return PreparedHostRpcResult(MappingProxyType(prepared), lambda: None)
+
+    def asset_read(self, request: Mapping[str, Any]) -> PreparedHostRpcResult:
+        def factory(
+            _meta: dict[str, Any],
+            params: dict[str, Any],
+            _snapshot: dict[str, Any],
+        ) -> tuple[Mapping[str, Any], Callable[[], Mapping[str, Any]]]:
+            asset_id = _require_id(params["asset_id"], "asset_id")
+            offset = _require_nonnegative_int(params["offset"], "offset")
+            length = params["length"]
+            if isinstance(length, bool) or not isinstance(length, int) or length < 1:
+                raise ContractValidationError("length must be a positive integer")
+            try:
+                metadata = self._assets.require(asset_id)
+                if offset > metadata.size:
+                    raise ContractError(
+                        ErrorCode.ASSET_ERROR,
+                        "Asset read offset exceeds content size",
+                    )
+                chunk = self._assets.read(asset_id, offset=offset, length=length)
+            except ContractError:
+                raise
+            except Exception as exc:
+                raise ContractError(
+                    ErrorCode.ASSET_ERROR,
+                    "Asset read authority is missing or invalid",
+                ) from exc
+            next_offset = offset + len(chunk)
+            result = {
+                "base64_chunk": base64.b64encode(chunk).decode("ascii"),
+                "next_offset": next_offset if next_offset < metadata.size else None,
+                "content_hash": metadata.sha256,
+            }
+            return result, lambda: result
+
+        return self._prepare(request, ASSET_READ, factory)
+
+    def asset_create(self, request: Mapping[str, Any]) -> PreparedHostRpcResult:
+        def factory(
+            _meta: dict[str, Any],
+            params: dict[str, Any],
+            _snapshot: dict[str, Any],
+        ) -> tuple[Mapping[str, Any], Callable[[], Mapping[str, Any]]]:
+            operation_key = _require_id(params["operation_key"], "operation_key")
+            upload_id = _require_id(params["upload_id"], "upload_id")
+            offset = _require_nonnegative_int(params["offset"], "offset")
+            total_size = _require_nonnegative_int(params["total_size"], "total_size")
+            expected_hash = _require_hash(params["expected_hash"], "expected_hash")
+            chunk_hash = _require_hash(params["chunk_hash"], "chunk_hash")
+            final = params["final"]
+            if not isinstance(final, bool):
+                raise ContractValidationError("final must be a boolean")
+            return self._asset_uploads.prepare(
+                owner=(
+                    self._attempt.job_id,
+                    self._attempt.step_id,
+                    self._attempt.attempt_id,
+                    self._attempt.lease_epoch,
+                ),
+                operation_key=operation_key,
+                upload_id=upload_id,
+                offset=offset,
+                mime=params["mime"],
+                total_size=total_size,
+                expected_hash=expected_hash,
+                chunk_hash=chunk_hash,
+                chunk=DisposableAssetUploadBuffer.decode_chunk(params["base64_chunk"]),
+                final=final,
+            )
+
+        return self._prepare(request, ASSET_CREATE, factory)
+
+    def candidate_stage(self, request: Mapping[str, Any]) -> PreparedHostRpcResult:
+        meta, params = self._parts(request, CANDIDATE_STAGE)
+        # Candidate preparation is itself the durable ACK-loss boundary.  It
+        # validates and commits atomically before the dispatcher can emit the
+        # ACK, and an exact retry (including after restart/terminal commit)
+        # reads the same prepared mapping.
+        result = dict(
+            self._authority.stage_candidate_batch(
+                job_id=self._attempt.job_id,
+                step_id=self._attempt.step_id,
+                attempt_id=self._attempt.attempt_id,
+                lease_epoch=self._attempt.lease_epoch,
+                operation_key=params["operation_key"],
+                worker_run_id=self._attempt.worker_run_id,
+                result_bundle_asset_id=params["result_bundle_asset_id"],
+                input_snapshot_hash=params["input_snapshot_hash"],
+                operation_meta=meta,
+            )
+        )
+        validate_rpc_result(CANDIDATE_STAGE, result, request=request)
+        return PreparedHostRpcResult(MappingProxyType(result), lambda: None)
+
+    def _capability_caller(self, meta: Mapping[str, Any]) -> CallerAttemptContext:
+        if self._capability_broker is None:
+            raise ContractError(
+                ErrorCode.INVALID_TRANSITION,
+                "production capability Host methods require the composed CapabilityBroker",
+            )
+        return CallerAttemptContext(
+            self._attempt.job_id,
+            self._attempt.step_id,
+            self._attempt.attempt_id,
+            self._attempt.lease_epoch,
+            generation_id=str(meta["generation_id"]),
+            plugin_release_id=str(meta["plugin_release_id"]),
+        )
+
+    def capability_invoke(self, request: Mapping[str, Any]) -> PreparedHostRpcResult:
+        meta, params = self._parts(request, CAPABILITY_INVOKE)
+        caller = self._capability_caller(meta)
+        broker = self._capability_broker
+        assert broker is not None
+        result = broker.invoke(
+            caller,
+            operation_key=params["operation_key"],
+            binding_id=params["binding_id"],
+            input_asset_id=params["input_asset_id"],
+            parameters_asset_id=params["parameters_asset_id"],
+            expected_result_contract=params["expected_result_contract"],
+            propagate_cancel=params["propagate_cancel"],
+        ).to_dict()
+        validate_rpc_result(CAPABILITY_INVOKE, result, request=request)
+        return PreparedHostRpcResult(MappingProxyType(result), lambda: None)
+
+    def capability_poll(self, request: Mapping[str, Any]) -> PreparedHostRpcResult:
+        meta, params = self._parts(request, CAPABILITY_POLL)
+        caller = self._capability_caller(meta)
+        broker = self._capability_broker
+        assert broker is not None
+        child_job_id = str(params["child_job_id"])
+        after = _require_nonnegative_int(
+            params["after_job_event_seq"], "after_job_event_seq"
+        )
+        result = dict(
+            self._poll_cursors.poll(
+                (
+                    self._attempt.job_id,
+                    self._attempt.step_id,
+                    self._attempt.attempt_id,
+                    self._attempt.lease_epoch,
+                    child_job_id,
+                ),
+                after,
+                lambda: broker.poll(
+                    caller,
+                    child_job_id=child_job_id,
+                    after_job_event_seq=after,
+                ).to_dict(),
+            )
+        )
+        validate_rpc_result(CAPABILITY_POLL, result, request=request)
+        return PreparedHostRpcResult(MappingProxyType(result), lambda: None)
+
+    def capability_cancel(self, request: Mapping[str, Any]) -> PreparedHostRpcResult:
+        meta, params = self._parts(request, CAPABILITY_CANCEL)
+        caller = self._capability_caller(meta)
+        broker = self._capability_broker
+        assert broker is not None
+        result = broker.cancel(
+            caller,
+            operation_key=params["operation_key"],
+            child_job_id=params["child_job_id"],
+            reason=params["reason"],
+        ).to_dict()
+        validate_rpc_result(CAPABILITY_CANCEL, result, request=request)
+        return PreparedHostRpcResult(MappingProxyType(result), lambda: None)
 
     def checkpoint_commit(self, request: Mapping[str, Any]) -> PreparedHostRpcResult:
         def factory(
@@ -1256,9 +1830,12 @@ def build_chapter_host_handlers(
     ],
     checkpoints: DurableCheckpointAdapter | None = None,
     snapshot_reader: JobSnapshotReader | None = None,
+    asset_uploads: DisposableAssetUploadBuffer | None = None,
+    capability_broker: CapabilityBroker | None = None,
+    poll_cursors: DisposablePollCursorBuffer | None = None,
     clock: Callable[[], str] = utc_now,
 ) -> Mapping[str, HostRpcHandler]:
-    """Build the five frozen chapter Host handlers for one active Attempt."""
+    """Build the shared frozen Host handlers for one durable Attempt."""
 
     return ChapterHostHandlerSet(
         authority,
@@ -1269,6 +1846,9 @@ def build_chapter_host_handlers(
         stream_commit_policy_resolver=stream_commit_policy_resolver,
         checkpoints=checkpoints,
         snapshot_reader=snapshot_reader,
+        asset_uploads=asset_uploads,
+        capability_broker=capability_broker,
+        poll_cursors=poll_cursors,
         clock=clock,
     )
 
@@ -1285,14 +1865,23 @@ def build_chapter_durable_replay_resolver(
 
 
 __all__ = [
+    "ASSET_CREATE",
+    "ASSET_READ",
     "AWAIT_USER",
+    "CANDIDATE_STAGE",
+    "CAPABILITY_CANCEL",
+    "CAPABILITY_INVOKE",
+    "CAPABILITY_POLL",
     "CHAPTER_HOST_METHODS",
     "CHECKPOINT_COMMIT",
     "JOB_COMPLETE",
     "JOB_EVENT",
+    "SHARED_CORE_HOST_METHODS",
     "STREAM_COMMIT",
     "ChapterDurableReplayResolver",
     "ChapterHostHandlerSet",
+    "DisposableAssetUploadBuffer",
+    "DisposablePollCursorBuffer",
     "JobSnapshotReader",
     "ProvenanceReceiptResolver",
     "StreamCommitPolicy",

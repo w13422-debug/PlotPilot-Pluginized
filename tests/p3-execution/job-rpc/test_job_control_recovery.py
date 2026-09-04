@@ -22,6 +22,7 @@ from backend.plotpilot_core.repositories.execution import ExecutionAuthority
 from backend.plotpilot_core.supervisor.job_control import JobControl, RunSnapshotWorker
 from backend.plotpilot_core.supervisor.models import AttemptFence, WorkerTicket
 from backend.plotpilot_core.supervisor.rpc import RpcEvent
+from backend.plotpilot_plugin_sdk import ContractError, ErrorCode
 from backend.plotpilot_plugin_sdk.verifier import request_key, snapshot_hash
 
 RELEASE = "e" * 64
@@ -83,6 +84,28 @@ class RecordingSupervisor:
     ) -> RpcEvent | None:
         del ticket, request_id
         return None
+
+
+class WorkerResponseSupervisor(RecordingSupervisor):
+    def __init__(self, worker_run_id: str | None) -> None:
+        super().__init__()
+        self.response_worker_run_id = worker_run_id
+
+    def take_worker_response(
+        self, ticket: WorkerTicket, request_id: str
+    ) -> RpcEvent | None:
+        del ticket
+        result = {
+            "accepted": True,
+            "provenance_receipt_id": "receipt-1",
+            "output_streams": [],
+        }
+        if self.response_worker_run_id is not None:
+            result["worker_run_id"] = self.response_worker_run_id
+        return RpcEvent(
+            "response",
+            {"jsonrpc": "2.0", "id": request_id, "result": result},
+        )
 
 
 class InjectedBindFailure(RuntimeError):
@@ -250,6 +273,57 @@ def test_attempt_start_reads_the_same_authority_row_and_runtime_uses_snapshot_wo
         encoding="utf-8"
     )
     assert "repository._connection" not in source
+
+
+@pytest.mark.parametrize(
+    ("response_worker_run_id", "accepted"),
+    [(None, False), ("worker-derived", False), ("worker-run-1", True)],
+)
+def test_worker_start_response_requires_authoritative_p2_lifecycle_identity(
+    tmp_path, response_worker_run_id, accepted
+):
+    _, _, repository, authority, snapshot = _authority(tmp_path)
+    supervisor = WorkerResponseSupervisor(response_worker_run_id)
+    runtime = ChapterJobRuntime(
+        authority,
+        job_control=JobControl(supervisor),
+        checkpoints=DurableCheckpointAdapter(authority),
+        attempt_lifecycle=supervisor,
+    )
+    worker = RunSnapshotWorker(
+        run_snapshot_id=snapshot["snapshot_id"],
+        worker_id="worker-1",
+        plugin_id="com.plotpilot.demo",
+        generation_id="generation-1",
+        release_id=RELEASE,
+    )
+    started = runtime.start_attempt(
+        run_snapshot_worker=worker,
+        job_id="job-1",
+        step_id="step-1",
+        attempt_id="attempt-1",
+        package_hash=PACKAGE,
+        capability_id="writing.chapter.draft/v1",
+        preallocated_receipt_id="receipt-1",
+        expected_result_contract="candidate-batch/v1",
+    )
+    with repository.read_connection() as connection:
+        before = tuple(connection.iterdump())
+
+    if accepted:
+        event = runtime.take_worker_response(started, "request-1")
+        assert event is not None
+        assert event.message["result"]["worker_run_id"] == "worker-run-1"
+    else:
+        with pytest.raises(ContractError) as exc_info:
+            runtime.take_worker_response(started, "request-1")
+        assert exc_info.value.code == int(ErrorCode.STALE_LEASE)
+
+    with repository.read_connection() as connection:
+        after = tuple(connection.iterdump())
+    assert after == before
+    runtime.release_worker(started)
+    repository.close()
 
 
 def test_bind_failure_interrupts_before_release_and_retry_advances_epoch(tmp_path):

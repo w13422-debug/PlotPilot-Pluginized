@@ -1,16 +1,25 @@
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 
 import pytest
 
+from backend.plotpilot_core.assets import AssetStore
 from backend.plotpilot_core.jobs.http_rpc import (
     HostRpcApplicationDispatcher,
     PreparedHostRpcResult,
 )
+from backend.plotpilot_core.jobs.http_rpc.chapter_handlers import (
+    DisposableAssetUploadBuffer,
+)
 from backend.plotpilot_core.supervisor.models import WorkerTicket
 from backend.plotpilot_core.supervisor.rpc import RpcEvent
-from backend.plotpilot_plugin_sdk import ContractError, ErrorCode
+from backend.plotpilot_plugin_sdk import (
+    ContractError,
+    ContractValidationError,
+    ErrorCode,
+)
 from backend.plotpilot_plugin_sdk.rpc import build_meta, build_request
 
 
@@ -269,3 +278,171 @@ def test_batch_dispatch_stops_before_destructive_p2_drain_is_available():
     dispatcher = HostRpcApplicationDispatcher(FakeSupervisor(), {})
     with pytest.raises(ContractError, match="non-destructive"):
         dispatcher.dispatch_pending(_ticket())
+
+
+def test_asset_create_result_is_validated_before_commit_and_ack():
+    request = build_request(
+        "host.asset.create/v1",
+        {
+            "operation_key": "upload-op-1",
+            "upload_id": "upload-1",
+            "offset": 0,
+            "mime": "text/plain",
+            "total_size": 1,
+            "expected_hash": "a" * 64,
+            "chunk_hash": "b" * 64,
+            "base64_chunk": "eA==",
+            "final": True,
+        },
+        build_meta(
+            "attempt",
+            generation_id="dg-a",
+            plugin_release_id="e" * 64,
+            deadline_at="2026-08-28T18:00:00Z",
+            job_id="job-1",
+            step_id="step-1",
+            attempt_id="attempt-1",
+            lease_epoch=1,
+        ),
+        request_id="00000000-0000-4000-8000-000000000101",
+    )
+    supervisor = FakeSupervisor()
+    commits: list[str] = []
+    dispatcher = HostRpcApplicationDispatcher(
+        supervisor,
+        {
+            "host.asset.create/v1": lambda _request: _prepared(
+                {
+                    "upload_id": "upload-1",
+                    "accepted_bytes": 1,
+                    "completed": True,
+                    "asset_id": "asset-1",
+                },
+                lambda: commits.append("upload-op-1"),
+            )
+        },
+    )
+
+    assert dispatcher.dispatch_event(_ticket(), RpcEvent("host_request", request))
+    assert commits == ["upload-op-1"]
+    assert supervisor.responses[0][2] == {
+        "upload_id": "upload-1",
+        "accepted_bytes": 1,
+        "completed": True,
+        "asset_id": "asset-1",
+    }
+
+
+def test_disposable_asset_upload_rejects_malformed_chunks_and_offsets(tmp_path):
+    buffer = DisposableAssetUploadBuffer(AssetStore(tmp_path / "assets"))
+    owner = ("job-1", "step-1", "attempt-1", 1)
+    content = b"ab"
+    expected_hash = hashlib.sha256(content).hexdigest()
+
+    with pytest.raises(ContractValidationError, match="strict base64"):
+        buffer.decode_chunk("***")
+    with pytest.raises(ContractError, match="chunk hash mismatch"):
+        buffer.prepare(
+            owner=owner,
+            operation_key="upload-op-bad-hash",
+            upload_id="upload-1",
+            offset=0,
+            mime="text/plain",
+            total_size=len(content),
+            expected_hash=expected_hash,
+            chunk_hash="0" * 64,
+            chunk=b"a",
+            final=False,
+        )
+
+    _, commit = buffer.prepare(
+        owner=owner,
+        operation_key="upload-op-1",
+        upload_id="upload-1",
+        offset=0,
+        mime="text/plain",
+        total_size=len(content),
+        expected_hash=expected_hash,
+        chunk_hash=hashlib.sha256(b"a").hexdigest(),
+        chunk=b"a",
+        final=False,
+    )
+    commit()
+    with pytest.raises(ContractError, match="offset does not match"):
+        buffer.prepare(
+            owner=owner,
+            operation_key="upload-op-2",
+            upload_id="upload-1",
+            offset=0,
+            mime="text/plain",
+            total_size=len(content),
+            expected_hash=expected_hash,
+            chunk_hash=hashlib.sha256(b"b").hexdigest(),
+            chunk=b"b",
+            final=True,
+        )
+
+
+def test_final_asset_upload_checks_size_hash_and_rebuilds_ack_after_restart(tmp_path):
+    assets = AssetStore(tmp_path / "assets")
+    buffer = DisposableAssetUploadBuffer(assets)
+    owner = ("job-1", "step-1", "attempt-1", 1)
+    content = b"ab"
+    content_hash = hashlib.sha256(content).hexdigest()
+
+    with pytest.raises(ContractError, match="total_size"):
+        buffer.prepare(
+            owner=owner,
+            operation_key="upload-op-short",
+            upload_id="upload-short",
+            offset=0,
+            mime="text/plain",
+            total_size=len(content),
+            expected_hash=content_hash,
+            chunk_hash=hashlib.sha256(b"a").hexdigest(),
+            chunk=b"a",
+            final=True,
+        )
+    with pytest.raises(ContractError, match="content hash mismatch"):
+        buffer.prepare(
+            owner=owner,
+            operation_key="upload-op-wrong-content",
+            upload_id="upload-wrong-content",
+            offset=0,
+            mime="text/plain",
+            total_size=len(content),
+            expected_hash=hashlib.sha256(b"ac").hexdigest(),
+            chunk_hash=content_hash,
+            chunk=content,
+            final=True,
+        )
+
+    result, commit = buffer.prepare(
+        owner=owner,
+        operation_key="upload-op-final",
+        upload_id="upload-final",
+        offset=0,
+        mime="text/plain",
+        total_size=len(content),
+        expected_hash=content_hash,
+        chunk_hash=content_hash,
+        chunk=content,
+        final=True,
+    )
+    assert commit() == result
+
+    restarted = DisposableAssetUploadBuffer(assets)
+    replay, replay_commit = restarted.prepare(
+        owner=owner,
+        operation_key="upload-op-final",
+        upload_id="upload-final",
+        offset=0,
+        mime="text/plain",
+        total_size=len(content),
+        expected_hash=content_hash,
+        chunk_hash=content_hash,
+        chunk=content,
+        final=True,
+    )
+    assert replay == result
+    assert replay_commit() == result

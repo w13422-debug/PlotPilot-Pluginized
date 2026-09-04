@@ -13,7 +13,7 @@ from backend.plotpilot_core.broker.service import (
     ChildCreationRequest,
 )
 from backend.plotpilot_core.repositories.execution import ExecutionAuthority
-from backend.plotpilot_plugin_sdk import ContractError, ErrorCode
+from backend.plotpilot_plugin_sdk import ContractError, ErrorCode, canonical_bytes
 from backend.plotpilot_plugin_sdk.verifier import hash_without_field
 
 
@@ -36,6 +36,42 @@ def _request(stack, operation_key="invoke-1"):
         envelope_id, envelope, input_meta.asset_id, None, binding, None,
         "e" * 64, "generation-1", context,
     )
+
+
+def _checkpoint_asset(
+    stack,
+    *,
+    checkpoint_id="checkpoint-resume-1",
+    checkpoint_seq=1,
+    source="attempt-1",
+    epoch=1,
+):
+    value = {
+        "schema": "checkpoint/v1",
+        "checkpoint_id": checkpoint_id,
+        "checkpoint_seq": checkpoint_seq,
+        "job_id": "job-1",
+        "step_id": "step-1",
+        "source_attempt_id": source,
+        "lease_epoch": epoch,
+        "run_snapshot_hash": stack["snapshot"]["snapshot_hash"],
+        "replay_policy": "checkpoint_resume",
+        "completed_units": 1,
+        "total_units": 2,
+        "unit_set_hash": "b" * 64,
+        "state_asset_id": None,
+        "created_at": "2026-09-04T00:00:00Z",
+    }
+    value["checkpoint_hash"] = hash_without_field(
+        value, "checkpoint_hash", "checkpoint/v1"
+    )
+    asset = stack["assets"].put(
+        canonical_bytes(value),
+        mime="application/json",
+        logical_role="checkpoint",
+        provenance="test:direct-resume",
+    )
+    return value, asset
 
 
 def test_sqlite_reservation_round_trips_and_rejects_drift(execution_stack):
@@ -281,6 +317,172 @@ def test_production_broker_uses_p1_ports_and_replays_after_restart(execution_sta
     assert reopened._connection.execute("SELECT count(*) FROM execution_child_creation").fetchone()[0] == 1
 
 
+def test_direct_resume_alias_reuses_exact_child_and_survives_restart(execution_stack):
+    class Execution:
+        def __init__(self, stack):
+            self.cancel_calls = 0
+            self.snapshot_id = stack["assets"].create_asset(
+                b"snapshot", mime="application/json"
+            )
+            self.events_id = stack["assets"].create_asset(
+                b"events", mime="application/json"
+            )
+
+        def poll(self, _child_job_id, after_event_seq):
+            return {
+                "job_snapshot_asset_id": self.snapshot_id,
+                "job_event_page_asset_id": self.events_id,
+                "next_job_event_seq": after_event_seq,
+                "terminal": False,
+                "result_bundle_asset_id": None,
+                "provenance_receipt_id": None,
+                "child_state": "queued",
+            }
+
+        def cancel(self, _operation_key, _child_job_id):
+            self.cancel_calls += 1
+            return {
+                "accepted": True,
+                "terminal_known": False,
+                "child_state": "cancelling",
+                "child_job_event_seq": 0,
+            }
+
+    execution = Execution(execution_stack)
+    broker, source, request = _production_broker(execution_stack, execution=execution)
+    first = broker.invoke(
+        source,
+        operation_key="invoke-1",
+        binding_id="binding-1",
+        input_asset_id=request.input_asset_id,
+    )
+    _checkpoint, checkpoint_asset = _checkpoint_asset(execution_stack)
+    paused = execution_stack["authority"].control_port.pause(
+        job_id="job-1",
+        step_id="step-1",
+        attempt_id="attempt-1",
+        lease_epoch=1,
+        operation_key="pause-for-direct-resume",
+        worker_run_id="worker-run-1",
+        reason="resume child wait",
+        checkpoint_asset_id=checkpoint_asset.asset_id,
+    )
+    assert paused.accepted
+    resumed = execution_stack["authority"].control_port.resume(
+        job_id="job-1",
+        step_id="step-1",
+        operation_key="resume-direct-child",
+        resume_of_attempt_id="attempt-1",
+        worker_run_id="worker-run-2",
+        new_attempt_id="attempt-2",
+        checkpoint_asset_id=checkpoint_asset.asset_id,
+    )
+    assert resumed.accepted
+    current = CallerAttemptContext(
+        "job-1",
+        "step-1",
+        "attempt-2",
+        2,
+        generation_id="generation-1",
+        plugin_release_id="e" * 64,
+    )
+
+    aliased = broker.invoke(
+        current,
+        operation_key="invoke-1",
+        binding_id="binding-1",
+        input_asset_id=request.input_asset_id,
+    )
+    assert aliased.to_dict() == first.to_dict()
+    with pytest.raises(ContractError, match="before every child"):
+        execution_stack["authority"].complete_attempt(
+            job_id="job-1",
+            step_id="step-1",
+            attempt_id="attempt-2",
+            lease_epoch=2,
+            operation_key="complete-resumed-parent",
+            worker_run_id="worker-run-2",
+            outcome="failed",
+            result_bundle_asset_id=None,
+            candidate_stage_operation_key=None,
+            terminal_detail_asset_id=None,
+            local_seq=1,
+            provenance_receipt=None,
+            operation_meta={
+                "protocol_version": "1",
+                "generation_id": "generation-1",
+                "plugin_release_id": "e" * 64,
+                "deadline_at": "2026-09-04T01:00:00Z",
+                "context": "attempt",
+                "operation_id": "complete-resumed-parent",
+                "job_id": "job-1",
+                "step_id": "step-1",
+                "attempt_id": "attempt-2",
+                "lease_epoch": 2,
+            },
+        )
+    assert broker.poll(current, child_job_id=first.child_job_id).terminal is False
+    for _ in range(2):
+        cancelled = broker.cancel(
+            current,
+            operation_key="cancel-resumed-child",
+            child_job_id=first.child_job_id,
+            reason="stop resumed parent",
+        )
+        assert cancelled.accepted
+    assert execution.cancel_calls == 1
+    connection = execution_stack["repository"]._connection
+    assert (
+        connection.execute("SELECT count(*) FROM execution_child_creation").fetchone()[
+            0
+        ]
+        == 1
+    )
+    assert (
+        connection.execute("SELECT count(*) FROM p3_broker_child_record").fetchone()[0]
+        == 1
+    )
+    assert (
+        connection.execute(
+            "SELECT count(*) FROM p3_broker_operation "
+            "WHERE method='host.capability.invoke/v1'"
+        ).fetchone()[0]
+        == 2
+    )
+
+    execution_stack["repository"].close()
+    from backend.plotpilot_core.assets import AssetStore
+    from backend.plotpilot_core.repositories.authority import CoreAuthorityRepository
+
+    reopened = CoreAuthorityRepository(execution_stack["database"])
+    assets = AssetStore(execution_stack["asset_root"])
+    execution_stack["repository"] = reopened
+    execution_stack["assets"] = assets
+    execution_stack["authority"] = ExecutionAuthority(reopened, assets)
+    restarted, _source, restarted_request = _production_broker(
+        execution_stack, execution=Execution(execution_stack)
+    )
+    replay = restarted.invoke(
+        current,
+        operation_key="invoke-1",
+        binding_id="binding-1",
+        input_asset_id=restarted_request.input_asset_id,
+    )
+    assert replay.to_dict() == first.to_dict()
+    assert (
+        reopened._connection.execute(
+            "SELECT count(*) FROM execution_child_creation"
+        ).fetchone()[0]
+        == 1
+    )
+    assert (
+        reopened._connection.execute(
+            "SELECT count(*) FROM p3_broker_child_record"
+        ).fetchone()[0]
+        == 1
+    )
+
+
 def test_invoke_response_requires_child_and_child_drift_is_rejected(execution_stack):
     context, _binding, request = _request(execution_stack)
     identity = context.identity(); ledger = execution_stack["authority"].operation_ledger
@@ -321,6 +523,229 @@ def _production_broker(stack, *, execution, ledger=None):
         child_records=authority.child_records, attempt_context=authority,
     )
     return broker, context, request
+
+
+def _prepared_direct_resume_case(stack):
+    class Execution:
+        pass
+
+    broker, source, request = _production_broker(stack, execution=Execution())
+    child = broker.invoke(
+        source,
+        operation_key="invoke-1",
+        binding_id="binding-1",
+        input_asset_id=request.input_asset_id,
+    )
+    _checkpoint, checkpoint_asset = _checkpoint_asset(stack)
+    stack["authority"].control_port.pause(
+        job_id="job-1",
+        step_id="step-1",
+        attempt_id="attempt-1",
+        lease_epoch=1,
+        operation_key="pause-for-alias-negative",
+        worker_run_id="worker-run-1",
+        reason="negative alias setup",
+        checkpoint_asset_id=checkpoint_asset.asset_id,
+    )
+    stack["authority"].control_port.resume(
+        job_id="job-1",
+        step_id="step-1",
+        operation_key="resume-for-alias-negative",
+        resume_of_attempt_id="attempt-1",
+        worker_run_id="worker-run-2",
+        new_attempt_id="attempt-2",
+        checkpoint_asset_id=checkpoint_asset.asset_id,
+    )
+    current = CallerAttemptContext(
+        "job-1",
+        "step-1",
+        "attempt-2",
+        2,
+        generation_id="generation-1",
+        plugin_release_id="e" * 64,
+    )
+    return broker, request, child, current
+
+
+@pytest.mark.parametrize(
+    "drift",
+    [
+        "sibling",
+        "wrong-checkpoint",
+        "release",
+        "generation",
+        "package",
+        "capability",
+        "snapshot",
+        "payload",
+        "worker",
+    ],
+)
+def test_direct_resume_alias_identity_drift_rejects_before_effect(
+    execution_stack, drift
+):
+    broker, request, child, current = _prepared_direct_resume_case(execution_stack)
+    connection = execution_stack["repository"]._connection
+    input_asset_id = request.input_asset_id
+    if drift == "sibling":
+        sibling_attempt_id = connection.execute(
+            "SELECT attempt_id FROM execution_attempt WHERE job_id=?",
+            (child.child_job_id,),
+        ).fetchone()[0]
+        connection.execute(
+            "UPDATE execution_attempt SET resume_of_attempt_id=? "
+            "WHERE attempt_id='attempt-2'",
+            (sibling_attempt_id,),
+        )
+    elif drift == "wrong-checkpoint":
+        connection.execute(
+            "UPDATE execution_attempt SET resume_checkpoint_id='checkpoint-missing' "
+            "WHERE attempt_id='attempt-2'"
+        )
+    elif drift == "release":
+        connection.execute(
+            "UPDATE execution_attempt SET release_id=? WHERE attempt_id='attempt-2'",
+            ("f" * 64,),
+        )
+        current = CallerAttemptContext(
+            "job-1",
+            "step-1",
+            "attempt-2",
+            2,
+            generation_id="generation-1",
+            plugin_release_id="f" * 64,
+        )
+    elif drift == "generation":
+        connection.execute(
+            "UPDATE execution_attempt SET generation_id='generation-2' "
+            "WHERE attempt_id='attempt-2'"
+        )
+        current = CallerAttemptContext(
+            "job-1",
+            "step-1",
+            "attempt-2",
+            2,
+            generation_id="generation-2",
+            plugin_release_id="e" * 64,
+        )
+    elif drift == "package":
+        connection.execute(
+            "UPDATE execution_attempt SET package_hash=? WHERE attempt_id='attempt-2'",
+            ("f" * 64,),
+        )
+    elif drift == "capability":
+        connection.execute(
+            "UPDATE execution_attempt SET capability_id='writing.other/v1' "
+            "WHERE attempt_id='attempt-2'"
+        )
+    elif drift == "snapshot":
+        connection.execute(
+            "UPDATE execution_checkpoint SET run_snapshot_hash=? "
+            "WHERE checkpoint_id='checkpoint-resume-1'",
+            ("f" * 64,),
+        )
+    elif drift == "payload":
+        input_asset_id = execution_stack["assets"].create_asset(
+            b"different input", mime="text/plain"
+        )
+    elif drift == "worker":
+        connection.execute(
+            "UPDATE execution_attempt SET owner_instance_id='worker-derived' "
+            "WHERE attempt_id='attempt-2'"
+        )
+    before_db = connection.serialize()
+    before_assets = sorted(
+        str(path.relative_to(execution_stack["assets"].root))
+        for path in execution_stack["assets"].root.rglob("*")
+        if path.is_file()
+    )
+
+    with pytest.raises(ContractError):
+        broker.invoke(
+            current,
+            operation_key="invoke-1",
+            binding_id="binding-1",
+            input_asset_id=input_asset_id,
+        )
+
+    assert connection.serialize() == before_db
+    assert (
+        sorted(
+            str(path.relative_to(execution_stack["assets"].root))
+            for path in execution_stack["assets"].root.rglob("*")
+            if path.is_file()
+        )
+        == before_assets
+    )
+    assert (
+        connection.execute(
+            "SELECT count(*) FROM p3_broker_operation "
+            "WHERE method='host.capability.invoke/v1'"
+        ).fetchone()[0]
+        == 1
+    )
+
+
+def test_non_direct_resume_alias_chain_is_rejected(execution_stack):
+    broker, request, first, attempt_2 = _prepared_direct_resume_case(execution_stack)
+    aliased = broker.invoke(
+        attempt_2,
+        operation_key="invoke-1",
+        binding_id="binding-1",
+        input_asset_id=request.input_asset_id,
+    )
+    assert aliased.child_job_id == first.child_job_id
+    _checkpoint, checkpoint_asset = _checkpoint_asset(
+        execution_stack,
+        checkpoint_id="checkpoint-resume-2",
+        checkpoint_seq=2,
+        source="attempt-2",
+        epoch=2,
+    )
+    execution_stack["authority"].control_port.pause(
+        job_id="job-1",
+        step_id="step-1",
+        attempt_id="attempt-2",
+        lease_epoch=2,
+        operation_key="pause-for-nondirect-alias",
+        worker_run_id="worker-run-2",
+        reason="second resume",
+        checkpoint_asset_id=checkpoint_asset.asset_id,
+    )
+    execution_stack["authority"].control_port.resume(
+        job_id="job-1",
+        step_id="step-1",
+        operation_key="resume-nondirect-alias",
+        resume_of_attempt_id="attempt-2",
+        worker_run_id="worker-run-3",
+        new_attempt_id="attempt-3",
+        checkpoint_asset_id=checkpoint_asset.asset_id,
+    )
+    attempt_3 = CallerAttemptContext(
+        "job-1",
+        "step-1",
+        "attempt-3",
+        3,
+        generation_id="generation-1",
+        plugin_release_id="e" * 64,
+    )
+    connection = execution_stack["repository"]._connection
+    before = connection.serialize()
+    with pytest.raises(ContractError):
+        broker.invoke(
+            attempt_3,
+            operation_key="invoke-1",
+            binding_id="binding-1",
+            input_asset_id=request.input_asset_id,
+        )
+    assert connection.serialize() == before
+    assert (
+        connection.execute(
+            "SELECT count(*) FROM p3_broker_operation "
+            "WHERE method='host.capability.invoke/v1'"
+        ).fetchone()[0]
+        == 2
+    )
 
 
 def test_f001_cancel_reservation_precedes_side_effect_and_recovers_record_failure(execution_stack):
