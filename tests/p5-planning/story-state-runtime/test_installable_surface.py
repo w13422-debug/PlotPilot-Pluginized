@@ -11,7 +11,7 @@ import tomllib
 
 ROOT = Path(__file__).resolve().parents[3]
 SDK_VERSION = "0.1.2"
-SDK_HASH = "8510991547e84fdc6f9fcfb246858747d93390c2d02e6015d9e0b77c961dc9c4"
+SDK_HASH = "e85421b20a9fb07b17e602afecc992f530513b01dcd16038dc2f869df1cb1bb4"
 SDK_REQUIREMENT = f"plotpilot-plugin-sdk=={SDK_VERSION}"
 
 LOCK_ENTRIES = {
