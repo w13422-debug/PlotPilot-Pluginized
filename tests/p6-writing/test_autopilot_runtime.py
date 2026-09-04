@@ -71,15 +71,20 @@ class FakeHost:
         *,
         initial_event_seq: int = 0,
         completion_receipt_id: str | None = None,
+        assets: MemoryAssets | None = None,
+        stage_response: Mapping[str, object] | None = None,
     ) -> None:
         self.calls: list[tuple[str, dict[str, object]]] = []
         self.invoke_operation_keys: list[str] = []
         self.cancel_operation_keys: list[str] = []
+        self.stage_operation_keys: list[str] = []
         self.complete_operation_keys: list[str] = []
         self._poll_responses = deque(poll_responses)
         self._initial_event_seq = initial_event_seq
         self._children_by_key: dict[str, dict[str, object]] = {}
         self.completion_receipt_id = completion_receipt_id or _receipt_id("attempt-1")
+        self._assets = assets
+        self._stage_response = None if stage_response is None else dict(stage_response)
 
     @property
     def child_count(self) -> int:
@@ -96,6 +101,8 @@ class FakeHost:
             return self._poll(copied)
         if method == "host.capability.cancel/v1":
             return self._cancel(copied)
+        if method == "host.candidate.stage/v1":
+            return self._stage(copied)
         if method == "host.job.complete/v1":
             return self._complete(copied)
         raise AssertionError(f"unexpected Host method: {method}")
@@ -136,9 +143,34 @@ class FakeHost:
             "child_job_event_seq": 1,
         }
 
+    def _stage(self, params: dict[str, object]) -> dict[str, object]:
+        operation_key = params["operation_key"]
+        assert isinstance(operation_key, str)
+        self.stage_operation_keys.append(operation_key)
+        if self._stage_response is not None:
+            return dict(self._stage_response)
+        assert self._assets is not None
+        bundle_asset_id = params["result_bundle_asset_id"]
+        assert isinstance(bundle_asset_id, str)
+        bundle = json.loads(self._assets.read(bundle_asset_id).content)
+        return {
+            "accepted": True,
+            "staged_items": [
+                {
+                    "item_id": item["item_id"],
+                    "candidate_id": f"candidate-{index}",
+                    "stage_status": "created",
+                    "publication_eligibility": "eligible",
+                }
+                for index, item in enumerate(bundle["items"], start=1)
+            ],
+            "job_event_seq": 0,
+        }
+
     def _complete(self, params: dict[str, object]) -> dict[str, object]:
         operation_key = params["operation_key"]
         assert isinstance(operation_key, str)
+        assert params["candidate_stage_operation_key"] in self.stage_operation_keys
         self.complete_operation_keys.append(operation_key)
         return {
             "accepted": True,
@@ -247,8 +279,8 @@ def test_equal_cursor_waits_then_retries_to_a_terminal_stage() -> None:
     ]
 
 
-def test_poll_budget_exhaustion_is_pending_without_terminal_mutation() -> None:
-    host = FakeHost([pending_poll()])
+def test_poll_budget_exhaustion_continues_in_the_synchronous_handler() -> None:
+    host = FakeHost([pending_poll(), pending_poll(), terminal_poll()])
     slept: list[float] = []
 
     def sleeper(delay_seconds: float, _cancelled: object) -> bool:
@@ -263,22 +295,21 @@ def test_poll_budget_exhaustion_is_pending_without_terminal_mutation() -> None:
         poll_budget_seconds=10.0,
         initial_backoff_seconds=0.05,
         max_backoff_seconds=0.2,
-        monotonic=Clock([0.0, 0.0, 0.01]),
+        monotonic=Clock([0.0, 0.0, 0.01, 0.01, 0.02]),
         sleeper=sleeper,
     ).run(identity(), one_stage_dag())
 
     methods = [method for method, _ in host.calls]
-    assert result.pending is True
-    assert result.pending_stage_id == "plan"
-    assert result.completed_stage_ids == ()
-    assert result.stage_effects == ()
-    assert result.checkpoint is None
-    assert result.retry_after_seconds is not None
-    assert slept == [0.05]
-    assert methods == ["host.capability.invoke/v1", "host.capability.poll/v1"]
-    assert "host.checkpoint.commit/v1" not in methods
-    assert "host.candidate.stage/v1" not in methods
-    assert "host.job.complete/v1" not in methods
+    assert result.completed is True
+    assert result.completed_stage_ids == ("plan",)
+    assert len(result.stage_effects) == 1
+    assert slept == [0.05, 0.1]
+    assert methods == [
+        "host.capability.invoke/v1",
+        "host.capability.poll/v1",
+        "host.capability.poll/v1",
+        "host.capability.poll/v1",
+    ]
 
 
 def test_cursor_regression_fails_closed_before_any_retry() -> None:
@@ -322,7 +353,6 @@ def test_cancel_interrupts_wait_and_propagates_once_to_the_active_child() -> Non
     result = runtime.run(identity(), one_stage_dag())
 
     assert result.cancelled is True
-    assert result.pending is False
     assert sleeps == [0.05]
     assert len(host.cancel_operation_keys) == 1
     assert runtime.cancel("operator-stop") is False
@@ -334,9 +364,13 @@ def test_cancel_interrupts_wait_and_propagates_once_to_the_active_child() -> Non
     ]
 
 
-def test_candidate_completion_uses_bundle_and_complete_without_staging_or_publication() -> None:
+def test_candidate_completion_stages_then_completes_without_publication() -> None:
     assets = MemoryAssets()
-    host = FakeHost([terminal_poll()], completion_receipt_id=_receipt_id("attempt-1"))
+    host = FakeHost(
+        [terminal_poll()],
+        completion_receipt_id=_receipt_id("attempt-1"),
+        assets=assets,
+    )
     candidate = CandidateProjection(
         text="A completed Autopilot candidate.",
         mutation_mode="replace",
@@ -375,14 +409,48 @@ def test_candidate_completion_uses_bundle_and_complete_without_staging_or_public
     assert methods == [
         "host.capability.invoke/v1",
         "host.capability.poll/v1",
+        "host.candidate.stage/v1",
         "host.job.complete/v1",
     ]
+    stage_params = host.calls[-2][1]
     complete_params = host.calls[-1][1]
+    assert stage_params["operation_key"] == result.candidate_stage_operation_key
+    assert stage_params["result_bundle_asset_id"] == result.result_bundle_asset_id
+    assert stage_params["input_snapshot_hash"] == SNAPSHOT_HASH
     assert complete_params["candidate_stage_operation_key"] == result.candidate_stage_operation_key
     assert complete_params["result_bundle_asset_id"] == result.result_bundle_asset_id
-    assert "host.candidate.stage/v1" not in methods
     assert "host.checkpoint.commit/v1" not in methods
     assert not any("publication" in method for method in methods)
+
+
+def test_rejected_candidate_stage_prevents_terminal_completion() -> None:
+    assets = MemoryAssets()
+    host = FakeHost(
+        [terminal_poll()],
+        assets=assets,
+        stage_response={"accepted": False, "staged_items": [], "job_event_seq": 0},
+    )
+    candidate = CandidateProjection(
+        text="Candidate must not complete after rejected staging.",
+        mutation_mode="replace",
+        workspace_id="workspace-1",
+        document_id="document-1",
+        base_revision_id="revision-1",
+        base_content_hash="d" * 64,
+        source_refs=(),
+    )
+
+    with pytest.raises(AutopilotRuntimeError, match="rejected.*staging"):
+        AutopilotRuntime(host, plugin_release_id=RELEASE, assets=assets).run(
+            identity(),
+            one_stage_dag(),
+            candidate=candidate,
+            worker_run_id="worker-run-1",
+        )
+
+    methods = [method for method, _ in host.calls]
+    assert methods[-1] == "host.candidate.stage/v1"
+    assert "host.job.complete/v1" not in methods
 
 
 def _control_request(
@@ -437,9 +505,9 @@ def test_shared_worker_registers_autopilot_lifecycle_and_descriptor() -> None:
     assert descriptor["input_schema"] == "run-snapshot/v1"
     assert descriptor["output_schema"] == "result-bundle/v1"
     assert descriptor["result_contract"] == "candidate-batch/v1"
-    assert descriptor["supports"] == ["run", "resume", "cancel"]
+    assert descriptor["supports"] == ["run", "cancel"]
     domain = worker._domains["autopilot.dag.run/v1"]
-    assert domain.start is not None and domain.resume is not None and domain.cancel is not None
+    assert domain.start is not None and domain.resume is None and domain.cancel is not None
 
     shutdown = worker.handle(
         _control_request(
@@ -478,7 +546,7 @@ def test_registered_start_handler_consumes_the_worker_bound_run_snapshot() -> No
     ).encode("utf-8")
     assets = MemoryAssets()
     assets.put("asset-autopilot-parameters-1", parameter_bytes)
-    host = FakeHost([terminal_poll()])
+    host = FakeHost([terminal_poll()], assets=assets)
     bound_context = SimpleNamespace(
         identity=SimpleNamespace(
             workspace_id="workspace-1",
@@ -525,6 +593,7 @@ def test_registered_start_handler_consumes_the_worker_bound_run_snapshot() -> No
     assert [method for method, _ in host.calls] == [
         "host.capability.invoke/v1",
         "host.capability.poll/v1",
+        "host.candidate.stage/v1",
         "host.job.complete/v1",
     ]
 
@@ -560,6 +629,6 @@ def test_runtime_keeps_protocol_and_persistence_authority_in_the_sdk_and_core() 
 
     assert any(name.endswith("stdio_worker") for name in imported)
     assert not any(name == "plotpilot_core" or name.startswith("plotpilot_core.") for name in imported)
-    assert "host.candidate.stage/v1" not in runtime_path.read_text(encoding="utf-8")
+    assert "host.candidate.stage/v1" in runtime_path.read_text(encoding="utf-8")
     assert "host.checkpoint.commit/v1" not in runtime_path.read_text(encoding="utf-8")
     assert "publish" not in function_names

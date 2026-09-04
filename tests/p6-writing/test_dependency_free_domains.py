@@ -1,12 +1,25 @@
 from __future__ import annotations
 
+import json
 from hashlib import sha256
+from pathlib import Path
 
 import pytest
-
 from plotpilot_autopilot import Stage, StageOutcome, build_plan, decide_next_stage
+from plotpilot_autopilot.runtime import (
+    build_worker as build_autopilot_worker,
+)
+from plotpilot_autopilot.runtime import (
+    capability_descriptor as autopilot_descriptor,
+)
 from plotpilot_chapter_workflow import ContextSource, SkillRef, freeze_context_plan
 from plotpilot_quality_suite import scan_language_style
+from plotpilot_quality_suite.runtime import (
+    capability_descriptor as quality_descriptor,
+)
+from plotpilot_quality_suite.runtime import (
+    create_worker as create_quality_worker,
+)
 
 
 def test_context_and_skill_chain_are_frozen_and_ordered() -> None:
@@ -61,3 +74,51 @@ def test_quality_matches_donor_vectors_and_does_not_invent_transition_warning() 
     two = one + "这里停顿许久以后。他的目光像刀锋一样锐利。"
     assert scan_language_style(one) == ()
     assert [item.rule_id for item in scan_language_style(two)] == ["style.number_metaphor"]
+
+
+def test_p6_manifests_descriptors_and_worker_surfaces_are_exact() -> None:
+    root = Path(__file__).resolve().parents[2]
+    release = "a" * 64
+    cases = (
+        (
+            "autopilot",
+            autopilot_descriptor(release_id=release),
+            build_autopilot_worker()._domains["autopilot.dag.run/v1"],
+            ["run", "cancel"],
+            [
+                "host.asset.read/v1",
+                "host.asset.create/v1",
+                "host.capability.invoke/v1",
+                "host.capability.poll/v1",
+                "host.capability.cancel/v1",
+                "host.candidate.stage/v1",
+                "host.job.complete/v1",
+            ],
+        ),
+        (
+            "quality-suite",
+            quality_descriptor(release_id=release),
+            create_quality_worker()._domains["quality.review/v1"],
+            ["run"],
+            [
+                "host.asset.read/v1",
+                "host.asset.create/v1",
+                "host.candidate.stage/v1",
+                "host.job.complete/v1",
+            ],
+        ),
+    )
+
+    for plugin, descriptor, domain, operations, needs in cases:
+        manifest = json.loads(
+            (root / "first-party-plugins" / plugin / "plugin.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        capability = manifest["capabilities"][0]
+        assert capability["operations"] == descriptor["supports"] == operations
+        assert manifest["needs"] == needs
+        assert domain.start is not None
+        assert (domain.resume is not None) is ("resume" in operations)
+        assert (domain.cancel is not None) is ("cancel" in operations)
+        assert "host.checkpoint.commit/v1" not in manifest["needs"]

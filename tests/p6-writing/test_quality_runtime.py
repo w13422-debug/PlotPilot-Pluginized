@@ -161,15 +161,23 @@ def _request(
 class QualityHostSession:
     """A bounded in-memory Host that responds only to the shared worker ports."""
 
-    def __init__(self, *, assets: Mapping[str, bytes], receipt_id: str) -> None:
+    def __init__(
+        self,
+        *,
+        assets: Mapping[str, bytes],
+        receipt_id: str,
+        stage_response: Mapping[str, object] | None = None,
+    ) -> None:
         self.assets = dict(assets)
         self.created_assets: dict[str, bytes] = {}
+        self.stages: list[dict[str, object]] = []
         self.completions: list[dict[str, object]] = []
         self.messages: list[dict[str, object]] = []
         self._incoming: deque[bytes] = deque()
         self._output_decoder = FrameDecoder()
         self._uploads: dict[str, bytearray] = {}
         self._receipt_id = receipt_id
+        self._stage_response = None if stage_response is None else dict(stage_response)
 
     def queue(self, message: Mapping[str, object]) -> None:
         self._incoming.append(encode_frame(dict(message)))
@@ -244,7 +252,47 @@ class QualityHostSession:
                     "completed": False,
                     "asset_id": None,
                 }
+        elif method == "host.candidate.stage/v1":
+            self.stages.append(dict(params))
+            if self._stage_response is not None:
+                result = dict(self._stage_response)
+            else:
+                bundle_asset_id = params["result_bundle_asset_id"]
+                assert isinstance(bundle_asset_id, str)
+                bundle = json.loads(self.assets[bundle_asset_id])
+                result = {
+                    "accepted": True,
+                    "staged_items": [
+                        {
+                            "item_id": item["item_id"],
+                            "candidate_id": (
+                                None
+                                if item["status"] in {"failed", "skipped"}
+                                else f"candidate-{index}"
+                            ),
+                            "stage_status": (
+                                item["status"]
+                                if item["status"] in {"failed", "skipped"}
+                                else "created"
+                            ),
+                            "publication_eligibility": (
+                                "none"
+                                if item["status"] in {"failed", "skipped"}
+                                else "eligible"
+                                if item["status"] == "complete"
+                                else "review_only"
+                            ),
+                        }
+                        for index, item in enumerate(bundle["items"], start=1)
+                    ],
+                    "job_event_seq": 0,
+                }
         elif method == "host.job.complete/v1":
+            assert self.stages
+            assert (
+                params["candidate_stage_operation_key"]
+                == self.stages[-1]["operation_key"]
+            )
             self.completions.append(dict(params))
             result = {
                 "accepted": True,
@@ -272,6 +320,7 @@ def _worker_session(
     operation_id: str = "worker-run-1",
     attempt_id: str = "attempt-1",
     lease_epoch: int = 1,
+    stage_response: Mapping[str, object] | None = None,
 ) -> tuple[QualityHostSession, dict[str, object]]:
     release = snapshot["plugin_releases"][0]["release_id"]
     assert isinstance(release, str)
@@ -282,7 +331,11 @@ def _worker_session(
     }
     if parameters is not None:
         assets["asset-parameters-1"] = parameters
-    session = QualityHostSession(assets=assets, receipt_id=receipt_id)
+    session = QualityHostSession(
+        assets=assets,
+        receipt_id=receipt_id,
+        stage_response=stage_response,
+    )
     handshake = _request(
         "runtime.handshake",
         {
@@ -418,8 +471,12 @@ def test_shared_worker_emits_sdk_verified_partial_candidate_batch_and_completes(
 
     methods = _host_methods(session)
     assert methods.count("host.asset.create/v1") == 4
+    assert methods.count("host.candidate.stage/v1") == 1
     assert methods.count("host.job.complete/v1") == 1
-    assert "host.candidate.stage/v1" not in methods
+    assert methods.index("host.candidate.stage/v1") < methods.index("host.job.complete/v1")
+    assert session.stages[0]["operation_key"] == completion["candidate_stage_operation_key"]
+    assert session.stages[0]["result_bundle_asset_id"] == bundle_asset_id
+    assert session.stages[0]["input_snapshot_hash"] == snapshot["snapshot_hash"]
     assert not any("publish" in method for method in methods)
 
 
@@ -468,8 +525,25 @@ def test_worker_preserves_failed_domain_details_in_partial_candidate_batch(
     assert report["state"] == "failed"
     assert report["failure"] == "RuntimeError: injected consistency failure"
     methods = _host_methods(session)
-    assert "host.candidate.stage/v1" not in methods
+    assert methods.count("host.candidate.stage/v1") == 1
     assert not any("publish" in method for method in methods)
+
+
+def test_rejected_quality_candidate_stage_prevents_completion() -> None:
+    content = b"The room is quiet."
+    snapshot = quality_snapshot(content)
+    session, start = _worker_session(
+        snapshot,
+        source_content=content,
+        stage_response={"accepted": False, "staged_items": [], "job_event_seq": 0},
+    )
+
+    response = _response_for(session.messages, start)
+    assert "error" in response
+    assert "rejected Quality Candidate staging" in response["error"]["message"]
+    assert len(session.stages) == 1
+    assert session.completions == []
+    assert _host_methods(session)[-1] == "host.candidate.stage/v1"
 
 
 def test_worker_keeps_an_all_failed_review_outcome_partial_with_summary(
@@ -591,6 +665,12 @@ def test_candidate_stage_operation_key_is_stable_across_attempts() -> None:
     _successful_start(second_session, second_start)
     first_completion = first_session.completions[0]
     second_completion = second_session.completions[0]
+    assert first_session.stages[0]["operation_key"] == first_completion[
+        "candidate_stage_operation_key"
+    ]
+    assert second_session.stages[0]["operation_key"] == second_completion[
+        "candidate_stage_operation_key"
+    ]
     assert (
         first_completion["candidate_stage_operation_key"]
         == second_completion["candidate_stage_operation_key"]
@@ -770,6 +850,10 @@ def test_quality_worker_framed_handshake_describe_shutdown_binds_release() -> No
         session.queue(message)
 
     worker = create_worker()
+    domain = worker._domains[CAPABILITY_ID]
+    assert domain.start is not None
+    assert domain.resume is None
+    assert domain.cancel is None
     worker.serve(stdin=session, stdout=session)
 
     handshake_response = _response_for(session.messages, handshake)

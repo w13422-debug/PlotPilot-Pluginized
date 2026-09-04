@@ -327,6 +327,49 @@ def _stable_operation_key(prefix: str, value: Mapping[str, object]) -> str:
     return f"{prefix}-{sha256(canonical_json_bytes(value)).hexdigest()[:48]}"
 
 
+def _validate_candidate_stage(
+    response: Mapping[str, object],
+    items: list[dict[str, object]],
+) -> None:
+    """Require the exact Core Candidate mapping before terminal completion."""
+
+    if response.get("accepted") is not True:
+        raise QualityRuntimeError("Host rejected Quality Candidate staging")
+    staged = response.get("staged_items")
+    if not isinstance(staged, list) or len(staged) != len(items):
+        raise QualityRuntimeError("Host staged Quality Candidate mapping is incomplete")
+    if [entry.get("item_id") if isinstance(entry, Mapping) else None for entry in staged] != [
+        item["item_id"] for item in items
+    ]:
+        raise QualityRuntimeError("Host staged Quality Candidate identity drifted")
+
+    for item, entry in zip(items, staged, strict=True):
+        if not isinstance(entry, Mapping):
+            raise QualityRuntimeError("Host staged Quality Candidate entry is invalid")
+        status = item["status"]
+        if status in {"failed", "skipped"}:
+            if (
+                entry.get("candidate_id") is not None
+                or entry.get("stage_status") != status
+                or entry.get("publication_eligibility") != "none"
+            ):
+                raise QualityRuntimeError(
+                    "Host staged unusable Quality item with conflicting authority"
+                )
+            continue
+        _require_identifier(entry.get("candidate_id"), "staged candidate_id")
+        if entry.get("stage_status") not in {"created", "existing"}:
+            raise QualityRuntimeError("Host staged Quality Candidate status drifted")
+        expected_eligibility = "eligible" if status == "complete" else "review_only"
+        if entry.get("publication_eligibility") != expected_eligibility:
+            raise QualityRuntimeError(
+                "Host staged Quality Candidate eligibility drifted"
+            )
+    job_event_seq = response.get("job_event_seq")
+    if type(job_event_seq) is not int or job_event_seq < 0:
+        raise QualityRuntimeError("Host staged Quality Candidate event sequence is invalid")
+
+
 def _default_receipt_id(attempt_id: str) -> str:
     """Match Core's default preallocated-receipt derivation for an Attempt."""
 
@@ -812,6 +855,16 @@ def _run_quality_job(
         mime="application/json",
         operation_key=binding.bundle_asset_operation_key,
     )
+    bundle_value = result_bundle.to_dict()
+    stage = context.host.call(
+        "host.candidate.stage/v1",
+        {
+            "operation_key": binding.candidate_stage_operation_key,
+            "result_bundle_asset_id": bundle_asset.asset_id,
+            "input_snapshot_hash": binding.identity.run_snapshot_hash,
+        },
+    )
+    _validate_candidate_stage(stage, bundle_value["items"])
     completion = context.host.call(
         "host.job.complete/v1",
         {
@@ -835,19 +888,6 @@ def _run_quality_job(
         "worker_run_id": binding.worker_run_id,
         "provenance_receipt_id": binding.provenance_receipt_id,
         "output_streams": [],
-    }
-
-
-def _cancel_quality_job(
-    _params: Mapping[str, Any],
-    _context: WorkerContext,
-) -> Mapping[str, object]:
-    """A synchronous review run has no child activity to cancel locally."""
-
-    return {
-        "accepted": True,
-        "terminal_known": False,
-        "attempt_state": "cancelling",
     }
 
 
@@ -881,8 +921,6 @@ def create_worker() -> FramedStdioWorker:
         descriptor=lambda release_id: capability_descriptor(release_id=release_id),
         operations=(CAPABILITY_ID,),
         start=_run_quality_job,
-        resume=_run_quality_job,
-        cancel=_cancel_quality_job,
     )
     return worker
 

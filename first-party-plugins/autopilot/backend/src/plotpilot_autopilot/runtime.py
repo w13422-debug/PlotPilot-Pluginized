@@ -1,11 +1,10 @@
-"""Host-composed Autopilot execution, recovery, and Candidate completion.
+"""Host-composed Autopilot execution and Candidate completion.
 
 The module deliberately has no Core import, database handle, process registry,
 or framing implementation.  ``FramedStdioWorker`` owns the protocol boundary;
-this domain runtime consumes only its bound Host and Asset ports.  A pending
-child poll is recoverable rather than a local durable transition, so a retry
-replays the same Host operation identity instead of inventing a second
-checkpoint authority.
+this domain runtime consumes only its bound Host and Asset ports.  Child polls
+remain inside the active synchronous handler until terminal or cancelled;
+bounded wait windows therefore cannot create an unconsumed process-local Job.
 """
 
 from __future__ import annotations
@@ -51,10 +50,7 @@ except ModuleNotFoundError:  # Repository-source execution keeps the same SDK im
 from .checkpoint import (
     AutopilotCheckpointError,
     AutopilotIdentity,
-    CheckpointEnvelope,
     StageEffect,
-    parse_canonical_json_bytes,
-    recover_checkpoint_envelope,
     validate_identifier,
     validate_sha256,
 )
@@ -142,6 +138,56 @@ def _strict_text(value: object, label: str) -> str:
     return value
 
 
+def _validate_candidate_stage(
+    response: Mapping[str, object],
+    items: list[dict[str, object]],
+) -> None:
+    """Require the exact Core Candidate mapping before terminal completion."""
+
+    if response.get("accepted") is not True:
+        raise AutopilotRuntimeError("Host rejected Autopilot Candidate staging")
+    staged = response.get("staged_items")
+    if not isinstance(staged, list) or len(staged) != len(items):
+        raise AutopilotRuntimeError("Host staged Candidate mapping is incomplete")
+    if [entry.get("item_id") if isinstance(entry, Mapping) else None for entry in staged] != [
+        item["item_id"] for item in items
+    ]:
+        raise AutopilotRuntimeError("Host staged Candidate item order or identity drifted")
+
+    for item, entry in zip(items, staged, strict=True):
+        if not isinstance(entry, Mapping):
+            raise AutopilotRuntimeError("Host staged Candidate entry is not an object")
+        status = item["status"]
+        if status in {"failed", "skipped"}:
+            expected_stage_status = status
+            expected_eligibility = "none"
+            if entry.get("candidate_id") is not None:
+                raise AutopilotRuntimeError(
+                    "Host assigned a Candidate identity to an unusable result item"
+                )
+        else:
+            expected_stage_status = {"created", "existing"}
+            expected_eligibility = "eligible" if status == "complete" else "review_only"
+            try:
+                validate_identifier(entry.get("candidate_id"), "candidate_id")
+            except AutopilotCheckpointError as exc:
+                raise AutopilotRuntimeError(
+                    "Host omitted the staged Candidate identity"
+                ) from exc
+        stage_status = entry.get("stage_status")
+        if (
+            stage_status != expected_stage_status
+            if isinstance(expected_stage_status, str)
+            else stage_status not in expected_stage_status
+        ):
+            raise AutopilotRuntimeError("Host staged Candidate status drifted")
+        if entry.get("publication_eligibility") != expected_eligibility:
+            raise AutopilotRuntimeError(
+                "Host staged Candidate publication eligibility drifted"
+            )
+    _nonnegative_int(response.get("job_event_seq"), "job_event_seq")
+
+
 @dataclass(frozen=True, slots=True)
 class CandidateProjection:
     """A Candidate-only document mutation assembled from frozen run inputs."""
@@ -193,14 +239,11 @@ class CandidateProjection:
 
 @dataclass(frozen=True, slots=True)
 class AutopilotRunResult:
-    """One bounded execution outcome with no process-local durable authority."""
+    """One synchronous execution outcome with no process-local durable authority."""
 
     dag_hash: str
     completed_stage_ids: tuple[str, ...]
     stage_effects: tuple[StageEffect, ...]
-    checkpoint: CheckpointEnvelope | None
-    pending_stage_id: str | None = None
-    retry_after_seconds: float | None = None
     cancelled: bool = False
     result_bundle: Mapping[str, object] | None = None
     result_bundle_asset_id: str | None = None
@@ -210,18 +253,6 @@ class AutopilotRunResult:
 
     def __post_init__(self) -> None:
         validate_sha256(self.dag_hash, "dag_hash")
-        if self.pending_stage_id is not None:
-            validate_identifier(self.pending_stage_id, "pending_stage_id")
-            if self.cancelled:
-                raise AutopilotRuntimeError("a run cannot be pending and cancelled")
-            if (
-                self.retry_after_seconds is None
-                or self.retry_after_seconds < 0.0
-                or not math.isfinite(self.retry_after_seconds)
-            ):
-                raise AutopilotRuntimeError("pending runs require a finite retry delay")
-        elif self.retry_after_seconds is not None:
-            raise AutopilotRuntimeError("only a pending run may expose retry delay")
         if self.result_bundle_asset_id is not None:
             validate_identifier(self.result_bundle_asset_id, "result_bundle_asset_id")
         if self.provenance_receipt_id is not None:
@@ -235,19 +266,9 @@ class AutopilotRunResult:
 
     @property
     def completed(self) -> bool:
-        """Whether this invocation reached all stages without pending/cancel."""
+        """Whether this invocation reached all stages without cancellation."""
 
-        return self.pending_stage_id is None and not self.cancelled
-
-    @property
-    def pending(self) -> bool:
-        """Whether a legal quiescent child poll exhausted this invocation's budget."""
-
-        return self.pending_stage_id is not None
-
-    @property
-    def checkpoint_asset_id(self) -> str | None:
-        return None if self.checkpoint is None else self.checkpoint.checkpoint_asset_id
+        return not self.cancelled
 
 
 @dataclass(frozen=True, slots=True)
@@ -259,8 +280,6 @@ class _ActiveChild:
 @dataclass(frozen=True, slots=True)
 class _StagePollOutcome:
     effect: StageEffect | None = None
-    pending: bool = False
-    retry_after_seconds: float | None = None
     cancelled: bool = False
 
 
@@ -476,43 +495,6 @@ class AutopilotRuntime:
         self.cancel(self._cancel_reason or "cancelled")
         return True
 
-    def _recover(
-        self,
-        checkpoint_asset_id: str,
-        *,
-        identity: AutopilotIdentity,
-        dag: DurableDAG,
-        resume_of_attempt_id: str,
-    ) -> CheckpointEnvelope:
-        checkpoint_asset = self._assets.read(checkpoint_asset_id)
-        checkpoint_value = parse_canonical_json_bytes(checkpoint_asset.content)
-        if not isinstance(checkpoint_value, Mapping):
-            raise AutopilotRuntimeError("checkpoint Asset must contain an object")
-        state_asset_id = checkpoint_value.get("state_asset_id")
-        try:
-            validate_identifier(state_asset_id, "checkpoint state_asset_id")
-        except AutopilotCheckpointError as exc:
-            raise AutopilotRuntimeError(str(exc)) from exc
-        state_asset = self._assets.read(state_asset_id)
-        state_value = parse_canonical_json_bytes(state_asset.content)
-        if not isinstance(state_value, Mapping):
-            raise AutopilotRuntimeError(
-                "checkpoint runtime-state Asset must contain an object"
-            )
-        try:
-            return recover_checkpoint_envelope(
-                dict(checkpoint_value),
-                state_value,
-                state_asset_id=state_asset_id,
-                checkpoint_asset_id=checkpoint_asset_id,
-                identity=identity,
-                dag_hash=dag.dag_hash,
-                total_units=len(dag.ordered_stages),
-                resume_of_attempt_id=resume_of_attempt_id,
-            )
-        except AutopilotCheckpointError as exc:
-            raise AutopilotRuntimeError(str(exc)) from exc
-
     def _invoke_stage(
         self,
         stage: DurableStage,
@@ -564,9 +546,10 @@ class AutopilotRuntime:
             return _StagePollOutcome(cancelled=True)
 
         previous_clock = self._clock_now()
-        deadline = previous_clock + self._poll_budget_seconds
+        window_deadline = previous_clock + self._poll_budget_seconds
         backoff = self._initial_backoff_seconds
-        for _poll_index in range(self._max_stage_polls):
+        polls_in_window = 0
+        while True:
             if self._cancel_if_requested():
                 return _StagePollOutcome(cancelled=True)
             poll = self._call(
@@ -611,39 +594,38 @@ class AutopilotRuntime:
                 )
 
             # Equality is a legal quiescent poll.  A regression above remains
-            # fail-closed, while any retry below always performs a real wait.
+            # fail-closed, while every retry below performs a real wait.  The
+            # local count/time budget starts another synchronous continuation
+            # window instead of returning an ownerless pending Job.
             progressed = next_event_seq > after_event_seq
             after_event_seq = next_event_seq
             now = self._clock_now(previous_clock)
             previous_clock = now
-            remaining = deadline - now
-            if remaining <= 0.0:
-                return _StagePollOutcome(
-                    pending=True,
-                    retry_after_seconds=min(self._max_backoff_seconds, backoff),
-                )
+            polls_in_window += 1
+            if now >= window_deadline or polls_in_window >= self._max_stage_polls:
+                window_deadline = now + self._poll_budget_seconds
+                polls_in_window = 0
+            remaining = window_deadline - now
             delay = min(backoff, self._max_backoff_seconds, remaining)
+            if delay <= 0.0:
+                window_deadline = now + self._poll_budget_seconds
+                delay = min(
+                    backoff,
+                    self._max_backoff_seconds,
+                    self._poll_budget_seconds,
+                )
             if self._wait_once(delay) or self._cancel_if_requested():
                 return _StagePollOutcome(cancelled=True)
             now = self._clock_now(previous_clock)
             previous_clock = now
-            if now >= deadline:
-                return _StagePollOutcome(
-                    pending=True,
-                    retry_after_seconds=min(self._max_backoff_seconds, backoff),
-                )
+            if now >= window_deadline:
+                window_deadline = now + self._poll_budget_seconds
+                polls_in_window = 0
             backoff = (
                 self._initial_backoff_seconds
                 if progressed
                 else min(self._max_backoff_seconds, backoff * 2.0)
             )
-
-        # The count bound complements the elapsed-time budget if an injected
-        # test clock does not advance.  It is still a recoverable pending state.
-        return _StagePollOutcome(
-            pending=True,
-            retry_after_seconds=min(self._max_backoff_seconds, backoff),
-        )
 
     def _complete_candidate(
         self,
@@ -655,7 +637,7 @@ class AutopilotRuntime:
         candidate: CandidateProjection,
         worker_run_id: str,
     ) -> AutopilotRunResult:
-        if result.pending or result.cancelled:
+        if result.cancelled:
             return result
         validate_identifier(worker_run_id, "worker_run_id")
         candidate_payload = candidate.text.encode("utf-8")
@@ -672,7 +654,7 @@ class AutopilotRuntime:
         )
         receipt_id = _preallocated_receipt_id(identity.attempt_id)
         # Bundle/item IDs are owned by this current Candidate projection.  Host
-        # operation identities below remain stable across a direct resume edge.
+        # operation identities below remain stable across an exact transport retry.
         bundle_id = _operation_key(
             "candidate-bundle",
             identity.job_id,
@@ -775,6 +757,15 @@ class AutopilotRuntime:
             payload_hash=payload_hash,
             parts=(candidate.document_id,),
         )
+        stage = self._call(
+            "host.candidate.stage/v1",
+            {
+                "operation_key": candidate_stage_operation_key,
+                "result_bundle_asset_id": bundle_asset.asset_id,
+                "input_snapshot_hash": identity.run_snapshot_hash,
+            },
+        )
+        _validate_candidate_stage(stage, [item])
         completion = self._call(
             "host.job.complete/v1",
             {
@@ -807,18 +798,15 @@ class AutopilotRuntime:
         identity: AutopilotIdentity,
         dag: DurableDAG,
         *,
-        checkpoint_asset_id: str | None = None,
-        resume_of_attempt_id: str | None = None,
         payload_hash: str | None = None,
         candidate: CandidateProjection | None = None,
         worker_run_id: str | None = None,
     ) -> AutopilotRunResult:
-        """Run a DAG or one authoritative direct resume edge.
+        """Run the DAG synchronously until it is terminal or cancelled.
 
-        A supplied checkpoint is accepted only with the ``job.resume`` source
-        Attempt that selected it.  This method never commits a checkpoint: a
-        budget expiry returns pending before a new StageEffect, checkpoint,
-        next-stage advance, Candidate, or terminal completion can be emitted.
+        Stable Host operation keys make exact transport retry safe.  Local poll
+        budgets bound one continuation window only; they never manufacture a
+        pending result that the synchronous worker cannot consume.
         """
 
         if not isinstance(identity, AutopilotIdentity):
@@ -834,65 +822,13 @@ class AutopilotRuntime:
             validate_sha256(effective_payload_hash, "payload_hash")
         except AutopilotCheckpointError as exc:
             raise AutopilotRuntimeError(str(exc)) from exc
-        if checkpoint_asset_id is None:
-            if resume_of_attempt_id is not None:
-                raise AutopilotRuntimeError(
-                    "resume_of_attempt_id requires the current resume checkpoint Asset"
-                )
-            checkpoint = None
-            durable_effects: list[StageEffect] = []
-        else:
-            if not isinstance(resume_of_attempt_id, str):
-                raise AutopilotRuntimeError(
-                    "checkpoint recovery is allowed only from job.resume direct lineage"
-                )
-            try:
-                validate_identifier(checkpoint_asset_id, "checkpoint_asset_id")
-                validate_identifier(resume_of_attempt_id, "resume_of_attempt_id")
-            except AutopilotCheckpointError as exc:
-                raise AutopilotRuntimeError(str(exc)) from exc
-            checkpoint = self._recover(
-                checkpoint_asset_id,
-                identity=identity,
-                dag=dag,
-                resume_of_attempt_id=resume_of_attempt_id,
-            )
-            durable_effects = list(checkpoint.state.completed_stages)
-
         ordered = dag.ordered_stages
-        completed_ids = tuple(effect.stage_id for effect in durable_effects)
-        expected_prefix = tuple(stage.stage_id for stage in ordered[: len(durable_effects)])
-        if completed_ids != expected_prefix:
-            raise AutopilotRuntimeError(
-                "checkpoint completed stages are not the current DAG prefix"
-            )
-        for stage, effect in zip(
-            ordered[: len(durable_effects)], durable_effects, strict=True
-        ):
-            expected_operation_key = self._stable_operation_key(
-                "stage",
-                identity=identity,
-                dag_hash=dag.dag_hash,
-                payload_hash=effective_payload_hash,
-                parts=(stage.stage_id,),
-            )
-            if effect.operation_key != expected_operation_key:
-                raise AutopilotRuntimeError(
-                    "checkpoint stage operation identity drifted from the "
-                    "current payload"
-                )
-
-        # Effects made after this invocation begins remain local until every
-        # stage reaches terminal state.  A pending return deliberately drops
-        # them; stable child operation keys make the next run replay-safe.
-        new_effects: list[StageEffect] = []
-        for stage in ordered[len(durable_effects) :]:
-            completed_set = {
-                effect.stage_id for effect in (*durable_effects, *new_effects)
-            }
+        effects: list[StageEffect] = []
+        for stage in ordered:
+            completed_set = {effect.stage_id for effect in effects}
             if not set(stage.depends_on).issubset(completed_set):
                 raise AutopilotRuntimeError(
-                    "DAG dependency is not durably complete before execution"
+                    "DAG dependency is not complete before execution"
                 )
             stage_outcome = self._invoke_stage(
                 stage,
@@ -903,31 +839,18 @@ class AutopilotRuntime:
             if stage_outcome.cancelled:
                 return AutopilotRunResult(
                     dag_hash=dag.dag_hash,
-                    completed_stage_ids=completed_ids,
-                    stage_effects=tuple(durable_effects),
-                    checkpoint=checkpoint,
+                    completed_stage_ids=tuple(effect.stage_id for effect in effects),
+                    stage_effects=tuple(effects),
                     cancelled=True,
-                )
-            if stage_outcome.pending:
-                return AutopilotRunResult(
-                    dag_hash=dag.dag_hash,
-                    completed_stage_ids=completed_ids,
-                    stage_effects=tuple(durable_effects),
-                    checkpoint=checkpoint,
-                    pending_stage_id=stage.stage_id,
-                    retry_after_seconds=stage_outcome.retry_after_seconds,
                 )
             if stage_outcome.effect is None:
                 raise AutopilotRuntimeError("stage completed without a durable effect")
-            new_effects.append(stage_outcome.effect)
+            effects.append(stage_outcome.effect)
 
         result = AutopilotRunResult(
             dag_hash=dag.dag_hash,
-            completed_stage_ids=tuple(
-                effect.stage_id for effect in (*durable_effects, *new_effects)
-            ),
-            stage_effects=(*durable_effects, *new_effects),
-            checkpoint=checkpoint,
+            completed_stage_ids=tuple(effect.stage_id for effect in effects),
+            stage_effects=tuple(effects),
         )
         if candidate is None:
             if worker_run_id is not None:
@@ -947,8 +870,6 @@ class AutopilotRuntime:
             candidate=candidate,
             worker_run_id=worker_run_id,
         )
-
-    resume = run
 
 
 def _asset_json(asset: HostAsset, *, label: str) -> Mapping[str, object]:
@@ -1179,31 +1100,15 @@ class _AutopilotDomain:
 
     def __init__(self, *, runtime_options: Mapping[str, object] | None = None) -> None:
         self._runtime_options = dict(runtime_options or {})
-        self._pending_runs: dict[str, AutopilotRuntime] = {}
+        self._active_runs: dict[str, AutopilotRuntime] = {}
+        self._runs_lock = threading.RLock()
 
-    def _start_or_resume(
-        self,
-        params: Mapping[str, Any],
-        context: WorkerContext,
-        *,
-        is_resume: bool,
+    def start(
+        self, params: Mapping[str, Any], context: WorkerContext
     ) -> Mapping[str, object]:
         identity = _identity_from_context(context)
         dag, payload_hash, candidate = _load_worker_input(context)
-        checkpoint_asset_id = params["checkpoint_asset_id"]
-        resume_of_attempt_id: str | None = None
-        if is_resume:
-            if checkpoint_asset_id is None:
-                raise AutopilotRuntimeError(
-                    "job.resume requires the Core-authoritative checkpoint Asset"
-                )
-            resume_of_attempt_id = params["resume_of_attempt_id"]
-            try:
-                validate_identifier(checkpoint_asset_id, "checkpoint_asset_id")
-                validate_identifier(resume_of_attempt_id, "resume_of_attempt_id")
-            except AutopilotCheckpointError as exc:
-                raise AutopilotRuntimeError(str(exc)) from exc
-        elif checkpoint_asset_id is not None:
+        if params["checkpoint_asset_id"] is not None:
             raise AutopilotRuntimeError(
                 "job.start cannot select an arbitrary checkpoint Asset"
             )
@@ -1215,19 +1120,21 @@ class _AutopilotDomain:
             assets=context.assets,
             **self._runtime_options,
         )
-        result = runtime.run(
-            identity,
-            dag,
-            checkpoint_asset_id=checkpoint_asset_id,
-            resume_of_attempt_id=resume_of_attempt_id,
-            payload_hash=payload_hash,
-            candidate=candidate,
-            worker_run_id=worker_run_id,
-        )
-        if result.pending:
-            self._pending_runs[worker_run_id] = runtime
-        else:
-            self._pending_runs.pop(worker_run_id, None)
+        with self._runs_lock:
+            if worker_run_id in self._active_runs:
+                raise AutopilotRuntimeError("worker_run_id already has an active run")
+            self._active_runs[worker_run_id] = runtime
+        try:
+            result = runtime.run(
+                identity,
+                dag,
+                payload_hash=payload_hash,
+                candidate=candidate,
+                worker_run_id=worker_run_id,
+            )
+        finally:
+            with self._runs_lock:
+                self._active_runs.pop(worker_run_id, None)
         return {
             "accepted": True,
             "worker_run_id": worker_run_id,
@@ -1235,16 +1142,6 @@ class _AutopilotDomain:
             or _preallocated_receipt_id(identity.attempt_id),
             "output_streams": [],
         }
-
-    def start(
-        self, params: Mapping[str, Any], context: WorkerContext
-    ) -> Mapping[str, object]:
-        return self._start_or_resume(params, context, is_resume=False)
-
-    def resume(
-        self, params: Mapping[str, Any], context: WorkerContext
-    ) -> Mapping[str, object]:
-        return self._start_or_resume(params, context, is_resume=True)
 
     def cancel(
         self, params: Mapping[str, Any], context: WorkerContext
@@ -1254,7 +1151,8 @@ class _AutopilotDomain:
             validate_identifier(worker_run_id, "worker_run_id")
         except AutopilotCheckpointError as exc:
             raise AutopilotRuntimeError(str(exc)) from exc
-        runtime = self._pending_runs.pop(worker_run_id, None)
+        with self._runs_lock:
+            runtime = self._active_runs.get(worker_run_id)
         if runtime is None:
             return {
                 "accepted": True,
@@ -1280,7 +1178,7 @@ def capability_descriptor(*, release_id: str) -> dict[str, object]:
         "input_schema": "run-snapshot/v1",
         "output_schema": "result-bundle/v1",
         "result_contract": RESULT_CONTRACT,
-        "supports": ["run", "resume", "cancel"],
+        "supports": ["run", "cancel"],
         "deterministic": False,
         "accepted_data_formats": [],
     }
@@ -1313,7 +1211,6 @@ def build_worker(
         descriptor=lambda release_id: capability_descriptor(release_id=release_id),
         operations=(CAPABILITY_ID,),
         start=domain.start,
-        resume=domain.resume,
         cancel=domain.cancel,
     )
     return worker

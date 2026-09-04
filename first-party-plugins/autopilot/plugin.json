@@ -12,7 +12,7 @@
   "capabilities": [
     {
       "capability_id": "autopilot.dag.run/v1",
-      "operations": ["run", "resume", "cancel"],
+      "operations": ["run", "cancel"],
       "result_contract": "candidate-batch/v1"
     }
   ],
@@ -22,7 +22,9 @@
     "host.asset.create/v1",
     "host.capability.invoke/v1",
     "host.capability.poll/v1",
-    "host.checkpoint.commit/v1"
+    "host.capability.cancel/v1",
+    "host.candidate.stage/v1",
+    "host.job.complete/v1"
   ],
   "kind": "code",
   "backend": {
