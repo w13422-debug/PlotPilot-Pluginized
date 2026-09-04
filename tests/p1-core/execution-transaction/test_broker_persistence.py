@@ -567,6 +567,239 @@ def _prepared_direct_resume_case(stack):
     return broker, request, child, current
 
 
+def _receipt_for_attempt(attempt, *, parent_receipt_ids):
+    receipt = {
+        "schema": "provenance-receipt/v1",
+        "receipt_id": attempt["preallocated_receipt_id"],
+        "plugin_id": attempt["plugin_id"],
+        "release_id": attempt["release_id"],
+        "package_hash": attempt["package_hash"],
+        "capability_id": attempt["capability_id"],
+        "job_id": attempt["job_id"],
+        "step_id": attempt["step_id"],
+        "attempt_id": attempt["attempt_id"],
+        "lease_epoch": attempt["lease_epoch"],
+        "run_snapshot_hash": attempt["run_snapshot_hash"],
+        "bundle_id": None,
+        "bundle_hash": None,
+        "parent_receipt_ids": list(parent_receipt_ids),
+        "model_receipt_ids": [],
+        "skill_chain_result_refs": [],
+        "staged_items": [],
+        "created_at": "2026-09-04T00:00:00Z",
+    }
+    receipt["receipt_hash"] = hash_without_field(
+        receipt, "receipt_hash", "provenance-receipt/v1"
+    )
+    return receipt
+
+
+def _terminal_direct_resume_case(stack):
+    broker, request, child, current = _prepared_direct_resume_case(stack)
+    aliased = broker.invoke(
+        current,
+        operation_key="invoke-1",
+        binding_id="binding-1",
+        input_asset_id=request.input_asset_id,
+    )
+    assert aliased.to_dict() == child.to_dict()
+
+    authority = stack["authority"]
+    connection = stack["repository"]._connection
+    child_attempt = connection.execute(
+        "SELECT a.*,j.run_snapshot_hash FROM execution_attempt a "
+        "JOIN execution_job j ON j.job_id=a.job_id WHERE a.job_id=?",
+        (child.child_job_id,),
+    ).fetchone()
+    authority.start_attempt(
+        job_id=child.child_job_id,
+        step_id=child.child_step_id,
+        attempt_id=child_attempt["attempt_id"],
+        worker_run_id="child-worker-terminal",
+        plugin_id=request.binding.plugin_id,
+        release_id=request.plugin_release_id,
+        package_hash="b" * 64,
+        capability_id=request.binding.capability_id,
+        generation_id=request.generation_id,
+        lease_epoch=child_attempt["lease_epoch"],
+        preallocated_receipt_id=child_attempt["preallocated_receipt_id"],
+    )
+    child_attempt = connection.execute(
+        "SELECT a.*,j.run_snapshot_hash FROM execution_attempt a "
+        "JOIN execution_job j ON j.job_id=a.job_id WHERE a.job_id=?",
+        (child.child_job_id,),
+    ).fetchone()
+    child_receipt = _receipt_for_attempt(child_attempt, parent_receipt_ids=())
+    child_commit = authority.complete_attempt(
+        job_id=child.child_job_id,
+        step_id=child.child_step_id,
+        attempt_id=child_attempt["attempt_id"],
+        lease_epoch=child_attempt["lease_epoch"],
+        operation_key="complete-terminal-child",
+        worker_run_id="child-worker-terminal",
+        outcome="failed",
+        result_bundle_asset_id=None,
+        candidate_stage_operation_key=None,
+        terminal_detail_asset_id=None,
+        local_seq=1,
+        provenance_receipt=child_receipt,
+        operation_meta={
+            "protocol_version": "1",
+            "generation_id": request.generation_id,
+            "plugin_release_id": request.plugin_release_id,
+            "deadline_at": "2026-09-04T01:00:00Z",
+            "context": "attempt",
+            "operation_id": "complete-terminal-child",
+            "job_id": child.child_job_id,
+            "step_id": child.child_step_id,
+            "attempt_id": child_attempt["attempt_id"],
+            "lease_epoch": child_attempt["lease_epoch"],
+        },
+    )
+    assert child_commit.result["attempt_state"] == "failed"
+
+    parent_attempt = connection.execute(
+        "SELECT a.*,j.run_snapshot_hash FROM execution_attempt a "
+        "JOIN execution_job j ON j.job_id=a.job_id "
+        "WHERE a.attempt_id='attempt-2'"
+    ).fetchone()
+    parent_receipt = _receipt_for_attempt(
+        parent_attempt,
+        parent_receipt_ids=(child_receipt["receipt_id"],),
+    )
+    parent_completion = {
+        "job_id": "job-1",
+        "step_id": "step-1",
+        "attempt_id": "attempt-2",
+        "lease_epoch": 2,
+        "operation_key": "complete-resumed-parent",
+        "worker_run_id": "worker-run-2",
+        "outcome": "failed",
+        "result_bundle_asset_id": None,
+        "candidate_stage_operation_key": None,
+        "terminal_detail_asset_id": None,
+        "local_seq": 2,
+        "provenance_receipt": parent_receipt,
+        "operation_meta": {
+            "protocol_version": "1",
+            "generation_id": "generation-1",
+            "plugin_release_id": "e" * 64,
+            "deadline_at": "2026-09-04T01:00:00Z",
+            "context": "attempt",
+            "operation_id": "complete-resumed-parent",
+            "job_id": "job-1",
+            "step_id": "step-1",
+            "attempt_id": "attempt-2",
+            "lease_epoch": 2,
+        },
+    }
+    return current, child_receipt["receipt_id"], parent_completion
+
+
+def test_direct_resume_terminal_alias_closure_allows_parent_completion(
+    execution_stack,
+):
+    _current, child_receipt_id, parent_completion = _terminal_direct_resume_case(
+        execution_stack
+    )
+    commit = execution_stack["authority"].complete_attempt(**parent_completion)
+    assert commit.result["accepted"] is True
+    assert commit.result["attempt_state"] == "failed"
+
+    connection = execution_stack["repository"]._connection
+    parent_attempt = connection.execute(
+        "SELECT state FROM execution_attempt WHERE attempt_id='attempt-2'"
+    ).fetchone()
+    assert parent_attempt["state"] == "failed"
+    parent_receipt = connection.execute(
+        "SELECT receipt_json FROM execution_receipt WHERE receipt_id=?",
+        (commit.result["provenance_receipt_id"],),
+    ).fetchone()
+    assert json.loads(parent_receipt["receipt_json"])["parent_receipt_ids"] == [
+        child_receipt_id
+    ]
+
+
+@pytest.mark.parametrize("drift", ["payload", "envelope", "response"])
+def test_direct_resume_terminal_alias_closure_drift_is_zero_write(
+    execution_stack, drift
+):
+    current, _child_receipt_id, parent_completion = _terminal_direct_resume_case(
+        execution_stack
+    )
+    connection = execution_stack["repository"]._connection
+    current_identity = current.identity()
+    operation = connection.execute(
+        "SELECT * FROM p3_broker_operation "
+        "WHERE context_identity=? AND method='host.capability.invoke/v1' "
+        "AND operation_key='invoke-1'",
+        (current_identity,),
+    ).fetchone()
+    if drift == "payload":
+        connection.execute(
+            "UPDATE p3_broker_operation SET payload_hash=? "
+            "WHERE context_identity=? AND method='host.capability.invoke/v1' "
+            "AND operation_key='invoke-1'",
+            ("f" * 64, current_identity),
+        )
+    elif drift == "envelope":
+        source_envelope_asset_id = connection.execute(
+            "SELECT envelope_asset_id FROM p3_broker_operation "
+            "WHERE context_identity<>? AND method='host.capability.invoke/v1' "
+            "AND operation_key='invoke-1'",
+            (current_identity,),
+        ).fetchone()[0]
+        connection.execute(
+            "UPDATE p3_broker_operation SET envelope_asset_id=? "
+            "WHERE context_identity=? AND method='host.capability.invoke/v1' "
+            "AND operation_key='invoke-1'",
+            (source_envelope_asset_id, current_identity),
+        )
+    else:
+        response = json.loads(bytes(operation["response"]))
+        response["child_job_event_seq"] += 1
+        connection.execute(
+            "UPDATE p3_broker_operation SET response=? "
+            "WHERE context_identity=? AND method='host.capability.invoke/v1' "
+            "AND operation_key='invoke-1'",
+            (canonical_bytes(response), current_identity),
+        )
+    database_before = connection.serialize()
+    assets_before = sorted(
+        str(path.relative_to(execution_stack["assets"].root))
+        for path in execution_stack["assets"].root.rglob("*")
+        if path.is_file()
+    )
+
+    with pytest.raises(
+        ContractError, match="direct resume child alias closure drifted"
+    ) as caught:
+        execution_stack["authority"].complete_attempt(**parent_completion)
+
+    assert caught.value.code == int(ErrorCode.RESULT_CONTRACT_MISMATCH)
+    assert connection.serialize() == database_before
+    assert (
+        sorted(
+            str(path.relative_to(execution_stack["assets"].root))
+            for path in execution_stack["assets"].root.rglob("*")
+            if path.is_file()
+        )
+        == assets_before
+    )
+    assert (
+        connection.execute(
+            "SELECT state FROM execution_attempt WHERE attempt_id='attempt-2'"
+        ).fetchone()[0]
+        == "running"
+    )
+    assert (
+        connection.execute(
+            "SELECT count(*) FROM execution_outcome WHERE attempt_id='attempt-2'"
+        ).fetchone()[0]
+        == 0
+    )
+
+
 @pytest.mark.parametrize(
     "drift",
     [
