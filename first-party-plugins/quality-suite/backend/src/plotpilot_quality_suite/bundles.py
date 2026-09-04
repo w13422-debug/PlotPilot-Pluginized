@@ -19,6 +19,11 @@ from typing import Any, TypeAlias
 
 from .rules import Finding, scan_language_style
 
+try:  # The installed worker exposes the SDK at top level; repository tests use backend.
+    from backend.plotpilot_plugin_sdk import verify_result_bundle
+except ModuleNotFoundError:  # pragma: no cover - exercised by the installed plugin path
+    from plotpilot_plugin_sdk import verify_result_bundle
+
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _SEVERITIES = frozenset({"info", "warning", "error"})
 _UTF8_BOM = b"\xef\xbb\xbf"
@@ -1031,4 +1036,228 @@ def build_candidate_only_bundle(
 
 __all__.extend(
     ("CandidateOnlyBundle", "build_candidate_only_bundle", "coerce_quality_source")
+)
+
+
+@dataclass(frozen=True, slots=True)
+class QualityCandidateDomain:
+    """One immutable, uploaded Quality-domain report for a Core Candidate item."""
+
+    domain: str
+    status: str
+    payload_asset_id: str
+    payload_hash: str
+    failure: str | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.domain, str) or _DOMAIN_RE.fullmatch(self.domain) is None:
+            raise BundleValidationError("candidate-batch domain is invalid")
+        if self.status not in {"partial", "failed"}:
+            raise BundleValidationError("candidate-batch domain status is invalid")
+        _required_identifier(self.payload_asset_id, "candidate-batch payload_asset_id")
+        _required_hash(self.payload_hash, "candidate-batch payload_hash")
+        if self.status == "failed":
+            if not isinstance(self.failure, str) or not self.failure:
+                raise BundleValidationError(
+                    "failed candidate-batch domain requires failure detail"
+                )
+        elif self.failure is not None:
+            raise BundleValidationError(
+                "partial candidate-batch domain cannot carry failure detail"
+            )
+
+
+@dataclass(frozen=True, slots=True, init=False)
+class QualityCandidateBatch:
+    """Canonical Core ``candidate-batch/v1`` bytes with SDK verification."""
+
+    payload: Mapping[str, Any]
+    json_bytes: bytes
+    sha256: str
+
+    def __init__(self, payload: Mapping[str, Any]) -> None:
+        if not isinstance(payload, Mapping):
+            raise BundleValidationError("candidate-batch payload must be a mapping")
+        plain = _thaw(_freeze(payload))
+        raw = canonical_json_bytes(plain)
+        verify_result_bundle(plain)
+        object.__setattr__(self, "payload", _freeze(plain))
+        object.__setattr__(self, "json_bytes", raw)
+        object.__setattr__(self, "sha256", sha256_hex(raw))
+
+    @property
+    def bundle_id(self) -> str:
+        return str(self.payload["bundle_id"])
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return a detached JSON-compatible copy of the verified bundle."""
+
+        return _thaw(self.payload)
+
+
+def _candidate_batch_identifier(prefix: str, value: Mapping[str, object]) -> str:
+    return f"{prefix}-{sha256_hex(canonical_json_bytes(value))[:48]}"
+
+
+def _candidate_batch_producer(producer: Mapping[str, object]) -> dict[str, object]:
+    expected = {
+        "plugin_id",
+        "release_id",
+        "capability_id",
+        "job_id",
+        "step_id",
+        "attempt_id",
+        "lease_epoch",
+    }
+    if not isinstance(producer, Mapping) or set(producer) != expected:
+        raise BundleValidationError("candidate-batch producer fields are not closed")
+    value = dict(producer)
+    for field in expected - {"release_id", "lease_epoch"}:
+        _required_identifier(value[field], f"candidate-batch producer {field}")
+    _required_hash(value["release_id"], "candidate-batch producer release_id")
+    if type(value["lease_epoch"]) is not int or value["lease_epoch"] < 1:
+        raise BundleValidationError(
+            "candidate-batch producer lease_epoch must be positive"
+        )
+    return value
+
+
+def build_quality_candidate_batch(
+    source: BundleInput,
+    *,
+    document_id: str,
+    input_snapshot_hash: str,
+    producer: Mapping[str, object],
+    provenance_receipt_id: str,
+    domains: Iterable[QualityCandidateDomain],
+) -> QualityCandidateBatch:
+    """Build the review-only Core Candidate result from uploaded domain reports.
+
+    Every candidate uses ``append_text`` and stays ``partial``.  This makes the
+    payload a review report rather than a completed document replacement; Core
+    retains the sole authority to stage and decide any later disposition.
+    """
+
+    frozen = _coerce_source(source)
+    document_id = _required_identifier(document_id, "candidate-batch document_id")
+    input_snapshot_hash = _required_hash(
+        input_snapshot_hash,
+        "candidate-batch input_snapshot_hash",
+    )
+    receipt_id = _required_identifier(
+        provenance_receipt_id,
+        "candidate-batch provenance_receipt_id",
+    )
+    producer_value = _candidate_batch_producer(producer)
+    domain_values = tuple(domains)
+    if not domain_values or any(
+        not isinstance(item, QualityCandidateDomain) for item in domain_values
+    ):
+        raise BundleValidationError(
+            "candidate-batch requires one or more Quality domain reports"
+        )
+    domain_names = tuple(item.domain for item in domain_values)
+    if len(set(domain_names)) != len(domain_names):
+        raise BundleValidationError("candidate-batch domains must be unique")
+
+    source_ref = {
+        "workspace_id": frozen.workspace_id,
+        "source_type": "document",
+        "source_id": document_id,
+        "revision_or_hash": frozen.revision_id,
+    }
+    target = {
+        "workspace_id": frozen.workspace_id,
+        "entity_kind": "document",
+        "entity_id": document_id,
+    }
+    base = {
+        "revision_id": frozen.revision_id,
+        "content_hash": frozen.content_hash,
+    }
+    write_set_entry = {
+        "workspace_id": frozen.workspace_id,
+        "entity_kind": "document",
+        "entity_id": document_id,
+        "revision_id": frozen.revision_id,
+        "content_hash": frozen.content_hash,
+    }
+    items: list[dict[str, object]] = []
+    warnings: list[dict[str, object]] = []
+    for domain in domain_values:
+        item_identity = {
+            "schema": "quality-candidate-item-id/v1",
+            "domain": domain.domain,
+            "document_id": document_id,
+            "source_hash": frozen.content_hash,
+            "input_snapshot_hash": input_snapshot_hash,
+            "producer": producer_value,
+            "payload_hash": domain.payload_hash,
+        }
+        items.append(
+            {
+                "schema": "candidate-item/v1",
+                "item_id": _candidate_batch_identifier(
+                    f"quality-{domain.domain}",
+                    item_identity,
+                ),
+                "item_kind": "document",
+                "target": dict(target),
+                "mutation": {
+                    "mode": "append_text",
+                    "payload_schema": "core/document-text/v1",
+                    "payload_hash": domain.payload_hash,
+                },
+                "payload_asset_id": domain.payload_asset_id,
+                "base": dict(base),
+                "write_set": [dict(write_set_entry)],
+                "parent_candidate_ids": [],
+                "source_refs": [dict(source_ref)],
+                "status": domain.status,
+            }
+        )
+        if domain.status == "failed":
+            assert domain.failure is not None
+            warnings.append(
+                {
+                    "code": f"quality.{domain.domain}.failed",
+                    "message": domain.failure,
+                    "details_asset_id": domain.payload_asset_id,
+                }
+            )
+
+    payload: dict[str, object] = {
+        "schema": "result-bundle/v1",
+        "contract_id": "candidate-batch/v1",
+        "bundle_id": "",
+        "bundle_type": "candidate_batch",
+        "producer": producer_value,
+        "input_snapshot_hash": input_snapshot_hash,
+        "items": items,
+        "warnings": warnings,
+        "partial": True,
+        "provenance_receipt_id": receipt_id,
+        "skill_chain_result_refs": [],
+    }
+    bundle_identity = dict(payload)
+    bundle_identity.pop("bundle_id")
+    payload["bundle_id"] = _candidate_batch_identifier(
+        "quality-candidate-batch",
+        bundle_identity,
+    )
+    result = QualityCandidateBatch(payload)
+    verify_result_bundle(
+        result.to_dict(),
+        snapshot_workspace_id=frozen.workspace_id,
+        snapshot_hash_value=input_snapshot_hash,
+    )
+    return result
+
+
+__all__.extend(
+    (
+        "QualityCandidateBatch",
+        "QualityCandidateDomain",
+        "build_quality_candidate_batch",
+    )
 )
