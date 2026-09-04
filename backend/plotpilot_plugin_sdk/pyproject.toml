@@ -19,5 +19,8 @@ include-package-data = true
 [tool.setuptools.package-data]
 plotpilot_plugin_sdk = ["resources/*.json"]
 
+[tool.setuptools.data-files]
+"Lib/contracts/json-schema" = ["../../contracts/json-schema/*.json"]
+
 [tool.setuptools.package-dir]
 plotpilot_plugin_sdk = "."
