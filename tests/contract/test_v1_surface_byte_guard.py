@@ -12,7 +12,7 @@ E0_BLOB_OVERRIDES = {
     "contracts/manifest-v1.json": "bb0421c52fdace39ddc3e2d5e397bc0cc2ccf335",
     "backend/plotpilot_plugin_sdk/rpc.py": "bc62f78bd575af50c3d69241b88464832fd77377",
     "backend/plotpilot_plugin_sdk/verifier.py": "d74afeb5638df42ee7042e578d9d64d9ff019257",
-    "backend/plotpilot_plugin_sdk/pyproject.toml": "721d2b62b82164cd30fdc6f35cec9da84d4e887e",
+    "backend/plotpilot_plugin_sdk/pyproject.toml": "f25334cb37d4101300015b29d1f5ed7bbb79f7c0",
 }
 
 
