@@ -301,14 +301,18 @@ def validate_transition(value: Mapping[str, Any]) -> dict[str, Any]:
         result["shadow_data_generation_id"] is not None
     ):
         raise LifecycleError(f"{state} cannot reference a shadow Generation")
-    if state in {
-        "selected",
-        "staged",
-        "package_published",
-        "env_prepared",
-        "shadow_prepared",
-        "migrated",
-    } and result["target_settings_revision_ids"]:
+    if (
+        state
+        in {
+            "selected",
+            "staged",
+            "package_published",
+            "env_prepared",
+            "shadow_prepared",
+            "migrated",
+        }
+        and result["target_settings_revision_ids"]
+    ):
         raise LifecycleError(f"{state} cannot reference validated Settings")
     if state == "lkg_promoted":
         if result["qualification_id"] is None:
@@ -343,8 +347,18 @@ class LifecycleRepository:
         connection: sqlite3.Connection,
         *,
         transaction_factory: TransactionFactory | None = None,
+        core_authority_binding: object | None = None,
     ) -> None:
+        if transaction_factory is not None and core_authority_binding is None:
+            raise LifecycleError(
+                "a shared lifecycle repository requires its Core authority binding"
+            )
         self.connection = connection
+        # This public identity is the only production proof that P1 and P2 were
+        # composed over the same CoreAuthorityRepository object.  Standalone
+        # P2 tests may omit it, but such a repository cannot enter a backup
+        # contributor or any other authority-bound production seam.
+        self.core_authority_binding = core_authority_binding
         self._transaction_factory = transaction_factory
         self._lock = threading.RLock()
         self._transaction_owner: int | None = None
@@ -396,7 +410,9 @@ class LifecycleRepository:
             nested = self._transaction_depth > 0
             if nested:
                 if self._transaction_owner != thread_id:
-                    raise LifecycleError("lifecycle transaction is owned by another thread")
+                    raise LifecycleError(
+                        "lifecycle transaction is owned by another thread"
+                    )
                 self._transaction_depth += 1
             else:
                 if self.connection.in_transaction:
@@ -729,7 +745,10 @@ class LifecycleRepository:
         plugin_id = request.get("plugin_id")
         release_id = request.get("release_id")
         package_hash = request.get("package_hash")
-        if not all(isinstance(item, str) and item for item in (plugin_id, release_id, package_hash)):
+        if not all(
+            isinstance(item, str) and item
+            for item in (plugin_id, release_id, package_hash)
+        ):
             raise LifecycleError("frozen install request lacks exact package identity")
         members = {member["plugin_id"]: member for member in generation["members"]}
         target_member = members.get(plugin_id)
@@ -764,7 +783,9 @@ class LifecycleRepository:
                 raise LifecycleError("frozen base Generation is absent")
             base = validate_generation(_load(row[0]))
             base_members = {member["plugin_id"]: member for member in base["members"]}
-        unchanged_actual = {key: value for key, value in members.items() if key != plugin_id}
+        unchanged_actual = {
+            key: value for key, value in members.items() if key != plugin_id
+        }
         unchanged_base = {
             key: value for key, value in base_members.items() if key != plugin_id
         }

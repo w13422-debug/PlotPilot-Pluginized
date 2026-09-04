@@ -17,11 +17,13 @@ RELEASE_B = "b" * 64
 PACKAGE_A = "c" * 64
 PACKAGE_B = "d" * 64
 CORE_HASH = "e" * 64
+CORE_AUTHORITY = object()
 
 
 @dataclass
 class FakeGenerationSource:
     state: GenerationState
+    core_authority_binding: object = CORE_AUTHORITY
 
     def generation_state(self) -> GenerationState:
         return self.state
