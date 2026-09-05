@@ -113,7 +113,10 @@ class StdioHostPort:
             self._stdout.write(encode_frame(request))
             self._stdout.flush()
             while True:
-                chunk = self._stdin.read(65536)
+                read = getattr(self._stdin, "read1", None)
+                if read is None:
+                    read = self._stdin.read
+                chunk = read(65536)
                 if not chunk:
                     raise StoryStateWorkerError(
                         ErrorCode.ASSET_ERROR, "Host channel ended before response"

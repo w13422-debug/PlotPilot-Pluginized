@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import io
 import json
+import os
 import sys
 from collections import deque
 from collections.abc import Callable
@@ -25,6 +27,7 @@ from plotpilot_project_planner import (
     planner_prepare_operation_key,
     prepare_planner_run,
 )
+from plotpilot_project_planner.worker import StdioHostPort
 from plotpilot_project_planner.worker import main as planner_main
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -536,3 +539,110 @@ def test_no_argument_planner_rejects_identity_drift_before_any_write_effect(
         "host.candidate.stage/v1",
         "host.job.complete/v1",
     }
+
+
+_HOST_READ_PARAMS = {"asset_id": "asset-stdio-small-1", "offset": 0, "length": 1}
+_HOST_READ_RESULT = {
+    "base64_chunk": "",
+    "next_offset": None,
+    "content_hash": sha256_hex(b""),
+}
+
+
+def _host_response_frame(request: dict[str, Any]) -> bytes:
+    return encode_frame(
+        {
+            "jsonrpc": "2.0",
+            "id": request["id"],
+            "result": _HOST_READ_RESULT,
+        }
+    )
+
+
+class _Read1OnlyBufferedPipe:
+    """Keep the writer open: only BufferedReader.read1 can return this small frame."""
+
+    def __init__(self) -> None:
+        reader_fd, self._writer_fd = os.pipe()
+        self._reader = io.BufferedReader(os.fdopen(reader_fd, "rb", buffering=0))
+        self.frame_lengths: list[int] = []
+        self.read1_sizes: list[int] = []
+
+    def queue_response(self, request: dict[str, Any]) -> None:
+        frame = _host_response_frame(request)
+        self.frame_lengths.append(len(frame))
+        assert os.write(self._writer_fd, frame) == len(frame)
+
+    def read1(self, size: int) -> bytes:
+        self.read1_sizes.append(size)
+        return self._reader.read1(size)
+
+    def read(self, _size: int) -> bytes:
+        raise AssertionError("read() must not be called when read1() is available")
+
+    def close(self) -> None:
+        os.close(self._writer_fd)
+        self._reader.close()
+
+
+class _ReadFallbackInput:
+    def __init__(self) -> None:
+        self._frames: deque[bytes] = deque()
+        self.frame_lengths: list[int] = []
+        self.read_sizes: list[int] = []
+
+    def queue_response(self, request: dict[str, Any]) -> None:
+        frame = _host_response_frame(request)
+        self.frame_lengths.append(len(frame))
+        self._frames.append(frame)
+
+    def read(self, size: int) -> bytes:
+        self.read_sizes.append(size)
+        return self._frames.popleft()
+
+
+class _HostResponseWriter:
+    def __init__(self, input_stream: Any) -> None:
+        self._decoder = FrameDecoder()
+        self._input_stream = input_stream
+
+    def write(self, data: bytes) -> int:
+        for message in self._decoder.feed(bytes(data)):
+            self._input_stream.queue_response(message)
+        return len(data)
+
+    def flush(self) -> None:
+        return None
+
+
+def _host_meta() -> dict[str, Any]:
+    return build_meta(
+        "attempt",
+        generation_id="generation-stdio-1",
+        plugin_release_id="a" * 64,
+        deadline_at="2026-09-04T00:00:00Z",
+        job_id="job-stdio-1",
+        step_id="step-stdio-1",
+        attempt_id="attempt-stdio-1",
+        lease_epoch=1,
+        operation_id="stdio-host-port-1",
+    )
+
+
+def test_stdio_host_port_uses_read1_for_small_frame_and_falls_back_to_read():
+    pipe = _Read1OnlyBufferedPipe()
+    try:
+        port = StdioHostPort(pipe, _HostResponseWriter(pipe))
+        port.bind_meta(_host_meta())
+        assert port.call("host.asset.read/v1", _HOST_READ_PARAMS) == _HOST_READ_RESULT
+        assert pipe.read1_sizes == [65536]
+        assert pipe.frame_lengths and pipe.frame_lengths[0] < 65536
+    finally:
+        pipe.close()
+
+    fallback = _ReadFallbackInput()
+    port = StdioHostPort(fallback, _HostResponseWriter(fallback))
+    port.bind_meta(_host_meta())
+    assert port.call("host.asset.read/v1", _HOST_READ_PARAMS) == _HOST_READ_RESULT
+    assert fallback.read_sizes == [65536]
+    assert fallback.frame_lengths and fallback.frame_lengths[0] < 65536
