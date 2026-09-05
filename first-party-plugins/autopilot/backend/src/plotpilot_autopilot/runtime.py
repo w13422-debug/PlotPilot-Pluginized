@@ -974,10 +974,6 @@ def _candidate_from_snapshot(
         base_content_hash = validate_sha256(
             revision.get("content_hash"), "base_content_hash"
         )
-        snapshot_id = validate_identifier(snapshot.get("snapshot_id"), "snapshot_id")
-        snapshot_hash = validate_sha256(
-            snapshot.get("snapshot_hash"), "snapshot_hash"
-        )
     except AutopilotCheckpointError as exc:
         raise AutopilotRuntimeError(str(exc)) from exc
 
@@ -1001,15 +997,9 @@ def _candidate_from_snapshot(
         source_refs=(
             {
                 "workspace_id": workspace_id,
-                "source_type": "run_snapshot",
-                "source_id": snapshot_id,
-                "revision_or_hash": snapshot_hash,
-            },
-            {
-                "workspace_id": workspace_id,
-                "source_type": "autopilot_parameters",
-                "source_id": parameter_asset_id,
-                "revision_or_hash": parameter_hash,
+                "source_type": "revision",
+                "source_id": base_revision_id,
+                "revision_or_hash": base_content_hash,
             },
         ),
     )

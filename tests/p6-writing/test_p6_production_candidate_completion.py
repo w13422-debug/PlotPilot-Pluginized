@@ -9,8 +9,7 @@ from typing import Any
 
 import plotpilot_quality_suite.runtime as quality_runtime
 import pytest
-from plotpilot_autopilot import AutopilotIdentity, AutopilotRuntime, build_durable_dag
-from plotpilot_autopilot.runtime import CandidateProjection
+from plotpilot_autopilot.runtime import build_worker
 
 from backend.plotpilot_core.api.v1.jobs.rpc.command_query import AttemptStartBinding
 from backend.plotpilot_core.assets import AssetStore
@@ -55,7 +54,18 @@ def _snapshot(
     source_hash: str,
     revision_id: str,
     run_intent_id: str,
+    parameters_asset_id: str | None = None,
+    parameters_hash: str | None = None,
 ) -> dict[str, object]:
+    if (parameters_asset_id is None) != (parameters_hash is None):
+        raise ValueError("parameters Asset identity and hash must be paired")
+    asset_hashes: list[dict[str, str]] = [
+        {"asset_id": source_asset_id, "sha256": source_hash}
+    ]
+    if parameters_asset_id is not None and parameters_hash is not None:
+        asset_hashes.append(
+            {"asset_id": parameters_asset_id, "sha256": parameters_hash}
+        )
     value: dict[str, object] = {
         "schema": "run-snapshot/v1",
         "snapshot_id": f"snapshot-{run_intent_id}",
@@ -86,8 +96,8 @@ def _snapshot(
         "data_bindings": [],
         "skill_releases": [],
         "model_profile_revision_id": None,
-        "parameters_asset_id": None,
-        "asset_hashes": [{"asset_id": source_asset_id, "sha256": source_hash}],
+        "parameters_asset_id": parameters_asset_id,
+        "asset_hashes": asset_hashes,
         "request_key": "0" * 64,
         "run_intent_id": run_intent_id,
         "created_at": "2026-09-05T00:00:00Z",
@@ -251,6 +261,17 @@ def _harness(
         provenance="test:production-composition",
     )
     plugin_release_id = release_id(plugin_id, "1.0.0", PACKAGE_HASH)
+    parameters_asset_id: str | None = None
+    parameters_hash: str | None = None
+    if plugin_id == "com.plotpilot.autopilot":
+        parameters_asset = assets.put(
+            canonical_bytes({"schema": "autopilot-dag/v1", "stages": []}),
+            mime="application/json",
+            logical_role="parameters",
+            provenance="test:production-composition",
+        )
+        parameters_asset_id = parameters_asset.asset_id
+        parameters_hash = parameters_asset.sha256
     snapshot = _snapshot(
         plugin_id=plugin_id,
         plugin_release_id=plugin_release_id,
@@ -259,6 +280,8 @@ def _harness(
         source_hash=source_asset.sha256,
         revision_id=base.revision_id,
         run_intent_id=run_intent_id,
+        parameters_asset_id=parameters_asset_id,
+        parameters_hash=parameters_hash,
     )
     authority.create_from_verified_snapshot("job-1", snapshot)
     authority.freeze_plan(
@@ -399,46 +422,81 @@ def _assert_conflicting_or_cross_attempt_replay_is_rejected(harness: _Harness) -
 
 
 def test_autopilot_runtime_stages_then_completes_on_production_core(tmp_path: Path) -> None:
+    operation_id = "worker-autopilot-1"
+    worker_run_id = "autopilot-worker-run-" + sha256(
+        f"worker-run\njob-1\nstep-1\nattempt-1\n1\n{operation_id}".encode()
+    ).hexdigest()[:48]
     harness = _harness(
         tmp_path / "autopilot",
         plugin_id="com.plotpilot.autopilot",
         capability_id="autopilot.dag.run/v1",
-        worker_run_id="worker-autopilot-1",
+        worker_run_id=worker_run_id,
         run_intent_id="intent-autopilot",
     )
     try:
-        identity = AutopilotIdentity(
-            workspace_id="workspace-1",
-            job_id="job-1",
-            step_id="step-1",
-            attempt_id="attempt-1",
-            lease_epoch=1,
-            plugin_release_id=harness.attempt.release_id,
-            run_snapshot_hash=str(harness.snapshot["snapshot_hash"]),
-            created_at="2026-09-05T00:00:00Z",
-        )
-        result = AutopilotRuntime(
-            harness.host,
-            plugin_release_id=harness.attempt.release_id,
-            assets=harness.asset_client,
-        ).run(
-            identity,
-            build_durable_dag(()),
-            candidate=CandidateProjection(
-                text="A production-staged Autopilot candidate.",
-                mutation_mode="replace",
-                workspace_id="workspace-1",
-                document_id="document-1",
-                base_revision_id=harness.base_revision_id,
-                base_content_hash=harness.base_content_hash,
-                source_refs=(),
+        worker = build_worker()
+        domain = worker._domains["autopilot.dag.run/v1"]
+        assert domain.start is not None
+        result = domain.start(
+            {"checkpoint_asset_id": None},
+            WorkerContext(
+                request={},
+                meta={"deadline_at": DEADLINE},
+                host=harness.host,  # type: ignore[arg-type]
+                assets=harness.asset_client,
+                identity=AttemptIdentity(
+                    generation_id=GENERATION_ID,
+                    plugin_release_id=harness.attempt.release_id,
+                    data_generation_id=GENERATION_ID,
+                    package_hash=PACKAGE_HASH,
+                    workspace_id="workspace-1",
+                    job_id="job-1",
+                    step_id="step-1",
+                    attempt_id="attempt-1",
+                    lease_epoch=1,
+                    operation_id=operation_id,
+                    capability_id="autopilot.dag.run/v1",
+                    run_snapshot_asset_id=harness.run_snapshot_asset_id,
+                    run_snapshot_id=str(harness.snapshot["snapshot_id"]),
+                    run_snapshot_hash=str(harness.snapshot["snapshot_hash"]),
+                ),
+                run_snapshot=harness.snapshot,
+                run_snapshot_asset=None,
             ),
-            worker_run_id=harness.attempt.worker_run_id,
         )
 
-        assert result.completed is True
-        assert result.candidate_stage_operation_key is not None
+        assert result["accepted"] is True
+        assert result["worker_run_id"] == harness.attempt.worker_run_id
         _assert_stage_before_complete(harness)
+        stage_params = next(
+            params
+            for method, params in harness.host.calls
+            if method == "host.candidate.stage/v1"
+        )
+        bundle = json.loads(
+            harness.assets.read(str(stage_params["result_bundle_asset_id"]))
+        )
+        assert harness.snapshot["parameters_asset_id"] in {
+            entry["asset_id"] for entry in harness.snapshot["asset_hashes"]
+        }
+        assert bundle["input_snapshot_hash"] == harness.snapshot["snapshot_hash"]
+        assert bundle["producer"] == {
+            "plugin_id": harness.attempt.plugin_id,
+            "release_id": harness.attempt.release_id,
+            "capability_id": harness.attempt.capability_id,
+            "job_id": harness.attempt.job_id,
+            "step_id": harness.attempt.step_id,
+            "attempt_id": harness.attempt.attempt_id,
+            "lease_epoch": harness.attempt.lease_epoch,
+        }
+        assert bundle["items"][0]["source_refs"] == [
+            {
+                "workspace_id": "workspace-1",
+                "source_type": "revision",
+                "source_id": harness.base_revision_id,
+                "revision_or_hash": harness.base_content_hash,
+            }
+        ]
         with harness.repository.read_connection() as connection:
             assert connection.execute(
                 "SELECT state FROM execution_attempt WHERE attempt_id='attempt-1'"

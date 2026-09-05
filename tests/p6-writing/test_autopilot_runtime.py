@@ -590,6 +590,16 @@ def test_registered_start_handler_consumes_the_worker_bound_run_snapshot() -> No
 
     assert result["accepted"] is True
     assert result["provenance_receipt_id"] == _receipt_id("attempt-1")
+    result_bundle = json.loads(assets.read(assets.created[-1][0]).content)
+    assert result_bundle["input_snapshot_hash"] == SNAPSHOT_HASH
+    assert result_bundle["items"][0]["source_refs"] == [
+        {
+            "workspace_id": "workspace-1",
+            "source_type": "revision",
+            "source_id": "revision-1",
+            "revision_or_hash": "d" * 64,
+        }
+    ]
     assert [method for method, _ in host.calls] == [
         "host.capability.invoke/v1",
         "host.capability.poll/v1",
