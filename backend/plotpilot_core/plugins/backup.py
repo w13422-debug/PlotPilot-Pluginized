@@ -1,4 +1,5 @@
 """P2 Generation contributor bound to an already-frozen Core backup barrier."""
+
 from __future__ import annotations
 
 import re
@@ -17,6 +18,8 @@ class GenerationBackupError(ValueError):
 
 
 class GenerationStateSource(Protocol):
+    core_authority_binding: object
+
     def generation_state(self) -> GenerationState: ...
 
 
@@ -32,7 +35,54 @@ def _hash(value: object, label: str) -> str:
     return value
 
 
-def _generation(value: Mapping[str, Any] | None, label: str) -> Mapping[str, Any] | None:
+def _backup_barrier(value: object) -> BackupBarrier:
+    """Normalize the accepted public Barrier across namespace spellings."""
+
+    try:
+        token = value.token  # type: ignore[attr-defined]
+        backup_epoch = value.backup_epoch  # type: ignore[attr-defined]
+        high_water = value.core_event_high_water  # type: ignore[attr-defined]
+        created_at = value.created_at  # type: ignore[attr-defined]
+    except AttributeError as exc:
+        raise GenerationBackupError("backup barrier is absent or malformed") from exc
+    if (
+        not isinstance(token, str)
+        or not token
+        or type(backup_epoch) is not int
+        or backup_epoch < 1
+        or type(high_water) is not int
+        or high_water < 0
+        or not isinstance(created_at, str)
+    ):
+        raise GenerationBackupError("backup barrier is absent or malformed")
+    return BackupBarrier(token, backup_epoch, high_water, created_at)
+
+
+def _generation_state(value: object) -> GenerationState:
+    """Normalize the accepted public GenerationState across import namespaces."""
+
+    try:
+        current = value.current  # type: ignore[attr-defined]
+        lkg = value.lkg  # type: ignore[attr-defined]
+        safe_mode = value.safe_mode  # type: ignore[attr-defined]
+        rollback_consumed = value.rollback_consumed  # type: ignore[attr-defined]
+    except AttributeError as exc:
+        raise GenerationBackupError(
+            "generation source returned an untyped state"
+        ) from exc
+    if type(safe_mode) is not bool or type(rollback_consumed) is not bool:
+        raise GenerationBackupError("generation source returned an untyped state")
+    return GenerationState(
+        current=current,
+        lkg=lkg,
+        safe_mode=safe_mode,
+        rollback_consumed=rollback_consumed,
+    )
+
+
+def _generation(
+    value: Mapping[str, Any] | None, label: str
+) -> Mapping[str, Any] | None:
     if value is None:
         return None
     if not isinstance(value, Mapping):
@@ -40,10 +90,14 @@ def _generation(value: Mapping[str, Any] | None, label: str) -> Mapping[str, Any
     try:
         return validate_generation(value)
     except Exception as exc:
-        raise GenerationBackupError(f"{label} Generation failed contract validation") from exc
+        raise GenerationBackupError(
+            f"{label} Generation failed contract validation"
+        ) from exc
 
 
-def _release_projection(generations: tuple[Mapping[str, Any] | None, ...]) -> tuple[dict[str, object], ...]:
+def _release_projection(
+    generations: tuple[Mapping[str, Any] | None, ...],
+) -> tuple[dict[str, object], ...]:
     """Record only identities that the immutable Generation actually contains.
 
     A Generation has no version field and this Stage 1 contributor does not
@@ -70,7 +124,9 @@ def _release_projection(generations: tuple[Mapping[str, Any] | None, ...]) -> tu
             key = plugin_id, release_id
             previous = releases.get(key)
             if previous is not None and previous != projected:
-                raise GenerationBackupError("same Generation release identity has conflicting bytes")
+                raise GenerationBackupError(
+                    "same Generation release identity has conflicting bytes"
+                )
             releases[key] = projected
     return tuple(
         releases[key]
@@ -101,7 +157,26 @@ class GenerationBackupContributor:
     """Read immutable P2 pointers; never repairs, switches, or substitutes them."""
 
     def __init__(self, generations: GenerationStateSource) -> None:
+        if not callable(getattr(generations, "generation_state", None)):
+            raise GenerationBackupError("generation source is absent")
         self._generations = generations
+        _ = self.core_authority_binding
+
+    @property
+    def core_authority_binding(self) -> object:
+        """Live-read the sole public Core authority held by the source."""
+
+        try:
+            binding = self._generations.core_authority_binding
+        except AttributeError as exc:
+            raise GenerationBackupError(
+                "generation source has no public Core authority binding"
+            ) from exc
+        if binding is None:
+            raise GenerationBackupError(
+                "generation source Core authority binding is null"
+            )
+        return binding
 
     def capture_for_backup(
         self,
@@ -113,8 +188,7 @@ class GenerationBackupContributor:
         workspace_ids: tuple[str, ...],
     ) -> GenerationSnapshot:
         del core_database, workspace_ids
-        if not isinstance(barrier, BackupBarrier) or not barrier.token:
-            raise GenerationBackupError("backup barrier is absent")
+        public_barrier = _backup_barrier(barrier)
         _hash(core_snapshot_hash, "core_snapshot_hash")
         if mode not in {"full", "data", "workspace"}:
             raise GenerationBackupError("backup mode is not closed")
@@ -122,22 +196,22 @@ class GenerationBackupContributor:
             # Workspace bundles intentionally exclude global P2 pointers,
             # package roots, and Asset closure contributions.
             return GenerationSnapshot(
-                barrier_token=barrier.token,
+                barrier_token=public_barrier.token,
                 bound_core_snapshot_hash=core_snapshot_hash,
                 current_generation_id=None,
                 lkg_generation_id=None,
                 compatible=True,
             )
-        state = self._generations.generation_state()
-        if not isinstance(state, GenerationState):
-            raise GenerationBackupError("generation source returned an untyped state")
+        state = _generation_state(self._generations.generation_state())
         current = _generation(state.current, "current")
         lkg = _generation(state.lkg, "lkg")
         selected = (current, lkg)
         return GenerationSnapshot(
-            barrier_token=barrier.token,
+            barrier_token=public_barrier.token,
             bound_core_snapshot_hash=core_snapshot_hash,
-            current_generation_id=None if current is None else str(current["generation_id"]),
+            current_generation_id=None
+            if current is None
+            else str(current["generation_id"]),
             lkg_generation_id=None if lkg is None else str(lkg["generation_id"]),
             compatible=True,
             asset_ids=_asset_ids(selected),
