@@ -4,6 +4,7 @@ import copy
 import json
 import sys
 import unicodedata
+from collections.abc import Mapping
 from pathlib import Path
 
 import pytest
@@ -12,10 +13,21 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "backend"))
 sys.path.insert(0, str(ROOT / "tools" / "integration"))
 
-from plotpilot_plugin_sdk.errors import ContractError, ErrorCode  # noqa: E402
-from plotpilot_plugin_sdk.package import _unicode_nfc, build_files_sha256  # noqa: E402
-from plotpilot_plugin_sdk.verifier import unicode_nfc_casefold  # noqa: E402
-from verify_contracts import (  # noqa: E402
+from plotpilot_plugin_sdk import verifier as verifier_module
+from plotpilot_plugin_sdk.errors import (
+    ContractError,
+    ContractValidationError,
+    ErrorCode,
+)
+from plotpilot_plugin_sdk.package import _unicode_nfc, build_files_sha256
+from plotpilot_plugin_sdk.rpc import build_meta, build_request
+from plotpilot_plugin_sdk.verifier import (
+    unicode_nfc_casefold,
+    validate_rpc_request,
+    validate_rpc_response,
+    validate_rpc_result,
+)
+from verify_contracts import (
     FIXTURES_DIR,
     GOLDEN_DIR,
     hash_without_field,
@@ -41,6 +53,138 @@ def _assert_rejected(action, code: ErrorCode) -> None:
     with pytest.raises(ContractError) as caught:
         action()
     assert caught.value.code == int(code)
+
+
+def _job_run_request(method: str, request_id: str) -> dict[str, object]:
+    params: dict[str, object] = {
+        "capability_id": "shared.worker.run/v1",
+        "run_snapshot_asset_id": "run-snapshot-asset",
+        "checkpoint_asset_id": None,
+        "secrets": [],
+    }
+    if method == "job.resume":
+        params.update(
+            {
+                "resume_of_attempt_id": "attempt-previous",
+                "resume_intent_id": "resume-intent-1",
+                "resume_reason": "retry",
+            }
+        )
+    return build_request(
+        method,
+        params,
+        build_meta(
+            "attempt",
+            generation_id="generation-rpc-success",
+            plugin_release_id="a" * 64,
+            deadline_at="2030-01-02T03:04:05Z",
+            operation_id=f"{method}-operation",
+            job_id="job-1",
+            step_id="step-1",
+            attempt_id="attempt-1",
+            lease_epoch=1,
+        ),
+        request_id=request_id,
+    )
+
+
+def _job_run_response(request: Mapping[str, object]) -> dict[str, object]:
+    return {
+        "jsonrpc": "2.0",
+        "id": request["id"],
+        "result": {
+            "accepted": True,
+            "worker_run_id": "worker-run-1",
+            "provenance_receipt_id": "receipt-1",
+            "output_streams": [],
+        },
+    }
+
+
+@pytest.mark.parametrize(
+    ("method", "request_id"),
+    (
+        ("job.start", "123e4567-e89b-42d3-a456-426614174000"),
+        ("job.resume", "123e4567-e89b-42d3-a456-426614174001"),
+    ),
+)
+def test_method_aware_job_success_validation_is_exact_and_fail_closed(
+    method: str,
+    request_id: str,
+) -> None:
+    request = _job_run_request(method, request_id)
+    response = _job_run_response(request)
+    validate_rpc_request(request)
+    validate_rpc_response(response, request=request)
+    validate_rpc_result(method, response["result"], request=request)
+
+    with pytest.raises(ContractValidationError):
+        validate_rpc_response(response)
+
+    other_method = "job.resume" if method == "job.start" else "job.start"
+    _assert_rejected(
+        lambda: validate_rpc_response(response, other_method, request=request),
+        ErrorCode.RESULT_CONTRACT_MISMATCH,
+    )
+
+    wrong_fields = copy.deepcopy(response)
+    wrong_fields["result"]["unexpected"] = "value"
+    _assert_rejected(
+        lambda: validate_rpc_response(wrong_fields, request=request),
+        ErrorCode.RESULT_CONTRACT_MISMATCH,
+    )
+
+    malformed_id = copy.deepcopy(response)
+    malformed_id["id"] = "not-a-uuid"
+    _assert_rejected(
+        lambda: validate_rpc_response(malformed_id, request=request),
+        ErrorCode.RESULT_CONTRACT_MISMATCH,
+    )
+
+    invalid_identifier = copy.deepcopy(response)
+    invalid_identifier["result"]["worker_run_id"] = ""
+    _assert_rejected(
+        lambda: validate_rpc_response(invalid_identifier, request=request),
+        ErrorCode.RESULT_CONTRACT_MISMATCH,
+    )
+
+    invalid_type = copy.deepcopy(response)
+    invalid_type["result"]["output_streams"] = {}
+    _assert_rejected(
+        lambda: validate_rpc_response(invalid_type, request=request),
+        ErrorCode.RESULT_CONTRACT_MISMATCH,
+    )
+
+    invalid_envelope = copy.deepcopy(response)
+    invalid_envelope["jsonrpc"] = "1.0"
+    _assert_rejected(
+        lambda: validate_rpc_response(invalid_envelope, request=request),
+        ErrorCode.RESULT_CONTRACT_MISMATCH,
+    )
+
+
+@pytest.mark.parametrize("mutation", ("nonidentical", "unexpected_overlap"))
+def test_method_aware_job_success_does_not_waive_other_oneof_overlaps(
+    monkeypatch: pytest.MonkeyPatch,
+    mutation: str,
+) -> None:
+    original_load_schema = verifier_module._load_schema
+
+    def altered_load_schema(contract_id: str) -> dict[str, object]:
+        schema = original_load_schema(contract_id)
+        if contract_id != "rpc-success-v1":
+            return schema
+        branches = schema["properties"]["result"]["oneOf"]
+        if mutation == "nonidentical":
+            branches[8]["description"] = "not byte-identical"
+        else:
+            branches.append(copy.deepcopy(branches[7]))
+        return schema
+
+    monkeypatch.setattr(verifier_module, "_load_schema", altered_load_schema)
+    request = _job_run_request("job.start", "123e4567-e89b-42d3-a456-426614174002")
+    with pytest.raises(ContractValidationError):
+        validate_rpc_response(_job_run_response(request), request=request)
 
 
 def test_all_self_hash_positive_fixtures_are_strict_and_tamper_negative() -> None:
@@ -78,6 +222,35 @@ def test_all_self_hash_positive_fixtures_are_strict_and_tamper_negative() -> Non
     tampered_chain = copy.deepcopy(chain)
     tampered_chain["chain_hash"] = "0" * 64
     _assert_rejected(lambda: verify_skill_chain(tampered_chain, [receipt]), ErrorCode.RESULT_CONTRACT_MISMATCH)
+
+
+def test_provenance_staged_items_are_non_empty_unique_string_ids() -> None:
+    receipt = load_strict_json(FIXTURES_DIR / "provenance-receipt.json")
+    receipt["staged_items"] = ["candidate-item-1", "candidate-item-2"]
+    receipt["receipt_hash"] = hash_without_field(
+        receipt, "receipt_hash", "provenance-receipt/v1"
+    )
+    verify_provenance_receipt(receipt)
+
+    duplicate = copy.deepcopy(receipt)
+    duplicate["staged_items"] = ["candidate-item-1", "candidate-item-1"]
+    duplicate["receipt_hash"] = hash_without_field(
+        duplicate, "receipt_hash", "provenance-receipt/v1"
+    )
+    _assert_rejected(
+        lambda: verify_provenance_receipt(duplicate),
+        ErrorCode.RESULT_CONTRACT_MISMATCH,
+    )
+
+    object_entry = copy.deepcopy(receipt)
+    object_entry["staged_items"] = [{"item_id": "candidate-item-1"}]
+    object_entry["receipt_hash"] = hash_without_field(
+        object_entry, "receipt_hash", "provenance-receipt/v1"
+    )
+    _assert_rejected(
+        lambda: verify_provenance_receipt(object_entry),
+        ErrorCode.RESULT_CONTRACT_MISMATCH,
+    )
 
 
 def test_data_bundle_hash_unicode_collision_and_skill_manifest_exact_bytes() -> None:
@@ -154,8 +327,6 @@ def test_checkpoint_heartbeat_rpc_capability_and_ui_refs_are_bound() -> None:
     verify_checkpoint(checkpoint, expected_snapshot_hash=checkpoint["run_snapshot_hash"], previous_seq=0)
     _assert_rejected(lambda: verify_checkpoint(checkpoint, previous_seq=checkpoint["checkpoint_seq"]), ErrorCode.CHECKPOINT_INVALID)
     _assert_rejected(lambda: verify_checkpoint(checkpoint, expected_snapshot_hash="b" * 64), ErrorCode.CHECKPOINT_INVALID)
-
-    from plotpilot_plugin_sdk.verifier import validate_rpc_request, validate_rpc_response, validate_rpc_result  # noqa: E402
 
     heartbeat = load_strict_json(FIXTURES_DIR / "rpc-notification.json")
     validate_rpc_request(heartbeat, expected_lease_epoch=1)

@@ -2313,34 +2313,53 @@ class CapabilityBroker:
                 ErrorCode.INVALID_TRANSITION,
                 "invoke operation ledger contains a non-accepted response",
             )
-        record = _store_get_operation(
-            self.child_records,
-            context_identity=context_identity,
-            operation_key=operation_key,
+        record = self._record_for_caller(
+            caller,
+            result.child_job_id,
+            invoke_operation_key=operation_key,
         )
-        if record is None:
-            raise ContractError(
-                ErrorCode.ASSET_ERROR,
-                "invoke operation ledger exists without its child record; refusing replay",
-            )
+        direct_resume_alias = record.parent_attempt_id != caller.parent_attempt_id
         if (
             record.parent_job_id != caller.parent_job_id
             or record.parent_step_id != caller.parent_step_id
-            or record.parent_attempt_id != caller.parent_attempt_id
             or record.invoke_operation_key != operation_key
             or record.binding_id != binding.binding_id
             or record.result_contract != binding.result_contract
             or record.required != binding.required
             or record.propagate_cancel != binding.propagate_cancel
-            or record.broker_invocation_hash != payload_hash
+            or (
+                not direct_resume_alias
+                and record.broker_invocation_hash != payload_hash
+            )
         ):
             raise ContractError(
                 ErrorCode.RESULT_CONTRACT_MISMATCH,
                 "invoke ledger and child record binding drift",
             )
+        reservation = _reservation_get(
+            self.operation_ledger,
+            context_identity=context_identity,
+            method=self.INVOKE_METHOD,
+            operation_key=operation_key,
+        )
+        if (
+            reservation is None
+            or reservation.envelope_asset_id is None
+            or reservation.child_creation is None
+            or reservation.payload_hash != payload_hash
+        ):
+            raise ContractError(
+                ErrorCode.ASSET_ERROR,
+                "invoke replay lacks its durable current-context reservation",
+            )
         try:
             persisted = BrokerInvocationEnvelope.from_mapping(
-                parse_json_bytes(self._read_asset(record.broker_invocation_asset_id, "broker_invocation_asset_id"))
+                parse_json_bytes(
+                    self._read_asset(
+                        reservation.envelope_asset_id,
+                        "broker_invocation_asset_id",
+                    )
+                )
             )
         except ContractError:
             raise
@@ -2364,14 +2383,6 @@ class CapabilityBroker:
                 ErrorCode.RESULT_CONTRACT_MISMATCH,
                 "invoke ledger response and child record binding drift",
             )
-        reservation = _reservation_get(
-            self.operation_ledger,
-            context_identity=context_identity,
-            method=self.INVOKE_METHOD,
-            operation_key=operation_key,
-        )
-        if reservation is None or reservation.child_creation is None:
-            raise ContractError(ErrorCode.ASSET_ERROR, "invoke replay lacks its durable child reservation")
         creation = ChildCreationResult.from_mapping(_thaw(reservation.child_creation))
         if (
             creation.child_job_id != result.child_job_id
@@ -2495,6 +2506,37 @@ class CapabilityBroker:
                     context_identity=context_identity,
                     operation_key=operation_key,
                 )
+
+            aliaser = getattr(self.attempt_context, "alias_direct_resume_invoke", None)
+            if callable(aliaser):
+                aliased = aliaser(
+                    caller=current,
+                    envelope=envelope,
+                    binding=binding,
+                    plugin_release_id=release_id,
+                    generation_id=generation_id,
+                )
+                if aliased is not None:
+                    existing = _ledger_lookup(
+                        self.operation_ledger,
+                        context_identity=context_identity,
+                        method=self.INVOKE_METHOD,
+                        operation_key=operation_key,
+                    )
+                    if existing is None:
+                        raise ContractError(
+                            ErrorCode.ASSET_ERROR,
+                            "direct resume alias was not durably persisted",
+                        )
+                    return self._validate_existing_invoke(
+                        existing,
+                        payload_hash=payload_hash,
+                        envelope=envelope,
+                        caller=current,
+                        binding=binding,
+                        context_identity=context_identity,
+                        operation_key=operation_key,
+                    )
 
             reservation = _reservation_reserve(
                 self.operation_ledger,
@@ -2643,6 +2685,8 @@ class CapabilityBroker:
         self,
         caller: CallerAttemptContext,
         child_job_id: str,
+        *,
+        invoke_operation_key: str | None = None,
     ) -> BrokerChildRecord:
         record = _store_get_job(self.child_records, child_job_id)
         if record is None:
@@ -2650,9 +2694,31 @@ class CapabilityBroker:
         if (
             record.parent_job_id != caller.parent_job_id
             or record.parent_step_id != caller.parent_step_id
-            or record.parent_attempt_id != caller.parent_attempt_id
         ):
-            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "child does not belong to caller Attempt")
+            raise ContractError(
+                ErrorCode.RESULT_CONTRACT_MISMATCH,
+                "child does not belong to caller Job/Step",
+            )
+        if record.parent_attempt_id != caller.parent_attempt_id:
+            resolver = getattr(
+                self.attempt_context, "resolve_direct_resume_child_alias", None
+            )
+            if not callable(resolver):
+                raise ContractError(
+                    ErrorCode.RESULT_CONTRACT_MISMATCH,
+                    "child does not belong to caller Attempt",
+                )
+            resolved = resolver(
+                caller=caller,
+                child_job_id=child_job_id,
+                invoke_operation_key=invoke_operation_key,
+            )
+            resolved_record = _record_from_port(resolved)
+            if resolved_record is None or resolved_record.to_dict() != record.to_dict():
+                raise ContractError(
+                    ErrorCode.RESULT_CONTRACT_MISMATCH,
+                    "child is not the caller's persisted direct-resume alias",
+                )
         return record
 
     def _validate_result_binding(

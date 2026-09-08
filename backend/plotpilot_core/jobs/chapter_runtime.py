@@ -109,6 +109,21 @@ class ChapterJobRuntime:
         self.attempts = AuthorityAttemptStartAdapter(authority)
         self.control_port = authority.control_port
 
+    @staticmethod
+    def _require_authoritative_owner(started: StartedChapterAttempt) -> None:
+        if (
+            not isinstance(started, StartedChapterAttempt)
+            or started.binding.worker_run_id != started.ticket.lifecycle_id
+            or (
+                started.fence is not None
+                and started.fence.owner_id != started.ticket.lifecycle_id
+            )
+        ):
+            raise ContractError(
+                ErrorCode.STALE_LEASE,
+                "chapter Attempt is not owned by its P2 lifecycle",
+            )
+
     def _verify_run_snapshot_worker(
         self,
         *,
@@ -277,6 +292,15 @@ class ChapterJobRuntime:
                 ErrorCode.INVALID_TRANSITION,
                 "worker request requires a composed and bound Attempt lifecycle",
             )
+        self._require_authoritative_owner(started)
+        if (
+            method in {"job.start", "job.resume"}
+            and meta.get("operation_id") != started.ticket.lifecycle_id
+        ):
+            raise ContractError(
+                ErrorCode.STALE_LEASE,
+                "Worker start/resume request is not owned by the active P2 lifecycle",
+            )
         return self.attempt_lifecycle.send_worker_request(
             started.ticket,
             method,
@@ -297,7 +321,23 @@ class ChapterJobRuntime:
                 ErrorCode.INVALID_TRANSITION,
                 "worker response requires a composed and bound Attempt lifecycle",
             )
-        return self.attempt_lifecycle.take_worker_response(started.ticket, request_id)
+        self._require_authoritative_owner(started)
+        event = self.attempt_lifecycle.take_worker_response(started.ticket, request_id)
+        if event is None:
+            return None
+        result = event.message.get("result")
+        if isinstance(result, Mapping) and {
+            "accepted",
+            "provenance_receipt_id",
+            "output_streams",
+        }.issubset(result):
+            worker_run_id = result.get("worker_run_id")
+            if worker_run_id != started.ticket.lifecycle_id:
+                raise ContractError(
+                    ErrorCode.STALE_LEASE,
+                    "Worker start/resume response did not echo the P2 lifecycle identity",
+                )
+        return event
 
     def recover_stream(self, **identity: Any) -> StreamCheckpointRecovery | None:
         return self.checkpoints.recover_stream(**identity)

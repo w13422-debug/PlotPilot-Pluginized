@@ -74,7 +74,9 @@ def _plain_json(value: Any, path: str = "$") -> Any:
             result[key] = _plain_json(item, f"{path}.{key}")
         return result
     if isinstance(value, (list, tuple)):
-        return [_plain_json(item, f"{path}[{index}]") for index, item in enumerate(value)]
+        return [
+            _plain_json(item, f"{path}[{index}]") for index, item in enumerate(value)
+        ]
     if isinstance(value, float) and not isfinite(value):
         raise PlannerRuntimeError(f"{path} contains a non-finite number")
     if value is None or isinstance(value, (str, int, float, bool)):
@@ -84,7 +86,9 @@ def _plain_json(value: Any, path: str = "$") -> Any:
             except UnicodeEncodeError as exc:
                 raise PlannerRuntimeError(f"{path} contains invalid Unicode") from exc
         return value
-    raise PlannerRuntimeError(f"{path} contains unsupported JSON value {type(value).__name__}")
+    raise PlannerRuntimeError(
+        f"{path} contains unsupported JSON value {type(value).__name__}"
+    )
 
 
 def _freeze(value: Any) -> Any:
@@ -118,9 +122,13 @@ class PlannerBindingSelection:
 
     def __post_init__(self) -> None:
         for field_name in self.__dataclass_fields__:
-            object.__setattr__(self, field_name, _identifier(getattr(self, field_name), field_name))
+            object.__setattr__(
+                self, field_name, _identifier(getattr(self, field_name), field_name)
+            )
         if self.prompt_skill_id != PLANNER_PROMPT_SKILL_ID:
-            raise PlannerRuntimeError("Prompt selection is not the Planner compatibility designation")
+            raise PlannerRuntimeError(
+                "Prompt selection is not the Planner compatibility designation"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -197,34 +205,48 @@ def _freeze_planner_run_impl(
     plain = _plain_json(snapshot)
     verify_snapshot(plain)
     if plain["scope"]["operation"] != PLANNER_OPERATION:
-        raise PlannerRuntimeError("RunSnapshot operation is not the Project Planner operation")
+        raise PlannerRuntimeError(
+            "RunSnapshot operation is not the Project Planner operation"
+        )
     if plain["plan_revision_id"] != selection.plan_revision_id:
         raise PlannerRuntimeError("selected Plan revision is not frozen in RunSnapshot")
     if plain["model_profile_revision_id"] != selection.model_profile_revision_id:
-        raise PlannerRuntimeError("selected Model Profile revision is not frozen in RunSnapshot")
+        raise PlannerRuntimeError(
+            "selected Model Profile revision is not frozen in RunSnapshot"
+        )
 
     releases = [
-        item for item in plain["plugin_releases"]
+        item
+        for item in plain["plugin_releases"]
         if item["plugin_id"] == PLANNER_PLUGIN_ID
     ]
     if len(releases) != 1 or releases[0]["release_id"] != selection.planner_release_id:
-        raise PlannerRuntimeError("Planner release is absent from or differs from RunSnapshot")
+        raise PlannerRuntimeError(
+            "Planner release is absent from or differs from RunSnapshot"
+        )
     planner_release = releases[0]
     _digest(planner_release["package_hash"], "planner package_hash")
 
     settings = [
-        item for item in plain["plugin_settings_revisions"]
+        item
+        for item in plain["plugin_settings_revisions"]
         if item["plugin_id"] == PLANNER_PLUGIN_ID
         and item["settings_revision_id"] == selection.planner_settings_revision_id
     ]
     if len(settings) != 1:
-        raise PlannerRuntimeError("Planner settings revision is absent from RunSnapshot")
+        raise PlannerRuntimeError(
+            "Planner settings revision is absent from RunSnapshot"
+        )
     planner_settings = settings[0]
     if planner_settings["validated_by_release_id"] != selection.planner_release_id:
-        raise PlannerRuntimeError("Planner settings were not validated by the frozen release")
+        raise PlannerRuntimeError(
+            "Planner settings were not validated by the frozen release"
+        )
     if planner_settings["scope"] == "workspace":
         if planner_settings["scope_id"] != plain["workspace_id"]:
-            raise PlannerRuntimeError("Planner workspace settings cross the frozen Workspace")
+            raise PlannerRuntimeError(
+                "Planner workspace settings cross the frozen Workspace"
+            )
     elif planner_settings["scope_id"] is not None:
         raise PlannerRuntimeError("global Planner settings must have a null scope_id")
     _digest(planner_settings["schema_hash"], "planner settings schema_hash")
@@ -236,19 +258,25 @@ def _freeze_planner_run_impl(
             release_id=_identifier(item["release_id"], "skill release_id"),
             package_hash=_digest(item["package_hash"], "skill package_hash"),
             parameters_asset_id=(
-                None if item["parameters_asset_id"] is None
-                else _identifier(item["parameters_asset_id"], "skill parameters_asset_id")
+                None
+                if item["parameters_asset_id"] is None
+                else _identifier(
+                    item["parameters_asset_id"], "skill parameters_asset_id"
+                )
             ),
         )
         for item in plain["skill_releases"]
     )
     prompt = [
-        skill for skill in skills
+        skill
+        for skill in skills
         if skill.skill_id == PLANNER_PROMPT_SKILL_ID
         and skill.release_id == selection.prompt_release_id
     ]
     if len(prompt) != 1:
-        raise PlannerRuntimeError("Planner Prompt must be one exact frozen compatibility Skill release")
+        raise PlannerRuntimeError(
+            "Planner Prompt must be one exact frozen compatibility Skill release"
+        )
 
     binding_material = {
         "schema": "project-planner-frozen-binding/v1",
@@ -293,7 +321,9 @@ def _freeze_planner_run_impl(
         planner_settings_scope=planner_settings["scope"],
         planner_settings_scope_id=planner_settings["scope_id"],
         skills=skills,
-        binding_fingerprint=hash_jcs("project-planner-frozen-binding/v1", binding_material),
+        binding_fingerprint=hash_jcs(
+            "project-planner-frozen-binding/v1", binding_material
+        ),
         _seal=_RUN_SEAL,
     )
 
@@ -306,7 +336,9 @@ def freeze_planner_run(
 
 def _verified_frozen_run(value: object) -> _FrozenPlannerRun:
     if not isinstance(value, _FrozenPlannerRun) or value._seal is not _RUN_SEAL:
-        raise PlannerRuntimeError("frozen Planner run was not minted by freeze_planner_run")
+        raise PlannerRuntimeError(
+            "frozen Planner run was not minted by freeze_planner_run"
+        )
     expected = _freeze_planner_run_impl(
         _thaw(value.snapshot),
         PlannerBindingSelection(
@@ -319,7 +351,9 @@ def _verified_frozen_run(value: object) -> _FrozenPlannerRun:
         ),
     )
     if expected != value:
-        raise PlannerRuntimeError("frozen Planner run derived fields were forged or drifted")
+        raise PlannerRuntimeError(
+            "frozen Planner run derived fields were forged or drifted"
+        )
     return expected
 
 
@@ -333,10 +367,16 @@ class PlannerDocumentTarget:
 
     def __post_init__(self) -> None:
         if self.role not in PLANNER_CANDIDATE_ROLES:
-            raise PlannerRuntimeError(f"unsupported Planner Candidate role: {self.role}")
+            raise PlannerRuntimeError(
+                f"unsupported Planner Candidate role: {self.role}"
+            )
         for field_name in ("workspace_id", "document_id", "revision_id"):
-            object.__setattr__(self, field_name, _identifier(getattr(self, field_name), field_name))
-        object.__setattr__(self, "content_hash", _digest(self.content_hash, "content_hash"))
+            object.__setattr__(
+                self, field_name, _identifier(getattr(self, field_name), field_name)
+            )
+        object.__setattr__(
+            self, "content_hash", _digest(self.content_hash, "content_hash")
+        )
 
     def target_dict(self) -> dict[str, str]:
         return {
@@ -383,11 +423,15 @@ def _payload_bytes(value: Any, role: str) -> tuple[bytes, str]:
         if not value.strip():
             raise PlannerRuntimeError(f"generated {role} text must not be blank")
         if value.startswith("\ufeff"):
-            raise PlannerRuntimeError(f"generated {role} text must not start with a BOM")
+            raise PlannerRuntimeError(
+                f"generated {role} text must not start with a BOM"
+            )
         try:
             return value.encode("utf-8"), "text/plain; charset=utf-8"
         except UnicodeEncodeError as exc:
-            raise PlannerRuntimeError(f"generated {role} text contains invalid Unicode") from exc
+            raise PlannerRuntimeError(
+                f"generated {role} text contains invalid Unicode"
+            ) from exc
     if isinstance(value, (Mapping, list, tuple)):
         return canonical_bytes(_plain_json(value, f"$.{role}")), "application/json"
     raise PlannerRuntimeError(f"generated {role} must be text or JSON")
@@ -414,8 +458,7 @@ def _validated_source_refs(
         for item in frozen_run.snapshot["input_revisions"]
     }
     assets = {
-        item["asset_id"]: item["sha256"]
-        for item in frozen_run.snapshot["asset_hashes"]
+        item["asset_id"]: item["sha256"] for item in frozen_run.snapshot["asset_hashes"]
     }
     result: list[Mapping[str, Any]] = []
     identities: set[tuple[str, str, str, str]] = set()
@@ -425,21 +468,31 @@ def _validated_source_refs(
         if set(plain) != fields:
             raise PlannerRuntimeError(f"{role} source ref fields are not closed")
         if plain["workspace_id"] != frozen_run.workspace_id:
-            raise PlannerRuntimeError(f"{role} source ref crosses or lacks the frozen Workspace")
+            raise PlannerRuntimeError(
+                f"{role} source ref crosses or lacks the frozen Workspace"
+            )
         source_type = plain["source_type"]
         source_id = _identifier(plain["source_id"], "source_id")
         revision_or_hash = _digest(plain["revision_or_hash"], "source revision_or_hash")
         if source_type == "core.revision":
             if (source_id, revision_or_hash) not in revisions:
-                raise PlannerRuntimeError(f"{role} revision source is not backed by RunSnapshot inputs")
+                raise PlannerRuntimeError(
+                    f"{role} revision source is not backed by RunSnapshot inputs"
+                )
         elif source_type == "core.asset":
             if assets.get(source_id) != revision_or_hash:
-                raise PlannerRuntimeError(f"{role} Asset source is not hash-backed by RunSnapshot")
+                raise PlannerRuntimeError(
+                    f"{role} Asset source is not hash-backed by RunSnapshot"
+                )
         else:
-            raise PlannerRuntimeError(f"{role} source type lacks an accepted frozen provenance contract")
+            raise PlannerRuntimeError(
+                f"{role} source type lacks an accepted frozen provenance contract"
+            )
         identity = (plain["workspace_id"], source_type, source_id, revision_or_hash)
         if identity in identities:
-            raise PlannerRuntimeError(f"{role} source refs contain a duplicate identity")
+            raise PlannerRuntimeError(
+                f"{role} source refs contain a duplicate identity"
+            )
         identities.add(identity)
         result.append(_frozen_json(plain))
     return tuple(result)
@@ -455,7 +508,9 @@ def _proposal_material(
     previous_version: object | None,
     parent_candidate_ids: Mapping[str, Sequence[str]] | None,
     source_refs: Mapping[str, Sequence[Mapping[str, Any]]] | None,
-) -> tuple[_FrozenPlannerRun, tuple[PreparedPlannerCandidate, ...], dict[str, Any], str]:
+) -> tuple[
+    _FrozenPlannerRun, tuple[PreparedPlannerCandidate, ...], dict[str, Any], str
+]:
     checked = _verified_frozen_run(frozen_run)
     if isinstance(ordinal, bool) or not isinstance(ordinal, int) or ordinal < 1:
         raise PlannerRuntimeError("ordinal must be a positive integer")
@@ -493,11 +548,19 @@ def _proposal_material(
             raise PlannerRuntimeError(f"target role mismatch for {role}")
         if target.workspace_id != checked.workspace_id:
             raise PlannerRuntimeError(f"{role} target crosses the frozen Workspace")
-        if (target.document_id, target.revision_id, target.content_hash) not in input_revisions:
-            raise PlannerRuntimeError(f"{role} target base is absent from RunSnapshot inputs")
+        if (
+            target.document_id,
+            target.revision_id,
+            target.content_hash,
+        ) not in input_revisions:
+            raise PlannerRuntimeError(
+                f"{role} target base is absent from RunSnapshot inputs"
+            )
         target_identity = (target.workspace_id, target.document_id)
         if target_identity in target_identities:
-            raise PlannerRuntimeError("setting, bible and outline targets must be distinct documents")
+            raise PlannerRuntimeError(
+                "setting, bible and outline targets must be distinct documents"
+            )
         target_identities.add(target_identity)
 
         role_refs = _validated_source_refs(checked, refs.get(role, ()), role=role)
@@ -513,16 +576,20 @@ def _proposal_material(
             "base": target.base_dict(),
             "source_refs": [_thaw(item) for item in role_refs],
         }
-        item_id = f"planner-{role}-{hash_jcs('project-planner-item/v2', item_material)[:40]}"
-        candidates.append(PreparedPlannerCandidate(
-            role=role,
-            item_id=item_id,
-            payload=payload,
-            payload_hash=payload_hash,
-            mime=mime,
-            target=target,
-            source_refs=role_refs,
-        ))
+        item_id = (
+            f"planner-{role}-{hash_jcs('project-planner-item/v2', item_material)[:40]}"
+        )
+        candidates.append(
+            PreparedPlannerCandidate(
+                role=role,
+                item_id=item_id,
+                payload=payload,
+                payload_hash=payload_hash,
+                mime=mime,
+                target=target,
+                source_refs=role_refs,
+            )
+        )
         item_materials.append({**item_material, "item_id": item_id})
 
     request_material = {
@@ -590,7 +657,9 @@ def prepare_planner_run(
     )
     operation_key = _identifier(operation_key, "operation_key")
     if operation_key != f"planner-prepare-{payload_hash}":
-        raise PlannerRuntimeError("operation key was reused with a different Planner payload")
+        raise PlannerRuntimeError(
+            "operation key was reused with a different Planner payload"
+        )
     proposal_material = {
         "operation_key": operation_key,
         "operation_payload_hash": payload_hash,
@@ -606,6 +675,293 @@ def prepare_planner_run(
     )
 
 
+def planner_candidate_items(
+    proposal: PreparedPlannerProposal,
+    *,
+    payload_asset_ids: Mapping[str, str],
+) -> tuple[dict[str, Any], ...]:
+    """Bind prepared Planner bytes to Host-created Assets without staging them.
+
+    The returned values are ordinary frozen-contract ``candidate-item/v1``
+    mappings. Asset creation, Candidate staging and any later Publication stay
+    on the injected Host/Core side of the adapter.
+    """
+
+    if not isinstance(proposal, PreparedPlannerProposal):
+        raise TypeError("proposal must be a PreparedPlannerProposal")
+    if set(payload_asset_ids) != set(PLANNER_CANDIDATE_ROLES):
+        raise PlannerRuntimeError(
+            "payload_asset_ids must contain exactly setting, bible and outline"
+        )
+    items: list[dict[str, Any]] = []
+    for candidate in proposal.candidates:
+        asset_id = _identifier(
+            payload_asset_ids[candidate.role], f"{candidate.role} payload_asset_id"
+        )
+        items.append(
+            {
+                "schema": "candidate-item/v1",
+                "item_id": candidate.item_id,
+                "item_kind": "document",
+                "target": candidate.target.target_dict(),
+                "mutation": {
+                    "mode": "replace",
+                    "payload_schema": f"project-planner/{candidate.role}/v1",
+                    "payload_hash": candidate.payload_hash,
+                },
+                "payload_asset_id": asset_id,
+                "base": candidate.target.base_dict(),
+                "write_set": [
+                    {**candidate.target.target_dict(), **candidate.target.base_dict()}
+                ],
+                "parent_candidate_ids": [],
+                "source_refs": [_thaw(item) for item in candidate.source_refs],
+                "status": "complete",
+            }
+        )
+    return tuple(items)
+
+
+_RUNTIME_INPUT_SCHEMA = "project-planner-runtime-input/v1"
+
+
+def _production_mapping(
+    value: object, *, fields: set[str], label: str
+) -> Mapping[str, Any]:
+    if not isinstance(value, Mapping) or set(value) != fields:
+        raise PlannerRuntimeError(f"{label} fields are not closed")
+    return value
+
+
+def _production_sequence(value: object, *, label: str) -> Sequence[Any]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+        raise PlannerRuntimeError(f"{label} must be an array")
+    return value
+
+
+def _bound_runtime_input(context: Any) -> tuple[Mapping[str, Any], Any, Mapping[str, Any]]:
+    """Read the one RunSnapshot-hash-bound private Planner input Asset.
+
+    The shared framed-stdio worker already verifies the immutable RunSnapshot
+    and populates its Attempt identity.  This adapter deliberately performs
+    the remaining domain binding before it returns a proposal to the Host
+    publisher: the input Asset must be the exact ``parameters_asset_id``
+    listed in that snapshot, canonical JSON, and hash-attested by the snapshot
+    itself.  It is intentionally private to this plugin rather than a second
+    public RPC contract.
+    """
+
+    identity = getattr(context, "identity", None)
+    snapshot = getattr(context, "run_snapshot", None)
+    snapshot_asset = getattr(context, "run_snapshot_asset", None)
+    assets = getattr(context, "assets", None)
+    request = getattr(context, "request", None)
+    if (
+        identity is None
+        or not isinstance(snapshot, Mapping)
+        or snapshot_asset is None
+        or not isinstance(request, Mapping)
+        or not callable(getattr(assets, "read", None))
+    ):
+        raise PlannerRuntimeError(
+            "Planner production execution requires a shared stdio-bound Attempt"
+        )
+    params = request.get("params")
+    if (
+        not isinstance(params, Mapping)
+        or params.get("run_snapshot_asset_id")
+        != getattr(identity, "run_snapshot_asset_id", None)
+        or getattr(snapshot_asset, "asset_id", None)
+        != getattr(identity, "run_snapshot_asset_id", None)
+    ):
+        raise PlannerRuntimeError("Planner RunSnapshot Asset binding drifted")
+    parameters_asset_id = _identifier(
+        snapshot.get("parameters_asset_id"), "parameters_asset_id"
+    )
+    matches = [
+        item
+        for item in snapshot.get("asset_hashes", ())
+        if isinstance(item, Mapping) and item.get("asset_id") == parameters_asset_id
+    ]
+    if len(matches) != 1:
+        raise PlannerRuntimeError(
+            "Planner parameters Asset is not hash-bound by the RunSnapshot"
+        )
+    expected_hash = _digest(matches[0].get("sha256"), "parameters_asset sha256")
+    asset = assets.read(parameters_asset_id)
+    if (
+        getattr(asset, "asset_id", None) != parameters_asset_id
+        or getattr(asset, "sha256", None) != expected_hash
+        or not isinstance(getattr(asset, "content", None), bytes)
+    ):
+        raise PlannerRuntimeError("Planner parameters Asset authority drifted")
+    try:
+        parsed = parse_json_bytes(asset.content)
+    except Exception as exc:
+        raise PlannerRuntimeError("Planner parameters Asset is not JSON") from exc
+    if not isinstance(parsed, Mapping) or canonical_bytes(parsed) != asset.content:
+        raise PlannerRuntimeError("Planner parameters Asset is not canonical JSON")
+    value = _production_mapping(
+        parsed,
+        fields={
+            "schema",
+            "run_snapshot",
+            "execution",
+            "selection",
+            "generated",
+            "targets",
+            "source_refs",
+        },
+        label="Planner runtime input",
+    )
+    if value["schema"] != _RUNTIME_INPUT_SCHEMA:
+        raise PlannerRuntimeError("Planner runtime input schema is invalid")
+    return value, identity, snapshot
+
+
+def prepare_planner_from_worker_context(context: Any) -> PreparedPlannerProposal:
+    """Materialize one Planner proposal only after full identity fencing.
+
+    ``context.identity.operation_id`` is the only P2/Core-carried worker-run
+    identity available to a plugin worker.  This function does not derive or
+    replace it; its caller passes that exact value through terminal completion.
+    """
+
+    value, identity, snapshot = _bound_runtime_input(context)
+    snapshot_binding = _production_mapping(
+        value["run_snapshot"],
+        fields={
+            "asset_id",
+            "snapshot_id",
+            "workspace_id",
+            "parameters_asset_id",
+        },
+        label="Planner runtime RunSnapshot binding",
+    )
+    parameters_asset_id = snapshot["parameters_asset_id"]
+    parameter_hashes = [
+        item["sha256"]
+        for item in snapshot["asset_hashes"]
+        if item["asset_id"] == parameters_asset_id
+    ]
+    if len(parameter_hashes) != 1:
+        raise PlannerRuntimeError("Planner parameters Asset hash binding drifted")
+    expected_snapshot_binding = {
+        "asset_id": identity.run_snapshot_asset_id,
+        "snapshot_id": identity.run_snapshot_id,
+        "workspace_id": identity.workspace_id,
+        "parameters_asset_id": parameters_asset_id,
+    }
+    if dict(snapshot_binding) != expected_snapshot_binding:
+        raise PlannerRuntimeError("Planner runtime input crosses its RunSnapshot")
+
+    execution = _production_mapping(
+        value["execution"],
+        fields={
+            "plugin_id",
+            "release_id",
+            "package_hash",
+            "data_generation_id",
+            "capability_id",
+            "job_id",
+            "step_id",
+            "attempt_id",
+            "lease_epoch",
+            "worker_run_id",
+        },
+        label="Planner execution binding",
+    )
+    expected_execution = {
+        "plugin_id": PLANNER_PLUGIN_ID,
+        "release_id": identity.plugin_release_id,
+        "package_hash": identity.package_hash,
+        "data_generation_id": identity.data_generation_id,
+        "capability_id": PLANNER_CAPABILITY_ID,
+        "job_id": identity.job_id,
+        "step_id": identity.step_id,
+        "attempt_id": identity.attempt_id,
+        "lease_epoch": identity.lease_epoch,
+        "worker_run_id": identity.operation_id,
+    }
+    if type(execution["lease_epoch"]) is not int or dict(execution) != expected_execution:
+        raise PlannerRuntimeError("Planner execution Attempt binding drifted")
+
+    selection_value = _production_mapping(
+        value["selection"],
+        fields={
+            "prompt_skill_id",
+            "prompt_release_id",
+            "planner_release_id",
+            "planner_settings_revision_id",
+            "plan_revision_id",
+            "model_profile_revision_id",
+        },
+        label="Planner selection",
+    )
+    selection = PlannerBindingSelection(**dict(selection_value))
+    if selection.planner_release_id != identity.plugin_release_id:
+        raise PlannerRuntimeError("Planner selection release differs from the Attempt")
+    frozen = freeze_planner_run(snapshot, selection)
+    if (
+        frozen.workspace_id != identity.workspace_id
+        or frozen.snapshot_id != identity.run_snapshot_id
+        or frozen.snapshot_hash != identity.run_snapshot_hash
+        or frozen.planner_package_hash != identity.package_hash
+        or frozen.planner_release_id != identity.plugin_release_id
+    ):
+        raise PlannerRuntimeError("Planner frozen binding differs from the Attempt")
+
+    generated = _production_mapping(
+        value["generated"],
+        fields=set(PLANNER_CANDIDATE_ROLES),
+        label="Planner generated values",
+    )
+    targets_value = _production_mapping(
+        value["targets"],
+        fields=set(PLANNER_CANDIDATE_ROLES),
+        label="Planner targets",
+    )
+    targets: dict[str, PlannerDocumentTarget] = {}
+    for role in PLANNER_CANDIDATE_ROLES:
+        target = _production_mapping(
+            targets_value[role],
+            fields={"workspace_id", "document_id", "revision_id", "content_hash"},
+            label=f"Planner {role} target",
+        )
+        targets[role] = PlannerDocumentTarget(role=role, **dict(target))
+
+    refs_value = _production_mapping(
+        value["source_refs"],
+        fields=set(PLANNER_CANDIDATE_ROLES),
+        label="Planner source references",
+    )
+    source_refs: dict[str, Sequence[Mapping[str, Any]]] = {}
+    for role in PLANNER_CANDIDATE_ROLES:
+        refs = _production_sequence(refs_value[role], label=f"Planner {role} source_refs")
+        if not all(isinstance(item, Mapping) for item in refs):
+            raise PlannerRuntimeError(f"Planner {role} source_refs contain a non-object")
+        source_refs[role] = tuple(dict(item) for item in refs)
+
+    operation_key = planner_prepare_operation_key(
+        frozen,
+        generated,
+        targets,
+        attempt_id=identity.attempt_id,
+        source_refs=source_refs,
+    )
+    proposal = prepare_planner_run(
+        frozen,
+        generated,
+        targets,
+        attempt_id=identity.attempt_id,
+        operation_key=operation_key,
+        source_refs=source_refs,
+    )
+    if proposal.attempt_id != identity.attempt_id:
+        raise PlannerRuntimeError("Planner proposal Attempt binding drifted")
+    return proposal
+
+
 __all__ = [
     "PLANNER_CANDIDATE_ROLES",
     "PLANNER_CAPABILITY_ID",
@@ -619,6 +975,8 @@ __all__ = [
     "PreparedPlannerCandidate",
     "PreparedPlannerProposal",
     "freeze_planner_run",
+    "planner_candidate_items",
     "planner_prepare_operation_key",
+    "prepare_planner_from_worker_context",
     "prepare_planner_run",
 ]

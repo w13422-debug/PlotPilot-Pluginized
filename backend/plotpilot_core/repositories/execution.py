@@ -16,6 +16,7 @@ from backend.plotpilot_plugin_sdk import (
     derive_operation_context_identity,
     parse_json_bytes,
     sha256_hex,
+    verify_checkpoint,
     verify_result_bundle,
     verify_skill_chain,
     verify_snapshot,
@@ -36,6 +37,7 @@ from ..broker.service import (
     BrokerLedgerEntry,
     BrokerOperationReservation,
     CallerAttemptContext,
+    CapabilityBinding,
     ChildCreationRequest,
     ChildCreationResult,
     verify_child_snapshot_binding,
@@ -51,6 +53,7 @@ from .checkpoints import (
 )
 
 _INVOKE = "host.capability.invoke/v1"
+_CANDIDATE_STAGE = "host.candidate.stage/v1"
 _COMPLETE = "host.job.complete/v1"
 _DEFAULT_RPC_ID = "00000000-0000-4000-8000-000000000001"
 
@@ -599,6 +602,434 @@ class ExecutionAuthority:
         with self.repository.transaction() as connection:
             self._validate_attempt_row(connection, context)
 
+    @staticmethod
+    def _candidate_stage_payload_hash(
+        *,
+        attempt: sqlite3.Row,
+        context_identity: str,
+        operation_key: str,
+        worker_run_id: str,
+        input_snapshot_hash: str,
+        bundle: Mapping[str, Any],
+    ) -> str:
+        """Bind one stable stage key to its complete durable identity and payload."""
+        return sha256_hex(
+            canonical_bytes(
+                {
+                    "schema": "execution-candidate-stage-operation/v1",
+                    "context_identity": context_identity,
+                    "workspace_id": attempt["workspace_id"],
+                    "job_id": attempt["job_id"],
+                    "step_id": attempt["step_id"],
+                    "attempt_id": attempt["attempt_id"],
+                    "lease_epoch": attempt["lease_epoch"],
+                    "worker_run_id": worker_run_id,
+                    "operation_key": operation_key,
+                    "input_snapshot_hash": input_snapshot_hash,
+                    "result_bundle": dict(bundle),
+                }
+            )
+        )
+
+    @staticmethod
+    def _candidate_stage_scoped_key(context_identity: str, operation_key: str) -> str:
+        # Candidate rows keep the accepted terminal namespace so existing
+        # publication/backup closure can prove that completion consumed them.
+        # Only stable identity enters this key; payload drift belongs in the
+        # durable candidate_batch_operation.payload_hash conflict binding.
+        return hashlib.sha256(
+            (
+                "candidate-operation/v1\n"
+                f"{context_identity}\n{_COMPLETE}\n{operation_key}"
+            ).encode()
+        ).hexdigest()
+
+    def _read_candidate_stage_bundle(
+        self,
+        connection: sqlite3.Connection,
+        attempt: sqlite3.Row,
+        *,
+        job_id: str,
+        step_id: str,
+        attempt_id: str,
+        lease_epoch: int,
+        result_bundle_asset_id: str,
+        input_snapshot_hash: str,
+    ) -> tuple[dict[str, Any], str]:
+        if input_snapshot_hash != attempt["run_snapshot_hash"]:
+            raise ContractError(
+                ErrorCode.RESULT_CONTRACT_MISMATCH,
+                "Candidate stage input Snapshot is not authoritative",
+            )
+        try:
+            bundle_bytes = self.assets.read(result_bundle_asset_id)
+            bundle = parse_json_bytes(bundle_bytes)
+            if not isinstance(bundle, dict):
+                raise ContractValidationError("result Bundle is not an object")
+            parent_ids = {
+                parent
+                for item in bundle.get("items", ())
+                if isinstance(item, Mapping)
+                for parent in item.get("parent_candidate_ids", ())
+                if isinstance(parent, str)
+            }
+            known_parent_ids: set[str] = set()
+            if parent_ids:
+                rows = connection.execute(
+                    f"SELECT candidate_id,status FROM candidate WHERE candidate_id IN ({','.join('?' for _ in parent_ids)})",
+                    tuple(parent_ids),
+                ).fetchall()
+                known_parent_ids = {
+                    row["candidate_id"]
+                    for row in rows
+                    if row["status"]
+                    not in {"prepared", "rejected", "deleted", "expired"}
+                }
+            verify_result_bundle(
+                bundle,
+                snapshot_hash_value=attempt["run_snapshot_hash"],
+                snapshot_workspace_id=attempt["workspace_id"],
+                known_parent_ids=known_parent_ids,
+            )
+        except ContractError:
+            raise
+        except Exception as exc:
+            raise ContractError(
+                ErrorCode.ASSET_ERROR, "Candidate stage result Bundle is invalid"
+            ) from exc
+
+        if (
+            bundle["contract_id"] != "candidate-batch/v1"
+            or attempt["expected_result_contract"] != "candidate-batch/v1"
+        ):
+            raise ContractError(
+                ErrorCode.RESULT_CONTRACT_MISMATCH,
+                "Candidate stage requires the frozen candidate Batch contract",
+            )
+        if bundle["input_snapshot_hash"] != input_snapshot_hash:
+            raise ContractError(
+                ErrorCode.RESULT_CONTRACT_MISMATCH,
+                "Candidate stage Bundle Snapshot binding drifted",
+            )
+        if any(
+            item.get("item_kind") == "incomplete_stream" for item in bundle["items"]
+        ):
+            raise ContractError(
+                ErrorCode.RESULT_CONTRACT_MISMATCH,
+                "plugin Bundle cannot claim Core incomplete_stream authority",
+            )
+        producer = bundle["producer"]
+        actual_producer = tuple(
+            producer[name]
+            for name in (
+                "job_id",
+                "step_id",
+                "attempt_id",
+                "lease_epoch",
+                "plugin_id",
+                "release_id",
+                "capability_id",
+            )
+        )
+        expected_producer = (
+            job_id,
+            step_id,
+            attempt_id,
+            lease_epoch,
+            attempt["plugin_id"],
+            attempt["release_id"],
+            attempt["capability_id"],
+        )
+        if actual_producer != expected_producer:
+            code = (
+                ErrorCode.STALE_LEASE
+                if producer["lease_epoch"] != lease_epoch
+                else ErrorCode.RESULT_CONTRACT_MISMATCH
+            )
+            raise ContractError(code, "Candidate stage producer identity drifted")
+        return bundle, hashlib.sha256(bundle_bytes).hexdigest()
+
+    def _load_candidate_stage_rows(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        attempt: sqlite3.Row,
+        context_identity: str,
+        operation_key: str,
+        worker_run_id: str,
+        input_snapshot_hash: str,
+        bundle: Mapping[str, Any],
+        allowed_statuses: set[str],
+        bindings: str,
+    ) -> list[tuple[str, str]]:
+        scoped_key = self._candidate_stage_scoped_key(context_identity, operation_key)
+        item_ids = [item["item_id"] for item in bundle["items"]]
+        item_ids_json = json.dumps(item_ids, ensure_ascii=False, separators=(",", ":"))
+        payload_hash = self._candidate_stage_payload_hash(
+            attempt=attempt,
+            context_identity=context_identity,
+            operation_key=operation_key,
+            worker_run_id=worker_run_id,
+            input_snapshot_hash=input_snapshot_hash,
+            bundle=bundle,
+        )
+        operation = connection.execute(
+            "SELECT workspace_id,payload_hash,item_ids_json "
+            "FROM candidate_batch_operation WHERE operation_key=?",
+            (scoped_key,),
+        ).fetchone()
+        if operation is None:
+            raise ContractError(
+                ErrorCode.INVALID_TRANSITION,
+                "Candidate completion requires its durable prepared stage",
+            )
+        if (
+            operation["workspace_id"] != attempt["workspace_id"]
+            or operation["payload_hash"] != payload_hash
+            or operation["item_ids_json"] != item_ids_json
+        ):
+            raise ContractError(
+                ErrorCode.DUPLICATE_REQUEST,
+                "Candidate stage key reused with identity or payload drift",
+            )
+
+        rows = connection.execute(
+            "SELECT candidate_id,item_id,item_hash,item_json,status "
+            "FROM candidate WHERE operation_key=?",
+            (scoped_key,),
+        ).fetchall()
+        candidates = {row["item_id"]: row for row in rows}
+        expected_candidate_ids = {
+            item["item_id"]
+            for item in bundle["items"]
+            if item["status"] not in {"failed", "skipped"}
+        }
+        if set(candidates) != expected_candidate_ids:
+            raise ContractError(
+                ErrorCode.ASSET_ERROR,
+                "durable Candidate stage item mapping is incomplete",
+            )
+
+        staged: list[tuple[str, str]] = []
+        for item in bundle["items"]:
+            item_id = item["item_id"]
+            candidate = candidates.get(item_id)
+            if candidate is None:
+                continue
+            try:
+                item_json, item_hash = self.candidates._canonical(item)
+                self.assets.require(
+                    item["payload_asset_id"],
+                    sha256=item["mutation"]["payload_hash"],
+                )
+            except Exception as exc:
+                raise ContractError(
+                    ErrorCode.ASSET_ERROR,
+                    "durable Candidate stage payload authority drifted",
+                ) from exc
+            if (
+                candidate["item_hash"] != item_hash
+                or candidate["item_json"] != item_json
+                or candidate["status"] not in allowed_statuses
+            ):
+                raise ContractError(
+                    ErrorCode.ASSET_ERROR,
+                    "durable Candidate stage mapping drifted",
+                )
+            publication = connection.execute(
+                "SELECT 1 FROM publication_receipt WHERE candidate_id=?",
+                (candidate["candidate_id"],),
+            ).fetchone()
+            binding = connection.execute(
+                "SELECT job_id,attempt_id,bundle_id,item_id,stage_operation_key "
+                "FROM execution_candidate_binding WHERE candidate_id=?",
+                (candidate["candidate_id"],),
+            ).fetchone()
+            if bindings == "absent" and (
+                publication is not None or binding is not None
+            ):
+                raise ContractError(
+                    ErrorCode.ASSET_ERROR,
+                    "prepared Candidate already has a terminal binding",
+                )
+            if bindings == "committed" and (
+                binding is None
+                or tuple(binding)
+                != (
+                    attempt["job_id"],
+                    attempt["attempt_id"],
+                    bundle["bundle_id"],
+                    item_id,
+                    operation_key,
+                )
+            ):
+                raise ContractError(
+                    ErrorCode.ASSET_ERROR,
+                    "committed Candidate stage binding drifted",
+                )
+            staged.append((item_id, candidate["candidate_id"]))
+        return staged
+
+    def stage_candidate_batch(
+        self,
+        *,
+        job_id: str,
+        step_id: str,
+        attempt_id: str,
+        lease_epoch: int,
+        operation_key: str,
+        worker_run_id: str,
+        result_bundle_asset_id: str,
+        input_snapshot_hash: str,
+        operation_meta: Mapping[str, Any],
+    ) -> Mapping[str, Any]:
+        """Durably prepare one Candidate batch for exact terminal consumption."""
+        with self.repository.transaction() as connection:
+            context = CallerAttemptContext(job_id, step_id, attempt_id, lease_epoch)
+            attempt = self._validate_attempt_row(
+                connection, context, allow_terminal=True
+            )
+            if attempt["worker_run_id"] != worker_run_id:
+                raise ContractError(
+                    ErrorCode.STALE_LEASE, "worker run is not authoritative"
+                )
+            expected_meta = {
+                "context": "attempt",
+                "job_id": job_id,
+                "step_id": step_id,
+                "attempt_id": attempt_id,
+                "lease_epoch": lease_epoch,
+                "generation_id": attempt["generation_id"],
+                "plugin_release_id": attempt["release_id"],
+            }
+            if any(
+                operation_meta.get(name) != value
+                for name, value in expected_meta.items()
+            ):
+                code = (
+                    ErrorCode.STALE_LEASE
+                    if operation_meta.get("lease_epoch") != lease_epoch
+                    else ErrorCode.INCOMPATIBLE_GENERATION
+                )
+                raise ContractError(
+                    code,
+                    "RPC operation meta is not authoritative for this Attempt",
+                )
+            self._verify_replay_snapshot_profile(connection, attempt)
+            context_identity = derive_operation_context_identity(
+                operation_meta, expected_lease_epoch=attempt["lease_epoch"]
+            )
+            bundle, _bundle_hash = self._read_candidate_stage_bundle(
+                connection,
+                attempt,
+                job_id=job_id,
+                step_id=step_id,
+                attempt_id=attempt_id,
+                lease_epoch=lease_epoch,
+                result_bundle_asset_id=result_bundle_asset_id,
+                input_snapshot_hash=input_snapshot_hash,
+            )
+            scoped_key = self._candidate_stage_scoped_key(
+                context_identity, operation_key
+            )
+            existing = connection.execute(
+                "SELECT 1 FROM candidate_batch_operation WHERE operation_key=?",
+                (scoped_key,),
+            ).fetchone()
+            terminal = attempt["state"] in TERMINAL_STATES
+            if existing is None:
+                if terminal:
+                    raise ContractError(
+                        ErrorCode.INVALID_TRANSITION,
+                        "a terminal Attempt cannot prepare a new Candidate stage",
+                    )
+                if attempt["state"] != "running" or attempt["job_state"] != "running":
+                    raise ContractError(
+                        ErrorCode.CANCELLED,
+                        "cancellation prevents a new Candidate stage",
+                    )
+                item_ids = [item["item_id"] for item in bundle["items"]]
+                connection.execute(
+                    "INSERT INTO candidate_batch_operation"
+                    "(operation_key,workspace_id,payload_hash,item_ids_json,created_at) "
+                    "VALUES(?,?,?,?,?)",
+                    (
+                        scoped_key,
+                        attempt["workspace_id"],
+                        self._candidate_stage_payload_hash(
+                            attempt=attempt,
+                            context_identity=context_identity,
+                            operation_key=operation_key,
+                            worker_run_id=worker_run_id,
+                            input_snapshot_hash=input_snapshot_hash,
+                            bundle=bundle,
+                        ),
+                        json.dumps(
+                            item_ids,
+                            ensure_ascii=False,
+                            separators=(",", ":"),
+                        ),
+                        utc_now(),
+                    ),
+                )
+                try:
+                    for item in bundle["items"]:
+                        self.candidates.stage_in_transaction(
+                            connection,
+                            operation_key,
+                            item,
+                            initial_status="prepared",
+                            context_identity=context_identity,
+                            method=_COMPLETE,
+                            expected_workspace_id=attempt["workspace_id"],
+                        )
+                except CandidateError as exc:
+                    raise ContractError(
+                        ErrorCode.RESULT_CONTRACT_MISMATCH, str(exc)
+                    ) from exc
+
+            staged = self._load_candidate_stage_rows(
+                connection,
+                attempt=attempt,
+                context_identity=context_identity,
+                operation_key=operation_key,
+                worker_run_id=worker_run_id,
+                input_snapshot_hash=input_snapshot_hash,
+                bundle=bundle,
+                allowed_statuses=(
+                    {"staged", "published"} if terminal else {"prepared"}
+                ),
+                bindings="committed" if terminal else "absent",
+            )
+            candidates = dict(staged)
+            result = {
+                "accepted": True,
+                "staged_items": [
+                    {
+                        "item_id": item["item_id"],
+                        "candidate_id": candidates.get(item["item_id"]),
+                        "stage_status": (
+                            item["status"]
+                            if item["status"] in {"failed", "skipped"}
+                            else "created"
+                        ),
+                        "publication_eligibility": (
+                            "none"
+                            if item["status"] in {"failed", "skipped"}
+                            else (
+                                "eligible"
+                                if item["status"] == "complete"
+                                else "review_only"
+                            )
+                        ),
+                    }
+                    for item in bundle["items"]
+                ],
+                "job_event_seq": attempt["job_event_high_water"],
+            }
+            validate_rpc_result(_CANDIDATE_STAGE, result)
+            return result
+
     def stage_incomplete_stream(
         self,
         *,
@@ -787,16 +1218,81 @@ class ExecutionAuthority:
         self,
         connection: sqlite3.Connection,
         *,
-        attempt_id: str,
+        attempt: sqlite3.Row,
         parent_outcome: str,
     ) -> tuple[str, ...]:
-        rows = connection.execute(
+        direct_rows = connection.execute(
             "SELECT child_job_id,record_json FROM p3_broker_child_record WHERE json_extract(record_json,'$.parent_attempt_id')=? ORDER BY child_job_id",
-            (attempt_id,),
+            (attempt["attempt_id"],),
         ).fetchall()
+        records_by_child = {
+            str(row["child_job_id"]): BrokerChildRecord.from_mapping(
+                _load(row["record_json"])
+            )
+            for row in direct_rows
+        }
+        edge = self._direct_resume_source(connection, attempt)
+        if edge is not None:
+            source, _checkpoint = edge
+            context_identity = _broker_context_identity(
+                attempt["job_id"], attempt["step_id"], attempt["attempt_id"]
+            )
+            alias_operations = connection.execute(
+                "SELECT * FROM p3_broker_operation "
+                "WHERE context_identity=? AND method=? ORDER BY operation_key",
+                (context_identity, _INVOKE),
+            ).fetchall()
+            for operation in alias_operations:
+                try:
+                    creation = ChildCreationResult.from_mapping(
+                        _load(operation["child_creation_json"])
+                    )
+                except ContractError:
+                    raise
+                except Exception as exc:
+                    raise ContractError(
+                        ErrorCode.ASSET_ERROR,
+                        "terminal child operation identity is invalid",
+                    ) from exc
+                record_identity = connection.execute(
+                    "SELECT context_identity,operation_key "
+                    "FROM p3_broker_child_record WHERE child_job_id=?",
+                    (creation.child_job_id,),
+                ).fetchone()
+                if record_identity is None:
+                    raise ContractError(
+                        ErrorCode.ASSET_ERROR,
+                        "terminal child operation authority is missing",
+                    )
+                if record_identity["context_identity"] == context_identity:
+                    direct_record = records_by_child.get(creation.child_job_id)
+                    if (
+                        direct_record is None
+                        or record_identity["operation_key"]
+                        != operation["operation_key"]
+                        or direct_record.invoke_operation_key
+                        != operation["operation_key"]
+                    ):
+                        raise ContractError(
+                            ErrorCode.RESULT_CONTRACT_MISMATCH,
+                            "terminal direct child operation drifted",
+                        )
+                    continue
+                record = self._validate_persisted_direct_resume_alias_closure(
+                    connection,
+                    current=attempt,
+                    source=source,
+                    operation=operation,
+                )
+                previous = records_by_child.get(record.child_job_id)
+                if previous is not None and previous.to_dict() != record.to_dict():
+                    raise ContractError(
+                        ErrorCode.ASSET_ERROR,
+                        "terminal child alias is ambiguous",
+                    )
+                records_by_child[record.child_job_id] = record
         receipt_ids: list[str] = []
-        for row in rows:
-            record = BrokerChildRecord.from_mapping(_load(row["record_json"]))
+        for record in (records_by_child[key] for key in sorted(records_by_child)):
             child = connection.execute(
                 "SELECT job_state,result_bundle_asset_id,provenance_receipt_id FROM execution_job WHERE job_id=?",
                 (record.child_job_id,),
@@ -1079,6 +1575,39 @@ class ExecutionAuthority:
                 or producer_identity != expected_producer_identity
             ):
                 raise ContractError(ErrorCode.ASSET_ERROR, "committed result Bundle closure drifted")
+            if bundle["contract_id"] == "candidate-batch/v1":
+                stage_bindings = connection.execute(
+                    "SELECT item_id,stage_operation_key FROM execution_candidate_binding "
+                    "WHERE attempt_id=? ORDER BY item_id",
+                    (previous["attempt_id"],),
+                ).fetchall()
+                stage_keys = {row["stage_operation_key"] for row in stage_bindings}
+                if len(stage_keys) != 1 or {
+                    row["item_id"] for row in stage_bindings
+                } != set(receipt["staged_items"]):
+                    raise ContractError(
+                        ErrorCode.ASSET_ERROR,
+                        "committed Candidate stage operation is ambiguous",
+                    )
+                stage_operation_key = next(iter(stage_keys))
+                staged = self._load_candidate_stage_rows(
+                    connection,
+                    attempt=attempt,
+                    context_identity=previous["context_identity"],
+                    operation_key=stage_operation_key,
+                    worker_run_id=attempt["worker_run_id"],
+                    input_snapshot_hash=bundle["input_snapshot_hash"],
+                    bundle=bundle,
+                    allowed_statuses={"staged", "published"},
+                    bindings="committed",
+                )
+                if [item_id for item_id, _candidate_id in staged] != list(
+                    receipt["staged_items"]
+                ):
+                    raise ContractError(
+                        ErrorCode.ASSET_ERROR,
+                        "committed Candidate stage receipt mapping drifted",
+                    )
         event = connection.execute(
             "SELECT event_json FROM execution_job_event WHERE job_id=? AND job_event_seq=? AND attempt_id=?",
             (previous["job_id"], result["job_event_seq"], previous["attempt_id"]),
@@ -1148,6 +1677,498 @@ class ExecutionAuthority:
                 "SELECT 1 FROM candidate WHERE candidate_id=? AND status IN ('staged','published')", (binding["candidate_id"],)
             ).fetchone() is None:
                 raise ContractError(ErrorCode.ASSET_ERROR, "committed completion Candidate binding is missing")
+
+    def _direct_resume_source(
+        self,
+        connection: sqlite3.Connection,
+        current: sqlite3.Row,
+    ) -> tuple[sqlite3.Row, sqlite3.Row] | None:
+        source_attempt_id = current["resume_of_attempt_id"]
+        checkpoint_id = current["resume_checkpoint_id"]
+        if source_attempt_id is None and checkpoint_id is None:
+            return None
+        if source_attempt_id is None or checkpoint_id is None:
+            raise ContractError(
+                ErrorCode.STALE_LEASE,
+                "resume Attempt has an incomplete direct checkpoint edge",
+            )
+        source = connection.execute(
+            "SELECT * FROM execution_attempt WHERE attempt_id=?",
+            (source_attempt_id,),
+        ).fetchone()
+        checkpoint = connection.execute(
+            "SELECT * FROM execution_checkpoint WHERE checkpoint_id=?",
+            (checkpoint_id,),
+        ).fetchone()
+        if (
+            source is None
+            or checkpoint is None
+            or source["job_id"] != current["job_id"]
+            or source["step_id"] != current["step_id"]
+            or source["state"] != "suspended"
+            or source["owner_instance_id"] is None
+            or source["owner_instance_id"] != source["worker_run_id"]
+            or checkpoint["job_id"] != current["job_id"]
+            or checkpoint["step_id"] != current["step_id"]
+            or checkpoint["source_attempt_id"] != source_attempt_id
+            or checkpoint["lease_epoch"] != source["lease_epoch"]
+            or checkpoint["run_snapshot_hash"] != current["run_snapshot_hash"]
+        ):
+            raise ContractError(
+                ErrorCode.STALE_LEASE,
+                "resume Attempt is not an exact direct checkpoint child",
+            )
+        stable_attempt_fields = (
+            "plugin_id",
+            "release_id",
+            "package_hash",
+            "capability_id",
+            "generation_id",
+            "expected_result_contract",
+        )
+        if any(source[name] != current[name] for name in stable_attempt_fields):
+            raise ContractError(
+                ErrorCode.INCOMPATIBLE_GENERATION,
+                "direct resume Attempt identity drifted",
+            )
+        try:
+            checkpoint_value = _load(checkpoint["checkpoint_json"])
+            verify_checkpoint(
+                checkpoint_value,
+                expected_snapshot_hash=current["run_snapshot_hash"],
+            )
+        except ContractError:
+            raise
+        except Exception as exc:
+            raise ContractError(
+                ErrorCode.CHECKPOINT_INVALID,
+                "direct resume checkpoint authority is invalid",
+            ) from exc
+        checkpoint_identity = (
+            checkpoint_value.get("checkpoint_id"),
+            checkpoint_value.get("job_id"),
+            checkpoint_value.get("step_id"),
+            checkpoint_value.get("source_attempt_id"),
+            checkpoint_value.get("lease_epoch"),
+            checkpoint_value.get("run_snapshot_hash"),
+            checkpoint_value.get("checkpoint_hash"),
+        )
+        stored_identity = (
+            checkpoint_id,
+            checkpoint["job_id"],
+            checkpoint["step_id"],
+            checkpoint["source_attempt_id"],
+            checkpoint["lease_epoch"],
+            checkpoint["run_snapshot_hash"],
+            checkpoint["checkpoint_hash"],
+        )
+        if checkpoint_identity != stored_identity:
+            raise ContractError(
+                ErrorCode.CHECKPOINT_INVALID,
+                "direct resume checkpoint closure drifted",
+            )
+        return source, checkpoint
+
+    @staticmethod
+    def _resume_equivalent_envelopes(
+        source: BrokerInvocationEnvelope,
+        current: BrokerInvocationEnvelope,
+    ) -> bool:
+        source_value = source.to_dict()
+        source_value["parent_attempt_id"] = current.parent_attempt_id
+        return source_value == current.to_dict()
+
+    def _validate_persisted_direct_resume_alias_closure(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        current: sqlite3.Row,
+        source: sqlite3.Row,
+        operation: sqlite3.Row,
+        expected_child_job_id: str | None = None,
+    ) -> BrokerChildRecord:
+        """Validate one persisted alias without leaving the caller transaction."""
+
+        current_identity = _broker_context_identity(
+            current["job_id"], current["step_id"], current["attempt_id"]
+        )
+        source_identity = _broker_context_identity(
+            source["job_id"], source["step_id"], source["attempt_id"]
+        )
+        if (
+            operation["context_identity"] != current_identity
+            or operation["method"] != _INVOKE
+            or any(
+                operation[name] is None
+                for name in ("envelope_asset_id", "child_creation_json", "response")
+            )
+        ):
+            raise ContractError(
+                ErrorCode.ASSET_ERROR,
+                "direct resume child alias is incomplete",
+            )
+        source_operation = connection.execute(
+            "SELECT * FROM p3_broker_operation "
+            "WHERE context_identity=? AND method=? AND operation_key=?",
+            (source_identity, _INVOKE, operation["operation_key"]),
+        ).fetchone()
+        try:
+            creation = ChildCreationResult.from_mapping(
+                _load(operation["child_creation_json"])
+            )
+            response = BrokerInvokeResult.from_mapping(
+                parse_json_bytes(bytes(operation["response"]))
+            )
+        except ContractError:
+            raise
+        except Exception as exc:
+            raise ContractError(
+                ErrorCode.ASSET_ERROR,
+                "direct resume child alias identity is invalid",
+            ) from exc
+        record_row = connection.execute(
+            "SELECT context_identity,operation_key,record_json "
+            "FROM p3_broker_child_record WHERE child_job_id=?",
+            (creation.child_job_id,),
+        ).fetchone()
+        if (
+            source_operation is None
+            or record_row is None
+            or any(
+                source_operation[name] is None
+                for name in ("envelope_asset_id", "child_creation_json", "response")
+            )
+        ):
+            raise ContractError(
+                ErrorCode.ASSET_ERROR,
+                "direct resume source child authority is missing",
+            )
+        try:
+            record = BrokerChildRecord.from_mapping(_load(record_row["record_json"]))
+            current_envelope_bytes = self.assets.read(operation["envelope_asset_id"])
+            source_envelope_bytes = self.assets.read(
+                source_operation["envelope_asset_id"]
+            )
+            current_envelope_value = parse_json_bytes(current_envelope_bytes)
+            source_envelope_value = parse_json_bytes(source_envelope_bytes)
+            if not isinstance(current_envelope_value, Mapping) or not isinstance(
+                source_envelope_value, Mapping
+            ):
+                raise ContractValidationError(
+                    "direct resume invocation Asset is not an object"
+                )
+            current_envelope = BrokerInvocationEnvelope.from_mapping(
+                current_envelope_value
+            )
+            source_envelope = BrokerInvocationEnvelope.from_mapping(
+                source_envelope_value
+            )
+        except ContractError:
+            raise
+        except Exception as exc:
+            raise ContractError(
+                ErrorCode.ASSET_ERROR,
+                "direct resume invocation Asset closure is invalid",
+            ) from exc
+        if (
+            (
+                expected_child_job_id is not None
+                and creation.child_job_id != expected_child_job_id
+            )
+            or source_operation["context_identity"] != source_identity
+            or source_operation["method"] != _INVOKE
+            or source_operation["operation_key"] != operation["operation_key"]
+            or source_operation["child_creation_json"]
+            != operation["child_creation_json"]
+            or bytes(source_operation["response"]) != bytes(operation["response"])
+            or source_operation["payload_hash"] != source_envelope.asset_hash
+            or operation["payload_hash"] != current_envelope.asset_hash
+            or sha256_hex(source_envelope_bytes) != source_envelope.asset_hash
+            or sha256_hex(current_envelope_bytes) != current_envelope.asset_hash
+            or not self._resume_equivalent_envelopes(source_envelope, current_envelope)
+            or source_envelope.parent_job_id != source["job_id"]
+            or source_envelope.parent_step_id != source["step_id"]
+            or source_envelope.parent_attempt_id != source["attempt_id"]
+            or current_envelope.parent_job_id != current["job_id"]
+            or current_envelope.parent_step_id != current["step_id"]
+            or current_envelope.parent_attempt_id != current["attempt_id"]
+            or source_envelope.invoke_operation_key != operation["operation_key"]
+            or record_row["context_identity"] != source_identity
+            or record_row["operation_key"] != operation["operation_key"]
+            or record.parent_job_id != source["job_id"]
+            or record.parent_step_id != source["step_id"]
+            or record.parent_attempt_id != source["attempt_id"]
+            or record.invoke_operation_key != operation["operation_key"]
+            or record.child_job_id != creation.child_job_id
+            or record.binding_id != source_envelope.binding_id
+            or record.broker_invocation_asset_id
+            != source_operation["envelope_asset_id"]
+            or record.broker_invocation_hash != source_envelope.asset_hash
+            or record.child_run_snapshot_asset_id
+            != creation.child_run_snapshot_asset_id
+            or record.child_run_snapshot_hash != creation.child_run_snapshot_hash
+            or record.result_contract != source_envelope.expected_result_contract
+            or record.required != source_envelope.required
+            or record.propagate_cancel != source_envelope.propagate_cancel
+            or creation.child_plugin_release_id != source["release_id"]
+            or response.accepted is not True
+            or response.child_job_id != creation.child_job_id
+            or response.child_step_id != creation.child_step_id
+            or response.child_run_snapshot_asset_id
+            != creation.child_run_snapshot_asset_id
+            or response.child_run_snapshot_hash != creation.child_run_snapshot_hash
+            or response.child_result_contract != record.result_contract
+            or response.child_job_event_seq != creation.child_job_event_seq
+        ):
+            raise ContractError(
+                ErrorCode.RESULT_CONTRACT_MISMATCH,
+                "direct resume child alias closure drifted",
+            )
+        return record
+
+    def alias_direct_resume_invoke(
+        self,
+        *,
+        caller: CallerAttemptContext,
+        envelope: BrokerInvocationEnvelope,
+        binding: CapabilityBinding,
+        plugin_release_id: str,
+        generation_id: str,
+    ) -> Mapping[str, Any] | None:
+        """Persist one current-context alias to an exact direct-parent child."""
+
+        context_identity = _broker_context_identity(
+            caller.parent_job_id,
+            caller.parent_step_id,
+            caller.parent_attempt_id,
+        )
+        if caller.context_identity not in {None, context_identity}:
+            raise ContractError(
+                ErrorCode.DUPLICATE_REQUEST,
+                "caller context identity is not canonical",
+            )
+        if (
+            envelope.parent_job_id != caller.parent_job_id
+            or envelope.parent_step_id != caller.parent_step_id
+            or envelope.parent_attempt_id != caller.parent_attempt_id
+            or envelope.binding_id != binding.binding_id
+            or envelope.expected_result_contract != binding.result_contract
+            or envelope.required != binding.required
+            or envelope.propagate_cancel != binding.propagate_cancel
+        ):
+            raise ContractError(
+                ErrorCode.RESULT_CONTRACT_MISMATCH,
+                "current Broker envelope is outside its caller/binding",
+            )
+        operation_key = envelope.invoke_operation_key
+        with self.repository.transaction() as connection:
+            current = self._validate_attempt_row(connection, caller)
+            edge = self._direct_resume_source(connection, current)
+            if edge is None:
+                return None
+            source, _checkpoint = edge
+            current_operation = connection.execute(
+                "SELECT 1 FROM p3_broker_operation "
+                "WHERE context_identity=? AND method=? AND operation_key=?",
+                (context_identity, _INVOKE, operation_key),
+            ).fetchone()
+            if current_operation is not None:
+                return None
+            source_identity = _broker_context_identity(
+                source["job_id"], source["step_id"], source["attempt_id"]
+            )
+            operation = connection.execute(
+                "SELECT * FROM p3_broker_operation "
+                "WHERE context_identity=? AND method=? AND operation_key=?",
+                (source_identity, _INVOKE, operation_key),
+            ).fetchone()
+            if operation is None:
+                return None
+            if any(
+                operation[name] is None
+                for name in ("envelope_asset_id", "child_creation_json", "response")
+            ):
+                raise ContractError(
+                    ErrorCode.INVALID_TRANSITION,
+                    "direct-parent child operation is not durably complete",
+                )
+            try:
+                source_envelope_bytes = self.assets.read(operation["envelope_asset_id"])
+                source_envelope_value = parse_json_bytes(source_envelope_bytes)
+                if not isinstance(source_envelope_value, Mapping):
+                    raise ContractValidationError(
+                        "source Broker invocation Asset is not an object"
+                    )
+                source_envelope = BrokerInvocationEnvelope.from_mapping(
+                    source_envelope_value
+                )
+            except ContractError:
+                raise
+            except Exception as exc:
+                raise ContractError(
+                    ErrorCode.ASSET_ERROR,
+                    "direct-parent Broker invocation Asset is invalid",
+                ) from exc
+            if (
+                operation["payload_hash"] != source_envelope.asset_hash
+                or sha256_hex(source_envelope_bytes) != source_envelope.asset_hash
+                or not self._resume_equivalent_envelopes(source_envelope, envelope)
+            ):
+                raise ContractError(
+                    ErrorCode.DUPLICATE_REQUEST,
+                    "direct resume invocation payload drifted",
+                )
+            creation = ChildCreationResult.from_mapping(
+                _load(operation["child_creation_json"])
+            )
+            response = BrokerInvokeResult.from_mapping(
+                parse_json_bytes(bytes(operation["response"]))
+            )
+            creation_row = connection.execute(
+                "SELECT request_hash,child_job_id,result_json "
+                "FROM execution_child_creation "
+                "WHERE context_identity=? AND operation_key=?",
+                (source_identity, operation_key),
+            ).fetchone()
+            record_row = connection.execute(
+                "SELECT context_identity,operation_key,record_json "
+                "FROM p3_broker_child_record WHERE child_job_id=?",
+                (creation.child_job_id,),
+            ).fetchone()
+            child_attempt = connection.execute(
+                "SELECT a.*,j.run_snapshot_asset_id,j.run_snapshot_hash,"
+                "s.expected_result_contract AS step_result_contract "
+                "FROM execution_attempt a "
+                "JOIN execution_job j ON j.job_id=a.job_id "
+                "JOIN execution_step s ON s.step_id=a.step_id "
+                "WHERE a.attempt_id=? AND a.job_id=? AND a.step_id=?",
+                (
+                    creation.child_attempt_id,
+                    creation.child_job_id,
+                    creation.child_step_id,
+                ),
+            ).fetchone()
+            if record_row is None or creation_row is None or child_attempt is None:
+                raise ContractError(
+                    ErrorCode.ASSET_ERROR,
+                    "direct-parent child authority closure is missing",
+                )
+            record = BrokerChildRecord.from_mapping(_load(record_row["record_json"]))
+            if (
+                creation_row["child_job_id"] != creation.child_job_id
+                or creation_row["result_json"] != operation["child_creation_json"]
+                or record_row["context_identity"] != source_identity
+                or record_row["operation_key"] != operation_key
+                or record.parent_job_id != source["job_id"]
+                or record.parent_step_id != source["step_id"]
+                or record.parent_attempt_id != source["attempt_id"]
+                or record.invoke_operation_key != operation_key
+                or record.child_job_id != creation.child_job_id
+                or record.binding_id != binding.binding_id
+                or record.result_contract != binding.result_contract
+                or record.required != binding.required
+                or record.propagate_cancel != binding.propagate_cancel
+                or response.child_job_id != creation.child_job_id
+                or response.child_step_id != creation.child_step_id
+                or response.child_run_snapshot_asset_id
+                != creation.child_run_snapshot_asset_id
+                or response.child_run_snapshot_hash != creation.child_run_snapshot_hash
+                or response.child_result_contract != binding.result_contract
+                or creation.child_plugin_release_id != plugin_release_id
+                or child_attempt["release_id"] != plugin_release_id
+                or child_attempt["generation_id"] != generation_id
+                or child_attempt["run_snapshot_asset_id"]
+                != creation.child_run_snapshot_asset_id
+                or child_attempt["run_snapshot_hash"]
+                != creation.child_run_snapshot_hash
+                or child_attempt["step_result_contract"] != binding.result_contract
+            ):
+                raise ContractError(
+                    ErrorCode.RESULT_CONTRACT_MISMATCH,
+                    "direct-parent child identity drifted",
+                )
+            try:
+                self.assets.require(
+                    record.broker_invocation_asset_id,
+                    sha256=record.broker_invocation_hash,
+                )
+                self.assets.require(
+                    creation.child_run_snapshot_asset_id,
+                    sha256=creation.child_run_snapshot_hash,
+                )
+            except Exception as exc:
+                raise ContractError(
+                    ErrorCode.ASSET_ERROR,
+                    "direct-parent child Asset closure is missing",
+                ) from exc
+
+            current_envelope_asset_id = self.assets.create_asset(
+                envelope.canonical_bytes(), mime="application/json"
+            )
+            connection.execute(
+                "INSERT INTO p3_broker_operation"
+                "(context_identity,method,operation_key,payload_hash,"
+                "envelope_asset_id,child_creation_json,response) "
+                "VALUES(?,?,?,?,?,?,?)",
+                (
+                    context_identity,
+                    _INVOKE,
+                    operation_key,
+                    envelope.asset_hash,
+                    current_envelope_asset_id,
+                    operation["child_creation_json"],
+                    bytes(operation["response"]),
+                ),
+            )
+            return response.to_dict()
+
+    def resolve_direct_resume_child_alias(
+        self,
+        *,
+        caller: CallerAttemptContext,
+        child_job_id: str,
+        invoke_operation_key: str | None = None,
+    ) -> BrokerChildRecord | None:
+        """Resolve only a persisted current-context direct-resume alias."""
+
+        context_identity = _broker_context_identity(
+            caller.parent_job_id,
+            caller.parent_step_id,
+            caller.parent_attempt_id,
+        )
+        with self.repository.transaction() as connection:
+            current = self._validate_attempt_row(connection, caller)
+            edge = self._direct_resume_source(connection, current)
+            if edge is None:
+                return None
+            source, _checkpoint = edge
+            query = (
+                "SELECT * FROM p3_broker_operation WHERE context_identity=? "
+                "AND method=? AND operation_key=?"
+                if invoke_operation_key is not None
+                else "SELECT * FROM p3_broker_operation WHERE context_identity=? "
+                "AND method=? AND json_extract(child_creation_json,'$.child_job_id')=?"
+            )
+            args = (
+                (context_identity, _INVOKE, invoke_operation_key)
+                if invoke_operation_key is not None
+                else (context_identity, _INVOKE, child_job_id)
+            )
+            rows = connection.execute(query, args).fetchall()
+            if not rows:
+                return None
+            if len(rows) != 1:
+                raise ContractError(
+                    ErrorCode.ASSET_ERROR,
+                    "direct resume child alias is ambiguous",
+                )
+            return self._validate_persisted_direct_resume_alias_closure(
+                connection,
+                current=current,
+                source=source,
+                operation=rows[0],
+                expected_child_job_id=child_job_id,
+            )
 
     def create_or_recover_child(self, request: ChildCreationRequest) -> ChildCreationResult:
         context_identity = _broker_context_identity(request.caller.parent_job_id, request.caller.parent_step_id, request.caller.parent_attempt_id)
@@ -1526,7 +2547,7 @@ class ExecutionAuthority:
                 raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "non-candidate outcome cannot bind a staging operation")
 
             child_receipt_ids = self._synchronize_and_validate_children(
-                connection, attempt_id=attempt_id, parent_outcome=outcome
+                connection, attempt=attempt, parent_outcome=outcome
             )
             if provenance_receipt is None:
                 raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "terminal completion requires its provenance receipt")
@@ -1626,25 +2647,29 @@ class ExecutionAuthority:
                         ) from exc
 
             if contract_id == "candidate-batch/v1":
-                for item in bundle["items"]:  # type: ignore[index]
-                    try:
-                        item_result = self.candidates.stage_in_transaction(
-                            connection, candidate_stage_operation_key, item, initial_status="prepared",  # type: ignore[arg-type]
-                            context_identity=context_identity,
-                            method=_COMPLETE,
-                            expected_workspace_id=attempt["workspace_id"],
-                        )
-                    except CandidateError as exc:
-                        raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, str(exc)) from exc
-                    if item_result.candidate_id is not None:
-                        existing_pub = connection.execute("SELECT 1 FROM publication_receipt WHERE candidate_id=?", (item_result.candidate_id,)).fetchone()
-                        if existing_pub:
-                            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "candidate was published before terminal commit")
-                        staged.append((item_result.item_id, item_result.candidate_id))
-                if list(submitted_receipt["staged_items"]) != [item_id for item_id, _ in staged]:
-                    raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "receipt staged item mapping is incomplete")
+                staged = self._load_candidate_stage_rows(
+                    connection,
+                    attempt=attempt,
+                    context_identity=context_identity,
+                    operation_key=candidate_stage_operation_key,  # type: ignore[arg-type]
+                    worker_run_id=worker_run_id,
+                    input_snapshot_hash=bundle["input_snapshot_hash"],  # type: ignore[index]
+                    bundle=bundle,  # type: ignore[arg-type]
+                    allowed_statuses={"prepared"},
+                    bindings="absent",
+                )
+                if list(submitted_receipt["staged_items"]) != [
+                    item_id for item_id, _ in staged
+                ]:
+                    raise ContractError(
+                        ErrorCode.RESULT_CONTRACT_MISMATCH,
+                        "receipt staged item mapping is incomplete",
+                    )
             elif submitted_receipt["staged_items"]:
-                raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "non-candidate receipt cannot claim staged items")
+                raise ContractError(
+                    ErrorCode.RESULT_CONTRACT_MISMATCH,
+                    "non-candidate receipt cannot claim staged items",
+                )
 
             receipt = {
                 "schema": "provenance-receipt/v1",
@@ -1684,10 +2709,28 @@ class ExecutionAuthority:
                     (receipt_id, receipt["receipt_hash"], receipt_json, job_id, step_id, attempt_id, receipt["created_at"]),
                 )
             for item_id, candidate_id in staged:
-                connection.execute("UPDATE candidate SET status='staged' WHERE candidate_id=? AND status IN ('prepared','staged')", (candidate_id,))
+                if (
+                    connection.execute(
+                        "UPDATE candidate SET status='staged' "
+                        "WHERE candidate_id=? AND status='prepared'",
+                        (candidate_id,),
+                    ).rowcount
+                    != 1
+                ):
+                    raise ContractError(
+                        ErrorCode.INVALID_TRANSITION,
+                        "prepared Candidate changed before terminal commit",
+                    )
                 connection.execute(
                     "INSERT INTO execution_candidate_binding(job_id,attempt_id,bundle_id,item_id,candidate_id,stage_operation_key) VALUES(?,?,?,?,?,?)",
-                    (job_id, attempt_id, bundle["bundle_id"], item_id, candidate_id, candidate_stage_operation_key),
+                    (
+                        job_id,
+                        attempt_id,
+                        bundle["bundle_id"],
+                        item_id,
+                        candidate_id,
+                        candidate_stage_operation_key,
+                    ),
                 )
 
             job_event_seq = attempt["job_event_high_water"] + 1

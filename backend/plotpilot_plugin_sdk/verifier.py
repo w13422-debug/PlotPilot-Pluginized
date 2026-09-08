@@ -10,9 +10,10 @@ from __future__ import annotations
 import copy
 import json
 import re
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any
 
 from jsonschema import Draft202012Validator, ValidationError
 
@@ -25,10 +26,11 @@ from .package import (
     release_id,
     skill_package_hash,
     skill_release_id,
+)
+from .package import (
     unicode_nfc_casefold as _frozen_unicode_nfc_casefold,
 )
 from .rpc import HOST_METHODS, METHOD_MATRIX, WORKER_METHODS
-
 
 ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_DIR = ROOT / "contracts" / "json-schema"
@@ -95,6 +97,13 @@ SCHEMA_NAME_ALIASES.update(
         "backup-bundle/v1": "backup-bundle-v1.schema.json",
     }
 )
+
+
+_JOB_RUN_SUCCESS_BRANCHES = {
+    "job.start": 7,
+    "job.resume": 8,
+}
+_JOB_RUN_SUCCESS_COLLISION = (7, 8)
 
 
 @dataclass(frozen=True)
@@ -597,7 +606,7 @@ def verify_provenance_receipt(receipt: Mapping[str, Any]) -> None:
     assert_valid("provenance-receipt/v1", receipt)
     if (receipt["bundle_id"] is None) != (receipt["bundle_hash"] is None):
         raise ContractValidationError("provenance Bundle ID/hash must be all-null or all-present")
-    _assert_unique((item["item_id"] for item in receipt["staged_items"]), "provenance staged item IDs must be unique")
+    _assert_unique(receipt["staged_items"], "provenance staged item IDs must be unique")
     for ref in receipt["skill_chain_result_refs"]:
         _verify_chain_ref(ref, bundle_id=receipt["bundle_id"], allow_bundleless=True)
     _assert_hash(hash_without_field(receipt, "receipt_hash", "provenance-receipt/v1"), receipt["receipt_hash"], "receipt_hash")
@@ -634,9 +643,10 @@ def verify_stream_prefix(prefix: Mapping[str, Any], *, previous: Mapping[str, An
             raise ContractError(ErrorCode.STALE_LEASE, "stream prefix binding changed")
         if prefix["prefix_seq"] <= previous["prefix_seq"] or prefix["byte_length"] < previous["byte_length"]:
             raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "stream prefix moved backwards")
-    if content is not None:
-        if len(content) != prefix["byte_length"] or sha256_hex(content) != prefix["prefix_hash"]:
-            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "stream prefix asset hash/length mismatch")
+    if content is not None and (
+        len(content) != prefix["byte_length"] or sha256_hex(content) != prefix["prefix_hash"]
+    ):
+        raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "stream prefix asset hash/length mismatch")
 
 
 def verify_skill_receipt(receipt: Mapping[str, Any]) -> None:
@@ -715,6 +725,62 @@ def _assert_exact_fields(value: Mapping[str, Any], fields: Iterable[str], label:
         raise ContractValidationError(f"{label} fields are not bound to the method schema: missing={missing}, extra={extra}")
 
 
+def _assert_method_aware_rpc_success_schema(
+    response: Mapping[str, Any],
+    method: str,
+) -> None:
+    """Validate the only frozen duplicate ``rpc-success`` result pair exactly."""
+    selected_branch = _JOB_RUN_SUCCESS_BRANCHES.get(method)
+    if selected_branch is None:
+        assert_valid("rpc-success-v1", response)
+        return
+
+    schema = _load_schema("rpc-success-v1")
+    result_schema = schema.get("properties", {}).get("result")
+    if not isinstance(result_schema, Mapping):
+        raise ContractValidationError("rpc-success/v1 has no method-aware result schema")
+    branches = result_schema.get("oneOf")
+    first_branch, second_branch = _JOB_RUN_SUCCESS_COLLISION
+    if (
+        not isinstance(branches, list)
+        or len(branches) <= second_branch
+        or not isinstance(branches[first_branch], Mapping)
+        or not isinstance(branches[second_branch], Mapping)
+        or branches[first_branch] != branches[second_branch]
+    ):
+        raise ContractValidationError(
+            "rpc-success/v1 does not retain the exact job.start/job.resume duplicate branches"
+        )
+
+    selected_schema = copy.deepcopy(schema)
+    selected_properties = selected_schema.get("properties")
+    if not isinstance(selected_properties, dict):
+        raise ContractValidationError("rpc-success/v1 has no strict response envelope")
+    selected_properties["result"] = copy.deepcopy(branches[selected_branch])
+    errors = sorted(
+        Draft202012Validator(selected_schema).iter_errors(response),
+        key=lambda error: (tuple(error.absolute_path), error.message),
+    )
+    if errors:
+        first = errors[0]
+        raise ContractValidationError(
+            f"rpc-success-v1: {first.message}",
+            path=_path(first),
+            details=[ValidationIssue(_path(error), error.message, error.validator).__dict__ for error in errors],
+        )
+
+    result = response["result"]
+    matching_branches = tuple(
+        index
+        for index, branch in enumerate(branches)
+        if not tuple(Draft202012Validator(branch).iter_errors(result))
+    )
+    if matching_branches != _JOB_RUN_SUCCESS_COLLISION:
+        raise ContractValidationError(
+            "rpc-success/v1 job result must match exactly the frozen duplicate branches"
+        )
+
+
 def validate_rpc_request(request: Mapping[str, Any], *, expected_lease_epoch: int | None = None) -> None:
     is_heartbeat = request.get("method") == "runtime.heartbeat" and "id" not in request
     assert_valid("rpc-notification/v1" if is_heartbeat else "rpc-request/v1", request)
@@ -763,7 +829,7 @@ def validate_rpc_request(request: Mapping[str, Any], *, expected_lease_epoch: in
             raise ContractError(ErrorCode.STALE_LEASE, "control health cannot carry shadow DB lease fields")
 
 
-def validate_rpc_result(
+def _validate_rpc_result_semantics(
     method: str,
     result: Mapping[str, Any],
     *,
@@ -782,13 +848,6 @@ def validate_rpc_result(
     if request is not None and request.get("method") != method:
         raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "RPC result method does not match its request")
     _assert_exact_fields(result, definition["result"]["fields"], f"{method} result")
-    response = {
-        "jsonrpc": "2.0",
-        "id": "123e4567-e89b-12d3-a456-426614174000",
-        "result": dict(result),
-    }
-    assert_valid("rpc-success/v1", response)
-
     params = request.get("params", {}) if request is not None else {}
     if method == "capability.describe":
         verify_capability_descriptor(result["descriptor"], expected_capability_id=params.get("capability_id"))
@@ -803,6 +862,24 @@ def validate_rpc_result(
             raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "child result contract does not match the binding request")
     elif method == "job.pause" and result["accepted"] and result["checkpoint_asset_id"] is None:
         raise ContractError(ErrorCode.CHECKPOINT_INVALID, "accepted job.pause must return a checkpoint Asset")
+
+
+def validate_rpc_result(
+    method: str,
+    result: Mapping[str, Any],
+    *,
+    request: Mapping[str, Any] | None = None,
+) -> None:
+    """Validate a result against the exact method branch, not just any RPC result."""
+    _validate_rpc_result_semantics(method, result, request=request)
+    _assert_method_aware_rpc_success_schema(
+        {
+            "jsonrpc": "2.0",
+            "id": "123e4567-e89b-12d3-a456-426614174000",
+            "result": dict(result),
+        },
+        method,
+    )
 
 
 def validate_rpc_response(
@@ -822,9 +899,11 @@ def validate_rpc_response(
         if response["error"]["code"] not in EXPECTED_ERROR_CODES:
             raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "RPC error code is not in the v1 registry")
     else:
-        assert_valid("rpc-success-v1", response)
-        if method is not None:
-            validate_rpc_result(method, response["result"], request=request)
+        if method is None:
+            assert_valid("rpc-success-v1", response)
+        else:
+            _assert_method_aware_rpc_success_schema(response, method)
+            _validate_rpc_result_semantics(method, response["result"], request=request)
 
 
 def verify_contract_inventory() -> None:

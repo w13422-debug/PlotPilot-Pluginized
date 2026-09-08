@@ -20,6 +20,20 @@ from backend.plotpilot_plugin_sdk import (
 from backend.plotpilot_plugin_sdk.verifier import hash_without_field
 
 
+def _prepare_candidate_stage(stack, completion):
+    stack["authority"].stage_candidate_batch(
+        job_id=completion["job_id"],
+        step_id=completion["step_id"],
+        attempt_id=completion["attempt_id"],
+        lease_epoch=completion["lease_epoch"],
+        operation_key=completion["candidate_stage_operation_key"],
+        worker_run_id=completion["worker_run_id"],
+        result_bundle_asset_id=completion["result_bundle_asset_id"],
+        input_snapshot_hash=stack["snapshot"]["snapshot_hash"],
+        operation_meta=completion["operation_meta"],
+    )
+
+
 def _checkpoint_asset(
     stack,
     *,
@@ -589,7 +603,9 @@ def test_terminal_cancel_after_attempt_terminal_returns_terminal_known(execution
     from support import complete_kwargs, make_candidate_bundle
 
     bundle_asset, receipt, _ = make_candidate_bundle(execution_stack)
-    execution_stack["authority"].complete_attempt(**complete_kwargs(bundle_asset, receipt))
+    completion = complete_kwargs(bundle_asset, receipt)
+    _prepare_candidate_stage(execution_stack, completion)
+    execution_stack["authority"].complete_attempt(**completion)
     terminal_kwargs = {
         "job_id": "job-1",
         "step_id": "step-1",
