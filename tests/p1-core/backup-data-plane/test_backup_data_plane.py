@@ -579,6 +579,30 @@ def _add_integrated_execution_closure(
         receipt, "receipt_hash", "provenance-receipt/v1"
     )
     operation_key = f"complete-{marker}"
+    candidate_stage_operation_key = f"stage-{marker}"
+    operation_meta = {
+        "protocol_version": "1",
+        "generation_id": generation_id,
+        "plugin_release_id": EXECUTION_RELEASE_ID,
+        "deadline_at": "2026-08-28T02:00:00Z",
+        "context": "attempt",
+        "operation_id": f"rpc-{marker}",
+        "job_id": job_id,
+        "step_id": step_id,
+        "attempt_id": attempt_id,
+        "lease_epoch": 1,
+    }
+    authority.stage_candidate_batch(
+        job_id=job_id,
+        step_id=step_id,
+        attempt_id=attempt_id,
+        lease_epoch=1,
+        operation_key=candidate_stage_operation_key,
+        worker_run_id=worker_run_id,
+        result_bundle_asset_id=bundle_asset.asset_id,
+        input_snapshot_hash=snapshot["snapshot_hash"],
+        operation_meta=operation_meta,
+    )
     authority.complete_attempt(
         job_id=job_id,
         step_id=step_id,
@@ -588,22 +612,11 @@ def _add_integrated_execution_closure(
         worker_run_id=worker_run_id,
         outcome="succeeded",
         result_bundle_asset_id=bundle_asset.asset_id,
-        candidate_stage_operation_key=f"stage-{marker}",
+        candidate_stage_operation_key=candidate_stage_operation_key,
         terminal_detail_asset_id=None,
         local_seq=1,
         provenance_receipt=receipt,
-        operation_meta={
-            "protocol_version": "1",
-            "generation_id": generation_id,
-            "plugin_release_id": EXECUTION_RELEASE_ID,
-            "deadline_at": "2026-08-28T02:00:00Z",
-            "context": "attempt",
-            "operation_id": f"rpc-{marker}",
-            "job_id": job_id,
-            "step_id": step_id,
-            "attempt_id": attempt_id,
-            "lease_epoch": 1,
-        },
+        operation_meta=operation_meta,
     )
     candidate_id = repository._connection.execute(
         "SELECT candidate_id FROM execution_candidate_binding WHERE job_id=?",
@@ -678,18 +691,16 @@ def _add_chapter_authority_projection_closure(
                 NOW,
             ),
         )
-        connection.execute(
-            "INSERT INTO candidate_batch_operation("
-            "operation_key,workspace_id,payload_hash,item_ids_json,created_at) "
-            "VALUES(?,?,?,?,?)",
+        updated_batch = connection.execute(
+            "UPDATE candidate_batch_operation "
+            "SET item_ids_json=? "
+            "WHERE operation_key=?",
             (
-                candidate["operation_key"],
-                workspace_id,
-                hashlib.sha256(marker.encode()).hexdigest(),
                 item_ids_json,
-                NOW,
+                candidate["operation_key"],
             ),
         )
+        assert updated_batch.rowcount == 1
         connection.execute(
             "INSERT INTO chapter_candidate_authority("
             "candidate_id,source_job_id,source_attempt_id,writer_epoch,"
