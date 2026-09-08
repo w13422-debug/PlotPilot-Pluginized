@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
 import json
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
 from backend.plotpilot_core.broker.service import (
     BrokerInvocationEnvelope,
-    CapabilityBroker,
     CallerAttemptContext,
     CapabilityBinding,
+    CapabilityBroker,
     ChildCreationRequest,
 )
 from backend.plotpilot_core.repositories.execution import ExecutionAuthority

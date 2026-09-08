@@ -297,7 +297,7 @@ def test_checkpoint_store_is_compatible_with_existing_job_snapshot_read_gate(exe
 def test_pause_resume_cancel_are_idempotent_cas_and_fence_late_worker(execution_stack):
     authority = execution_stack["authority"]
     control = authority.control_port
-    value, asset = _checkpoint_asset(
+    _value, asset = _checkpoint_asset(
         execution_stack,
         checkpoint_id="checkpoint-1",
         checkpoint_seq=1,
@@ -366,7 +366,7 @@ def test_pause_resume_cancel_are_idempotent_cas_and_fence_late_worker(execution_
 def test_resume_rejects_package_hash_drift_and_invalid_success_ids(execution_stack):
     authority = execution_stack["authority"]
     control = authority.control_port
-    value, asset = _checkpoint_asset(
+    _value, asset = _checkpoint_asset(
         execution_stack,
         checkpoint_id="checkpoint-1",
         checkpoint_seq=1,
@@ -735,7 +735,7 @@ def test_direct_checkpoint_replay_fences_worker_epoch_and_cross_attempt_before_r
     assert caught.value.code == int(ErrorCode.STALE_LEASE)
     assert _authority_state(repository) == before
 
-    next_value, next_asset = _checkpoint_asset(
+    _next_value, next_asset = _checkpoint_asset(
         execution_stack,
         checkpoint_id="checkpoint-replay-fence-2",
         checkpoint_seq=2,

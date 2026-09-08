@@ -8,12 +8,11 @@ not create a second SQLite authority.
 
 from __future__ import annotations
 
+import inspect
+import re
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
-from hashlib import sha256
-import inspect
 from threading import RLock
-import re
 from types import MappingProxyType
 from typing import Any, Protocol, Self, runtime_checkable
 
@@ -750,7 +749,7 @@ class BrokerChildRecord(_PayloadMapping):
         state: str | None = None,
         result_bundle_asset_id: str | None | object = ...,
         provenance_receipt_id: str | None | object = ...,
-    ) -> "BrokerChildRecord":
+    ) -> BrokerChildRecord:
         return BrokerChildRecord(
             child_job_id=self.child_job_id,
             parent_job_id=self.parent_job_id,
@@ -1150,7 +1149,7 @@ class BrokerOperationReservation:
             ChildCreationResult.from_mapping(_thaw(frozen))
 
     @classmethod
-    def from_value(cls, value: Any) -> "BrokerOperationReservation | None":
+    def from_value(cls, value: Any) -> BrokerOperationReservation | None:
         if value is None or isinstance(value, cls):
             return value
         if not isinstance(value, Mapping):
@@ -1164,7 +1163,7 @@ class BrokerOperationReservation:
             child_creation=value.get("child_creation"),
         )
 
-    def with_envelope(self, envelope_asset_id: str) -> "BrokerOperationReservation":
+    def with_envelope(self, envelope_asset_id: str) -> BrokerOperationReservation:
         return BrokerOperationReservation(
             self.context_identity,
             self.method,
@@ -1174,7 +1173,7 @@ class BrokerOperationReservation:
             self.child_creation,
         )
 
-    def with_child(self, child_creation: Mapping[str, Any]) -> "BrokerOperationReservation":
+    def with_child(self, child_creation: Mapping[str, Any]) -> BrokerOperationReservation:
         return BrokerOperationReservation(
             self.context_identity,
             self.method,
@@ -1829,7 +1828,7 @@ def derive_child_cancel_operation_key(parent_operation_key: str, child_job_id: s
     _require_id(parent_operation_key, "parent_operation_key")
     _require_id(child_job_id, "child_job_id")
     return sha256_hex(
-        f"child-cancel/v1\n{parent_operation_key}\n{child_job_id}\n".encode("utf-8")
+        f"child-cancel/v1\n{parent_operation_key}\n{child_job_id}\n".encode()
     )
 
 
@@ -1917,9 +1916,11 @@ def verify_child_snapshot_binding(
     for key, expected in required.items():
         if value.get(key) != expected:
             raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, f"child snapshot attestation mismatch at {key}")
-    if parameters_asset_id is not None:
-        if value.get("source_parameters_asset_id") != parameters_asset_id or value.get("source_parameters_hash") != parameters_hash:
-            raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "child snapshot source parameters binding mismatch")
+    if parameters_asset_id is not None and (
+        value.get("source_parameters_asset_id") != parameters_asset_id
+        or value.get("source_parameters_hash") != parameters_hash
+    ):
+        raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "child snapshot source parameters binding mismatch")
 
 
 @dataclass(frozen=True, slots=True)
@@ -2181,7 +2182,7 @@ class CapabilityBroker:
         descriptor_port: BrokerDescriptorPort | Any | None = None,
         child_snapshot_port: BrokerChildSnapshotPort | Any | None = None,
         receipt_port: BrokerReceiptPort | Any | None = None,
-    ) -> "CapabilityBroker":
+    ) -> CapabilityBroker:
         """Explicit test-only composition with in-memory authority doubles."""
 
         return cls(
@@ -2301,10 +2302,7 @@ class CapabilityBroker:
     ) -> BrokerInvokeResult:
         if _entry_payload_hash(entry) != payload_hash:
             raise ContractError(ErrorCode.DUPLICATE_REQUEST, "operation key reused with a different payload")
-        try:
-            response = parse_json_bytes(_entry_response(entry))
-        except ContractError:
-            raise
+        response = parse_json_bytes(_entry_response(entry))
         if not isinstance(response, Mapping):
             raise ContractError(ErrorCode.ASSET_ERROR, "broker ledger response is not an object")
         result = BrokerInvokeResult.from_mapping(response)
@@ -2744,10 +2742,7 @@ class CapabilityBroker:
         bundle_hash: str | None = None
         if projection.result_bundle_asset_id is not None:
             bundle_bytes = self._read_asset(projection.result_bundle_asset_id, "result_bundle_asset_id")
-            try:
-                bundle = parse_json_bytes(bundle_bytes)
-            except ContractError:
-                raise
+            bundle = parse_json_bytes(bundle_bytes)
             if not isinstance(bundle, Mapping):
                 raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "result bundle Asset is not an object")
             if bundle.get("contract_id") != record.result_contract:
@@ -3045,6 +3040,8 @@ class CapabilityBroker:
 
 
 __all__ = [
+    "RESULT_CONTRACTS",
+    "TERMINAL_STATES",
     "AttemptContextPort",
     "BrokerAggregation",
     "BrokerBinding",
@@ -3065,21 +3062,19 @@ __all__ = [
     "BrokerPollProjection",
     "BrokerReceiptPort",
     "BrokerReceiptPropagation",
-    "CapabilityBinding",
-    "CapabilityDescriptor",
-    "CapabilityBroker",
     "CallerAttemptContext",
+    "CapabilityBinding",
+    "CapabilityBroker",
+    "CapabilityDescriptor",
     "ChildCreationRequest",
     "ChildCreationResult",
     "InMemoryAttemptContextPort",
     "InMemoryBrokerChildRecordStore",
-    "InMemoryBrokerOperationLedger",
     "InMemoryBrokerLedger",
+    "InMemoryBrokerOperationLedger",
     "InvocationEnvelope",
     "InvokeResult",
     "PollResult",
-    "RESULT_CONTRACTS",
-    "TERMINAL_STATES",
     "aggregate_child_outcomes",
     "build_receipt_propagation",
     "derive_child_cancel_operation_key",

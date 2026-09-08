@@ -7,11 +7,21 @@ from pathlib import Path
 from threading import Event
 
 import pytest
+from support import (
+    PACKAGE,
+    RELEASE,
+    authority_rows,
+    complete_kwargs,
+    make_candidate_bundle,
+)
 
+from backend.plotpilot_core.broker.service import CallerAttemptContext
 from backend.plotpilot_core.candidates import CandidateError, CandidateService
 from backend.plotpilot_core.domain import Document, Workspace
 from backend.plotpilot_core.publication import PublicationService
-from backend.plotpilot_core.broker.service import CallerAttemptContext
+from backend.plotpilot_core.repositories.authority_application.errors import (
+    IncompletePublicationError,
+)
 from backend.plotpilot_core.repositories.execution import ExecutionAuthority
 from backend.plotpilot_plugin_sdk import (
     ContractError,
@@ -21,8 +31,6 @@ from backend.plotpilot_plugin_sdk import (
     verify_skill_chain,
 )
 from backend.plotpilot_plugin_sdk.verifier import hash_without_field
-
-from support import PACKAGE, RELEASE, authority_rows, complete_kwargs, make_candidate_bundle
 
 
 def _prepare_candidate_stage(stack, completion):
@@ -364,7 +372,7 @@ def test_f007_wrong_chain_hash_is_rejected_before_materialization(execution_stac
 
 
 def test_f008_plugin_incomplete_stream_is_never_stageable(execution_stack):
-    bundle_asset, receipt, item = make_candidate_bundle(execution_stack, partial=True, item_status="partial")
+    bundle_asset, receipt, _item = make_candidate_bundle(execution_stack, partial=True, item_status="partial")
 
     def mutate(bundle):
         bundle["items"][0]["item_kind"] = "incomplete_stream"
@@ -387,7 +395,7 @@ def test_f009_publication_requires_complete_execution_evidence(execution_stack):
     connection.execute("DELETE FROM execution_receipt")
     connection.execute("PRAGMA foreign_keys=ON")
     before = execution_stack["repository"].get_document("doc-1").current_revision_id
-    with pytest.raises(Exception):
+    with pytest.raises(IncompletePublicationError):
         PublicationService(execution_stack["repository"], execution_stack["assets"]).accept(
             "publish-without-evidence", candidate_id, created_by="user"
         )
@@ -424,7 +432,7 @@ def test_f009_publication_rechecks_snapshot_release_after_terminal_drift(executi
     candidate_id = connection.execute("SELECT candidate_id FROM candidate").fetchone()[0]
     connection.execute("UPDATE execution_attempt SET generation_id='generation-drift' WHERE attempt_id='attempt-1'")
     before = execution_stack["repository"].get_document("doc-1").current_revision_id
-    with pytest.raises(Exception):
+    with pytest.raises(IncompletePublicationError):
         PublicationService(execution_stack["repository"], execution_stack["assets"]).accept(
             "publish-generation-drift", candidate_id, created_by="user"
         )

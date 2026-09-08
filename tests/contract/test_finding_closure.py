@@ -15,8 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "backend"))
 sys.path.insert(0, str(ROOT / "tools" / "integration"))
 
-from verify_contracts import verify_negative_cases  # noqa: E402
-
+from verify_contracts import verify_negative_cases
 
 CLOSURE_RELATIVE = "docs/contracts/finding-closure-v1.json"
 EVIDENCE_RELATIVE = "docs/deliveries/PPA-00/evidence/finding-closure.json"
