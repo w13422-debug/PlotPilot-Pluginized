@@ -1,3 +1,61 @@
-from .dag import AutopilotPlan, Stage, StageOutcome, build_plan, decide_next_stage
+from .checkpoint import (
+    AutopilotCheckpointError,
+    AutopilotIdentity,
+    CheckpointEnvelope,
+    CheckpointState,
+    StageEffect,
+    build_checkpoint_envelope,
+    recover_checkpoint_envelope,
+)
+from .dag import (
+    DEFAULT_MAX_DAG_STAGES,
+    AutopilotDAG,
+    AutopilotPlan,
+    AutopilotStage,
+    DAGValidationError,
+    DurableDAG,
+    DurableStage,
+    Stage,
+    StageOutcome,
+    build_durable_dag,
+    build_plan,
+    decide_next_stage,
+)
+from .runtime import (
+    CAPABILITY_ID,
+    PLUGIN_ID,
+    AutopilotHostPort,
+    AutopilotRunResult,
+    AutopilotRuntime,
+    AutopilotRuntimeError,
+    capability_descriptor,
+)
 
-__all__ = ["AutopilotPlan", "Stage", "StageOutcome", "build_plan", "decide_next_stage"]
+__all__ = [
+    "CAPABILITY_ID",
+    "DEFAULT_MAX_DAG_STAGES",
+    "PLUGIN_ID",
+    "AutopilotCheckpointError",
+    "AutopilotDAG",
+    "AutopilotHostPort",
+    "AutopilotIdentity",
+    "AutopilotPlan",
+    "AutopilotRunResult",
+    "AutopilotRuntime",
+    "AutopilotRuntimeError",
+    "AutopilotStage",
+    "CheckpointEnvelope",
+    "CheckpointState",
+    "DAGValidationError",
+    "DurableDAG",
+    "DurableStage",
+    "Stage",
+    "StageEffect",
+    "StageOutcome",
+    "build_checkpoint_envelope",
+    "build_durable_dag",
+    "build_plan",
+    "capability_descriptor",
+    "decide_next_stage",
+    "recover_checkpoint_envelope",
+]
