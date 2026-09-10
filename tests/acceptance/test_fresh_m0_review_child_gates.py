@@ -7,7 +7,6 @@ import pytest
 
 from tools.integration import fresh_m0_review as fresh_review
 
-
 CHILD_GATE_IDS = (
     "python-contracts-all",
     "cross-language-goldens",
@@ -53,6 +52,59 @@ def _run_review(
     review_path = tmp_path / "fresh-readonly-review.json"
     monkeypatch.setattr(fresh_review, "REVIEW_PATH", review_path)
     monkeypatch.setattr(fresh_review, "RAW", tmp_path / "raw")
+
+    # These are unit tests for child-process result propagation.  Keep them
+    # independent from mutable, repository-wide M0 evidence; the actual record
+    # and browser evidence checks have their own executable acceptance gates.
+    monkeypatch.setattr(fresh_review, "check_records", lambda _records, _label: [])
+    real_read_json = fresh_review.read_json
+
+    def isolated_read_json(path: Path) -> dict[str, object]:
+        value = real_read_json(path)
+        if path == fresh_review.DELIVERY / "evidence" / "browser-smoke.json":
+            subflows = [
+                {
+                    "flow_id": "FLOW-07-foreshadow-ledger",
+                    "status": "passed",
+                    "exercised": True,
+                    "ui_actions": [{}],
+                    "api_trace": [{}],
+                    "screenshots": [{}],
+                },
+                {
+                    "flow_id": "FLOW-08-story-evolution-bible",
+                    "status": "passed",
+                    "exercised": True,
+                    "ui_actions": [{}],
+                    "api_trace": [{}],
+                    "screenshots": [{}],
+                },
+            ]
+            return {
+                "flows": [{"subflows": subflows}] + [{} for _ in range(9)],
+                "api_trace": [{}],
+                "page_errors": [],
+                "forbidden_generation_calls": [],
+                "unexpected_external_calls": [],
+                "constraints": {
+                    "non_empty_chapter_body_saved": True,
+                    "fake_provider_used": True,
+                    "real_provider_used": False,
+                    "external_network_used": False,
+                    "sse_disconnect_recovery": True,
+                },
+            }
+        if path == fresh_review.DELIVERY / "evidence" / "finding-closure.json":
+            closure_path = fresh_review.ROOT / "docs" / "contracts" / "finding-closure-v1.json"
+            value = dict(value)
+            value["closure_index"] = {
+                "path": "docs/contracts/finding-closure-v1.json",
+                "bytes": closure_path.stat().st_size,
+                "sha256": fresh_review.sha256_file(closure_path),
+            }
+        return value
+
+    monkeypatch.setattr(fresh_review, "read_json", isolated_read_json)
 
     def fake_run(_command: list[str], label: str) -> dict[str, object]:
         if label == failing_label:

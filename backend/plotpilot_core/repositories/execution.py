@@ -45,7 +45,7 @@ from ..broker.service import (
 from ..candidates import CandidateError, CandidateService
 from ..domain.entities import utc_now
 from ..jobs.states import ATTEMPT_EDGES, JOB_EDGES, STEP_EDGES, can_transition
-from .authority import CoreAuthorityRepository, verify_attempt_snapshot_binding
+from .authority import CoreAuthorityRepository
 from .checkpoints import (
     SQLiteCheckpointStore,
     SQLiteExecutionControlPort,
@@ -67,6 +67,31 @@ def _load(value: str) -> dict[str, Any]:
     if not isinstance(loaded, dict):
         raise ContractError(ErrorCode.ASSET_ERROR, "stored authority value is not an object")
     return loaded
+
+
+def _verify_snapshot_release_binding(
+    snapshot: Mapping[str, Any], attempt: Mapping[str, Any]
+) -> None:
+    """Do not conflate a rollout Generation ID with a data Generation ID."""
+
+    releases = [
+        release
+        for release in snapshot["plugin_releases"]
+        if release["plugin_id"] == attempt["plugin_id"]
+    ]
+    if len(releases) != 1:
+        raise ValueError("Attempt plugin is not uniquely bound by the RunSnapshot")
+    release = releases[0]
+    if (
+        release["release_id"],
+        release["package_hash"],
+        snapshot["scope"]["operation"],
+    ) != (
+        attempt["release_id"],
+        attempt["package_hash"],
+        attempt["capability_id"],
+    ):
+        raise ValueError("Attempt release identity is not bound by the RunSnapshot")
 
 
 def _broker_context_identity(job_id: str, step_id: str, attempt_id: str) -> str:
@@ -360,6 +385,887 @@ class ExecutionAuthority:
                 "SELECT * FROM execution_job WHERE workspace_id=? AND request_key=?", (workspace_id, request_key)
             ).fetchone()
         return None if row is None else dict(row)
+
+    @staticmethod
+    def _production_start_row_matches(
+        row: sqlite3.Row,
+        *,
+        request_hash: str,
+        request_json: str,
+        workspace_id: str,
+        job_id: str,
+        request_key: str,
+        run_snapshot_asset_id: str,
+        run_snapshot_hash: str,
+        step_id: str,
+        attempt_id: str,
+        plugin_id: str,
+        generation_id: str,
+        release_id: str,
+        package_hash: str,
+        capability_id: str,
+        result_contract: str,
+        writer_epoch: int,
+    ) -> bool:
+        expected = (
+            request_hash,
+            request_json,
+            workspace_id,
+            job_id,
+            request_key,
+            run_snapshot_asset_id,
+            run_snapshot_hash,
+            step_id,
+            attempt_id,
+            plugin_id,
+            generation_id,
+            release_id,
+            package_hash,
+            capability_id,
+            result_contract,
+            writer_epoch,
+        )
+        actual = tuple(
+            row[name]
+            for name in (
+                "request_hash",
+                "request_json",
+                "workspace_id",
+                "job_id",
+                "request_key",
+                "run_snapshot_asset_id",
+                "run_snapshot_hash",
+                "step_id",
+                "attempt_id",
+                "plugin_id",
+                "generation_id",
+                "release_id",
+                "package_hash",
+                "capability_id",
+                "result_contract",
+                "writer_epoch",
+            )
+        )
+        return actual == expected
+
+    def get_production_start_receipt(
+        self, operation_key: str
+    ) -> Mapping[str, Any] | None:
+        """Read one WU-2B start receipt without treating it as Job authority."""
+
+        with self.repository.read_connection() as connection:
+            row = connection.execute(
+                "SELECT * FROM execution_job_start_receipt WHERE operation_key=?",
+                (operation_key,),
+            ).fetchone()
+        return None if row is None else dict(row)
+
+    def reserve_production_start(
+        self,
+        *,
+        request: Mapping[str, Any],
+        snapshot: Mapping[str, Any],
+        run_snapshot_asset_id: str,
+        step_id: str,
+        attempt_id: str,
+        plugin_id: str,
+        generation_id: str,
+        release_id: str,
+        package_hash: str,
+        capability_id: str,
+        result_contract: str,
+    ) -> Mapping[str, Any]:
+        """Reserve external-start intent before a process can be acquired.
+
+        The receipt is deliberately separate from the Job ledger.  It only
+        closes the crash window around process acquisition; Job, Step and
+        Attempt rows are still committed by the existing execution authority.
+        """
+
+        verify_snapshot(snapshot)
+        request_json = _json(request)
+        request_hash = sha256_hex(canonical_bytes(dict(request)))
+        operation_key = str(request["operation_key"])
+        workspace_id = str(request["workspace_id"])
+        job_id = str(request["job_id"])
+        writer_epoch = int(request["writer_epoch"])
+        request_key = str(snapshot["request_key"])
+        run_snapshot_hash = str(snapshot["snapshot_hash"])
+        now = utc_now()
+        identity = {
+            "request_hash": request_hash,
+            "request_json": request_json,
+            "workspace_id": workspace_id,
+            "job_id": job_id,
+            "request_key": request_key,
+            "run_snapshot_asset_id": run_snapshot_asset_id,
+            "run_snapshot_hash": run_snapshot_hash,
+            "step_id": step_id,
+            "attempt_id": attempt_id,
+            "plugin_id": plugin_id,
+            "generation_id": generation_id,
+            "release_id": release_id,
+            "package_hash": package_hash,
+            "capability_id": capability_id,
+            "result_contract": result_contract,
+            "writer_epoch": writer_epoch,
+        }
+        with self.repository.transaction() as connection:
+            row = connection.execute(
+                "SELECT * FROM execution_job_start_receipt WHERE operation_key=?",
+                (operation_key,),
+            ).fetchone()
+            if row is not None:
+                if not self._production_start_row_matches(row, **identity):
+                    raise ContractError(
+                        ErrorCode.DUPLICATE_REQUEST,
+                        "job.start operation key is bound to different content",
+                    )
+                return dict(row)
+            collision = connection.execute(
+                "SELECT operation_key FROM execution_job_start_receipt "
+                "WHERE workspace_id=? AND (job_id=? OR request_key=?)",
+                (workspace_id, job_id, request_key),
+            ).fetchone()
+            if collision is not None:
+                raise ContractError(
+                    ErrorCode.DUPLICATE_REQUEST,
+                    "Job or RunSnapshot request is already bound to another start operation",
+                )
+            workspace = connection.execute(
+                "SELECT 1 FROM workspace WHERE workspace_id=?", (workspace_id,)
+            ).fetchone()
+            if workspace is None:
+                raise ContractError(ErrorCode.INVALID_TRANSITION, "unknown Workspace")
+            connection.execute(
+                "INSERT INTO execution_job_start_receipt("
+                "operation_key,workspace_id,job_id,request_key,request_hash,request_json,"
+                "run_snapshot_asset_id,run_snapshot_hash,step_id,attempt_id,plugin_id,"
+                "generation_id,release_id,package_hash,capability_id,result_contract,"
+                "writer_epoch,worker_run_id,state,response_json,failure_reason,created_at,updated_at) "
+                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,'reserved',NULL,NULL,?,?)",
+                (
+                    operation_key,
+                    workspace_id,
+                    job_id,
+                    request_key,
+                    request_hash,
+                    request_json,
+                    run_snapshot_asset_id,
+                    run_snapshot_hash,
+                    step_id,
+                    attempt_id,
+                    plugin_id,
+                    generation_id,
+                    release_id,
+                    package_hash,
+                    capability_id,
+                    result_contract,
+                    writer_epoch,
+                    now,
+                    now,
+                ),
+            )
+            return dict(
+                connection.execute(
+                    "SELECT * FROM execution_job_start_receipt WHERE operation_key=?",
+                    (operation_key,),
+                ).fetchone()
+            )
+
+    def bind_production_start_worker(
+        self, *, operation_key: str, request_hash: str, worker_run_id: str
+    ) -> Mapping[str, Any]:
+        """Durably bind the acquired P2 lifecycle before Job allocation."""
+
+        now = utc_now()
+        with self.repository.transaction() as connection:
+            row = connection.execute(
+                "SELECT * FROM execution_job_start_receipt WHERE operation_key=?",
+                (operation_key,),
+            ).fetchone()
+            if row is None or row["request_hash"] != request_hash:
+                raise ContractError(
+                    ErrorCode.DUPLICATE_REQUEST, "job.start reservation is absent or drifted"
+                )
+            if row["state"] == "reserved":
+                connection.execute(
+                    "UPDATE execution_job_start_receipt SET worker_run_id=?,state='worker_acquired',"
+                    "updated_at=? WHERE operation_key=? AND state='reserved'",
+                    (worker_run_id, now, operation_key),
+                )
+            elif row["worker_run_id"] != worker_run_id:
+                raise ContractError(
+                    ErrorCode.UNCERTAIN_EXTERNAL_EFFECT,
+                    "job.start is already bound to another process lifecycle",
+                )
+            return dict(
+                connection.execute(
+                    "SELECT * FROM execution_job_start_receipt WHERE operation_key=?",
+                    (operation_key,),
+                ).fetchone()
+            )
+
+    def commit_production_start(
+        self,
+        *,
+        operation_key: str,
+        request_hash: str,
+        snapshot: Mapping[str, Any],
+    ) -> Mapping[str, Any]:
+        """Atomically commit the reserved Job, frozen plan and first Attempt."""
+
+        verify_snapshot(snapshot)
+        now = utc_now()
+        with self.repository.transaction() as connection:
+            receipt = connection.execute(
+                "SELECT * FROM execution_job_start_receipt WHERE operation_key=?",
+                (operation_key,),
+            ).fetchone()
+            if receipt is None or receipt["request_hash"] != request_hash:
+                raise ContractError(
+                    ErrorCode.DUPLICATE_REQUEST, "job.start reservation is absent or drifted"
+                )
+            if receipt["state"] in {"uncertain", "reconciled"}:
+                raise ContractError(
+                    ErrorCode.UNCERTAIN_EXTERNAL_EFFECT,
+                    "job.start outcome is uncertain and requires explicit recovery",
+                )
+            if receipt["state"] in {"attempt_committed", "completed"}:
+                row = connection.execute(
+                    "SELECT * FROM execution_attempt WHERE attempt_id=?",
+                    (receipt["attempt_id"],),
+                ).fetchone()
+                if row is None or row["worker_run_id"] != receipt["worker_run_id"]:
+                    raise ContractError(
+                        ErrorCode.ASSET_ERROR, "committed job.start Attempt closure is broken"
+                    )
+                return dict(row)
+            if receipt["state"] != "worker_acquired" or not receipt["worker_run_id"]:
+                raise ContractError(
+                    ErrorCode.INVALID_TRANSITION,
+                    "job.start must bind a process lifecycle before authority commit",
+                )
+            if (
+                snapshot["workspace_id"] != receipt["workspace_id"]
+                or snapshot["request_key"] != receipt["request_key"]
+                or snapshot["snapshot_hash"] != receipt["run_snapshot_hash"]
+                or int(receipt["writer_epoch"]) != 1
+            ):
+                raise ContractError(
+                    ErrorCode.RESULT_CONTRACT_MISMATCH,
+                    "job.start reservation no longer matches its RunSnapshot",
+                )
+            if connection.execute(
+                "SELECT 1 FROM execution_job WHERE job_id=? OR "
+                "(workspace_id=? AND request_key=?)",
+                (
+                    receipt["job_id"],
+                    receipt["workspace_id"],
+                    receipt["request_key"],
+                ),
+            ).fetchone() is not None:
+                raise ContractError(
+                    ErrorCode.ASSET_ERROR,
+                    "Job exists while its atomic start receipt is uncommitted",
+                )
+            connection.execute(
+                "INSERT INTO execution_job("
+                "job_id,workspace_id,request_key,run_intent_id,run_snapshot_hash,"
+                "run_snapshot_asset_id,run_snapshot_json,job_state,job_revision,"
+                "plan_frozen,output_step_id,created_at,updated_at) "
+                "VALUES(?,?,?,?,?,?,?,'running',2,1,?,?,?)",
+                (
+                    receipt["job_id"],
+                    receipt["workspace_id"],
+                    receipt["request_key"],
+                    snapshot["run_intent_id"],
+                    receipt["run_snapshot_hash"],
+                    receipt["run_snapshot_asset_id"],
+                    _json(snapshot),
+                    receipt["step_id"],
+                    now,
+                    now,
+                ),
+            )
+            connection.execute(
+                "INSERT INTO execution_step("
+                "step_id,job_id,state,revision,created_at,updated_at,active_attempt_id,"
+                "next_lease_epoch,step_ordinal,dependency_step_ids_json,"
+                "expected_result_contract,is_output) "
+                "VALUES(?,?,'running',1,?,?,?,2,1,'[]',?,1)",
+                (
+                    receipt["step_id"],
+                    receipt["job_id"],
+                    now,
+                    now,
+                    receipt["attempt_id"],
+                    receipt["result_contract"],
+                ),
+            )
+            connection.execute(
+                "INSERT INTO execution_attempt("
+                "attempt_id,job_id,step_id,state,lease_epoch,worker_run_id,plugin_id,"
+                "release_id,package_hash,capability_id,generation_id,"
+                "preallocated_receipt_id,revision,created_at,updated_at,ordinal,"
+                "owner_instance_id,lease_expires_at,expected_result_contract) "
+                "VALUES(?,?,?,'running',?,?,?,?,?,?,?,?,1,?,?,1,?,'9999-12-31T23:59:59Z',?)",
+                (
+                    receipt["attempt_id"],
+                    receipt["job_id"],
+                    receipt["step_id"],
+                    receipt["writer_epoch"],
+                    receipt["worker_run_id"],
+                    receipt["plugin_id"],
+                    receipt["release_id"],
+                    receipt["package_hash"],
+                    receipt["capability_id"],
+                    receipt["generation_id"],
+                    _id("receipt", str(receipt["attempt_id"])),
+                    now,
+                    now,
+                    receipt["worker_run_id"],
+                    receipt["result_contract"],
+                ),
+            )
+            updated = connection.execute(
+                "UPDATE execution_job_start_receipt SET state='attempt_committed',"
+                "updated_at=? WHERE operation_key=? AND state='worker_acquired'",
+                (now, operation_key),
+            )
+            if updated.rowcount != 1:
+                raise ContractError(
+                    ErrorCode.INVALID_TRANSITION, "job.start receipt commit CAS lost"
+                )
+            return dict(
+                connection.execute(
+                    "SELECT * FROM execution_attempt WHERE attempt_id=?",
+                    (receipt["attempt_id"],),
+                ).fetchone()
+            )
+
+    def complete_production_start(
+        self,
+        *,
+        operation_key: str,
+        request_hash: str,
+        response: Mapping[str, Any],
+    ) -> Mapping[str, Any]:
+        """Close a start receipt only after the exact Worker request is staged."""
+
+        response_json = _json(response)
+        now = utc_now()
+        with self.repository.transaction() as connection:
+            receipt = connection.execute(
+                "SELECT * FROM execution_job_start_receipt WHERE operation_key=?",
+                (operation_key,),
+            ).fetchone()
+            if receipt is None or receipt["request_hash"] != request_hash:
+                raise ContractError(
+                    ErrorCode.DUPLICATE_REQUEST, "job.start reservation is absent or drifted"
+                )
+            if receipt["state"] == "completed":
+                if receipt["response_json"] != response_json:
+                    raise ContractError(
+                        ErrorCode.DUPLICATE_REQUEST, "job.start response closure drifted"
+                    )
+                return dict(receipt)
+            if receipt["state"] != "attempt_committed":
+                raise ContractError(
+                    ErrorCode.UNCERTAIN_EXTERNAL_EFFECT,
+                    "job.start cannot be completed from its durable state",
+                )
+            attempt = connection.execute(
+                "SELECT a.job_id,a.step_id,a.worker_run_id,a.lease_epoch,a.state,"
+                "a.plugin_id,a.release_id,a.package_hash,a.capability_id,"
+                "a.generation_id,a.expected_result_contract,"
+                "s.state AS step_state,s.active_attempt_id,"
+                "s.expected_result_contract AS step_result_contract,"
+                "j.workspace_id,j.job_state,j.run_snapshot_asset_id,"
+                "j.run_snapshot_hash,j.job_revision,j.job_event_high_water "
+                "FROM execution_attempt a "
+                "JOIN execution_step s ON s.job_id=a.job_id AND s.step_id=a.step_id "
+                "JOIN execution_job j ON j.job_id=a.job_id WHERE a.attempt_id=?",
+                (receipt["attempt_id"],),
+            ).fetchone()
+            if (
+                attempt is None
+                or attempt["job_id"] != receipt["job_id"]
+                or attempt["step_id"] != receipt["step_id"]
+                or attempt["workspace_id"] != receipt["workspace_id"]
+                or attempt["run_snapshot_asset_id"]
+                != receipt["run_snapshot_asset_id"]
+                or attempt["run_snapshot_hash"] != receipt["run_snapshot_hash"]
+                or attempt["worker_run_id"] != receipt["worker_run_id"]
+                or int(attempt["lease_epoch"]) != int(receipt["writer_epoch"])
+                or attempt["plugin_id"] != receipt["plugin_id"]
+                or attempt["release_id"] != receipt["release_id"]
+                or attempt["package_hash"] != receipt["package_hash"]
+                or attempt["capability_id"] != receipt["capability_id"]
+                or attempt["generation_id"] != receipt["generation_id"]
+                or attempt["expected_result_contract"] != receipt["result_contract"]
+                or attempt["step_result_contract"] != receipt["result_contract"]
+                or attempt["state"] != "running"
+                or attempt["step_state"] != "running"
+                or attempt["active_attempt_id"] != receipt["attempt_id"]
+                or attempt["job_state"] != "running"
+            ):
+                raise ContractError(
+                    ErrorCode.ASSET_ERROR, "job.start Attempt closure drifted"
+                )
+            expected_response = {
+                "schema": "job-command-result/v2",
+                "operation_key": operation_key,
+                "workspace_id": str(attempt["workspace_id"]),
+                "job_id": str(attempt["job_id"]),
+                "command": "start",
+                "accepted": True,
+                "idempotent": False,
+                "terminal_known": False,
+                "state": "running",
+                "job_revision": int(attempt["job_revision"]),
+                "snapshot_cursor": (
+                    f"job/{attempt['job_id']}/{int(attempt['job_event_high_water'])}"
+                ),
+            }
+            if dict(response) != expected_response:
+                raise ContractError(
+                    ErrorCode.RESULT_CONTRACT_MISMATCH,
+                    "job.start public response is outside its committed authority",
+                )
+            connection.execute(
+                "UPDATE execution_job_start_receipt SET state='completed',"
+                "response_json=?,updated_at=? WHERE operation_key=? "
+                "AND state='attempt_committed'",
+                (response_json, now, operation_key),
+            )
+            return dict(
+                connection.execute(
+                    "SELECT * FROM execution_job_start_receipt WHERE operation_key=?",
+                    (operation_key,),
+                ).fetchone()
+            )
+
+    def mark_production_start_uncertain(
+        self, *, operation_key: str, reason: str
+    ) -> None:
+        """Persist fail-closed Option-A uncertainty without fabricating success."""
+
+        with self.repository.transaction() as connection:
+            connection.execute(
+                "UPDATE execution_job_start_receipt SET state='uncertain',"
+                "response_json=NULL,failure_reason=?,updated_at=? WHERE operation_key=? "
+                "AND state IN ('reserved','worker_acquired','attempt_committed')",
+                (reason[:1000], utc_now(), operation_key),
+            )
+
+    def pause_from_committed_checkpoint(
+        self,
+        *,
+        job_id: str,
+        step_id: str,
+        attempt_id: str,
+        lease_epoch: int,
+        operation_key: str,
+        worker_run_id: str,
+        reason: str,
+        checkpoint: Mapping[str, Any],
+        checkpoint_asset_id: str,
+        expected_job_revision: int | None = None,
+        store_public_response: bool = False,
+    ) -> Mapping[str, Any]:
+        """Pause against the exact already-committed checkpoint lineage.
+
+        ``SQLiteExecutionControlPort.pause`` atomically commits a newly
+        supplied checkpoint.  Production HTTP pause has no checkpoint body,
+        so it must instead select the latest durable checkpoint and reuse the
+        same accepted control/event authority without fabricating another
+        checkpoint or ledger.
+        """
+
+        value, asset_id, asset_hash = self.checkpoint_store._load_source(
+            checkpoint, checkpoint_asset_id=checkpoint_asset_id
+        )
+        request_values = {
+                "job_id": job_id,
+                "step_id": step_id,
+                "attempt_id": attempt_id,
+                "lease_epoch": lease_epoch,
+                "operation_key": operation_key,
+                "worker_run_id": worker_run_id,
+                "reason": reason,
+                "checkpoint": value,
+                "checkpoint_asset_id": asset_id,
+                "checkpoint_asset_hash": asset_hash,
+                "prompt_asset_id": None,
+                "prompt_asset_hash": None,
+            }
+        if expected_job_revision is not None:
+            if (
+                isinstance(expected_job_revision, bool)
+                or not isinstance(expected_job_revision, int)
+                or expected_job_revision < 1
+            ):
+                raise ContractValidationError(
+                    "expected_job_revision must be a positive integer"
+                )
+            request_values["expected_job_revision"] = expected_job_revision
+        request = self.control_port._request("pause", request_values)
+        request_json = _json(request)
+        payload_hash = sha256_hex(canonical_bytes(request))
+        now = utc_now()
+        with self.repository.transaction() as connection:
+            replay = self.control_port._existing(
+                connection,
+                job_id,
+                operation_key,
+                "pause",
+                payload_hash,
+                request_json,
+            )
+            if replay is not None:
+                return dict(replay.result)
+            job, step, attempt = self.control_port._caller(
+                connection,
+                job_id=job_id,
+                step_id=step_id,
+                attempt_id=attempt_id,
+                lease_epoch=lease_epoch,
+                worker_run_id=worker_run_id,
+                now=now,
+            )
+            if (
+                expected_job_revision is not None
+                and int(job["job_revision"]) != expected_job_revision
+            ):
+                raise ContractError(
+                    ErrorCode.STALE_LEASE, "expected Job revision CAS failed"
+                )
+            latest = self.checkpoint_store._latest_row(
+                connection, job_id, step_id
+            )
+            if latest is None:
+                raise ContractError(
+                    ErrorCode.CHECKPOINT_INVALID,
+                    "pause requires a committed checkpoint",
+                )
+            durable = self.checkpoint_store._decode_row(connection, latest)
+            if (
+                dict(durable.checkpoint) != dict(value)
+                or value["source_attempt_id"] != attempt_id
+                or int(value["lease_epoch"]) != lease_epoch
+            ):
+                raise ContractError(
+                    ErrorCode.CHECKPOINT_INVALID,
+                    "pause checkpoint is outside the active Attempt lineage",
+                )
+            event_row = connection.execute(
+                "SELECT event_json FROM execution_job_event "
+                "WHERE job_id=? AND job_event_seq=?",
+                (job_id, int(latest["job_event_seq"])),
+            ).fetchone()
+            event = None if event_row is None else _load(str(event_row["event_json"]))
+            if event is None or (
+                event.get("payload_asset_id") != asset_id
+                or event.get("payload_hash") != asset_hash
+            ):
+                raise ContractError(
+                    ErrorCode.ASSET_ERROR,
+                    "pause checkpoint Asset closure drifted",
+                )
+            if (
+                attempt["state"] != "running"
+                or step["state"] != "running"
+                or job["job_state"] != "running"
+            ):
+                raise ContractError(
+                    ErrorCode.INVALID_TRANSITION,
+                    "pause race lost to an earlier state decision",
+                )
+            if not (
+                can_transition(ATTEMPT_EDGES, "running", "suspended")
+                and can_transition(STEP_EDGES, "running", "paused")
+                and can_transition(JOB_EDGES, "running", "paused")
+            ):
+                raise ContractError(
+                    ErrorCode.INVALID_TRANSITION, "invalid pause transition"
+                )
+            updated_attempt = connection.execute(
+                "UPDATE execution_attempt SET state='suspended',"
+                "revision=revision+1,updated_at=? WHERE attempt_id=? "
+                "AND state='running' AND lease_epoch=? AND worker_run_id=?",
+                (now, attempt_id, lease_epoch, worker_run_id),
+            )
+            updated_step = connection.execute(
+                "UPDATE execution_step SET state='paused',revision=revision+1,"
+                "updated_at=? WHERE job_id=? AND step_id=? AND state='running' "
+                "AND active_attempt_id=?",
+                (now, job_id, step_id, attempt_id),
+            )
+            if updated_attempt.rowcount != 1 or updated_step.rowcount != 1:
+                raise ContractError(
+                    ErrorCode.INVALID_TRANSITION, "pause compare-and-swap lost"
+                )
+            control_event = self.control_port._append_event(
+                connection,
+                job=job,
+                step_id=step_id,
+                attempt=attempt,
+                operation="pause",
+                operation_key=operation_key,
+                now=now,
+                payload_asset_id=asset_id,
+                payload_hash=asset_hash,
+            )
+            core_event = self.control_port._append_state_core_event(
+                connection,
+                job=job,
+                attempt=attempt,
+                operation_key=operation_key,
+                now=now,
+                payload_asset_id=asset_id,
+                payload_hash=asset_hash,
+            )
+            self.control_port._commit_job_state(
+                connection,
+                job=job,
+                target_state="paused",
+                core_event=core_event,
+                now=now,
+            )
+            result = {"accepted": True, "checkpoint_asset_id": asset_id}
+            validate_rpc_result("job.pause", result)
+            decision = self.control_port._store_operation(
+                connection,
+                job_id=job_id,
+                operation_key=operation_key,
+                operation="pause",
+                payload_hash=payload_hash,
+                attempt_id=attempt_id,
+                lease_epoch=lease_epoch,
+                request_json=request_json,
+                result=result,
+                now=now,
+                store_public_response=store_public_response,
+            )
+            if int(control_event["job_event_seq"]) <= int(
+                latest["job_event_seq"]
+            ):
+                raise ContractError(
+                    ErrorCode.ASSET_ERROR,
+                    "pause control Event did not follow its checkpoint",
+                )
+            return dict(decision.result)
+
+    def mark_production_attempt_needs_attention(
+        self, *, attempt_id: str, worker_run_id: str, reason: str
+    ) -> bool:
+        """Fence one failed transport binding without touching another Attempt."""
+
+        del reason  # The durable state is the recovery signal; no new log is invented.
+        now = utc_now()
+        with self.repository.transaction() as connection:
+            row = connection.execute(
+                "SELECT a.job_id,a.step_id,a.state,a.worker_run_id,s.active_attempt_id,"
+                "s.state AS step_state,j.job_state FROM execution_attempt a "
+                "JOIN execution_step s ON s.job_id=a.job_id AND s.step_id=a.step_id "
+                "JOIN execution_job j ON j.job_id=a.job_id WHERE a.attempt_id=?",
+                (attempt_id,),
+            ).fetchone()
+            if row is None or row["worker_run_id"] != worker_run_id:
+                return False
+            if row["state"] in {"running", "cancelling"}:
+                connection.execute(
+                    "UPDATE execution_attempt SET state='fenced',revision=revision+1,"
+                    "updated_at=? WHERE attempt_id=? AND worker_run_id=? "
+                    "AND state IN ('running','cancelling')",
+                    (now, attempt_id, worker_run_id),
+                )
+            if row["active_attempt_id"] == attempt_id and row["step_state"] in {
+                "running",
+                "paused",
+                "waiting_user",
+            }:
+                connection.execute(
+                    "UPDATE execution_step SET state='needs_attention',"
+                    "revision=revision+1,updated_at=? WHERE step_id=? "
+                    "AND state<>'needs_attention'",
+                    (now, row["step_id"]),
+                )
+            if row["job_state"] in {
+                "running",
+                "paused",
+                "waiting_user",
+                "cancelling",
+            }:
+                connection.execute(
+                    "UPDATE execution_job SET job_state='needs_attention',"
+                    "job_revision=job_revision+1,updated_at=? WHERE job_id=? "
+                    "AND job_state<>'needs_attention'",
+                    (now, row["job_id"]),
+                )
+            return True
+
+    def reconcile_production_restart(self) -> Mapping[str, int]:
+        """Fence process-owned Attempts and unresolved starts after host restart."""
+
+        now = utc_now()
+        receipts = 0
+        attempts = 0
+        jobs: set[str] = set()
+        with self.repository.transaction() as connection:
+            receipts = connection.execute(
+                "UPDATE execution_job_start_receipt SET state='uncertain',"
+                "response_json=NULL,failure_reason=COALESCE(failure_reason,?),updated_at=? "
+                "WHERE state IN ('reserved','worker_acquired','attempt_committed')",
+                ("host restart before start outcome closure", now),
+            ).rowcount
+            rows = connection.execute(
+                "SELECT a.attempt_id,a.job_id,a.step_id,a.state,s.state AS step_state,"
+                "s.active_attempt_id,j.job_state FROM execution_attempt a "
+                "JOIN execution_step s ON s.job_id=a.job_id AND s.step_id=a.step_id "
+                "JOIN execution_job j ON j.job_id=a.job_id "
+                "WHERE a.worker_run_id IS NOT NULL AND ("
+                "a.state IN ('running','cancelling') OR (a.state='fenced' AND ("
+                "(s.active_attempt_id=a.attempt_id AND "
+                "s.state IN ('running','paused','waiting_user')) OR "
+                "j.job_state IN ('running','paused','waiting_user','cancelling'))))"
+            ).fetchall()
+            for row in rows:
+                if row["state"] in {"running", "cancelling"}:
+                    changed = connection.execute(
+                        "UPDATE execution_attempt SET state='fenced',revision=revision+1,"
+                        "updated_at=? WHERE attempt_id=? AND state IN ('running','cancelling')",
+                        (now, row["attempt_id"]),
+                    ).rowcount
+                    if changed != 1:
+                        continue
+                    attempts += 1
+                if row["active_attempt_id"] == row["attempt_id"] and row[
+                    "step_state"
+                ] in {"running", "paused", "waiting_user"}:
+                    connection.execute(
+                        "UPDATE execution_step SET state='needs_attention',"
+                        "revision=revision+1,updated_at=? WHERE step_id=? "
+                        "AND state<>'needs_attention'",
+                        (now, row["step_id"]),
+                    )
+                if row["job_state"] in {
+                    "running",
+                    "paused",
+                    "waiting_user",
+                    "cancelling",
+                }:
+                    jobs.add(str(row["job_id"]))
+            for job_id in jobs:
+                connection.execute(
+                    "UPDATE execution_job SET job_state='needs_attention',"
+                    "job_revision=job_revision+1,updated_at=? WHERE job_id=? "
+                    "AND job_state IN ('running','paused','waiting_user','cancelling')",
+                    (now, job_id),
+                )
+        return {"receipts": receipts, "attempts": attempts, "jobs": len(jobs)}
+
+    def read_receipt(self, receipt_id: str) -> Mapping[str, Any]:
+        """Broker receipt port over the existing execution receipt authority."""
+
+        with self.repository.read_connection() as connection:
+            row = connection.execute(
+                "SELECT receipt_json FROM execution_receipt WHERE receipt_id=?",
+                (receipt_id,),
+            ).fetchone()
+        if row is None:
+            raise KeyError(receipt_id)
+        return _load(str(row["receipt_json"]))
+
+    def poll(self, child_job_id: str, after_event_seq: int) -> Mapping[str, Any]:
+        """Broker execution projection from the existing Job/Event authority."""
+
+        if isinstance(after_event_seq, bool) or not isinstance(after_event_seq, int) or after_event_seq < 0:
+            raise ContractValidationError("after_event_seq must be non-negative")
+        from ..events import JobEventStore, JobSnapshotStore
+        from ..events.snapshots import JobEventPageStore
+        from ..events.store import pinned_read_transaction
+
+        snapshots = JobSnapshotStore(
+            self.repository, self.assets, self.checkpoint_store
+        )
+        pages = JobEventPageStore(JobEventStore(self.repository), self.assets)
+        with pinned_read_transaction(self.repository) as connection:
+            row = connection.execute(
+                "SELECT workspace_id,job_state,result_bundle_asset_id,"
+                "provenance_receipt_id,job_event_high_water FROM execution_job "
+                "WHERE job_id=?",
+                (child_job_id,),
+            ).fetchone()
+            if row is None:
+                raise KeyError(child_job_id)
+            snapshot = snapshots.capture(
+                child_job_id,
+                int(row["job_event_high_water"]),
+                connection=connection,
+            )
+            page = pages.capture(
+                child_job_id, after_event_seq, connection=connection
+            )
+        return {
+            "job_snapshot_asset_id": snapshot.asset_id,
+            "job_event_page_asset_id": page.asset_id,
+            "next_job_event_seq": page.next_job_event_seq,
+            "terminal": row["job_state"] in TERMINAL_STATES,
+            "result_bundle_asset_id": row["result_bundle_asset_id"],
+            "provenance_receipt_id": row["provenance_receipt_id"],
+            "child_state": row["job_state"],
+        }
+
+    def cancel(self, operation_key: str, child_job_id: str) -> Mapping[str, Any]:
+        """Broker cancellation through the existing durable control port."""
+
+        with self.repository.read_connection() as connection:
+            row = connection.execute(
+                "SELECT j.job_state,j.job_event_high_water,s.step_id,s.active_attempt_id,"
+                "a.attempt_id,a.lease_epoch,a.worker_run_id,a.state AS attempt_state "
+                "FROM execution_job j JOIN execution_step s ON s.job_id=j.job_id "
+                "LEFT JOIN execution_attempt a ON a.attempt_id=s.active_attempt_id "
+                "WHERE j.job_id=? ORDER BY s.step_ordinal,s.step_id LIMIT 1",
+                (child_job_id,),
+            ).fetchone()
+        if row is None:
+            raise KeyError(child_job_id)
+        if row["job_state"] in TERMINAL_STATES:
+            return {
+                "accepted": True,
+                "terminal_known": True,
+                "child_state": row["job_state"],
+                "child_job_event_seq": int(row["job_event_high_water"]),
+            }
+        if row["attempt_id"] is None or row["worker_run_id"] is None:
+            raise ContractError(
+                ErrorCode.INVALID_TRANSITION,
+                "queued child cancellation requires an active durable Attempt",
+            )
+        decision = self.control_port.cancel(
+            job_id=child_job_id,
+            step_id=str(row["step_id"]),
+            attempt_id=str(row["attempt_id"]),
+            lease_epoch=int(row["lease_epoch"]),
+            operation_key=operation_key,
+            worker_run_id=str(row["worker_run_id"]),
+            reason="parent_cancelled",
+        )
+        with self.repository.read_connection() as connection:
+            current = connection.execute(
+                "SELECT job_state,job_event_high_water FROM execution_job WHERE job_id=?",
+                (child_job_id,),
+            ).fetchone()
+        if current is None:
+            raise ContractError(ErrorCode.ASSET_ERROR, "cancelled child disappeared")
+        return {
+            "accepted": bool(decision.accepted),
+            "terminal_known": current["job_state"] in TERMINAL_STATES,
+            "child_state": current["job_state"],
+            "child_job_event_seq": int(current["job_event_high_water"]),
+        }
 
     def freeze_plan(self, job_id: str, steps: list[Mapping[str, Any]], *, output_step_id: str) -> None:
         """Freeze the internal Step DAG before workers are acquired.
@@ -1343,7 +2249,7 @@ class ExecutionAuthority:
             if snapshot["snapshot_hash"] != attempt["run_snapshot_hash"]:
                 raise ContractError(ErrorCode.ASSET_ERROR, "committed RunSnapshot authority drifted")
             try:
-                verify_attempt_snapshot_binding(snapshot, attempt)
+                _verify_snapshot_release_binding(snapshot, attempt)
             except Exception as exc:
                 raise ContractError(
                     ErrorCode.INCOMPATIBLE_GENERATION,
@@ -1351,9 +2257,24 @@ class ExecutionAuthority:
                 ) from exc
             if attempt["run_snapshot_asset_id"] is not None:
                 try:
-                    self.assets.require(attempt["run_snapshot_asset_id"], sha256=attempt["run_snapshot_hash"])
+                    self.assets.require(
+                        attempt["run_snapshot_asset_id"], mime="application/json"
+                    )
+                    snapshot_bytes = self.assets.read(
+                        attempt["run_snapshot_asset_id"]
+                    )
+                    snapshot_value = parse_json_bytes(snapshot_bytes)
+                    if (
+                        not isinstance(snapshot_value, Mapping)
+                        or dict(snapshot_value) != dict(snapshot)
+                        or snapshot_bytes != canonical_bytes(snapshot)
+                    ):
+                        raise ContractValidationError("RunSnapshot row/Asset drift")
                 except Exception as exc:
-                    raise ContractError(ErrorCode.ASSET_ERROR, "committed RunSnapshot Asset is missing") from exc
+                    raise ContractError(
+                        ErrorCode.ASSET_ERROR,
+                        "committed RunSnapshot Asset is missing or corrupt",
+                    ) from exc
             return snapshot
 
         if snapshot.get("schema") != "broker-child-snapshot-binding/v1":

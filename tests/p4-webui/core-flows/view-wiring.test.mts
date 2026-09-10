@@ -4,6 +4,7 @@ import test from 'node:test'
 
 const home = readFileSync(new URL('../../../frontend/src/views/Home.vue', import.meta.url), 'utf8')
 const workbench = readFileSync(new URL('../../../frontend/src/views/Workbench.vue', import.meta.url), 'utf8')
+const chapterList = readFileSync(new URL('../../../frontend/src/core/flows/CoreChapterList.vue', import.meta.url), 'utf8')
 const runtime = readFileSync(new URL('../../../frontend/src/core/flows/runtime.ts', import.meta.url), 'utf8')
 
 test('Home is wired to Core flows without a wizard or legacy project authority', () => {
@@ -23,6 +24,18 @@ test('Workbench keeps the three-pane split while using document identity for ope
   assert.equal((workbench.match(/<n-split/g) ?? []).length, 2)
   assert.match(workbench, /<CoreChapterList/)
   assert.match(workbench, /<CoreChapterEditor/)
+  assert.match(workbench, /@create="handleChapterCreate"/)
+  assert.match(workbench, /:busy="pageLoading \|\| chapterLoading \|\| chapterSaving \|\| chapterCreating"/)
+  assert.match(workbench, /const title = `第 \$\{chapters\.value\.length \+ 1\} 章`/)
+  assert.match(workbench, /createCoreChapterRecovery\(\)/)
+  assert.match(workbench, /chapterCreateRecovery\.run\(workspaceId, title/)
+  assert.match(workbench, /requireCoreFlowRuntime\(\)\.createChapter\(targetWorkspaceId, targetTitle\)/)
+  assert.match(workbench, /const title = [^\n]+\n  chapterDeskReload\.cancel\(\)\n  chapterCreating\.value = true/)
+  assert.match(workbench, /const created = await requireCoreFlowRuntime\(\)\.createChapter\(targetWorkspaceId, targetTitle\)\n        chapterDeskReload\.cancel\(\)\n        return created/)
+  assert.match(workbench, /chapterCreateRecovery\.hasCommittedChapter\(workspaceId\)/)
+  assert.equal((workbench.match(/chapterCreateRecovery\.canRunOrdinaryReload\(token\.scope\)/g) ?? []).length, 2)
+  assert.match(workbench, /parseChapterQuery\(route\.query\.chapter\) !== targetDocumentId/)
+  assert.match(workbench, /let createSequence = 0/)
   assert.match(workbench, /currentDocumentId/)
   assert.match(workbench, /route\.query\.chapter !== documentId/)
   assert.match(workbench, /requireCoreFlowRuntime\(\)\.saveChapter/)
@@ -33,6 +46,13 @@ test('Workbench keeps the three-pane split while using document identity for ope
   assert.match(workbench, /requestSequence !== saveSequence/)
   assert.match(workbench, /requestSequence !== deskSequence/)
   assert.doesNotMatch(workbench, /useWorkbench|novelApi|chapterApi|<WorkArea|<ChapterList|<StatsTopBar|<SettingsPanel/)
+})
+
+test('CoreChapterList exposes a clear creation action without introducing a wizard', () => {
+  assert.match(chapterList, />新建章节<\/n-button>/)
+  assert.match(chapterList, /\$emit\('create'\)/)
+  assert.match(chapterList, /create: \[\]/)
+  assert.doesNotMatch(chapterList, /wizard|Guide/i)
 })
 
 test('runtime composition has no default fake, legacy fallback, or implicit HTTP mount', () => {

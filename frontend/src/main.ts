@@ -11,6 +11,8 @@ import './assets/styles/tokens-layout.css'
 
 // Tauri API 初始化（动态端口、环境检测）
 import { initApiClient } from './api/config'
+import { installCoreFlowRuntimeComposition } from './core/flows/composition.ts'
+import { installProductionFeatureRuntimeComposition } from './core/workbench/productionComposition.ts'
 import { installGlobalFeedbackIncidentCapture } from './support/feedbackGlobalInstall'
 
 async function bootstrap() {
@@ -27,6 +29,9 @@ async function bootstrap() {
   } catch (err) {
     console.warn('[Init] API 客户端初始化失败（可稍后重试）:', err)
   }
+
+  installCoreFlowRuntimeComposition()
+  installProductionFeatureRuntimeComposition(app)
 
   app.mount('#app')
 }

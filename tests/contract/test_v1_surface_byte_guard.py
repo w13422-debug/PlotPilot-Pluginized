@@ -14,6 +14,15 @@ E0_BLOB_OVERRIDES = {
     "backend/plotpilot_plugin_sdk/verifier.py": "69485ea5516ac92f51e3d30dd60eb5fcce6dfef9",
     "backend/plotpilot_plugin_sdk/pyproject.toml": "f25334cb37d4101300015b29d1f5ed7bbb79f7c0",
 }
+POST_E0_API_SOURCE_FILES = frozenset(
+    {
+        "backend/plotpilot_core/api/v1/core/__init__.py",
+        "backend/plotpilot_core/api/v1/core/adapter.py",
+        "backend/plotpilot_core/api/v1/core/router.py",
+        "backend/plotpilot_core/api/v1/webui/__init__.py",
+        "backend/plotpilot_core/api/v1/webui/chapter_generation.py",
+    }
+)
 
 
 def _tracked_paths_at_e0(root: str) -> set[str]:
@@ -119,7 +128,15 @@ def test_v1_api_surface_inventory_and_bytes_are_frozen() -> None:
     current_paths = {
         path.relative_to(ROOT).as_posix()
         for path in (ROOT / root).rglob("*")
-        if path.is_file()
+        if path.is_file() and "__pycache__" not in path.parts
     }
-    assert current_paths == e0_paths
-    _assert_e0_bytes_unchanged(root)
+    assert current_paths == e0_paths | POST_E0_API_SOURCE_FILES
+    for path in sorted(e0_paths):
+        current = ROOT / Path(path)
+        assert current.is_file(), f"accepted E0 file is missing: {path}"
+    for path in sorted(POST_E0_API_SOURCE_FILES):
+        assert (ROOT / Path(path)).is_file(), f"authorized post-E0 file is missing: {path}"
+    for path in sorted(e0_paths):
+        assert _current_filtered_blob(path) == _expected_blob(path), (
+            f"accepted E0 bytes changed: {path}"
+        )

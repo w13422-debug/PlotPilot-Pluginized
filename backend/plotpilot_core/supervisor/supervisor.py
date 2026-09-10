@@ -151,6 +151,12 @@ class PluginProcessSupervisor:
         self._worker_locks: dict[str, threading.Lock] = {}
         self._pending_retry_lock = threading.Lock()
         self._lock = threading.RLock()
+        self._acquire_condition = threading.Condition(self._lock)
+        self._active_acquires = 0
+        self._accepting = True
+        self._callbacks_enabled = True
+        self._shutdown_lock = threading.Lock()
+        self._shutdown_complete = False
 
     def _deadline(self, seconds: float) -> str:
         value = self._utc_now() + timedelta(seconds=seconds)
@@ -416,6 +422,27 @@ class PluginProcessSupervisor:
     def acquire(
         self, worker_id: str, *, expected_release_id: str | None = None
     ) -> WorkerTicket:
+        """Admit an acquire only while the supervisor owns live ingress."""
+
+        with self._acquire_condition:
+            if not self._accepting:
+                raise ContractError(
+                    ErrorCode.INVALID_TRANSITION,
+                    "plugin process supervisor is shut down",
+                )
+            self._active_acquires += 1
+        try:
+            return self._acquire_open(
+                worker_id, expected_release_id=expected_release_id
+            )
+        finally:
+            with self._acquire_condition:
+                self._active_acquires -= 1
+                self._acquire_condition.notify_all()
+
+    def _acquire_open(
+        self, worker_id: str, *, expected_release_id: str | None = None
+    ) -> WorkerTicket:
         """Lazy-start or retain the exact worker currently authorized by Core."""
 
         if expected_release_id is not None and (
@@ -632,6 +659,8 @@ class PluginProcessSupervisor:
     def _on_stdout(self, worker_id: str, lifecycle_id: str, data: bytes) -> None:
         key = self._key(worker_id, lifecycle_id)
         with self._lock:
+            if not self._callbacks_enabled:
+                return
             record = self._records.get(key)
             if record is None or record.state not in _PROTOCOL_STATES:
                 return
@@ -716,6 +745,8 @@ class PluginProcessSupervisor:
 
     def _on_stderr(self, worker_id: str, lifecycle_id: str, data: bytes) -> None:
         with self._lock:
+            if not self._callbacks_enabled:
+                return
             record = self._record_locked(worker_id, lifecycle_id)
             if record is None:
                 return
@@ -727,6 +758,9 @@ class PluginProcessSupervisor:
     def _on_transport_error(
         self, worker_id: str, lifecycle_id: str, error: str
     ) -> None:
+        with self._lock:
+            if not self._callbacks_enabled:
+                return
         self._begin_termination(
             self._key(worker_id, lifecycle_id),
             WorkerState.FAILED,
@@ -737,6 +771,8 @@ class PluginProcessSupervisor:
     def _on_exit(self, worker_id: str, lifecycle_id: str, code: int) -> None:
         key = self._key(worker_id, lifecycle_id)
         with self._lock:
+            if not self._callbacks_enabled:
+                return
             record = self._records.get(key)
         if record is None:
             return
@@ -921,13 +957,22 @@ class PluginProcessSupervisor:
                 ErrorCode.STALE_LEASE, "Attempt unbind belongs to an old worker"
             )
         held = self._authority.holds_attempt(record.fence, fence, record.lifecycle_id)
+        closed_attempt = getattr(self._authority, "closed_attempt", None)
+        durable_closed = bool(
+            callable(closed_attempt)
+            and closed_attempt(record.fence, fence, record.lifecycle_id)
+        )
         with record.rpc_lock, self._lock:
             terminal_commit = record.session.has_terminal_attempt_commit(fence)
             if (
                 record.state not in {WorkerState.READY, WorkerState.TERMINATING}
                 or not self._is_current_locked(record)
-                or (not held and not terminal_commit)
-                or (record.state == WorkerState.TERMINATING and not terminal_commit)
+                or (not held and not terminal_commit and not durable_closed)
+                or (
+                    record.state == WorkerState.TERMINATING
+                    and not terminal_commit
+                    and not durable_closed
+                )
             ):
                 raise ContractError(
                     ErrorCode.STALE_LEASE, "Attempt unbind raced worker termination"
@@ -1115,6 +1160,9 @@ class PluginProcessSupervisor:
     def tick(self) -> None:
         """Run watchdog/idle transitions without changing Core authority."""
 
+        with self._lock:
+            if self._shutdown_complete:
+                return
         self._retry_pending_releases()
         now = self._clock.monotonic()
         with self._lock:
@@ -1482,6 +1530,9 @@ class PluginProcessSupervisor:
         self, record: _Record, request_id: str, frame: bytes
     ) -> None:
         process: ManagedProcess | None = None
+        with self._lock:
+            if not self._callbacks_enabled:
+                return
         with record.rpc_lock:
             record.session.mark_host_response_written(request_id, frame)
             with self._lock:
@@ -1504,6 +1555,109 @@ class PluginProcessSupervisor:
                     )
                     if current is record:
                         record.failure = f"{record.failure or 'termination'}; terminate failed: {exc}"
+
+    def shutdown(self) -> None:
+        """Fence every local lifecycle and release each durable claim once.
+
+        New acquires are stopped before in-flight acquires are drained.  Exit
+        callbacks remain enabled only until every known claim is released;
+        late callbacks after closure therefore cannot mutate supervisor state.
+        """
+
+        with self._shutdown_lock:
+            if self._shutdown_complete:
+                return
+            wait_deadline = time.monotonic() + self._config.shutdown_timeout
+            with self._acquire_condition:
+                self._accepting = False
+                while self._active_acquires:
+                    remaining = wait_deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise ContractError(
+                            ErrorCode.INVALID_TRANSITION,
+                            "supervisor shutdown timed out waiting for acquire",
+                        )
+                    self._acquire_condition.wait(timeout=remaining)
+
+            with self._lock:
+                keys = tuple(self._records)
+                for record in self._records.values():
+                    record.retains.clear()
+            for key in keys:
+                with self._lock:
+                    record = self._records.get(key)
+                if record is None:
+                    continue
+                reconcile = False
+                attempt = record.attempt_fence
+                if attempt is not None:
+                    try:
+                        reconcile = self._authority.holds_attempt(
+                            record.fence, attempt, record.lifecycle_id
+                        )
+                    except Exception:  # noqa: BLE001 -- fail closed at authority boundary
+                        reconcile = True
+                self._begin_termination(
+                    key,
+                    WorkerState.FENCED if attempt is not None else WorkerState.STOPPED,
+                    "supervisor shutdown",
+                    reconcile_attempt=reconcile,
+                )
+
+            kill_at = time.monotonic() + self._config.shutdown_timeout
+            final_deadline = kill_at + self._config.termination_timeout
+            killed: set[tuple[str, str]] = set()
+            while True:
+                self._retry_pending_releases()
+                with self._lock:
+                    snapshot = tuple(self._records.items())
+                    pending = bool(self._pending_releases)
+                for key, record in snapshot:
+                    if record.exit_code is None:
+                        try:
+                            code = record.process.poll()
+                        except Exception:  # noqa: BLE001 -- failed observation is not exit proof
+                            code = None
+                        if code is not None:
+                            self._on_exit(
+                                record.fence.worker_id, record.lifecycle_id, code
+                            )
+                    else:
+                        self._reconcile_and_release(key)
+                with self._lock:
+                    unreleased = tuple(
+                        (key, record)
+                        for key, record in self._records.items()
+                        if not record.claim_released
+                    )
+                    pending = pending or bool(self._pending_releases)
+                if not unreleased and not pending:
+                    break
+                now = time.monotonic()
+                if now >= kill_at:
+                    for key, record in unreleased:
+                        if key in killed:
+                            continue
+                        killed.add(key)
+                        try:
+                            record.process.kill()
+                        except Exception:  # noqa: BLE001, S110 -- exit proof remains required
+                            pass
+                if now >= final_deadline:
+                    raise ContractError(
+                        ErrorCode.INVALID_TRANSITION,
+                        "supervisor shutdown could not confirm process exit and claim release",
+                    )
+                time.sleep(0.005)
+
+            with self._lock:
+                self._callbacks_enabled = False
+                self._records.clear()
+                self._current.clear()
+                self._pending_releases.clear()
+                self._shutdown_complete = True
+
+    close = shutdown
 
     def status(self, worker_id: str) -> WorkerStatus | None:
         with self._lock:

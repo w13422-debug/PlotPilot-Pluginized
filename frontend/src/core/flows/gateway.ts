@@ -7,6 +7,7 @@ import type {
   CoreAuthorityCommandQuery,
   CoreDeleteResult,
   CoreDocument,
+  CoreDocumentCreateCommand,
   CoreDocumentGetQuery,
   CoreDocumentPage,
   CoreDocumentQuery,
@@ -31,6 +32,7 @@ export interface CoreFlowRouteMap {
   'workspace.create': { request: CoreWorkspaceCreateCommand; response: CoreWorkspace }
   'workspace.delete': { request: CoreWorkspaceDeleteCommand; response: CoreDeleteResult }
   'document.list': { request: CoreDocumentQuery; response: CoreDocumentPage }
+  'document.create': { request: CoreDocumentCreateCommand; response: CoreDocument }
   'document.get': { request: CoreDocumentGetQuery; response: CoreDocument }
   'revision.get': { request: CoreRevisionGetQuery; response: CoreRevision }
   'revision.content': { request: CoreContentQuery; response: CoreRevisionContentPage }

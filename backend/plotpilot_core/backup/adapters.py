@@ -66,11 +66,62 @@ class WorkspaceProjectionError(CoreSnapshotAdapterError):
     """The frozen Core database cannot be safely scoped to one workspace."""
 
 
+_JOB_START_RECEIPT_REQUEST_BINDINGS = (
+    "operation_key",
+    "workspace_id",
+    "job_id",
+    "capability_id",
+    "run_snapshot_asset_id",
+    "writer_epoch",
+)
+
+
+def _validate_job_start_receipt_request(row: Mapping[str, object]) -> None:
+    raw = row.get("request_json")
+    if not isinstance(raw, str):
+        raise WorkspaceProjectionError(
+            "execution job start receipt request_json must be text"
+        )
+    try:
+        request = parse_json_bytes(raw.encode("utf-8"))
+    except Exception as exc:
+        raise WorkspaceProjectionError(
+            "execution job start receipt request_json is invalid"
+        ) from exc
+    if not isinstance(request, dict) or request.get("schema") != "job-start-command/v2":
+        raise WorkspaceProjectionError(
+            "execution job start receipt request contract is invalid"
+        )
+    try:
+        assert_valid("job-http-command-query-v2", request)
+        canonical_request = canonical_bytes(request)
+    except Exception as exc:
+        raise WorkspaceProjectionError(
+            "execution job start receipt request contract is invalid"
+        ) from exc
+    if raw.encode("utf-8") != canonical_request:
+        raise WorkspaceProjectionError(
+            "execution job start receipt request_json is not canonical"
+        )
+    if hashlib.sha256(canonical_request).hexdigest() != row.get("request_hash"):
+        raise WorkspaceProjectionError(
+            "execution job start receipt request hash drifted"
+        )
+    if any(
+        request.get(field) != row.get(field)
+        for field in _JOB_START_RECEIPT_REQUEST_BINDINGS
+    ):
+        raise WorkspaceProjectionError(
+            "execution job start receipt request authority drifted"
+        )
+
+
 _CORE_TABLE_ORDER = (
     "schema_migration",
     "workspace",
     "execution_orchestration_owner",
     "document",
+    "chapter_generation_writer_fence",
     "node",
     "revision",
     "relation",
@@ -80,9 +131,18 @@ _CORE_TABLE_ORDER = (
     "chapter_candidate_authority",
     "chapter_writer_fence",
     "publication_receipt",
+    "p2_plugin_generation",
+    "p2_plugin_generation_pointer",
+    "p2_plugin_install_attempt",
+    "p2_plugin_release_retirement",
+    "p2_plugin_retirement_attention",
+    "p2_plugin_release_pin",
+    "p2_plugin_shadow_generation",
+    "plugin_supervisor_claim",
     "execution_job",
     "execution_step",
     "execution_attempt",
+    "execution_job_start_receipt",
     "execution_receipt",
     "execution_job_event",
     "execution_core_event",
@@ -245,6 +305,12 @@ class SqliteWorkspaceDatabaseProjector:
                 where='"workspace_id"=?',
                 parameters=(workspace_id,),
             )
+        selected["chapter_generation_writer_fence"] = _rows(
+            connection,
+            "chapter_generation_writer_fence",
+            where='"workspace_id"=?',
+            parameters=(workspace_id,),
+        )
         candidates: list[dict[str, object]] = []
         candidate_items: dict[str, dict[str, object]] = {}
         for row in _rows(connection, "candidate"):
@@ -287,6 +353,30 @@ class SqliteWorkspaceDatabaseProjector:
             ),
             parameters=(workspace_id,),
         )
+        # A Workspace bundle intentionally excludes global P2 lifecycle and
+        # Supervisor authority.  The one synthetic pointer is the neutral row
+        # that the accepted lifecycle migration would have created in a fresh
+        # database; source current/LKG/safe-mode values never cross the scope.
+        selected["p2_plugin_generation"] = []
+        selected["p2_plugin_generation_pointer"] = [
+            {
+                "singleton": 1,
+                "current_generation_id": None,
+                "lkg_generation_id": None,
+                "safe_mode": 0,
+                "safe_mode_reason": None,
+                "revision": 0,
+            }
+        ]
+        for table in (
+            "p2_plugin_install_attempt",
+            "p2_plugin_release_retirement",
+            "p2_plugin_retirement_attention",
+            "p2_plugin_release_pin",
+            "p2_plugin_shadow_generation",
+            "plugin_supervisor_claim",
+        ):
+            selected[table] = []
         all_jobs = _rows(connection, "execution_job")
         selected["execution_job"] = [
             row for row in all_jobs if row.get("workspace_id") == workspace_id
@@ -298,6 +388,12 @@ class SqliteWorkspaceDatabaseProjector:
         selected["execution_attempt"] = [
             row for row in _rows(connection, "execution_attempt") if row.get("job_id") in job_ids
         ]
+        selected["execution_job_start_receipt"] = _rows(
+            connection,
+            "execution_job_start_receipt",
+            where='"workspace_id"=?',
+            parameters=(workspace_id,),
+        )
         for table in (
             "execution_receipt",
             "execution_job_event",
@@ -489,6 +585,28 @@ class SqliteWorkspaceDatabaseProjector:
         }
         for owner in (*document_owner.values(), *node_owner.values(), *revision_owner.values()):
             require(workspace_owner, owner, "Core authority workspace")
+
+        for row in _rows(connection, "chapter_generation_writer_fence"):
+            owner = require(
+                workspace_owner,
+                row.get("workspace_id"),
+                "chapter generation writer fence Workspace",
+            )
+            document_id = row.get("chapter_document_id")
+            document = document_rows.get(str(document_id))
+            if (
+                document is None
+                or require(
+                    document_owner,
+                    document_id,
+                    "chapter generation writer fence document",
+                )
+                != owner
+                or document.get("document_type") != "core.chapter"
+            ):
+                raise WorkspaceProjectionError(
+                    "chapter generation writer fence crosses Workspace or chapter authority"
+                )
 
         for row in _rows(connection, "workspace"):
             current = row.get("current_plan_revision_id")
@@ -772,6 +890,68 @@ class SqliteWorkspaceDatabaseProjector:
             ):
                 raise WorkspaceProjectionError("execution attempt crosses Workspace")
             attempt_owner[attempt_id] = owner
+
+        for row in _rows(connection, "execution_job_start_receipt"):
+            owner = require(
+                workspace_owner,
+                row.get("workspace_id"),
+                "execution job start receipt Workspace",
+            )
+            _validate_job_start_receipt_request(row)
+            job_id = str(row.get("job_id"))
+            step_id = str(row.get("step_id"))
+            attempt_id = str(row.get("attempt_id"))
+            job = job_rows.get(job_id)
+            step = step_rows.get(step_id)
+            attempt = attempt_rows.get(attempt_id)
+            materialized = (job is not None, step is not None, attempt is not None)
+            if any(materialized) and not all(materialized):
+                raise WorkspaceProjectionError(
+                    "execution job start receipt has a partial authority closure"
+                )
+            state = row.get("state")
+            if state in {"reserved", "worker_acquired"} and any(materialized):
+                raise WorkspaceProjectionError(
+                    "execution job start receipt materialized before its atomic commit"
+                )
+            if state in {"attempt_committed", "completed"} and not all(materialized):
+                raise WorkspaceProjectionError(
+                    "execution job start receipt lacks its committed authority closure"
+                )
+            if not all(materialized):
+                continue
+            assert job is not None and step is not None and attempt is not None
+            if (
+                require(job_owner, job_id, "execution job start receipt job") != owner
+                or require(step_owner, step_id, "execution job start receipt step")
+                != owner
+                or require(
+                    attempt_owner,
+                    attempt_id,
+                    "execution job start receipt attempt",
+                )
+                != owner
+                or step.get("job_id") != job_id
+                or attempt.get("job_id") != job_id
+                or attempt.get("step_id") != step_id
+                or job.get("request_key") != row.get("request_key")
+                or job.get("run_snapshot_asset_id")
+                != row.get("run_snapshot_asset_id")
+                or job.get("run_snapshot_hash") != row.get("run_snapshot_hash")
+                or attempt.get("worker_run_id") != row.get("worker_run_id")
+                or attempt.get("plugin_id") != row.get("plugin_id")
+                or attempt.get("release_id") != row.get("release_id")
+                or attempt.get("package_hash") != row.get("package_hash")
+                or attempt.get("capability_id") != row.get("capability_id")
+                or attempt.get("generation_id") != row.get("generation_id")
+                or attempt.get("lease_epoch") != row.get("writer_epoch")
+                or attempt.get("expected_result_contract")
+                != row.get("result_contract")
+                or step.get("expected_result_contract") != row.get("result_contract")
+            ):
+                raise WorkspaceProjectionError(
+                    "execution job start receipt crosses Workspace or committed authority"
+                )
 
         chapter_authority_rows: dict[str, dict[str, object]] = {}
         for row in _rows(connection, "chapter_candidate_authority"):

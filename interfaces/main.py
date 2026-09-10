@@ -3,6 +3,7 @@
 提供 RESTful API 接口。
 """
 import os
+
 from interfaces.api.settings import (
     BackendSettings,
     configure_process_environment,
@@ -12,22 +13,25 @@ from interfaces.api.settings import (
 # 必须在任何 HuggingFace/Transformers 导入前设置离线模式
 configure_process_environment()
 
-from pathlib import Path
+import logging
 import sys
 import time
-import logging
 from contextlib import asynccontextmanager
 from datetime import datetime
+from pathlib import Path
 
 # 必须在其他应用模块导入前执行：将仓库根目录 `.env` 写入 os.environ
 _PLOTPILOT_ROOT = Path(__file__).resolve().parents[1]
 if str(_PLOTPILOT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PLOTPILOT_ROOT))
+_BACKEND_ROOT = _PLOTPILOT_ROOT / "backend"
+if _BACKEND_ROOT.is_dir() and str(_BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(_BACKEND_ROOT))
 try:
     from load_env import load_env
 
     load_env()
-except Exception:
+except Exception:  # noqa: BLE001, S110 - optional pre-logging environment load
     # 无 .env 或非标准启动方式时忽略
     pass
 
@@ -45,21 +49,22 @@ setup_logging(level=log_level, log_file=log_file)
 
 logger = logging.getLogger(__name__)
 
+import signal
+import threading
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, RedirectResponse, JSONResponse
 from starlette.requests import Request
-import threading
-import signal
 
 from interfaces.api.routes import register_api_routes
 from interfaces.daemon_manager import AutopilotDaemonManager
 from interfaces.runtime import BackendLifecycle, get_backend_lifecycle_settings
 from interfaces.runtime_state import (
     _get_shared_state,
-    get_shared_novel_state,
-    update_shared_novel_state,
+    get_shared_novel_state,  # noqa: F401 - retained compatibility export
+    update_shared_novel_state,  # noqa: F401 - retained compatibility export
 )
 
 APP_RELEASE_VERSION = settings.release_version
@@ -74,7 +79,7 @@ log_startup_banner(
     fields={
         "Release": APP_RELEASE_VERSION,
         "Build": BACKEND_BUILD_ID,
-        "Time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "Time": datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S"),
         "Log level": logging.getLevelName(log_level),
         "Log file": log_file,
         "Python": sys.version.split()[0],
@@ -109,25 +114,33 @@ def _get_lifecycle() -> BackendLifecycle:
 
 
 def _stop_background_task_service() -> None:
-    from interfaces.api.dependencies import shutdown_background_task_service_if_initialized
+    from interfaces.api.dependencies import (
+        shutdown_background_task_service_if_initialized,
+    )
 
     shutdown_background_task_service_if_initialized()
 
 
 def _stop_async_bridge() -> None:
-    from application.core.async_bridge import shutdown_async_bridge_executor_if_initialized
+    from application.core.async_bridge import (
+        shutdown_async_bridge_executor_if_initialized,
+    )
 
     shutdown_async_bridge_executor_if_initialized()
 
 
 def _stop_persistence_consumer() -> None:
-    from application.engine.services.persistence_queue import shutdown_persistence_queue_if_initialized
+    from application.engine.services.persistence_queue import (
+        shutdown_persistence_queue_if_initialized,
+    )
 
     shutdown_persistence_queue_if_initialized()
 
 
 def _stop_managed_resources() -> None:
-    from application.engine.services.resource_manager import shutdown_resource_manager_if_initialized
+    from application.engine.services.resource_manager import (
+        shutdown_resource_manager_if_initialized,
+    )
 
     shutdown_resource_manager_if_initialized()
 
@@ -159,8 +172,7 @@ def _register_spa_fallback(created: FastAPI) -> None:
     @created.delete("/{full_path:path}", include_in_schema=False)
     async def spa_fallback(full_path: str, req: Request):
         """SPA fallback — 所有未匹配的路径返回 index.html"""
-        if (full_path.startswith("api/") or full_path.startswith("stats/")
-                or full_path.startswith("assets/") or full_path.startswith("_")):
+        if full_path.startswith(("api/", "stats/", "assets/", "_")):
             if not full_path.endswith('/'):
                 redirect_url = req.url.path + '/'
                 if req.url.query:
@@ -177,11 +189,18 @@ def create_app(app_settings: BackendSettings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(lifespan_app: FastAPI):
-        _get_lifecycle().startup(len(lifespan_app.routes))
+        legacy_lifecycle: BackendLifecycle | None = None
         try:
+            legacy_lifecycle = _get_lifecycle()
+            legacy_lifecycle.startup(len(lifespan_app.routes))
+            lifespan_app.state.webui_runtime.startup()
             yield
         finally:
-            _get_lifecycle().shutdown()
+            try:
+                lifespan_app.state.webui_runtime.shutdown()
+            finally:
+                if legacy_lifecycle is not None:
+                    legacy_lifecycle.shutdown()
 
     created = FastAPI(
         title="PlotPilot API",
@@ -216,6 +235,9 @@ def create_app(app_settings: BackendSettings | None = None) -> FastAPI:
         allow_headers=["*"],
     )
 
+    from backend.plotpilot_core.bootstrap.webui_runtime import (
+        mount_webui_runtime,
+    )
     from interfaces.api.middleware.error_handler import add_error_handlers
 
     add_error_handlers(created)
@@ -277,8 +299,13 @@ def create_app(app_settings: BackendSettings | None = None) -> FastAPI:
 
     frontend_dir = app_settings.frontend_dir
     index_html = frontend_dir / "index.html"
-    if frontend_dir.exists() and index_html.exists():
-        _register_spa_fallback(created)
+    webui_runtime = mount_webui_runtime(created)
+    try:
+        if frontend_dir.exists() and index_html.exists():
+            _register_spa_fallback(created)
+    except BaseException:
+        webui_runtime.close()
+        raise
 
     return created
 
@@ -347,7 +374,6 @@ def _force_exit_watchdog() -> None:
     - 在 shutdown event 触发时启动看门狗，给优雅关闭一段配置化的时间
     - 超时后直接 os._exit(0)，确保进程能退出
     """
-    global _shutdown_deadline
     if _shutdown_deadline is None:
         return
     settings = get_backend_lifecycle_settings()

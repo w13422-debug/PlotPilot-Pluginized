@@ -1,12 +1,16 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
 import hashlib
 import json
 import os
+import uuid
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import BinaryIO
-import uuid
+
+
+class AssetReferenceError(LookupError):
+    """An Asset identifier is invalid or has no authoritative metadata."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -93,9 +97,11 @@ class AssetStore:
             if path.read_bytes() != data:
                 raise OSError(f"content-address collision at {path}")
             return
-        temp = path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
+        temp = path.with_name(f".tmp-{uuid.uuid4().hex}")
+        temp_created = False
         try:
             with temp.open("xb") as stream:
+                temp_created = True
                 stream.write(data)
                 stream.flush()
                 os.fsync(stream.fileno())
@@ -105,11 +111,16 @@ class AssetStore:
                 if path.read_bytes() != data:
                     raise OSError(f"content-address collision at {path}")
         finally:
-            temp.unlink(missing_ok=True)
+            if temp_created:
+                temp.unlink(missing_ok=True)
 
     def describe(self, asset_id: str) -> AssetMetadata:
         digest = self._digest(asset_id)
-        raw = json.loads((self.metadata / f"{digest}.json").read_text(encoding="utf-8"))
+        try:
+            raw_text = (self.metadata / f"{digest}.json").read_text(encoding="utf-8")
+        except FileNotFoundError as exc:
+            raise AssetReferenceError("asset does not exist") from exc
+        raw = json.loads(raw_text)
         meta = AssetMetadata(**raw)
         if meta.asset_id != asset_id or meta.sha256 != digest:
             raise OSError("asset metadata identity mismatch")
@@ -118,7 +129,7 @@ class AssetStore:
     def read(self, asset_id: str, *, offset: int = 0, length: int | None = None) -> bytes:
         if offset < 0 or (length is not None and length < 0):
             raise ValueError("asset range must be non-negative")
-        digest = self._digest(asset_id)
+        digest = self.describe(asset_id).sha256
         path = self.objects / digest[:2] / digest
         with path.open("rb") as stream:
             stream.seek(offset)
@@ -131,8 +142,8 @@ class AssetStore:
     def _digest(asset_id: str) -> str:
         prefix = "asset-sha256-"
         if not asset_id.startswith(prefix):
-            raise ValueError("invalid asset id")
+            raise AssetReferenceError("invalid asset id")
         digest = asset_id[len(prefix) :]
         if len(digest) != 64 or any(ch not in "0123456789abcdef" for ch in digest):
-            raise ValueError("invalid asset id")
+            raise AssetReferenceError("invalid asset id")
         return digest

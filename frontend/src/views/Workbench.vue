@@ -17,8 +17,9 @@
             <CoreChapterList
               :chapters="chapters"
               :current-document-id="currentDocumentId"
-              :busy="chapterLoading || chapterSaving"
+              :busy="pageLoading || chapterLoading || chapterSaving || chapterCreating"
               @select="handleChapterSelect"
+              @create="handleChapterCreate"
               @back="goHome"
               @refresh="handleChapterUpdated"
             />
@@ -61,6 +62,28 @@
                       <dt>状态</dt><dd>{{ openedChapter?.dirty ? '有未保存编辑' : '已同步' }}</dd>
                     </dl>
                     <p v-else>选择章节后显示 Core 文档与 Revision 身份。</p>
+                    <div class="feature-surface-stack" aria-label="固定功能面">
+                      <SetupPlanningPanel :availability="featureAvailability.planning" />
+                      <GenerationControls
+                        :availability="featureAvailability.generation"
+                        :job-drawer-availability="featureAvailability.jobDrawer"
+                        @show-task-status="showTaskDrawer"
+                      />
+                      <CandidateReviewPanel
+                        :availability="featureAvailability.candidate"
+                        :result="candidateResult"
+                        :busy="candidateBusy"
+                        @preview="runCandidatePreview($event)"
+                        @review="runCandidateReview($event)"
+                        @accept="runCandidateAccept($event)"
+                      />
+                      <StoryStatePanel
+                        :foreshadow-availability="featureAvailability.foreshadow"
+                        :story-bible-availability="featureAvailability.storyBible"
+                      />
+                      <CheckpointRecoveryPanel :availability="featureAvailability.checkpoint" />
+                      <ExportControls :availability="featureAvailability.export" />
+                    </div>
                   </aside>
                 </template>
               </n-split>
@@ -70,7 +93,15 @@
       </div>
     </n-spin>
 
-    <TaskDrawer />
+    <section
+      v-if="featureAvailability.jobDrawer.available"
+      ref="taskDrawerAnchor"
+      class="task-drawer-anchor"
+      tabindex="-1"
+      aria-label="任务状态抽屉"
+    >
+      <TaskDrawerHost :workspace-id="slug" />
+    </section>
   </div>
 </template>
 
@@ -79,10 +110,24 @@ import { onMounted, onUnmounted, computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
 import { useDebouncedTask } from '../composables/useDebouncedTask'
-import TaskDrawer from '../components/jobs/TaskDrawer.vue'
+import TaskDrawerHost from '../components/jobs/TaskDrawerHost.vue'
+import CandidateReviewPanel from '../components/workbench/CandidateReviewPanel.vue'
+import CheckpointRecoveryPanel from '../components/workbench/CheckpointRecoveryPanel.vue'
+import ExportControls from '../components/workbench/ExportControls.vue'
+import GenerationControls from '../components/workbench/GenerationControls.vue'
+import SetupPlanningPanel from '../components/workbench/SetupPlanningPanel.vue'
+import StoryStatePanel from '../components/workbench/StoryStatePanel.vue'
+import {
+  bindWorkspaceCandidateReview,
+  runWorkspaceOwnedCandidateOperation,
+  useFeatureRuntimeGateway,
+  type CandidateIdentity,
+  type CandidateReviewDraft,
+} from '../core/workbench/FeatureRuntimeGateway.ts'
 import CoreChapterEditor from '../core/flows/CoreChapterEditor.vue'
 import CoreChapterList from '../core/flows/CoreChapterList.vue'
 import {
+  createCoreChapterRecovery,
   editCoreChapter,
   type CoreChapterListItem,
   type CoreOpenedChapter,
@@ -103,6 +148,11 @@ const router = useRouter()
 const message = useMessage()
 
 const slug = computed(() => String(route.params.slug ?? ''))
+const featureRuntime = useFeatureRuntimeGateway()
+const featureAvailability = featureRuntime.availability
+const candidateResult = ref('')
+const candidateBusy = ref(false)
+const taskDrawerAnchor = ref<HTMLElement | null>(null)
 
 const bookTitle = ref('')
 const chapters = ref<CoreChapterListItem[]>([])
@@ -111,12 +161,15 @@ const currentDocumentId = ref<string | null>(null)
 const chapterContent = ref('')
 const chapterLoading = ref(false)
 const chapterSaving = ref(false)
+const chapterCreating = ref(false)
 const openedChapter = ref<CoreOpenedChapter | null>(null)
 const draftByDocument = new Map<string, string>()
 const workspaceGeneration = new ScopedRequestGeneration()
+const chapterCreateRecovery = createCoreChapterRecovery()
 let openSequence = 0
 let saveSequence = 0
 let deskSequence = 0
+let createSequence = 0
 
 function isWorkspaceCurrent(token: Readonly<ScopedGenerationToken>, workspaceId: string): boolean {
   return workspaceGeneration.isCurrent(token) && token.scope === workspaceId && slug.value === workspaceId
@@ -131,6 +184,7 @@ function beginWorkspaceTransition(workspaceId: string): ScopedGenerationToken {
   openSequence += 1
   saveSequence += 1
   deskSequence += 1
+  createSequence += 1
   chapterDeskReload.cancel()
   bookTitle.value = workspaceId
   chapters.value = []
@@ -139,6 +193,9 @@ function beginWorkspaceTransition(workspaceId: string): ScopedGenerationToken {
   chapterContent.value = ''
   chapterLoading.value = false
   chapterSaving.value = false
+  chapterCreating.value = false
+  candidateBusy.value = false
+  candidateResult.value = ''
   pageLoading.value = true
   return token
 }
@@ -167,23 +224,85 @@ function goHome() {
   void router.push('/')
 }
 
-async function goToChapter(documentId: string, token = workspaceGeneration.capture()) {
+function formatFeatureResult(result: unknown): string {
+  try {
+    return JSON.stringify(result, null, 2)
+  } catch {
+    return String(result)
+  }
+}
+
+function showTaskDrawer(): void {
+  if (!featureAvailability.jobDrawer.available) return
+  const anchor = taskDrawerAnchor.value
+  if (anchor === null) return
+  anchor.scrollIntoView({ block: 'nearest' })
+  anchor.focus({ preventScroll: true })
+}
+
+function runCandidatePreview(candidateId: string): Promise<void> {
+  return runCandidateOperation(candidateId, identity => featureRuntime.previewCandidate(identity))
+}
+
+function runCandidateReview(draft: CandidateReviewDraft): Promise<void> {
+  return runCandidateOperation(draft.candidateId, identity => (
+    featureRuntime.reviewCandidate(bindWorkspaceCandidateReview(identity, draft))
+  ))
+}
+
+function runCandidateAccept(candidateId: string): Promise<void> {
+  return runCandidateOperation(candidateId, identity => featureRuntime.acceptCandidate(identity))
+}
+
+async function runCandidateOperation(
+  candidateIdInput: string,
+  operation: (identity: CandidateIdentity) => Promise<Readonly<Record<string, unknown>>>,
+): Promise<void> {
+  if (candidateBusy.value) return
+  const token = workspaceGeneration.capture()
+  if (token === null || !isWorkspaceCurrent(token, token.scope)) return
+  const workspaceId = token.scope
+  const candidateId = candidateIdInput.trim()
+  if (candidateId.length === 0) return
+  await runWorkspaceOwnedCandidateOperation(
+    () => isWorkspaceCurrent(token, workspaceId),
+    () => operation({ workspaceId, candidateId }),
+    {
+      onStart: () => {
+        candidateBusy.value = true
+        candidateResult.value = ''
+      },
+      onSuccess: result => {
+        candidateResult.value = formatFeatureResult(result)
+        message.success('Core v2 Candidate 操作已返回权威结果')
+      },
+      onError: error => {
+        message.error(error instanceof Error ? error.message : 'Core v2 Candidate 操作失败')
+      },
+      onSettled: () => {
+        candidateBusy.value = false
+      },
+    },
+  )
+}
+
+async function goToChapter(documentId: string, token = workspaceGeneration.capture()): Promise<boolean> {
   const requestSequence = ++openSequence
   if (token === null || !isWorkspaceCurrent(token, token.scope)) {
     chapterLoading.value = false
-    return
+    return false
   }
   const workspaceId = token.scope
   const target = chapters.value.find(chapter => chapter.documentId === documentId)
   if (target === undefined || target.workspaceId !== workspaceId) {
     chapterLoading.value = false
     message.error('章节不在当前 Core 文档列表中')
-    return
+    return false
   }
   chapterLoading.value = true
   try {
     let opened = await requireCoreFlowRuntime().openChapter(target)
-    if (!isWorkspaceCurrent(token, workspaceId) || requestSequence !== openSequence) return
+    if (!isWorkspaceCurrent(token, workspaceId) || requestSequence !== openSequence) return false
     const pendingDraft = draftByDocument.get(workspaceDraftKey(workspaceId, documentId))
     if (pendingDraft !== undefined) opened = editCoreChapter(opened, pendingDraft)
     currentDocumentId.value = documentId
@@ -192,9 +311,13 @@ async function goToChapter(documentId: string, token = workspaceGeneration.captu
     if (route.query.chapter !== documentId) {
       await router.replace({ query: { ...route.query, chapter: documentId } })
     }
+    return isWorkspaceCurrent(token, workspaceId)
+      && requestSequence === openSequence
+      && currentDocumentId.value === documentId
   } catch (error: unknown) {
-    if (!isWorkspaceCurrent(token, workspaceId) || requestSequence !== openSequence) return
+    if (!isWorkspaceCurrent(token, workspaceId) || requestSequence !== openSequence) return false
     message.error(error instanceof Error ? error.message : '加载章节失败')
+    return false
   } finally {
     if (isWorkspaceCurrent(token, workspaceId) && requestSequence === openSequence) chapterLoading.value = false
   }
@@ -202,6 +325,52 @@ async function goToChapter(documentId: string, token = workspaceGeneration.captu
 
 async function handleChapterSelect(documentId: string) {
   await goToChapter(documentId)
+}
+
+async function handleChapterCreate() {
+  if (chapterCreating.value) return
+  const token = workspaceGeneration.capture()
+  if (token === null || !isWorkspaceCurrent(token, token.scope)) return
+  const workspaceId = token.scope
+  const requestSequence = ++createSequence
+  const title = `第 ${chapters.value.length + 1} 章`
+  chapterDeskReload.cancel()
+  chapterCreating.value = true
+  try {
+    const documentId = await chapterCreateRecovery.run(workspaceId, title, {
+      createChapter: async (targetWorkspaceId, targetTitle) => {
+        const created = await requireCoreFlowRuntime().createChapter(targetWorkspaceId, targetTitle)
+        chapterDeskReload.cancel()
+        return created
+      },
+      refreshWorkspace: async (targetWorkspaceId) => {
+        if (targetWorkspaceId !== workspaceId
+          || !isWorkspaceCurrent(token, workspaceId)
+          || requestSequence !== createSequence
+          || !await loadDesk(workspaceId, token)) {
+          throw new Error('Core chapter create/recovery refresh lost its Workspace generation')
+        }
+      },
+      openDocument: async (targetDocumentId) => {
+        if (!isWorkspaceCurrent(token, workspaceId)
+          || requestSequence !== createSequence
+          || !await goToChapter(targetDocumentId, token)
+          || parseChapterQuery(route.query.chapter) !== targetDocumentId) {
+          throw new Error('Core chapter create/recovery did not open its committed document')
+        }
+      },
+    })
+    if (!isWorkspaceCurrent(token, workspaceId)
+      || requestSequence !== createSequence
+      || currentDocumentId.value !== documentId) return
+  } catch (error: unknown) {
+    if (!isWorkspaceCurrent(token, workspaceId) || requestSequence !== createSequence) return
+    message.error(chapterCreateRecovery.hasCommittedChapter(workspaceId)
+      ? '章节已创建，但刷新或打开失败；请再次点击“新建章节”恢复'
+      : error instanceof Error ? error.message : '新建章节失败')
+  } finally {
+    if (isWorkspaceCurrent(token, workspaceId) && requestSequence === createSequence) chapterCreating.value = false
+  }
 }
 
 function handleChapterEdit(content: string) {
@@ -250,7 +419,9 @@ async function handleChapterSave() {
 
 async function runChapterDeskReload() {
   const token = workspaceGeneration.capture()
-  if (token !== null) await loadDesk(token.scope, token)
+  if (token !== null && chapterCreateRecovery.canRunOrdinaryReload(token.scope)) {
+    await loadDesk(token.scope, token)
+  }
 }
 
 /** 合并短时间内的多次「整桌刷新」：全托管状态抖动 / 多源 emit 时只拉一次 API，减轻闪烁与日志刷屏 */
@@ -265,6 +436,8 @@ const chapterDeskReload = useDebouncedTask(
 )
 
 const handleChapterUpdated = () => {
+  const token = workspaceGeneration.capture()
+  if (token === null || !chapterCreateRecovery.canRunOrdinaryReload(token.scope)) return
   chapterDeskReload.schedule()
 }
 
@@ -313,7 +486,9 @@ onUnmounted(() => {
   openSequence += 1
   saveSequence += 1
   deskSequence += 1
+  createSequence += 1
   chapterDeskReload.cancel()
+  candidateBusy.value = false
 })
 
 watch(
@@ -393,6 +568,51 @@ watch(
 .core-right-panel dl { margin: 0; display: grid; gap: 6px; }
 .core-right-panel dt { color: var(--app-text-muted); font-size: 12px; }
 .core-right-panel dd { margin: 0 0 10px; overflow-wrap: anywhere; }
+
+.feature-surface-stack {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.feature-surface-stack :deep(.feature-panel),
+.feature-surface-stack :deep(.story-state-section) {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--app-divider, rgba(15, 23, 42, 0.12));
+}
+
+.feature-surface-stack :deep(.story-state-section) + :deep(.story-state-section) {
+  margin-top: 8px;
+}
+
+.feature-surface-stack :deep(h2),
+.feature-surface-stack :deep(p) {
+  margin: 0;
+}
+
+.feature-surface-stack :deep(.feature-reason) {
+  color: var(--app-text-muted);
+  font-size: 12px;
+}
+
+.feature-surface-stack :deep(.feature-actions) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.feature-surface-stack :deep(.candidate-result) {
+  max-height: 160px;
+  overflow: auto;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.task-drawer-anchor {
+  outline: none;
+}
 
 .workbench-spin {
   flex: 1;

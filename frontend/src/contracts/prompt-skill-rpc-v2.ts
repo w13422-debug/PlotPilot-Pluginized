@@ -265,6 +265,8 @@ function assertUnicodeScalars(value: unknown, path = '$', seen = new WeakSet<obj
   }
 }
 
+function id(value: unknown, label: string, nullable?: false): string
+function id(value: unknown, label: string, nullable: true): string | null
 function id(value: unknown, label: string, nullable = false): string | null {
   if (value === null && nullable) return null
   if (typeof value !== 'string' || !ID.test(value)) fail(`${label} is not a v2 identity`)

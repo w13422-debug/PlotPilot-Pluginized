@@ -37,6 +37,7 @@ from backend.plotpilot_core.broker.service import (
 )
 from backend.plotpilot_core.candidates import CandidateService
 from backend.plotpilot_core.domain import Document, Workspace
+from backend.plotpilot_core.plugins.lifecycle import LifecycleRepository
 from backend.plotpilot_core.plugins.package import verify_package
 from backend.plotpilot_core.plugins.store import PackageStore
 from backend.plotpilot_core.publication import PublicationService
@@ -1977,6 +1978,526 @@ def test_workspace_backup_projects_one_of_multiple_workspaces_and_restores_new_r
     full_database.close()
 
 
+def _insert_reserved_start_receipt(
+    repository: CoreAuthorityRepository,
+    *,
+    workspace_id: str,
+    marker: str,
+    run_snapshot_asset_id: str,
+    request_overrides: dict[str, object] | None = None,
+    request_hash_override: str | None = None,
+) -> None:
+    request = {
+        "schema": "job-start-command/v2",
+        "operation_key": f"start-{marker}",
+        "workspace_id": workspace_id,
+        "job_id": f"job-start-{marker}",
+        "capability_id": "writing.chapter.draft/v1",
+        "run_snapshot_asset_id": run_snapshot_asset_id,
+        "writer_epoch": 1,
+    }
+    if request_overrides:
+        request.update(request_overrides)
+    request_bytes = canonical_bytes(request)
+    request_json = request_bytes.decode("utf-8")
+    request_hash = request_hash_override or hashlib.sha256(request_bytes).hexdigest()
+    with repository.transaction() as connection:
+        connection.execute(
+            "INSERT INTO execution_job_start_receipt("
+            "operation_key,workspace_id,job_id,request_key,request_hash,request_json,"
+            "run_snapshot_asset_id,run_snapshot_hash,step_id,attempt_id,plugin_id,"
+            "generation_id,release_id,package_hash,capability_id,result_contract,"
+            "writer_epoch,worker_run_id,state,response_json,failure_reason,created_at,"
+            "updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,'reserved',NULL,"
+            "NULL,?,?)",
+            (
+                request["operation_key"],
+                workspace_id,
+                f"job-start-{marker}",
+                f"request-{marker}",
+                request_hash,
+                request_json,
+                run_snapshot_asset_id,
+                hashlib.sha256(f"snapshot-{marker}".encode()).hexdigest(),
+                f"step-start-{marker}",
+                f"attempt-start-{marker}",
+                "com.plotpilot.demo",
+                f"generation-{marker}",
+                "1" * 64,
+                "2" * 64,
+                "writing.chapter.draft/v1",
+                "candidate-batch/v1",
+                1,
+                NOW,
+                NOW,
+            ),
+        )
+
+
+def test_workspace_backup_projects_new_workspace_authority_and_restores_assets(
+    tmp_path: Path,
+) -> None:
+    source, database, assets, _ = _source(tmp_path)
+    store = AssetStore(assets)
+    selected_snapshot = store.put(
+        b"selected start snapshot",
+        mime="application/json",
+        logical_role="run_snapshot",
+        provenance="test:ws-1",
+    )
+    excluded_snapshot = store.put(
+        b"excluded start snapshot",
+        mime="application/json",
+        logical_role="run_snapshot",
+        provenance="test:ws-2",
+    )
+    repository = CoreAuthorityRepository(database)
+    repository.create_workspace(Workspace("ws-2", "Other", created_at=NOW, updated_at=NOW))
+    repository.create_document(
+        Document(
+            "chapter-mode-1",
+            "ws-1",
+            "Selected chapter",
+            "core.chapter",
+            created_at=NOW,
+            updated_at=NOW,
+        )
+    )
+    repository.create_document(
+        Document(
+            "chapter-mode-2",
+            "ws-2",
+            "Excluded chapter",
+            "core.chapter",
+            created_at=NOW,
+            updated_at=NOW,
+        )
+    )
+    selected_fence = repository.acquire_chapter_generation_writer_fence(
+        workspace_id="ws-1",
+        chapter_document_id="chapter-mode-1",
+        operation="generate",
+        writer_mode="legacy",
+        job_id="legacy-job-1",
+        operation_key="fence-acquire-1",
+    )
+    repository.acquire_chapter_generation_writer_fence(
+        workspace_id="ws-2",
+        chapter_document_id="chapter-mode-2",
+        operation="generate",
+        writer_mode="legacy",
+        job_id="legacy-job-2",
+        operation_key="fence-acquire-2",
+    )
+    _insert_reserved_start_receipt(
+        repository,
+        workspace_id="ws-1",
+        marker="selected",
+        run_snapshot_asset_id=selected_snapshot.asset_id,
+    )
+    _insert_reserved_start_receipt(
+        repository,
+        workspace_id="ws-2",
+        marker="excluded",
+        run_snapshot_asset_id=excluded_snapshot.asset_id,
+    )
+    repository.close()
+
+    backup = _plane(source, database, assets).create_backup(
+        tmp_path / "new-authority-backup",
+        _request("new-authority-backup"),
+    )
+    projected = sqlite3.connect(backup.bundle_root / "core/core.db")
+    try:
+        assert projected.execute(
+            "SELECT workspace_id,chapter_document_id,job_id,writer_epoch,state "
+            "FROM chapter_generation_writer_fence"
+        ).fetchall() == [
+            (
+                "ws-1",
+                "chapter-mode-1",
+                selected_fence.job_id,
+                selected_fence.writer_epoch,
+                "active",
+            )
+        ]
+        assert projected.execute(
+            "SELECT workspace_id,operation_key,state FROM execution_job_start_receipt"
+        ).fetchall() == [("ws-1", "start-selected", "reserved")]
+        assert projected.execute("PRAGMA foreign_key_check").fetchall() == []
+    finally:
+        projected.close()
+    assert selected_snapshot.asset_id in backup.receipt["asset_ids"]
+    assert excluded_snapshot.asset_id not in backup.receipt["asset_ids"]
+
+    restored = _plane(source, database, assets).stage_restore(
+        backup.bundle_root,
+        tmp_path / "new-authority-restored",
+        _restore_request("restore-new-authority"),
+    )
+    restored_database = sqlite3.connect(restored.target_root / "core/core.db")
+    try:
+        assert restored_database.execute(
+            "SELECT chapter_document_id FROM chapter_generation_writer_fence"
+        ).fetchall() == [("chapter-mode-1",)]
+        assert restored_database.execute(
+            "SELECT operation_key FROM execution_job_start_receipt"
+        ).fetchall() == [("start-selected",)]
+    finally:
+        restored_database.close()
+    assert AssetStore(restored.target_root / "assets").read(selected_snapshot.asset_id) == (
+        b"selected start snapshot"
+    )
+
+
+def test_workspace_backup_omits_global_p2_authority_with_neutral_pointer(
+    tmp_path: Path,
+) -> None:
+    source, database, assets, _ = _source(tmp_path)
+    marker = "GLOBAL_P2_SENTINEL_MUST_NOT_LEAK"
+    repository = CoreAuthorityRepository(database)
+    with repository.transaction() as connection:
+        connection.execute(
+            "INSERT INTO p2_plugin_generation VALUES(?,?,?)",
+            ("generation-global", json.dumps({"marker": marker}), "3" * 64),
+        )
+        connection.execute(
+            "UPDATE p2_plugin_generation_pointer SET current_generation_id=?,"
+            "safe_mode=1,safe_mode_reason=?,revision=7 WHERE singleton=1",
+            ("generation-global", marker),
+        )
+        connection.execute(
+            "INSERT INTO p2_plugin_install_attempt VALUES(?,?,?,?,?)",
+            ("install-global", "4" * 64, json.dumps({"marker": marker}), "{}", 1),
+        )
+        connection.execute(
+            "INSERT INTO p2_plugin_release_retirement VALUES(?,?,?)",
+            ("5" * 64, json.dumps({"marker": marker}), 1),
+        )
+        connection.execute(
+            "INSERT INTO p2_plugin_retirement_attention VALUES(?,?,?)",
+            ("5" * 64, marker, NOW),
+        )
+        connection.execute(
+            "INSERT INTO p2_plugin_release_pin VALUES(?,?,?,?,?)",
+            ("pin-global", "5" * 64, 1, json.dumps({"marker": marker}), 1),
+        )
+        connection.execute(
+            "INSERT INTO p2_plugin_shadow_generation VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                "shadow-global",
+                "install-global",
+                "5" * 64,
+                "prepared",
+                "lease-global",
+                1,
+                marker,
+                NOW,
+                "9999-12-31T23:59:59Z",
+                NOW,
+                "active",
+                1,
+            ),
+        )
+        connection.execute(
+            "INSERT INTO plugin_supervisor_claim VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                "worker-global",
+                1,
+                "pin-global",
+                marker,
+                "com.plotpilot.global",
+                "generation-global",
+                "5" * 64,
+                "6" * 64,
+                None,
+                1,
+                "active",
+                NOW,
+                NOW,
+                None,
+                1,
+            ),
+        )
+    repository.close()
+    database_before = database.read_bytes()
+
+    backup = _plane(source, database, assets).create_backup(
+        tmp_path / "global-p2-omitted",
+        _request("global-p2-omitted"),
+    )
+    projected_path = backup.bundle_root / "core/core.db"
+    projected = sqlite3.connect(projected_path)
+    try:
+        for table in (
+            "p2_plugin_generation",
+            "p2_plugin_install_attempt",
+            "p2_plugin_release_retirement",
+            "p2_plugin_retirement_attention",
+            "p2_plugin_release_pin",
+            "p2_plugin_shadow_generation",
+            "plugin_supervisor_claim",
+        ):
+            assert projected.execute(f'SELECT count(*) FROM "{table}"').fetchone() == (0,)
+        assert projected.execute(
+            "SELECT singleton,current_generation_id,lkg_generation_id,safe_mode,"
+            "safe_mode_reason,revision FROM p2_plugin_generation_pointer"
+        ).fetchall() == [(1, None, None, 0, None, 0)]
+        assert projected.execute("PRAGMA foreign_key_check").fetchall() == []
+    finally:
+        projected.close()
+
+    reopened = CoreAuthorityRepository(projected_path)
+    try:
+        with reopened.read_connection() as connection:
+            lifecycle = LifecycleRepository(
+                connection,
+                transaction_factory=reopened.transaction,
+                core_authority_binding=reopened,
+            )
+        state = lifecycle.generation_state()
+        assert state.current is None
+        assert state.lkg is None
+        assert state.safe_mode is False
+    finally:
+        reopened.close()
+    assert all(
+        marker.encode() not in path.read_bytes()
+        for path in backup.bundle_root.rglob("*")
+        if path.is_file()
+    )
+    assert database.read_bytes() == database_before
+
+
+def test_workspace_backup_rejects_cross_workspace_generation_writer_fence(
+    tmp_path: Path,
+) -> None:
+    source, database, assets, _ = _source(tmp_path)
+    repository = CoreAuthorityRepository(database)
+    repository.create_workspace(Workspace("ws-2", "Other", created_at=NOW, updated_at=NOW))
+    repository.create_document(
+        Document("chapter-fence-1", "ws-1", "Selected", "core.chapter")
+    )
+    repository.create_document(
+        Document("chapter-fence-2", "ws-2", "Excluded", "core.chapter")
+    )
+    repository.acquire_chapter_generation_writer_fence(
+        workspace_id="ws-1",
+        chapter_document_id="chapter-fence-1",
+        operation="generate",
+        writer_mode="legacy",
+        job_id="legacy-job-fence",
+        operation_key="acquire-cross-fence",
+    )
+    repository.close()
+    connection = sqlite3.connect(database)
+    connection.execute(
+        "UPDATE chapter_generation_writer_fence SET chapter_document_id='chapter-fence-2' "
+        "WHERE operation_key='acquire-cross-fence'"
+    )
+    connection.commit()
+    connection.close()
+    source_before = _durable_tree_hashes(source)
+    destination = tmp_path / "cross-generation-fence"
+
+    with pytest.raises(BackupValidationError, match="safely scoped"):
+        _plane(source, database, assets).create_backup(destination, _request())
+
+    assert not destination.exists()
+    assert _durable_tree_hashes(source) == source_before
+
+
+def test_workspace_backup_rejects_cross_workspace_start_receipt(
+    tmp_path: Path,
+) -> None:
+    source, database, assets, _ = _source(tmp_path)
+    store = AssetStore(assets)
+    repository = CoreAuthorityRepository(database)
+    repository.create_document(Document("doc-start-1", "ws-1", "Selected"))
+    repository.create_workspace(Workspace("ws-2", "Other"))
+    repository.create_document(Document("doc-start-2", "ws-2", "Excluded"))
+    _add_integrated_execution_closure(
+        repository,
+        store,
+        workspace_id="ws-1",
+        document_id="doc-start-1",
+        marker="start-cross-1",
+        content=b"selected",
+    )
+    excluded = _add_integrated_execution_closure(
+        repository,
+        store,
+        workspace_id="ws-2",
+        document_id="doc-start-2",
+        marker="start-cross-2",
+        content=b"excluded",
+    )
+    with repository.transaction() as connection:
+        job = connection.execute(
+            "SELECT request_key,run_snapshot_hash FROM execution_job WHERE job_id=?",
+            (excluded["job_id"],),
+        ).fetchone()
+        attempt = connection.execute(
+            "SELECT * FROM execution_attempt WHERE attempt_id=?",
+            (excluded["attempt_id"],),
+        ).fetchone()
+        connection.execute(
+            "INSERT INTO execution_job_start_receipt("
+            "operation_key,workspace_id,job_id,request_key,request_hash,request_json,"
+            "run_snapshot_asset_id,run_snapshot_hash,step_id,attempt_id,plugin_id,"
+            "generation_id,release_id,package_hash,capability_id,result_contract,"
+            "writer_epoch,worker_run_id,state,response_json,failure_reason,created_at,"
+            "updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'attempt_committed',"
+            "NULL,NULL,?,?)",
+            (
+                "start-cross-workspace",
+                "ws-1",
+                excluded["job_id"],
+                job["request_key"],
+                "7" * 64,
+                "{}",
+                "asset-sha256-" + "8" * 64,
+                job["run_snapshot_hash"],
+                excluded["step_id"],
+                excluded["attempt_id"],
+                attempt["plugin_id"],
+                attempt["generation_id"],
+                attempt["release_id"],
+                attempt["package_hash"],
+                attempt["capability_id"],
+                attempt["expected_result_contract"],
+                attempt["lease_epoch"],
+                attempt["worker_run_id"],
+                NOW,
+                NOW,
+            ),
+        )
+    repository.close()
+    source_before = _durable_tree_hashes(source)
+    destination = tmp_path / "cross-start-receipt"
+
+    with pytest.raises(BackupValidationError, match="safely scoped"):
+        _plane(source, database, assets).create_backup(destination, _request())
+
+    assert not destination.exists()
+    assert _durable_tree_hashes(source) == source_before
+
+
+def test_workspace_backup_rejects_foreign_embedded_start_receipt_authority(
+    tmp_path: Path,
+) -> None:
+    source, database, assets, _ = _source(tmp_path)
+    store = AssetStore(assets)
+    selected_snapshot = store.put(
+        b"selected snapshot",
+        mime="application/json",
+        logical_role="run_snapshot",
+        provenance="test:selected",
+    )
+    foreign_snapshot = store.put(
+        b"foreign snapshot",
+        mime="application/json",
+        logical_role="run_snapshot",
+        provenance="test:foreign",
+    )
+    repository = CoreAuthorityRepository(database)
+    repository.create_workspace(Workspace("ws-2", "Other"))
+    _insert_reserved_start_receipt(
+        repository,
+        workspace_id="ws-1",
+        marker="foreign-embedded",
+        run_snapshot_asset_id=selected_snapshot.asset_id,
+        request_overrides={
+            "workspace_id": "ws-2",
+            "run_snapshot_asset_id": foreign_snapshot.asset_id,
+        },
+    )
+    repository.close()
+    source_before = _durable_tree_hashes(source)
+    destination = tmp_path / "foreign-embedded-start-receipt"
+
+    with pytest.raises(BackupValidationError, match="safely scoped"):
+        _plane(source, database, assets).create_backup(destination, _request())
+
+    assert not destination.exists()
+    assert _durable_tree_hashes(source) == source_before
+
+
+@pytest.mark.parametrize(
+    ("mutation", "value"),
+    [
+        ("request_hash", "0" * 64),
+        ("operation_key", "start-other"),
+        ("workspace_id", "ws-2"),
+        ("job_id", "job-start-other"),
+        ("capability_id", "writing.chapter.rewrite/v1"),
+        ("run_snapshot_asset_id", "asset-sha256-" + "9" * 64),
+        ("writer_epoch", 2),
+        ("schema", "job-list-query/v2"),
+        ("unexpected", "closed-contract-drift"),
+        ("non_canonical", None),
+    ],
+)
+def test_workspace_backup_rejects_start_receipt_request_drift(
+    tmp_path: Path,
+    mutation: str,
+    value: object,
+) -> None:
+    source, database, assets, _ = _source(tmp_path)
+    snapshot = AssetStore(assets).put(
+        b"selected snapshot",
+        mime="application/json",
+        logical_role="run_snapshot",
+        provenance="test:request-drift",
+    )
+    repository = CoreAuthorityRepository(database)
+    repository.create_workspace(Workspace("ws-2", "Other"))
+    _insert_reserved_start_receipt(
+        repository,
+        workspace_id="ws-1",
+        marker="request-drift",
+        run_snapshot_asset_id=snapshot.asset_id,
+    )
+    with repository.transaction() as connection:
+        row = connection.execute(
+            "SELECT request_json FROM execution_job_start_receipt "
+            "WHERE operation_key='start-request-drift'"
+        ).fetchone()
+        request = json.loads(str(row["request_json"]))
+        if mutation == "request_hash":
+            connection.execute(
+                "UPDATE execution_job_start_receipt SET request_hash=? "
+                "WHERE operation_key='start-request-drift'",
+                (value,),
+            )
+        elif mutation == "non_canonical":
+            connection.execute(
+                "UPDATE execution_job_start_receipt SET request_json=? "
+                "WHERE operation_key='start-request-drift'",
+                (json.dumps(request, ensure_ascii=False, indent=2),),
+            )
+        else:
+            request[mutation] = value
+            request_bytes = canonical_bytes(request)
+            connection.execute(
+                "UPDATE execution_job_start_receipt SET request_json=?,request_hash=? "
+                "WHERE operation_key='start-request-drift'",
+                (
+                    request_bytes.decode("utf-8"),
+                    hashlib.sha256(request_bytes).hexdigest(),
+                ),
+            )
+    repository.close()
+    source_before = _durable_tree_hashes(source)
+    destination = tmp_path / f"start-receipt-{mutation}-drift"
+
+    with pytest.raises(BackupValidationError, match="safely scoped"):
+        _plane(source, database, assets).create_backup(destination, _request())
+
+    assert not destination.exists()
+    assert _durable_tree_hashes(source) == source_before
+
+
 def test_workspace_backup_projects_integrated_execution_and_broker_closure(
     tmp_path: Path,
 ) -> None:
@@ -2046,6 +2567,10 @@ def test_workspace_backup_projects_integrated_execution_and_broker_closure(
             ("0001-core-authority",),
             ("0002-candidate-publication",),
             ("0003-chapter-authority",),
+            ("0004-chapter-generation-writer-mode-fence",),
+            ("0005-production-supervisor-authority",),
+            ("0006-production-job-command-receipt",),
+            ("0100-plugin-lifecycle-v1",),
             ("p3-jobs-001",),
             ("0003-execution-authority",),
             ("0004-execution-remediation",),
@@ -2054,7 +2579,7 @@ def test_workspace_backup_projects_integrated_execution_and_broker_closure(
         ]
         assert connection.execute(
             "SELECT count(*) FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%'"
-        ).fetchone()[0] == 43
+        ).fetchone()[0] == 58
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
         assert connection.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
         assert connection.execute(

@@ -323,7 +323,7 @@ export function validatePublicationV2(commandValue: unknown, resultValue: unknow
   if (candidateValue !== undefined) {
     const candidate = parseCandidateV2(candidateValue, command.workspace_id)
     if (candidate.candidate_id !== result.candidate_id || candidate.target.entity_kind !== result.entity_kind || candidate.target.entity_id !== result.entity_id) fail('Publication result is not bound to Candidate target')
-    if (candidate.publication_eligibility !== 'eligible' || candidate.status === 'failed' || candidate.status === 'skipped') fail('Candidate is not publishable')
+    if (candidate.publication_eligibility !== 'eligible') fail('Candidate is not publishable')
     if (candidate.status === 'partial' && candidate.item_kind !== 'incomplete_stream') fail('normal partial Candidate is review-only')
     const targetWrite = candidate.write_set.find(item => item.entity_kind === candidate.target.entity_kind && item.entity_id === candidate.target.entity_id)
     if (!targetWrite || result.cas.base_revision_id !== targetWrite.revision_id || result.cas.base_content_hash !== targetWrite.content_hash) fail('Publication result CAS base is not bound to Candidate write_set')

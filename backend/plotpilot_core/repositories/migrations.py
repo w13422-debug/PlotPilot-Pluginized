@@ -79,6 +79,114 @@ CREATE INDEX candidate_review_operation ON candidate_review(operation_key);
 CREATE INDEX chapter_candidate_source_job ON chapter_candidate_authority(source_job_id,source_attempt_id);
 CREATE INDEX chapter_writer_fence_attempt ON chapter_writer_fence(attempt_id,writer_epoch);
 """),
+    Migration("0004-chapter-generation-writer-mode-fence", """
+CREATE TABLE chapter_generation_writer_fence(
+    workspace_id TEXT NOT NULL REFERENCES workspace(workspace_id),
+    chapter_document_id TEXT NOT NULL REFERENCES document(document_id),
+    operation TEXT NOT NULL,
+    writer_mode TEXT NOT NULL CHECK(writer_mode IN ('legacy','plugin')),
+    job_id TEXT NOT NULL,
+    operation_key TEXT NOT NULL UNIQUE,
+    writer_epoch INTEGER NOT NULL CHECK(writer_epoch >= 1),
+    state TEXT NOT NULL CHECK(state IN ('active','released')),
+    release_operation_key TEXT UNIQUE,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    released_at TEXT,
+    PRIMARY KEY(workspace_id,chapter_document_id,operation,writer_epoch),
+    CHECK(
+        (state='active' AND release_operation_key IS NULL AND released_at IS NULL)
+        OR
+        (state='released' AND release_operation_key IS NOT NULL AND released_at IS NOT NULL)
+    )
+);
+CREATE UNIQUE INDEX chapter_generation_writer_fence_one_active
+ON chapter_generation_writer_fence(workspace_id,chapter_document_id,operation)
+WHERE state='active';
+"""),
+)
+
+
+PRODUCTION_SUPERVISOR_MIGRATIONS = (
+    Migration("0005-production-supervisor-authority", """
+CREATE TABLE plugin_supervisor_claim(
+    worker_id TEXT NOT NULL,
+    pin_epoch INTEGER NOT NULL CHECK(pin_epoch >= 1),
+    pin_id TEXT NOT NULL UNIQUE,
+    owner_id TEXT NOT NULL,
+    plugin_id TEXT NOT NULL,
+    generation_id TEXT NOT NULL,
+    release_id TEXT NOT NULL,
+    package_hash TEXT NOT NULL,
+    data_generation_id TEXT,
+    retire_epoch INTEGER NOT NULL CHECK(retire_epoch >= 1),
+    state TEXT NOT NULL CHECK(state IN ('active','released')),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    released_at TEXT,
+    revision INTEGER NOT NULL CHECK(revision >= 1),
+    PRIMARY KEY(worker_id,pin_epoch),
+    FOREIGN KEY(pin_id) REFERENCES p2_plugin_release_pin(pin_id),
+    CHECK(
+        (state='active' AND released_at IS NULL)
+        OR
+        (state='released' AND released_at IS NOT NULL)
+    )
+);
+CREATE UNIQUE INDEX plugin_supervisor_claim_one_active
+ON plugin_supervisor_claim(worker_id)
+WHERE state='active';
+CREATE INDEX plugin_supervisor_claim_release
+ON plugin_supervisor_claim(release_id,retire_epoch,state);
+"""),
+)
+
+
+PRODUCTION_JOB_MIGRATIONS = (
+    Migration("0006-production-job-command-receipt", """
+CREATE TABLE execution_job_start_receipt(
+    operation_key TEXT PRIMARY KEY,
+    workspace_id TEXT NOT NULL,
+    job_id TEXT NOT NULL,
+    request_key TEXT NOT NULL,
+    request_hash TEXT NOT NULL CHECK(length(request_hash) = 64),
+    request_json TEXT NOT NULL,
+    run_snapshot_asset_id TEXT NOT NULL,
+    run_snapshot_hash TEXT NOT NULL CHECK(length(run_snapshot_hash) = 64),
+    step_id TEXT NOT NULL,
+    attempt_id TEXT NOT NULL,
+    plugin_id TEXT NOT NULL,
+    generation_id TEXT NOT NULL,
+    release_id TEXT NOT NULL CHECK(length(release_id) = 64),
+    package_hash TEXT NOT NULL CHECK(length(package_hash) = 64),
+    capability_id TEXT NOT NULL,
+    result_contract TEXT NOT NULL CHECK(result_contract IN ('candidate-batch/v1','artifact-bundle/v1','diagnostic-bundle/v1')),
+    writer_epoch INTEGER NOT NULL CHECK(writer_epoch >= 1),
+    worker_run_id TEXT,
+    state TEXT NOT NULL CHECK(state IN ('reserved','worker_acquired','attempt_committed','completed','uncertain','reconciled')),
+    response_json TEXT,
+    failure_reason TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE(workspace_id,job_id),
+    UNIQUE(workspace_id,request_key),
+    CHECK(
+        (state='reserved' AND worker_run_id IS NULL AND response_json IS NULL)
+        OR (state='worker_acquired' AND worker_run_id IS NOT NULL AND response_json IS NULL)
+        OR (state='attempt_committed' AND worker_run_id IS NOT NULL AND response_json IS NULL)
+        OR (state='completed' AND worker_run_id IS NOT NULL AND response_json IS NOT NULL)
+        OR (state IN ('uncertain','reconciled') AND response_json IS NULL)
+    )
+);
+CREATE INDEX execution_job_start_receipt_state
+ON execution_job_start_receipt(state,worker_run_id);
+"""),
+)
+
+PRODUCTION_CORE_MIGRATIONS = (
+    CORE_MIGRATIONS
+    + PRODUCTION_SUPERVISOR_MIGRATIONS
+    + PRODUCTION_JOB_MIGRATIONS
 )
 
 
@@ -86,7 +194,9 @@ class MigrationRunner:
     def __init__(self, connection: sqlite3.Connection) -> None:
         self.connection = connection
 
-    def apply(self, migrations: Iterable[Migration] = CORE_MIGRATIONS) -> None:
+    def apply(
+        self, migrations: Iterable[Migration] = PRODUCTION_CORE_MIGRATIONS
+    ) -> None:
         self.connection.execute("CREATE TABLE IF NOT EXISTS schema_migration(migration_id TEXT PRIMARY KEY,sha256 TEXT NOT NULL,applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)")
         for migration in migrations:
             try:

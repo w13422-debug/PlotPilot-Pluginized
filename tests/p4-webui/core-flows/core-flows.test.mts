@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { createCoreFlows, editCoreChapter, type CoreOpenedChapter } from '../../../frontend/src/core/flows/coreFlows.ts'
+import {
+  createCoreChapterRecovery,
+  createCoreFlows,
+  editCoreChapter,
+  type CoreOpenedChapter,
+} from '../../../frontend/src/core/flows/coreFlows.ts'
 import type { CoreFlowGateway, CoreFlowRouteId } from '../../../frontend/src/core/flows/gateway.ts'
 import type { CoreAuthorityCommandQuery } from '../../../frontend/src/contracts/types.ts'
 
@@ -8,7 +13,7 @@ const NOW = '2026-08-28T00:00:00Z'
 
 function ids() {
   let value = 0
-  return { next: (kind: 'workspace' | 'operation' | 'revision') => `${kind}-${++value}` }
+  return { next: (kind: 'workspace' | 'document' | 'operation' | 'revision') => `${kind}-${++value}` }
 }
 
 function gateway(handler: (routeId: CoreFlowRouteId, request: CoreAuthorityCommandQuery) => unknown): CoreFlowGateway {
@@ -72,6 +77,149 @@ test('creates and CAS-deletes a project with fresh typed operation identities', 
   assert.deepEqual(calls.map(([route]) => route), ['workspace.create', 'workspace.delete'])
   assert.equal(calls[1]?.[1].schema, 'core-workspace-delete-command/v1')
   if (calls[1]?.[1].schema === 'core-workspace-delete-command/v1') assert.equal(calls[1][1].expected_revision, 0)
+})
+
+test('creates a chapter with the filtered Core chapter type and exact returned authority', async () => {
+  const calls: Array<[CoreFlowRouteId, CoreAuthorityCommandQuery]> = []
+  const flows = createCoreFlows({ ids: ids(), gateway: gateway((route, request) => {
+    calls.push([route, request])
+    if (request.schema !== 'core-document-create-command/v1') throw new Error('wrong command')
+    return document(request.document_id, request.workspace_id, request.title)
+  }) })
+
+  const created = await flows.createChapter('  ws-1  ', '  第 1 章  ')
+  assert.deepEqual(created, {
+    documentId: 'document-2', workspaceId: 'ws-1', title: '第 1 章', displayIndex: 1,
+    revision: 0, currentRevisionId: null, createdAt: NOW, updatedAt: NOW,
+  })
+  assert.deepEqual(calls.map(([route]) => route), ['document.create'])
+  assert.deepEqual(calls[0]?.[1], {
+    schema: 'core-document-create-command/v1', operation_key: 'operation-1', document_id: 'document-2',
+    workspace_id: 'ws-1', document_type: 'core.chapter', title: '第 1 章',
+  })
+})
+
+test('reuses the exact chapter create command after a response is lost', async () => {
+  const commands: CoreAuthorityCommandQuery[] = []
+  let attempt = 0
+  const flows = createCoreFlows({ ids: ids(), gateway: gateway((_route, request) => {
+    commands.push(request)
+    attempt += 1
+    if (attempt === 1) throw new Error('response lost')
+    if (request.schema !== 'core-document-create-command/v1') throw new Error('wrong command')
+    return document(request.document_id, request.workspace_id, request.title)
+  }) })
+
+  await assert.rejects(() => flows.createChapter('ws-1', '第 1 章'), /response lost/)
+  await flows.createChapter('ws-1', '第 1 章')
+  assert.deepEqual(commands[0], commands[1])
+})
+
+test('rejects a chapter create response that drifts from workspace, document, type, or title', async (t) => {
+  const drifts = [
+    { name: 'workspace', patch: { workspace_id: 'ws-other' } },
+    { name: 'document', patch: { document_id: 'doc-other' } },
+    { name: 'type', patch: { document_type: 'core.notes' } },
+    { name: 'title', patch: { title: '其他章节' } },
+  ] as const
+  for (const drift of drifts) {
+    await t.test(drift.name, async () => {
+      const flows = createCoreFlows({ ids: ids(), gateway: gateway((_route, request) => {
+        if (request.schema !== 'core-document-create-command/v1') throw new Error('wrong command')
+        return { ...document(request.document_id, request.workspace_id, request.title), ...drift.patch }
+      }) })
+      await assert.rejects(() => flows.createChapter('ws-1', '第 1 章'), /different workspace, document, type, or title/)
+    })
+  }
+})
+
+test('chapter creation refreshes and opens the committed document on the happy path', async () => {
+  const recovery = createCoreChapterRecovery()
+  const events: string[] = []
+  const documentId = await recovery.run('ws-1', '第 1 章', {
+    createChapter: async (workspaceId, title) => {
+      events.push(`create:${workspaceId}:${title}`)
+      return { documentId: 'doc-new', workspaceId, title, displayIndex: 1, revision: 0,
+        currentRevisionId: null, createdAt: NOW, updatedAt: NOW }
+    },
+    refreshWorkspace: async workspaceId => { events.push(`refresh:${workspaceId}`) },
+    openDocument: async targetDocumentId => { events.push(`open:${targetDocumentId}`) },
+  })
+
+  assert.equal(documentId, 'doc-new')
+  assert.deepEqual(events, ['create:ws-1:第 1 章', 'refresh:ws-1', 'open:doc-new'])
+  assert.equal(recovery.canRunOrdinaryReload('ws-1'), true)
+})
+
+test('recovers a committed chapter after refresh failure without submitting a second create', async () => {
+  const recovery = createCoreChapterRecovery()
+  let createCount = 0
+  let refreshCount = 0
+  const openedDocumentIds: string[] = []
+  const actions = {
+    createChapter: async (workspaceId: string, title: string) => {
+      createCount += 1
+      return { documentId: 'doc-committed', workspaceId, title, displayIndex: 1, revision: 0,
+        currentRevisionId: null, createdAt: NOW, updatedAt: NOW }
+    },
+    refreshWorkspace: async () => {
+      refreshCount += 1
+      if (refreshCount === 1) throw new Error('refresh failed')
+    },
+    openDocument: async (documentId: string) => { openedDocumentIds.push(documentId) },
+  }
+
+  await assert.rejects(() => recovery.run('ws-1', '第 1 章', actions), /refresh failed/)
+  assert.equal(recovery.hasCommittedChapter('ws-1'), true)
+  assert.equal(recovery.canRunOrdinaryReload('ws-1'), false)
+
+  const recoveredDocumentId = await recovery.run('ws-1', 'ignored recovery title', actions)
+  assert.equal(recoveredDocumentId, 'doc-committed')
+  assert.equal(createCount, 1)
+  assert.equal(refreshCount, 2)
+  assert.deepEqual(openedDocumentIds, ['doc-committed'])
+  assert.equal(recovery.hasCommittedChapter('ws-1'), false)
+})
+
+test('blocks an interleaved ordinary reload until create-owned refresh opens and routes the new document', async () => {
+  const recovery = createCoreChapterRecovery()
+  let signalRefreshStarted!: () => void
+  let releaseRefresh!: () => void
+  const refreshStarted = new Promise<void>(resolve => { signalRefreshStarted = resolve })
+  const refreshReleased = new Promise<void>(resolve => { releaseRefresh = resolve })
+  let selectedDocumentId = 'doc-old'
+  let routeDocumentId = 'doc-old'
+  let ordinaryReloadCount = 0
+
+  const creation = recovery.run('ws-1', '第 2 章', {
+    createChapter: async (workspaceId, title) => ({ documentId: 'doc-new', workspaceId, title, displayIndex: 2,
+      revision: 0, currentRevisionId: null, createdAt: NOW, updatedAt: NOW }),
+    refreshWorkspace: async () => {
+      signalRefreshStarted()
+      await refreshReleased
+    },
+    openDocument: async documentId => {
+      selectedDocumentId = documentId
+      routeDocumentId = documentId
+    },
+  })
+  await refreshStarted
+
+  const pendingOrdinaryReloadRan = (() => {
+    if (!recovery.canRunOrdinaryReload('ws-1')) return false
+    ordinaryReloadCount += 1
+    selectedDocumentId = 'doc-old'
+    routeDocumentId = 'doc-old'
+    return true
+  })()
+  assert.equal(pendingOrdinaryReloadRan, false)
+  releaseRefresh()
+  await creation
+
+  assert.equal(ordinaryReloadCount, 0)
+  assert.equal(selectedDocumentId, 'doc-new')
+  assert.equal(routeDocumentId, 'doc-new')
+  assert.equal(recovery.canRunOrdinaryReload('ws-1'), true)
 })
 
 test('loads chapter navigation, opens paged content, edits and saves a new Core revision', async () => {

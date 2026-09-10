@@ -9,9 +9,8 @@ import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from backend.plotpilot_core.backup.models import BackupBarrier, BackupMode
 from backend.plotpilot_core.repositories import CoreAuthorityRepository
 from backend.plotpilot_plugin_sdk import (
     ContractError,
@@ -20,6 +19,9 @@ from backend.plotpilot_plugin_sdk import (
     canonical_bytes,
     sha256_hex,
 )
+
+if TYPE_CHECKING:
+    from backend.plotpilot_core.backup.models import BackupBarrier, BackupMode
 
 _ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$")
 _TIMESTAMP = re.compile(
@@ -178,6 +180,8 @@ class JobRuntimeBackupContributor:
         mode: BackupMode,
         workspace_ids: tuple[str, ...],
     ) -> Iterator[BackupBarrier]:
+        from backend.plotpilot_core.backup.models import BackupBarrier
+
         normalized = self._validate_request(
             backup_epoch=backup_epoch,
             created_at=created_at,
@@ -205,6 +209,8 @@ class JobRuntimeBackupContributor:
     def capture_durable_generation(
         self, *, barrier: BackupBarrier
     ) -> DurableJobGeneration:
+        from backend.plotpilot_core.backup.models import BackupBarrier
+
         if not isinstance(barrier, BackupBarrier) or not barrier.token:
             raise ContractValidationError("backup barrier is absent")
         if isinstance(barrier.backup_epoch, bool) or barrier.backup_epoch < 1:

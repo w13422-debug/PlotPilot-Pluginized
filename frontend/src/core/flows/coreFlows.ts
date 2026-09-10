@@ -1,5 +1,6 @@
 import type {
   CoreDocument,
+  CoreDocumentCreateCommand,
   CoreDeleteResult,
   CoreDocumentPage,
   CoreDocumentRevisionCreateCommand,
@@ -16,6 +17,7 @@ const PAGE_LIMIT = 100
 const CONTENT_PAGE_LENGTH = 65_536
 const MAX_PAGE_REQUESTS = 10_000
 const MAX_REVISION_CONTENT_LENGTH = 8_388_608
+const CHAPTER_DOCUMENT_TYPE = 'core.chapter'
 
 export interface CoreProjectListItem {
   workspaceId: string
@@ -52,7 +54,7 @@ export interface CoreOpenedChapter {
 }
 
 export interface CoreFlowIdFactory {
-  next(kind: 'workspace' | 'operation' | 'revision'): string
+  next(kind: 'workspace' | 'document' | 'operation' | 'revision'): string
 }
 
 export interface CreateCoreFlowsOptions {
@@ -91,7 +93,7 @@ function projectFromWorkspace(workspace: Readonly<CoreWorkspace>): CoreProjectLi
 
 function chaptersFromDocuments(documents: readonly Readonly<CoreDocument>[]): CoreChapterListItem[] {
   return documents
-    .filter(document => document.document_type === 'core.chapter')
+    .filter(document => document.document_type === CHAPTER_DOCUMENT_TYPE)
     .slice()
     .sort((left, right) => left.created_at.localeCompare(right.created_at) || left.document_id.localeCompare(right.document_id))
     .map((document, index) => ({
@@ -114,10 +116,58 @@ export function editCoreChapter(chapter: Readonly<CoreOpenedChapter>, draftConte
   }
 }
 
+export interface CoreChapterCreateRecoveryActions {
+  createChapter(workspaceId: string, title: string): Promise<Readonly<CoreChapterListItem>>
+  refreshWorkspace(workspaceId: string): Promise<void>
+  openDocument(documentId: string): Promise<void>
+}
+
+export function createCoreChapterRecovery() {
+  const activeWorkspaces = new Set<string>()
+  const committedByWorkspace = new Map<string, Readonly<{ workspaceId: string; documentId: string }>>()
+
+  function hasCommittedChapter(workspaceId: string): boolean {
+    return committedByWorkspace.has(workspaceId)
+  }
+
+  function canRunOrdinaryReload(workspaceId: string): boolean {
+    return !activeWorkspaces.has(workspaceId) && !hasCommittedChapter(workspaceId)
+  }
+
+  async function run(
+    workspaceIdInput: string,
+    title: string,
+    actions: Readonly<CoreChapterCreateRecoveryActions>,
+  ): Promise<string> {
+    const workspaceId = assertNonEmpty(workspaceIdInput, 'Workspace identity')
+    const normalizedTitle = assertNonEmpty(title, 'Chapter title')
+    if (activeWorkspaces.has(workspaceId)) throw new Error(`Core chapter create/recovery is already active for ${workspaceId}`)
+    activeWorkspaces.add(workspaceId)
+    try {
+      let committed = committedByWorkspace.get(workspaceId)
+      if (committed === undefined) {
+        const created = await actions.createChapter(workspaceId, normalizedTitle)
+        if (created.workspaceId !== workspaceId) throw new Error('Core chapter create/recovery crossed Workspace')
+        committed = { workspaceId, documentId: assertNonEmpty(created.documentId, 'Committed document identity') }
+        committedByWorkspace.set(workspaceId, committed)
+      }
+      await actions.refreshWorkspace(workspaceId)
+      await actions.openDocument(committed.documentId)
+      if (committedByWorkspace.get(workspaceId) === committed) committedByWorkspace.delete(workspaceId)
+      return committed.documentId
+    } finally {
+      activeWorkspaces.delete(workspaceId)
+    }
+  }
+
+  return { hasCommittedChapter, canRunOrdinaryReload, run }
+}
+
 export function createCoreFlows(options: CreateCoreFlowsOptions) {
   const gateway = options.gateway
   const ids = options.ids ?? defaultIds()
   const pendingCreateCommands = new Map<string, CoreWorkspaceCreateCommand>()
+  const pendingChapterCreateCommands = new Map<string, CoreDocumentCreateCommand>()
   const pendingDeleteCommands = new Map<string, CoreWorkspaceDeleteCommand>()
   const pendingSaveCommands = new Map<string, CoreDocumentRevisionCreateCommand>()
 
@@ -202,6 +252,39 @@ export function createCoreFlows(options: CreateCoreFlowsOptions) {
     pendingDeleteCommands.delete(pendingKey)
   }
 
+  async function createChapter(workspaceIdInput: string, title: string): Promise<CoreChapterListItem> {
+    const workspaceId = assertNonEmpty(workspaceIdInput, 'Workspace identity')
+    const normalizedTitle = assertNonEmpty(title, 'Chapter title')
+    const pendingKey = JSON.stringify([workspaceId, normalizedTitle])
+    let command = pendingChapterCreateCommands.get(pendingKey)
+    if (command === undefined) {
+      command = {
+        schema: 'core-document-create-command/v1',
+        operation_key: ids.next('operation'),
+        document_id: ids.next('document'),
+        workspace_id: workspaceId,
+        document_type: CHAPTER_DOCUMENT_TYPE,
+        title: normalizedTitle,
+      }
+      pendingChapterCreateCommands.set(pendingKey, command)
+    }
+    let document: Readonly<CoreDocument>
+    try {
+      document = await gateway.request('document.create', command)
+    } catch (error: unknown) {
+      if (error instanceof CoreFlowHttpError) pendingChapterCreateCommands.delete(pendingKey)
+      throw error
+    }
+    if (document.workspace_id !== command.workspace_id
+      || document.document_id !== command.document_id
+      || document.document_type !== command.document_type
+      || document.title !== command.title) {
+      throw new Error('Core chapter create returned a different workspace, document, type, or title')
+    }
+    pendingChapterCreateCommands.delete(pendingKey)
+    return chaptersFromDocuments([document])[0]!
+  }
+
   async function listDocuments(workspaceId: string): Promise<Readonly<CoreDocument>[]> {
     const documents: Readonly<CoreDocument>[] = []
     const seenDocumentIds = new Set<string>()
@@ -260,7 +343,7 @@ export function createCoreFlows(options: CreateCoreFlowsOptions) {
     const document = await gateway.request('document.get', {
       schema: 'core-document-get-query/v1', workspace_id: chapter.workspaceId, document_id: chapter.documentId,
     })
-    if (document.workspace_id !== chapter.workspaceId || document.document_id !== chapter.documentId || document.document_type !== 'core.chapter') {
+    if (document.workspace_id !== chapter.workspaceId || document.document_id !== chapter.documentId || document.document_type !== CHAPTER_DOCUMENT_TYPE) {
       throw new Error('Core chapter response crossed its document identity')
     }
     let content = ''
@@ -335,7 +418,7 @@ export function createCoreFlows(options: CreateCoreFlowsOptions) {
     }
   }
 
-  return { listProjects, createProject, deleteProject, loadWorkbench, openChapter, saveChapter }
+  return { listProjects, createProject, deleteProject, createChapter, loadWorkbench, openChapter, saveChapter }
 }
 
 export type CoreFlows = ReturnType<typeof createCoreFlows>

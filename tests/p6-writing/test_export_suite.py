@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from dataclasses import FrozenInstanceError
-from hashlib import sha256
-from pathlib import Path
 import io
+import json
 import re
 import time
 import zipfile
 import zlib
+from dataclasses import FrozenInstanceError
+from hashlib import sha256
+from pathlib import Path
 
 import pytest
-
 from plotpilot_export_suite.domain import (
     ChapterRevision,
     ExportDocument,
@@ -32,7 +32,17 @@ def document() -> ExportDocument:
 
 def test_runtime_package_is_not_faked_before_real_ports_exist() -> None:
     root = Path(__file__).parents[2] / "first-party-plugins/export-suite"
-    assert not (root / "plugin.json").exists()
+    manifest = json.loads((root / "plugin.json").read_text("utf-8"))
+    assert manifest["kind"] == "code"
+    assert manifest["plugin_id"] == "com.plotpilot.export-suite"
+    entrypoint = manifest["backend"]["entrypoint"]
+    assert entrypoint == "plotpilot_export_suite.worker:main"
+    module_name, separator, function_name = entrypoint.partition(":")
+    assert separator == ":"
+    entrypoint_path = root / "backend" / "src" / Path(*module_name.split(".")).with_suffix(".py")
+    assert entrypoint_path.is_file()
+    assert f"def {function_name}" in entrypoint_path.read_text("utf-8")
+    assert (root / "backend/requirements.lock").is_file()
     assert not list(root.rglob("*.whl"))
 
 
@@ -102,7 +112,7 @@ def test_binary_legacy_formats_are_real_files(export_format: ExportFormat, suffi
 
 def _pdf_text(data: bytes) -> str:
     streams: list[bytes] = []
-    for match in re.finditer(rb"stream\r?\n(.*?)\r?\nendstream", data, re.S):
+    for match in re.finditer(rb"stream\r?\n(.*?)\r?\nendstream", data, re.DOTALL):
         stream = match.group(1)
         try:
             stream = zlib.decompress(stream)
@@ -119,7 +129,7 @@ def _pdf_text(data: bytes) -> str:
 
     parts: list[str] = []
     for stream in streams:
-        for literal in re.findall(rb"\((.*?)\) Tj", stream, re.S):
+        for literal in re.findall(rb"\((.*?)\) Tj", stream, re.DOTALL):
             raw = unescape(literal)
             if len(raw) % 2 == 0:
                 parts.append("".join(cmap.get(int.from_bytes(raw[index:index + 2], "big"), "�") for index in range(0, len(raw), 2)))

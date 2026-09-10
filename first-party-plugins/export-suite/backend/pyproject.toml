@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "plotpilot-export-suite"
+version = "1.0.0"
+description = "Installable PlotPilot immutable Asset export worker"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "EbookLib==0.20",
+  "fpdf2==2.8.8",
+  "plotpilot-plugin-sdk==0.1.2",
+  "python-docx==1.2.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

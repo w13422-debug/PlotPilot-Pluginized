@@ -7,13 +7,13 @@ and does not add an HTTP surface: all writes use the connection and
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
-from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
 import hashlib
 import json
 import re
 import sqlite3
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from backend.plotpilot_plugin_sdk import (
@@ -25,19 +25,22 @@ from backend.plotpilot_plugin_sdk import (
     parse_json_bytes,
     sha256_hex,
     verify_checkpoint,
+    verify_snapshot,
 )
 from backend.plotpilot_plugin_sdk.verifier import validate_rpc_result
 
 from ..domain.entities import utc_now
 from ..events.store import CoreEventStore, JobEventStore
 from ..jobs.states import ATTEMPT_EDGES, JOB_EDGES, STEP_EDGES, can_transition
-from .authority import CoreAuthorityRepository, verify_attempt_snapshot_binding
-
+from .authority import CoreAuthorityRepository
 
 _ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$")
 _HASH = re.compile(r"^[0-9a-f]{64}$")
 _ACTIVE_ATTEMPT_STATES = frozenset({"running", "cancelling"})
 _TERMINAL_ATTEMPT_STATES = frozenset({"succeeded", "partial", "failed", "cancelled"})
+_TERMINAL_JOB_STATES = frozenset({"succeeded", "partial", "failed", "cancelled"})
+_CONTROL_AUTHORITY_RESULT = "authority_result"
+_CONTROL_PUBLIC_RESPONSE = "public_response"
 _AWAIT_USER_REASONS = frozenset({"user_input", "external_confirmation"})
 _CHECKPOINT_METHOD = "host.checkpoint.commit/v1"
 _CONTROL_METHODS = {
@@ -105,6 +108,32 @@ def _is_expired(expires_at: str, now: str) -> bool:
 
 def _checkpoint_error(message: str) -> ContractError:
     return ContractError(ErrorCode.CHECKPOINT_INVALID, message)
+
+
+def _verify_snapshot_release_binding(
+    snapshot: Mapping[str, Any], attempt: Mapping[str, Any]
+) -> None:
+    """Bind rollout Generation separately from the release's data Generation."""
+
+    verify_snapshot(snapshot)
+    releases = [
+        release
+        for release in snapshot["plugin_releases"]
+        if release["plugin_id"] == attempt["plugin_id"]
+    ]
+    if len(releases) != 1:
+        raise ValueError("Attempt plugin is not uniquely bound by the RunSnapshot")
+    release = releases[0]
+    if (
+        release["release_id"],
+        release["package_hash"],
+        snapshot["scope"]["operation"],
+    ) != (
+        attempt["release_id"],
+        attempt["package_hash"],
+        attempt["capability_id"],
+    ):
+        raise ValueError("Attempt release identity is not bound by the RunSnapshot")
 
 
 @dataclass(frozen=True, slots=True)
@@ -264,9 +293,12 @@ class SQLiteCheckpointStore:
             if not isinstance(loaded, Mapping):
                 raise ContractValidationError("checkpoint Asset is not an object")
             loaded_value = dict(loaded)
-            if isinstance(source, Mapping) and loaded_value != value:
-                if not allow_content_drift:
-                    raise ContractError(ErrorCode.CHECKPOINT_INVALID, "checkpoint Asset content drifted")
+            if (
+                isinstance(source, Mapping)
+                and loaded_value != value
+                and not allow_content_drift
+            ):
+                raise ContractError(ErrorCode.CHECKPOINT_INVALID, "checkpoint Asset content drifted")
             verify_checkpoint(loaded_value)
             if raw != canonical_bytes(loaded_value):
                 raise ContractError(ErrorCode.ASSET_ERROR, "checkpoint Asset is not canonical JSON")
@@ -357,7 +389,7 @@ class SQLiteCheckpointStore:
             raise ContractError(ErrorCode.ASSET_ERROR, "Attempt RunSnapshot hash authority drifted")
         if snapshot.get("schema") == "run-snapshot/v1":
             try:
-                verify_attempt_snapshot_binding(snapshot, attempt)
+                _verify_snapshot_release_binding(snapshot, attempt)
             except Exception as exc:
                 raise ContractError(
                     ErrorCode.INCOMPATIBLE_GENERATION,
@@ -668,7 +700,7 @@ class SQLiteCheckpointStore:
     ) -> tuple[sqlite3.Row, sqlite3.Row]:
         if worker_run_id is None:
             raise ContractValidationError("checkpoint requires a worker_run_id")
-        job, step, attempt = self._fence_attempt(
+        job, _step, attempt = self._fence_attempt(
             connection,
             job_id=str(value["job_id"]),
             step_id=str(value["step_id"]),
@@ -789,14 +821,19 @@ class SQLiteCheckpointStore:
             raise
         except Exception as exc:
             raise _checkpoint_error("checkpoint failed contract verification") from exc
-        if previous is not None and previous["source_attempt_id"] != value["source_attempt_id"]:
-            # A new source Attempt may continue a chain only when its durable
-            # Attempt row explicitly records the exact resume edge.
-            if (
+        if (
+            previous is not None
+            and previous["source_attempt_id"] != value["source_attempt_id"]
+            and (
                 attempt["resume_of_attempt_id"] != previous["source_attempt_id"]
                 or attempt["resume_checkpoint_id"] != previous["checkpoint_id"]
-            ):
-                raise _checkpoint_error("checkpoint source Attempt changed without an explicit resume")
+            )
+        ):
+            # A new source Attempt may continue a chain only when its durable
+            # Attempt row explicitly records the exact resume edge.
+            raise _checkpoint_error(
+                "checkpoint source Attempt changed without an explicit resume"
+            )
         self._validate_monotonic(value, previous)
 
         by_id = connection.execute(
@@ -983,7 +1020,10 @@ class SQLiteCheckpointStore:
         row = self._latest_row(connection, job_id)
         if row is not None:
             record = self._decode_row(connection, row, expected_workspace_id=workspace_id)
-            from ..api.v1.jobs.rpc.command_query import JobCheckpointBinding, JobSnapshotExtensions
+            from ..api.v1.jobs.rpc.command_query import (
+                JobCheckpointBinding,
+                JobSnapshotExtensions,
+            )
 
             return JobSnapshotExtensions(
                 JobCheckpointBinding(workspace_id, job_id, str(record.checkpoint["step_id"]), record.checkpoint_id, record.to_dict()),
@@ -1483,12 +1523,25 @@ class SQLiteExecutionControlPort:
         ):
             raise ContractError(ErrorCode.DUPLICATE_REQUEST, "control operation key was reused with a different payload")
         try:
-            result = json.loads(str(row["response_json"]))
+            stored_response = json.loads(str(row["response_json"]))
             request = json.loads(str(row["request_json"]))
         except (TypeError, json.JSONDecodeError) as exc:
             raise ContractError(ErrorCode.ASSET_ERROR, "control operation response is invalid") from exc
-        if not isinstance(result, dict) or not isinstance(request, dict):
+        if not isinstance(stored_response, dict) or not isinstance(request, dict):
             raise ContractError(ErrorCode.ASSET_ERROR, "control operation response is not an object")
+        result = stored_response
+        if set(stored_response) == {
+            _CONTROL_AUTHORITY_RESULT,
+            _CONTROL_PUBLIC_RESPONSE,
+        }:
+            authority_result = stored_response[_CONTROL_AUTHORITY_RESULT]
+            public_response = stored_response[_CONTROL_PUBLIC_RESPONSE]
+            if not isinstance(authority_result, dict) or not isinstance(public_response, dict):
+                raise ContractError(
+                    ErrorCode.ASSET_ERROR,
+                    "control operation response envelope is invalid",
+                )
+            result = authority_result
         if _json(request) != request_json or sha256_hex(canonical_bytes(request)) != payload_hash:
             raise ContractError(ErrorCode.ASSET_ERROR, "control operation request closure is invalid")
         self._validate_control_request_closure(connection, operation, request, result)
@@ -1652,6 +1705,7 @@ class SQLiteExecutionControlPort:
         request_json: str,
         result: Mapping[str, Any],
         now: str,
+        store_public_response: bool = False,
     ) -> ControlDecision:
         method = self._method(operation)
         if sha256_hex(canonical_bytes(json.loads(request_json))) != payload_hash:
@@ -1665,6 +1719,41 @@ class SQLiteExecutionControlPort:
             self._validate_resume_result(result)
         else:
             validate_rpc_result(method, result)
+        stored_response: Mapping[str, Any] = result
+        if store_public_response:
+            job = connection.execute(
+                "SELECT workspace_id,job_state,job_revision,job_event_high_water "
+                "FROM execution_job WHERE job_id=?",
+                (job_id,),
+            ).fetchone()
+            if job is None:
+                raise ContractError(
+                    ErrorCode.ASSET_ERROR,
+                    "control operation lost its Job authority",
+                )
+            public_state = (
+                "needs_attention"
+                if job["job_state"] in {"waiting_user", "interrupted"}
+                else str(job["job_state"])
+            )
+            stored_response = {
+                _CONTROL_AUTHORITY_RESULT: dict(result),
+                _CONTROL_PUBLIC_RESPONSE: {
+                    "schema": "job-command-result/v2",
+                    "operation_key": operation_key,
+                    "workspace_id": str(job["workspace_id"]),
+                    "job_id": job_id,
+                    "command": operation,
+                    "accepted": True,
+                    "idempotent": False,
+                    "terminal_known": public_state in _TERMINAL_JOB_STATES,
+                    "state": public_state,
+                    "job_revision": int(job["job_revision"]),
+                    "snapshot_cursor": (
+                        f"job/{job_id}/{int(job['job_event_high_water'])}"
+                    ),
+                },
+            }
         connection.execute(
             "INSERT INTO execution_control_operation("
             "job_id,operation_key,operation,payload_hash,attempt_id,lease_epoch,response_json,created_at,method,request_json) "
@@ -1676,7 +1765,7 @@ class SQLiteExecutionControlPort:
                 payload_hash,
                 attempt_id,
                 lease_epoch,
-                _json(result),
+                _json(stored_response),
                 now,
                 method,
                 request_json,
@@ -1694,6 +1783,8 @@ class SQLiteExecutionControlPort:
         operation_key: str,
         worker_run_id: str | None = None,
         reason: str,
+        expected_job_revision: int | None = None,
+        store_public_response: bool = False,
     ) -> ControlDecision:
         _require_id(operation_key, "operation_key")
         _require_id(job_id, "job_id")
@@ -1705,23 +1796,28 @@ class SQLiteExecutionControlPort:
         _require_positive_int(lease_epoch, "lease_epoch")
         if not isinstance(reason, str) or not reason:
             raise ContractValidationError("reason must be non-empty")
+        if expected_job_revision is not None:
+            _require_positive_int(expected_job_revision, "expected_job_revision")
+        request_values = {
+            "job_id": job_id,
+            "step_id": step_id,
+            "attempt_id": attempt_id,
+            "lease_epoch": lease_epoch,
+            "operation_key": operation_key,
+            "worker_run_id": worker_run_id,
+            "reason": reason,
+        }
+        if expected_job_revision is not None:
+            request_values["expected_job_revision"] = expected_job_revision
         request = self._request(
             "cancel",
-            {
-                "job_id": job_id,
-                "step_id": step_id,
-                "attempt_id": attempt_id,
-                "lease_epoch": lease_epoch,
-                "operation_key": operation_key,
-                "worker_run_id": worker_run_id,
-                "reason": reason,
-            },
+            request_values,
         )
         request_json = _json(request)
         payload_hash = sha256_hex(canonical_bytes(request))
         now = _clock_value(self.clock)
         with self.repository.transaction() as connection:
-            job, step, attempt = self._caller(
+            job, _step, attempt = self._caller(
                 connection,
                 job_id=job_id,
                 step_id=step_id,
@@ -1735,6 +1831,13 @@ class SQLiteExecutionControlPort:
             )
             if replay is not None:
                 return replay
+            if (
+                expected_job_revision is not None
+                and int(job["job_revision"]) != expected_job_revision
+            ):
+                raise ContractError(
+                    ErrorCode.STALE_LEASE, "expected Job revision CAS failed"
+                )
             if connection.execute(
                 "SELECT 1 FROM execution_checkpoint_operation WHERE job_id=? AND operation_key=?",
                 (job_id, operation_key),
@@ -1762,6 +1865,7 @@ class SQLiteExecutionControlPort:
                     request_json=request_json,
                     result=result,
                     now=now,
+                    store_public_response=store_public_response,
                 )
             if attempt["state"] != "running" or job["job_state"] != "running":
                 raise ContractError(ErrorCode.INVALID_TRANSITION, "cancel race lost to an earlier state decision")
@@ -1801,6 +1905,7 @@ class SQLiteExecutionControlPort:
                 request_json=request_json,
                 result=result,
                 now=now,
+                store_public_response=store_public_response,
             )
 
     def _suspend(
@@ -1819,6 +1924,8 @@ class SQLiteExecutionControlPort:
         checkpoint: Mapping[str, Any] | str | None = None,
         checkpoint_asset_id: str | None = None,
         prompt_asset_id: str | None = None,
+        expected_job_revision: int | None = None,
+        store_public_response: bool = False,
     ) -> ControlDecision:
         _require_id(operation_key, "operation_key")
         _require_id(job_id, "job_id")
@@ -1832,6 +1939,8 @@ class SQLiteExecutionControlPort:
             raise ContractValidationError("reason must be non-empty")
         if operation == "await_user" and reason not in _AWAIT_USER_REASONS:
             raise ContractValidationError("await_user reason is not in the frozen enum")
+        if expected_job_revision is not None:
+            _require_positive_int(expected_job_revision, "expected_job_revision")
         if checkpoint is None and checkpoint_asset_id is None:
             raise ContractError(ErrorCode.CHECKPOINT_INVALID, "suspension requires a checkpoint Asset")
         checkpoint_source: Mapping[str, Any] | str = (
@@ -1842,13 +1951,9 @@ class SQLiteExecutionControlPort:
             checkpoint_asset_id=checkpoint_asset_id if isinstance(checkpoint_source, Mapping) else None,
         )
         prompt_asset_hash = None
-        if operation == "await_user":
+        if operation == "await_user" or prompt_asset_id is not None:
             prompt_asset_hash = self._validate_prompt_asset(prompt_asset_id)
-        elif prompt_asset_id is not None:
-            prompt_asset_hash = self._validate_prompt_asset(prompt_asset_id)
-        request = self._request(
-            operation,
-            {
+        request_values = {
                 "job_id": job_id,
                 "step_id": step_id,
                 "attempt_id": attempt_id,
@@ -1861,8 +1966,10 @@ class SQLiteExecutionControlPort:
                 "checkpoint_asset_hash": source_asset_hash,
                 "prompt_asset_id": prompt_asset_id,
                 "prompt_asset_hash": prompt_asset_hash,
-            },
-        )
+            }
+        if expected_job_revision is not None:
+            request_values["expected_job_revision"] = expected_job_revision
+        request = self._request(operation, request_values)
         request_json = _json(request)
         payload_hash = sha256_hex(canonical_bytes(request))
         now = _clock_value(self.clock)
@@ -1881,6 +1988,13 @@ class SQLiteExecutionControlPort:
             )
             if replay is not None:
                 return replay
+            if (
+                expected_job_revision is not None
+                and int(job["job_revision"]) != expected_job_revision
+            ):
+                raise ContractError(
+                    ErrorCode.STALE_LEASE, "expected Job revision CAS failed"
+                )
             if connection.execute(
                 "SELECT 1 FROM execution_checkpoint_operation WHERE job_id=? AND operation_key=?",
                 (job_id, operation_key),
@@ -1890,7 +2004,7 @@ class SQLiteExecutionControlPort:
                 raise ContractError(ErrorCode.INVALID_TRANSITION, "suspension race lost to an earlier state decision")
             if not can_transition(ATTEMPT_EDGES, "running", "suspended") or not can_transition(STEP_EDGES, "running", target_state) or not can_transition(JOB_EDGES, "running", target_state):
                 raise ContractError(ErrorCode.INVALID_TRANSITION, "invalid suspension transition")
-            checkpoint_result, checkpoint_value, source_asset_id = self.checkpoints._commit_source_in_transaction(
+            _checkpoint_result, checkpoint_value, source_asset_id = self.checkpoints._commit_source_in_transaction(
                 connection,
                 checkpoint_value,
                 operation_key=operation_key,
@@ -1963,6 +2077,7 @@ class SQLiteExecutionControlPort:
                 request_json=request_json,
                 result=result,
                 now=now,
+                store_public_response=store_public_response,
             )
 
     def pause(self, **kwargs: Any) -> ControlDecision:
@@ -1992,6 +2107,8 @@ class SQLiteExecutionControlPort:
         preallocated_receipt_id: str | None = None,
         lease_expires_at: str | None = None,
         resume_reason: str = "resume",
+        expected_job_revision: int | None = None,
+        store_public_response: bool = False,
     ) -> ControlDecision:
         source_attempt_id = resume_of_attempt_id or attempt_id
         _require_id(job_id, "job_id")
@@ -2009,6 +2126,8 @@ class SQLiteExecutionControlPort:
             _require_positive_int(lease_epoch, "lease_epoch")
         if not isinstance(resume_reason, str) or not resume_reason:
             raise ContractValidationError("resume_reason must be non-empty")
+        if expected_job_revision is not None:
+            _require_positive_int(expected_job_revision, "expected_job_revision")
         checkpoint_source: Mapping[str, Any] | str = (
             checkpoint if checkpoint is not None else str(checkpoint_asset_id)
         )
@@ -2016,9 +2135,7 @@ class SQLiteExecutionControlPort:
             checkpoint_source,
             checkpoint_asset_id=checkpoint_asset_id if isinstance(checkpoint_source, Mapping) else None,
         )
-        request = self._request(
-            "resume",
-            {
+        request_values = {
                 "job_id": job_id,
                 "step_id": step_id,
                 "operation_key": operation_key,
@@ -2039,8 +2156,10 @@ class SQLiteExecutionControlPort:
                 "checkpoint_asset_id": source_asset_id,
                 "checkpoint_asset_hash": source_asset_hash,
                 "resume_reason": resume_reason,
-            },
-        )
+            }
+        if expected_job_revision is not None:
+            request_values["expected_job_revision"] = expected_job_revision
+        request = self._request("resume", request_values)
         request_json = _json(request)
         payload_hash = sha256_hex(canonical_bytes(request))
         now = _clock_value(self.clock)
@@ -2095,6 +2214,13 @@ class SQLiteExecutionControlPort:
             )
             if replay is not None:
                 return replay
+            if (
+                expected_job_revision is not None
+                and int(job["job_revision"]) != expected_job_revision
+            ):
+                raise ContractError(
+                    ErrorCode.STALE_LEASE, "expected Job revision CAS failed"
+                )
             if connection.execute(
                 "SELECT 1 FROM execution_checkpoint_operation WHERE job_id=? AND operation_key=?",
                 (job_id, operation_key),
@@ -2108,10 +2234,7 @@ class SQLiteExecutionControlPort:
             )
             if loaded_asset_id != source_asset_id or loaded_asset_hash != source_asset_hash:
                 raise ContractError(ErrorCode.ASSET_ERROR, "resume checkpoint Asset closure drifted")
-            try:
-                verify_checkpoint(value, expected_snapshot_hash=str(job["run_snapshot_hash"]))
-            except ContractError:
-                raise
+            verify_checkpoint(value, expected_snapshot_hash=str(job["run_snapshot_hash"]))
             if value["job_id"] != job_id or value["step_id"] != step_id or value["source_attempt_id"] != source_attempt_id or int(value["lease_epoch"]) != int(old["lease_epoch"]):
                 raise _checkpoint_error("resume checkpoint is not bound to the suspended Attempt")
             latest = self.checkpoints._latest_row(connection, job_id, step_id)
@@ -2171,7 +2294,7 @@ class SQLiteExecutionControlPort:
             ).fetchone()
             if new_attempt is None:
                 raise ContractError(ErrorCode.ASSET_ERROR, "resume Attempt allocation disappeared")
-            event = self._append_event(
+            self._append_event(
                 connection,
                 job=job,
                 step_id=step_id,
@@ -2226,6 +2349,7 @@ class SQLiteExecutionControlPort:
                 request_json=request_json,
                 result=result,
                 now=now,
+                store_public_response=store_public_response,
             )
 
     def apply(self, operation: str, **kwargs: Any) -> ControlDecision:

@@ -31,6 +31,7 @@ from backend.plotpilot_core.api.v1.jobs.rpc import (
     AttemptStartBinding,
     JobCommandQueryAdapter,
 )
+from backend.plotpilot_core.assets import AssetReferenceError
 from backend.plotpilot_core.broker.service import CallerAttemptContext, CapabilityBroker
 from backend.plotpilot_core.domain.entities import utc_now
 from backend.plotpilot_core.events.store import CoreEventStore, JobEventStore
@@ -368,7 +369,7 @@ class DisposableAssetUploadBuffer:
                 sha256=expected_hash,
                 mime=mime,
             )
-        except (FileNotFoundError, OSError, ValueError):
+        except AssetReferenceError:
             return None
         if metadata.size != total_size:
             raise ContractError(

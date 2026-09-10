@@ -1,0 +1,19 @@
+# Exact, offline-only Python 3.12 runtime closure for the installable worker.
+# The binary wheels below target the supported Windows x64 worker environment.
+# Every artifact is resolved from backend/wheels with --require-hashes.
+attrs==26.1.0 --hash=sha256:c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309
+defusedxml==0.7.1 --hash=sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61
+EbookLib==0.20 --hash=sha256:fff5322517a37e31c972d27be7d982cc3928c16b3dcc5fd7e8f7c0f5d7bcf42b
+fonttools==4.64.0 --hash=sha256:06b6409b868494556a831ae33b2d9a090476c37516b38d70f45a9720b460d423
+fpdf2==2.8.8 --hash=sha256:3557a478fc577a929c94aace9666aed4dcc432b5ab6764232e6a59f1ccd75f17
+jsonschema==4.26.0 --hash=sha256:d489f15263b8d200f8387e64b4c3a75f06629559fb73deb8fdfb525f2dab50ce
+jsonschema-specifications==2025.9.1 --hash=sha256:98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe
+lxml==6.1.3 --hash=sha256:3e9a00d1c2c30936f7add097c41afc5da6556c580909104aafd382cac92a855c
+Pillow==12.3.0 --hash=sha256:a2b55dd6b2a4c4b7d87ffa56bdb33fdc5fdb9a462173861a7bc097f17d91cb09
+plotpilot-plugin-sdk==0.1.2 --hash=sha256:e85421b20a9fb07b17e602afecc992f530513b01dcd16038dc2f869df1cb1bb4
+python-docx==1.2.0 --hash=sha256:3fd478f3250fbbbfd3b94fe1e985955737c145627498896a8a6bf81f4baf66c7
+referencing==0.37.0 --hash=sha256:381329a9f99628c9069361716891d34ad94af76e461dcb0335825aecc7692231
+rpds-py==2026.6.3 --hash=sha256:2c958bf94822e9290a40aaf2a822d4bc5c88099093e3948ad6c571eca9272e5f
+rfc8785==0.1.4 --hash=sha256:520d690b448ecf0703691c76e1a34a24ddcd4fc5bc41d589cb7c58ec651bcd48
+six==1.17.0 --hash=sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274
+typing-extensions==4.16.0 --hash=sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8

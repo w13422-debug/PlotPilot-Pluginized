@@ -6,6 +6,7 @@ import sqlite3
 import uuid
 from collections.abc import Mapping
 from contextlib import contextmanager
+from dataclasses import dataclass
 from pathlib import Path
 from threading import RLock
 
@@ -378,6 +379,22 @@ class ConflictError(RuntimeError): pass
 class NotFoundError(KeyError): pass
 
 
+@dataclass(frozen=True, slots=True)
+class ChapterGenerationWriterFence:
+    workspace_id: str
+    chapter_document_id: str
+    operation: str
+    writer_mode: str
+    job_id: str
+    operation_key: str
+    writer_epoch: int
+    state: str
+    release_operation_key: str | None
+    created_at: str
+    updated_at: str
+    released_at: str | None
+
+
 class CoreAuthorityRepository:
     """The sole transaction writer for Core creative authority."""
     def __init__(self, database: str | Path) -> None:
@@ -388,6 +405,11 @@ class CoreAuthorityRepository:
         self._connection.execute("PRAGMA foreign_keys=ON")
         self._connection.execute("PRAGMA journal_mode=WAL")
         MigrationRunner(self._connection).apply()
+        # P2 owns the immutable migration definitions; Core owns production
+        # application of them to the one authoritative database.
+        from ..plugins.lifecycle.repository import LIFECYCLE_MIGRATIONS
+
+        MigrationRunner(self._connection).apply(LIFECYCLE_MIGRATIONS)
         MigrationRunner(self._connection).apply(P3_JOB_MIGRATIONS)
         MigrationRunner(self._connection).apply(EXECUTION_MIGRATIONS)
 
@@ -453,6 +475,277 @@ class CoreAuthorityRepository:
                 self._connection.commit()
             except BaseException:
                 self._connection.rollback(); raise
+
+    @staticmethod
+    def _require_writer_fence_text(value: str, field: str) -> str:
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"{field} must be a non-empty string")
+        return value
+
+    @classmethod
+    def _writer_fence_from_row(
+        cls, row: sqlite3.Row
+    ) -> ChapterGenerationWriterFence:
+        return ChapterGenerationWriterFence(
+            workspace_id=row["workspace_id"],
+            chapter_document_id=row["chapter_document_id"],
+            operation=row["operation"],
+            writer_mode=row["writer_mode"],
+            job_id=row["job_id"],
+            operation_key=row["operation_key"],
+            writer_epoch=row["writer_epoch"],
+            state=row["state"],
+            release_operation_key=row["release_operation_key"],
+            created_at=row["created_at"],
+            updated_at=row["updated_at"],
+            released_at=row["released_at"],
+        )
+
+    @staticmethod
+    def _require_core_chapter(
+        connection: sqlite3.Connection,
+        workspace_id: str,
+        chapter_document_id: str,
+    ) -> None:
+        row = connection.execute(
+            "SELECT workspace_id,document_type FROM document WHERE document_id=?",
+            (chapter_document_id,),
+        ).fetchone()
+        if row is None:
+            raise NotFoundError(chapter_document_id)
+        if row["workspace_id"] != workspace_id:
+            raise ConflictError("chapter document is outside workspace")
+        if row["document_type"] != "core.chapter":
+            raise ConflictError("writer fence requires a core.chapter document")
+
+    def acquire_chapter_generation_writer_fence(
+        self,
+        *,
+        workspace_id: str,
+        chapter_document_id: str,
+        operation: str,
+        writer_mode: str,
+        job_id: str,
+        operation_key: str,
+    ) -> ChapterGenerationWriterFence:
+        """Acquire or replay the durable pre-Job writer lease for one chapter."""
+
+        workspace_id = self._require_writer_fence_text(workspace_id, "workspace_id")
+        chapter_document_id = self._require_writer_fence_text(
+            chapter_document_id, "chapter_document_id"
+        )
+        operation = self._require_writer_fence_text(operation, "operation")
+        writer_mode = self._require_writer_fence_text(writer_mode, "writer_mode")
+        job_id = self._require_writer_fence_text(job_id, "job_id")
+        operation_key = self._require_writer_fence_text(
+            operation_key, "operation_key"
+        )
+        if writer_mode not in {"legacy", "plugin"}:
+            raise ValueError("writer_mode must be legacy or plugin")
+
+        with self.transaction() as connection:
+            self._require_core_chapter(
+                connection, workspace_id, chapter_document_id
+            )
+            replay = connection.execute(
+                "SELECT * FROM chapter_generation_writer_fence "
+                "WHERE operation_key=? OR release_operation_key=?",
+                (operation_key, operation_key),
+            ).fetchone()
+            if replay is not None:
+                expected = (
+                    workspace_id,
+                    chapter_document_id,
+                    operation,
+                    writer_mode,
+                    job_id,
+                    operation_key,
+                )
+                actual = (
+                    replay["workspace_id"],
+                    replay["chapter_document_id"],
+                    replay["operation"],
+                    replay["writer_mode"],
+                    replay["job_id"],
+                    replay["operation_key"],
+                )
+                if actual != expected:
+                    raise ConflictError("writer acquire operation key is already bound")
+                return self._writer_fence_from_row(replay)
+
+            active = connection.execute(
+                "SELECT * FROM chapter_generation_writer_fence "
+                "WHERE workspace_id=? AND chapter_document_id=? AND operation=? "
+                "AND state='active'",
+                (workspace_id, chapter_document_id, operation),
+            ).fetchone()
+            if active is not None:
+                raise ConflictError("chapter generation writer fence is already active")
+
+            writer_epoch = connection.execute(
+                "SELECT COALESCE(MAX(writer_epoch),0)+1 "
+                "FROM chapter_generation_writer_fence "
+                "WHERE workspace_id=? AND chapter_document_id=? AND operation=?",
+                (workspace_id, chapter_document_id, operation),
+            ).fetchone()[0]
+            now = utc_now()
+            connection.execute(
+                "INSERT INTO chapter_generation_writer_fence("
+                "workspace_id,chapter_document_id,operation,writer_mode,job_id,"
+                "operation_key,writer_epoch,state,release_operation_key,created_at,"
+                "updated_at,released_at) VALUES(?,?,?,?,?,?,?,'active',NULL,?,?,NULL)",
+                (
+                    workspace_id,
+                    chapter_document_id,
+                    operation,
+                    writer_mode,
+                    job_id,
+                    operation_key,
+                    writer_epoch,
+                    now,
+                    now,
+                ),
+            )
+            row = connection.execute(
+                "SELECT * FROM chapter_generation_writer_fence "
+                "WHERE workspace_id=? AND chapter_document_id=? AND operation=? "
+                "AND writer_epoch=?",
+                (workspace_id, chapter_document_id, operation, writer_epoch),
+            ).fetchone()
+            return self._writer_fence_from_row(row)
+
+    def read_chapter_generation_writer_fence(
+        self,
+        *,
+        workspace_id: str,
+        chapter_document_id: str,
+        operation: str,
+    ) -> ChapterGenerationWriterFence | None:
+        """Read the active fence, or the latest released epoch when idle."""
+
+        workspace_id = self._require_writer_fence_text(workspace_id, "workspace_id")
+        chapter_document_id = self._require_writer_fence_text(
+            chapter_document_id, "chapter_document_id"
+        )
+        operation = self._require_writer_fence_text(operation, "operation")
+        with self.read_connection() as connection:
+            row = connection.execute(
+                "SELECT * FROM chapter_generation_writer_fence "
+                "WHERE workspace_id=? AND chapter_document_id=? AND operation=? "
+                "ORDER BY writer_epoch DESC LIMIT 1",
+                (workspace_id, chapter_document_id, operation),
+            ).fetchone()
+        if row is None:
+            return None
+        return self._writer_fence_from_row(row)
+
+    def release_chapter_generation_writer_fence(
+        self,
+        *,
+        workspace_id: str,
+        chapter_document_id: str,
+        operation: str,
+        writer_mode: str,
+        job_id: str,
+        writer_epoch: int,
+        release_operation_key: str,
+    ) -> ChapterGenerationWriterFence:
+        """Release exactly one active epoch, replaying only the same release."""
+
+        workspace_id = self._require_writer_fence_text(workspace_id, "workspace_id")
+        chapter_document_id = self._require_writer_fence_text(
+            chapter_document_id, "chapter_document_id"
+        )
+        operation = self._require_writer_fence_text(operation, "operation")
+        writer_mode = self._require_writer_fence_text(writer_mode, "writer_mode")
+        job_id = self._require_writer_fence_text(job_id, "job_id")
+        release_operation_key = self._require_writer_fence_text(
+            release_operation_key, "release_operation_key"
+        )
+        if writer_mode not in {"legacy", "plugin"}:
+            raise ValueError("writer_mode must be legacy or plugin")
+        if (
+            not isinstance(writer_epoch, int)
+            or isinstance(writer_epoch, bool)
+            or writer_epoch < 1
+        ):
+            raise ValueError("writer_epoch must be a positive integer")
+
+        with self.transaction() as connection:
+            self._require_core_chapter(
+                connection, workspace_id, chapter_document_id
+            )
+            operation_row = connection.execute(
+                "SELECT * FROM chapter_generation_writer_fence "
+                "WHERE operation_key=? OR release_operation_key=?",
+                (release_operation_key, release_operation_key),
+            ).fetchone()
+            if operation_row is not None:
+                expected = (
+                    workspace_id,
+                    chapter_document_id,
+                    operation,
+                    writer_mode,
+                    job_id,
+                    writer_epoch,
+                    release_operation_key,
+                    "released",
+                )
+                actual = (
+                    operation_row["workspace_id"],
+                    operation_row["chapter_document_id"],
+                    operation_row["operation"],
+                    operation_row["writer_mode"],
+                    operation_row["job_id"],
+                    operation_row["writer_epoch"],
+                    operation_row["release_operation_key"],
+                    operation_row["state"],
+                )
+                if actual != expected:
+                    raise ConflictError("writer release operation key is already bound")
+                return self._writer_fence_from_row(operation_row)
+
+            row = connection.execute(
+                "SELECT * FROM chapter_generation_writer_fence "
+                "WHERE workspace_id=? AND chapter_document_id=? AND operation=? "
+                "AND writer_epoch=?",
+                (workspace_id, chapter_document_id, operation, writer_epoch),
+            ).fetchone()
+            if (
+                row is None
+                or row["state"] != "active"
+                or row["writer_mode"] != writer_mode
+                or row["job_id"] != job_id
+            ):
+                raise ConflictError("chapter generation writer fence release mismatch")
+
+            now = utc_now()
+            changed = connection.execute(
+                "UPDATE chapter_generation_writer_fence "
+                "SET state='released',release_operation_key=?,updated_at=?,released_at=? "
+                "WHERE workspace_id=? AND chapter_document_id=? AND operation=? "
+                "AND writer_epoch=? AND writer_mode=? AND job_id=? AND state='active'",
+                (
+                    release_operation_key,
+                    now,
+                    now,
+                    workspace_id,
+                    chapter_document_id,
+                    operation,
+                    writer_epoch,
+                    writer_mode,
+                    job_id,
+                ),
+            ).rowcount
+            if changed != 1:
+                raise ConflictError("chapter generation writer fence release lost CAS")
+            released = connection.execute(
+                "SELECT * FROM chapter_generation_writer_fence "
+                "WHERE workspace_id=? AND chapter_document_id=? AND operation=? "
+                "AND writer_epoch=?",
+                (workspace_id, chapter_document_id, operation, writer_epoch),
+            ).fetchone()
+            return self._writer_fence_from_row(released)
 
     @staticmethod
     def _j(value) -> str: return json.dumps(dict(value),ensure_ascii=False,sort_keys=True,separators=(",",":"))

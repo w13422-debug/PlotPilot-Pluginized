@@ -43,6 +43,13 @@ const registry: AppSettingsSectionMeta[] = [
     component: () => import('@/components/settings/sections/EngineMatrixSection.vue'),
   },
   {
+    id: 'plugin-management',
+    label: '插件管理',
+    description: '已验证 Release 清单；未注册的运行时操作保持禁用',
+    order: 45,
+    component: () => import('@/components/settings/plugin-management/PluginManagementSettingsSection.vue'),
+  },
+  {
     id: 'about',
     label: '关于墨枢',
     description: '产品署名、团队信息与直播入口',
