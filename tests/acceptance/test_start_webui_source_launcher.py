@@ -47,12 +47,13 @@ def test_cmd_is_a_thin_fixed_mode_wrapper() -> None:
 def test_source_contract_is_browser_only_and_uses_hidden_local_services() -> None:
     source = _ps_source()
     lowered = source.lower()
+    launcher_source = source[source.index("function Invoke-Launcher {") :]
 
     assert '"interfaces.main:app"' in source
     assert '"--host", "127.0.0.1"' in source
     assert '"--port", "$backendPort"' in source
     assert '"--workers", "1"' in source
-    assert source.count('"--workers"') == 1
+    assert launcher_source.count('"--workers"') == 1
     assert "--reload" not in lowered
     assert "pnpm.cmd exec vite --host 127.0.0.1 --port 3000 --strictport" in lowered
     assert 'start-process -filepath $browserurl' in lowered
@@ -63,6 +64,9 @@ def test_source_contract_is_browser_only_and_uses_hidden_local_services() -> Non
     assert 'Join-Path $env:LOCALAPPDATA "PlotPilot\\data"' in source
     assert 'DISABLE_AUTO_DAEMON     = "1"' in source
     assert "VECTOR_STORE_ENABLED" in source
+    assert 'PYTHONPATH              = $sourcePythonPath' in source
+    assert 'Join-Path $root "backend"' in source
+    assert "source SDK + migrations verified" in source
 
     forbidden = (
         "ta" + "uri",
@@ -72,6 +76,66 @@ def test_source_contract_is_browser_only_and_uses_hidden_local_services() -> Non
         "stop" + "-" + "process",
     )
     assert not any(token in lowered for token in forbidden)
+
+
+def test_launcher_classifies_both_ports_before_building_a_plan_or_creating_data() -> None:
+    source = _ps_source()
+
+    assert 'function Get-PortServiceState' in source
+    assert 'function Get-LauncherPlan' in source
+    assert '"Available", "Reusable", "Occupied"' in source
+    assert 'State     = "Reusable"' in source
+    assert 'State     = "Occupied"' in source
+    assert 'Test-ProcessSourceAssociation' in source
+    assert 'Test-FrontendHttpContract' in source
+    assert 'Test-BackendHttpContract' in source
+    assert source.index('$backendState = Get-PortServiceState') < source.index(
+        'CreateDirectory($dataDirectory)'
+    )
+    assert source.index('$frontendState = Get-PortServiceState') < source.index(
+        'CreateDirectory($dataDirectory)'
+    )
+    assert source.index('Get-LauncherPlan') < source.index(
+        'CreateDirectory($dataDirectory)'
+    )
+
+
+def test_reuse_requires_process_source_and_role_specific_http_contracts() -> None:
+    source = _ps_source()
+    lowered = source.lower()
+
+    assert 'Get-ProcessSourceChain -ProcessId $ownerId' in source
+    assert 'RequiredPath $FrontendDirectory' in source
+    assert 'RequiredPath $Root' in source
+    assert 'RequiredTokens @("vite", "--host", "127.0.0.1", "--port", "3000", "--strictport")' in source
+    assert 'RequiredTokens @("uvicorn", "interfaces.main:app", "--app-dir", "--port", "8005", "--workers", "1")' in source
+    assert '-RequiredPathArgument "--app-dir"' in source
+    assert 'foreach ($record in @($ProcessRecords))' in source
+    assert 'combined path and tokens from different process records' in source
+    assert 'src="/src/main.ts"' in source
+    assert 'id="app"' in source
+    assert 'id="boot-splash"' in source
+    assert 'status -eq "healthy"' in source
+    assert 'build_id' in source
+    assert 'StatusCode -ge 200' in source
+    assert 'StatusCode -lt 300' in source
+    assert 'title-only' in lowered
+    assert 'StartBackend  = ($LauncherMode -eq "launch" -and $BackendState -eq "Available")' in source
+    assert 'StartFrontend = ($LauncherMode -eq "launch" -and $FrontendState -eq "Available")' in source
+
+
+def test_backend_app_dir_is_quoted_and_frontend_uses_supported_vite_arguments() -> None:
+    source = _ps_source()
+
+    assert '$backendAppDirectoryArgument = ConvertTo-QuotedWindowsArgument -Value $root' in source
+    assert '"--app-dir", $backendAppDirectoryArgument' in source
+    assert '"interfaces.main:app"' in source
+    assert '"--port", "$backendPort"' in source
+    assert '"pnpm.cmd exec vite --host 127.0.0.1 --port 3000 --strictPort"' in source
+    assert '--root' not in source.lower()
+    assert 'Reusable' in source
+    assert '$owned' in source
+    assert 'State     = "Reusable"' in source
 
 
 def test_guard_retains_exact_identity_before_releasing_unique_sentinel() -> None:
@@ -115,7 +179,7 @@ def test_cleanup_uses_one_immutable_snapshot_and_never_substitutes_a_reused_pid(
 def test_self_tests_cover_real_tree_pid_reuse_exited_root_and_capture_failure() -> None:
     source = _ps_source()
     start = source.index("function Invoke-OwnedCleanupSelfTest")
-    end = source.index("function Resolve-SourceTools")
+    end = source.index("function Invoke-LauncherPlanSelfTest")
     self_test = source[start:end]
 
     assert "Start-OwnedGuard" in self_test
@@ -129,6 +193,34 @@ def test_self_tests_cover_real_tree_pid_reuse_exited_root_and_capture_failure() 
     assert "uvicorn" not in self_test.lower()
     assert "vite" not in self_test.lower()
     assert "http://" not in self_test.lower()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="PowerShell plan self-test requires Windows")
+def test_controlled_plan_self_test_covers_reuse_and_adversarial_http_cases() -> None:
+    result = subprocess.run(
+        [
+            "powershell.exe",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(PS_LAUNCHER),
+            "-Mode",
+            "self-test-plan",
+        ],
+        cwd=ROOT,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+        check=False,
+    )
+
+    output = result.stdout + result.stderr
+    assert result.returncode == 0, output
+    assert "service classification and pure launcher plans passed" in output
 
 
 def test_check_branch_precedes_data_creation_and_owned_service_launches() -> None:

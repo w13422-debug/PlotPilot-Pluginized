@@ -3,7 +3,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("launch", "check", "self-test-cleanup", "self-test-mismatch", "self-test-exited", "self-test-capture-failure")]
+    [ValidateSet("launch", "check", "self-test-plan", "self-test-cleanup", "self-test-mismatch", "self-test-exited", "self-test-capture-failure")]
     [string] $Mode = "launch",
 
     [string] $GuardPayload
@@ -45,6 +45,230 @@ function Get-ProcessIdentity {
     catch {
         return $null
     }
+}
+
+function ConvertTo-NormalizedProcessText {
+    param([AllowNull()] [string] $Value)
+
+    if ($null -eq $Value) {
+        return ""
+    }
+    return $Value.Replace("/", "\")
+}
+
+function ConvertFrom-WindowsCommandLine {
+    param([AllowNull()] [string] $Value)
+
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        return @()
+    }
+
+    $tokens = New-Object System.Collections.ArrayList
+    foreach ($match in [regex]::Matches($Value, '"([^"]*)"|(\S+)')) {
+        if ($match.Groups[1].Success) {
+            [void] $tokens.Add($match.Groups[1].Value)
+        }
+        else {
+            [void] $tokens.Add($match.Groups[2].Value)
+        }
+    }
+    return @($tokens)
+}
+
+function Test-CommandTokenPresent {
+    param(
+        [Parameter(Mandatory = $true)] [string[]] $Tokens,
+        [Parameter(Mandatory = $true)] [string] $RequiredToken
+    )
+
+    foreach ($token in @($Tokens)) {
+        if ([string]::Equals($token, $RequiredToken, [StringComparison]::OrdinalIgnoreCase)) {
+            return $true
+        }
+        if ($RequiredToken -eq "vite") {
+            $leaf = [IO.Path]::GetFileNameWithoutExtension(
+                (ConvertTo-NormalizedProcessText -Value $token)
+            )
+            if ([string]::Equals($leaf, "vite", [StringComparison]::OrdinalIgnoreCase)) {
+                return $true
+            }
+        }
+    }
+    return $false
+}
+
+function Test-RecordContainsProductPath {
+    param(
+        [Parameter(Mandatory = $true)] [string[]] $Tokens,
+        [AllowNull()] [string] $ExecutablePath,
+        [Parameter(Mandatory = $true)] [string] $RequiredPath
+    )
+
+    $normalizedRequired = (
+        ConvertTo-NormalizedProcessText -Value ([IO.Path]::GetFullPath($RequiredPath))
+    ).TrimEnd("\")
+    foreach ($candidate in @($Tokens) + @([string] $ExecutablePath)) {
+        if ([string]::IsNullOrWhiteSpace($candidate)) {
+            continue
+        }
+        $normalizedCandidate = (ConvertTo-NormalizedProcessText -Value $candidate).TrimEnd("\")
+        if (
+            [string]::Equals($normalizedCandidate, $normalizedRequired, [StringComparison]::OrdinalIgnoreCase) -or
+            $normalizedCandidate.StartsWith($normalizedRequired + "\", [StringComparison]::OrdinalIgnoreCase)
+        ) {
+            return $true
+        }
+    }
+    return $false
+}
+
+function Test-PathArgumentValue {
+    param(
+        [Parameter(Mandatory = $true)] [string[]] $Tokens,
+        [Parameter(Mandatory = $true)] [string] $ArgumentName,
+        [Parameter(Mandatory = $true)] [string] $ExpectedPath
+    )
+
+    $normalizedExpected = (
+        ConvertTo-NormalizedProcessText -Value ([IO.Path]::GetFullPath($ExpectedPath))
+    ).TrimEnd("\")
+    for ($index = 0; $index -lt ($Tokens.Count - 1); $index++) {
+        if (-not [string]::Equals($Tokens[$index], $ArgumentName, [StringComparison]::OrdinalIgnoreCase)) {
+            continue
+        }
+        $normalizedActual = (ConvertTo-NormalizedProcessText -Value $Tokens[$index + 1]).TrimEnd("\")
+        if ([string]::Equals($normalizedActual, $normalizedExpected, [StringComparison]::OrdinalIgnoreCase)) {
+            return $true
+        }
+    }
+    return $false
+}
+
+function Test-ProcessSourceAssociation {
+    param(
+        [Parameter(Mandatory = $true)] [object[]] $ProcessRecords,
+        [Parameter(Mandatory = $true)] [string] $RequiredPath,
+        [Parameter(Mandatory = $true)] [string[]] $RequiredTokens,
+        [string] $RequiredPathArgument
+    )
+
+    foreach ($record in @($ProcessRecords)) {
+        $tokens = @(ConvertFrom-WindowsCommandLine -Value ([string] $record.CommandLine))
+        if (-not (Test-RecordContainsProductPath -Tokens $tokens -ExecutablePath ([string] $record.ExecutablePath) -RequiredPath $RequiredPath)) {
+            continue
+        }
+        $missingTokens = @(
+            $RequiredTokens | Where-Object {
+                -not (Test-CommandTokenPresent -Tokens $tokens -RequiredToken ([string] $_))
+            }
+        )
+        if ($missingTokens.Count -gt 0) {
+            continue
+        }
+        if (
+            -not [string]::IsNullOrWhiteSpace($RequiredPathArgument) -and
+            -not (Test-PathArgumentValue -Tokens $tokens -ArgumentName $RequiredPathArgument -ExpectedPath $RequiredPath)
+        ) {
+            continue
+        }
+        return $true
+    }
+    return $false
+}
+
+function ConvertTo-QuotedWindowsArgument {
+    param([Parameter(Mandatory = $true)] [string] $Value)
+
+    if ($Value.Contains('"')) {
+        throw "A Windows command-line path argument cannot contain a quote."
+    }
+    return '"' + $Value + '"'
+}
+
+function Get-ProcessSourceChain {
+    param([Parameter(Mandatory = $true)] [int] $ProcessId)
+
+    $records = @{}
+    foreach ($record in @(Get-CimInstance -ClassName Win32_Process -ErrorAction SilentlyContinue)) {
+        try {
+            $records[[int] $record.ProcessId] = [pscustomobject]@{
+                Id             = [int] $record.ProcessId
+                ParentId       = [int] $record.ParentProcessId
+                CommandLine    = [string] $record.CommandLine
+                ExecutablePath = [string] $record.ExecutablePath
+            }
+        }
+        catch {
+            # An unreadable process cannot establish product ownership.
+        }
+    }
+
+    $chain = New-Object System.Collections.ArrayList
+    $seen = @{}
+    $currentId = $ProcessId
+    for ($depth = 0; $depth -lt 16; $depth++) {
+        if ($seen.ContainsKey($currentId) -or -not $records.ContainsKey($currentId)) {
+            break
+        }
+        $seen[$currentId] = $true
+        $current = $records[$currentId]
+        [void] $chain.Add($current)
+        if ($current.ParentId -le 0 -or $current.ParentId -eq $current.Id) {
+            break
+        }
+        $currentId = [int] $current.ParentId
+    }
+    return @($chain)
+}
+
+function Test-HttpSuccess {
+    param([AllowNull()] $Response)
+
+    return (
+        $null -ne $Response -and
+        [int] $Response.StatusCode -ge 200 -and
+        [int] $Response.StatusCode -lt 300
+    )
+}
+
+function Test-FrontendHttpContract {
+    param([AllowNull()] $Response)
+
+    if (-not (Test-HttpSuccess -Response $Response)) {
+        return $false
+    }
+    $content = [string] $Response.Content
+    $markers = @(
+        'PlotPilot',
+        'id="app"',
+        'id="boot-splash"',
+        'src="/src/main.ts"'
+    )
+    return (@($markers | Where-Object { $content.IndexOf($_, [StringComparison]::OrdinalIgnoreCase) -lt 0 }).Count -eq 0)
+}
+
+function Test-BackendHttpContract {
+    param([AllowNull()] $Response)
+
+    if (-not (Test-HttpSuccess -Response $Response)) {
+        return $false
+    }
+    try {
+        $payload = ([string] $Response.Content) | ConvertFrom-Json -ErrorAction Stop
+    }
+    catch {
+        return $false
+    }
+
+    $propertyNames = @($payload.PSObject.Properties | ForEach-Object { $_.Name })
+    return (
+        $propertyNames -contains "status" -and
+        $propertyNames -contains "version" -and
+        $propertyNames -contains "build_id" -and
+        [string] $payload.status -eq "healthy" -and
+        -not [string]::IsNullOrWhiteSpace([string] $payload.version) -and
+        -not [string]::IsNullOrWhiteSpace([string] $payload.build_id)
+    )
 }
 
 function ConvertTo-OwnedIdentity {
@@ -595,6 +819,104 @@ function Invoke-OwnedCleanupSelfTest {
     }
 }
 
+function Invoke-LauncherPlanSelfTest {
+    $root = "C:\PlotPilot-self-test"
+    $frontendDirectory = Join-Path $root "frontend"
+    $frontendProcess = [pscustomobject]@{
+        CommandLine    = ('node "{0}\node_modules\vite\bin\vite.js" "--host" "127.0.0.1" "--port" "3000" "--strictPort"' -f $frontendDirectory)
+        ExecutablePath = "C:\Program Files\nodejs\node.exe"
+    }
+    $backendProcess = [pscustomobject]@{
+        CommandLine    = ('python -m uvicorn interfaces.main:app --app-dir "{0}" --host "127.0.0.1" --port "8005" --workers "1"' -f $root)
+        ExecutablePath = "C:\Python\python.exe"
+    }
+    $splitFrontendRecords = @(
+        [pscustomobject]@{
+            CommandLine    = ('node "{0}\node_modules\vite\bin\vite.js"' -f $frontendDirectory)
+            ExecutablePath = "C:\Program Files\nodejs\node.exe"
+        },
+        [pscustomobject]@{
+            CommandLine    = 'cmd "--host" "127.0.0.1" "--port" "3000" "--strictPort"'
+            ExecutablePath = "C:\Windows\System32\cmd.exe"
+        }
+    )
+    $frontendResponse = [pscustomobject]@{
+        StatusCode = 200
+        Content    = '<title>PlotPilot</title><div id="app"><div id="boot-splash"></div></div><script type="module" src="/src/main.ts"></script>'
+    }
+    $frontendTitleOnly = [pscustomobject]@{
+        StatusCode = 200
+        Content    = '<title>PlotPilot · 墨枢 | 作者的领航员</title>'
+    }
+    $backendResponse = [pscustomobject]@{
+        StatusCode = 200
+        Content    = '{"status":"healthy","version":"1.0.2","build_id":"build-test"}'
+    }
+    $backendUnhealthy = [pscustomobject]@{
+        StatusCode = 200
+        Content    = '{"status":"starting","version":"1.0.2","build_id":"build-test"}'
+    }
+
+    $frontendTokens = @("vite", "--host", "127.0.0.1", "--port", "3000", "--strictport")
+    if (-not (Test-ProcessSourceAssociation -ProcessRecords @($frontendProcess) -RequiredPath $frontendDirectory -RequiredTokens $frontendTokens)) {
+        throw "Plan self-test could not recognize the exact frontend source."
+    }
+    if (Test-ProcessSourceAssociation -ProcessRecords @($frontendProcess) -RequiredPath "C:\Other\frontend" -RequiredTokens $frontendTokens) {
+        throw "Plan self-test accepted a foreign frontend path."
+    }
+    if (Test-ProcessSourceAssociation -ProcessRecords $splitFrontendRecords -RequiredPath $frontendDirectory -RequiredTokens $frontendTokens) {
+        throw "Plan self-test combined path and tokens from different process records."
+    }
+    if (-not (Test-FrontendHttpContract -Response $frontendResponse)) {
+        throw "Plan self-test rejected a valid frontend shell."
+    }
+    if (Test-FrontendHttpContract -Response $frontendTitleOnly) {
+        throw "Plan self-test accepted a title-only frontend response."
+    }
+    if (-not (Test-ProcessSourceAssociation -ProcessRecords @($backendProcess) -RequiredPath $root -RequiredTokens @("uvicorn", "interfaces.main:app", "--app-dir", "--port", "8005", "--workers", "1") -RequiredPathArgument "--app-dir")) {
+        throw "Plan self-test could not recognize the exact backend source."
+    }
+    if ((ConvertTo-QuotedWindowsArgument -Value $root) -ne ('"{0}"' -f $root)) {
+        throw "Plan self-test did not quote the backend app directory."
+    }
+    if (-not (Test-BackendHttpContract -Response $backendResponse)) {
+        throw "Plan self-test rejected a valid backend health response."
+    }
+    if (Test-BackendHttpContract -Response $backendUnhealthy) {
+        throw "Plan self-test accepted an unhealthy backend response."
+    }
+
+    $empty = Get-LauncherPlan -BackendState "Available" -FrontendState "Available" -LauncherMode "launch"
+    if (-not $empty.StartBackend -or -not $empty.StartFrontend -or -not $empty.OpenBrowser) {
+        throw "Plan self-test failed the empty launch plan."
+    }
+    $partial = Get-LauncherPlan -BackendState "Available" -FrontendState "Reusable" -LauncherMode "launch"
+    if (-not $partial.StartBackend -or $partial.StartFrontend -or -not $partial.OpenBrowser) {
+        throw "Plan self-test failed the single-service reuse plan."
+    }
+    $both = Get-LauncherPlan -BackendState "Reusable" -FrontendState "Reusable" -LauncherMode "launch"
+    if ($both.StartBackend -or $both.StartFrontend -or -not $both.OpenBrowser) {
+        throw "Plan self-test failed the double-service reuse plan."
+    }
+    $check = Get-LauncherPlan -BackendState "Reusable" -FrontendState "Available" -LauncherMode "check"
+    if ($check.StartBackend -or $check.StartFrontend -or $check.OpenBrowser) {
+        throw "Plan self-test failed the side-effect-free check plan."
+    }
+    $occupiedRejected = $false
+    try {
+        [void] (Get-LauncherPlan -BackendState "Occupied" -FrontendState "Available" -LauncherMode "launch")
+    }
+    catch {
+        $occupiedRejected = $true
+    }
+    if (-not $occupiedRejected) {
+        throw "Plan self-test failed the occupied-port negative case."
+    }
+
+    Write-Host "[self-test] service classification and pure launcher plans passed."
+    return 0
+}
+
 function Resolve-SourceTools {
     param(
         [Parameter(Mandatory = $true)] [string] $Root,
@@ -628,7 +950,8 @@ function Test-SourceEnvironment {
         [Parameter(Mandatory = $true)] [string] $Root,
         [Parameter(Mandatory = $true)] [string] $FrontendDirectory,
         [Parameter(Mandatory = $true)] [string] $DataDirectory,
-        [Parameter(Mandatory = $true)] $Tools
+        [Parameter(Mandatory = $true)] $Tools,
+        [Parameter(Mandatory = $true)] [string] $SourcePythonPath
     )
 
     $backendEntry = Join-Path $Root "interfaces\main.py"
@@ -637,9 +960,16 @@ function Test-SourceEnvironment {
     }
 
     Write-Host ("[check] Python/uvicorn: {0}" -f $Tools.Python)
-    & $Tools.Python -c "import sys, uvicorn; print('  Python ' + sys.version.split()[0] + ' / uvicorn ' + getattr(uvicorn, '__version__', 'imported'))"
-    if ($LASTEXITCODE -ne 0) {
-        throw "Python exists but uvicorn cannot be imported."
+    $previousPythonPath = [Environment]::GetEnvironmentVariable("PYTHONPATH", "Process")
+    try {
+        [Environment]::SetEnvironmentVariable("PYTHONPATH", $SourcePythonPath, "Process")
+        & $Tools.Python -c "import sys, uvicorn, plotpilot_plugin_sdk; from backend.plotpilot_core.repositories.authority import P3_JOB_MIGRATIONS; print('  Python ' + sys.version.split()[0] + ' / uvicorn ' + getattr(uvicorn, '__version__', 'imported') + ' / source SDK + migrations verified')"
+        if ($LASTEXITCODE -ne 0) {
+            throw "Python exists but the WebUI source runtime cannot import its SDK or verified migrations."
+        }
+    }
+    finally {
+        [Environment]::SetEnvironmentVariable("PYTHONPATH", $previousPythonPath, "Process")
     }
 
     Write-Host ("[check] pnpm/Vite: {0}" -f $Tools.Pnpm)
@@ -665,18 +995,126 @@ function Test-SourceEnvironment {
     Write-Host ("[check] Data path: {0}" -f $resolvedData)
 }
 
-function Test-PortAvailable {
+function Invoke-LocalHttpResponse {
+    param([Parameter(Mandatory = $true)] [string] $Url)
+
+    try {
+        return Invoke-WebRequest -UseBasicParsing -Uri $Url -TimeoutSec 3
+    }
+    catch {
+        return $null
+    }
+}
+
+function Get-PortServiceState {
     param(
+        [Parameter(Mandatory = $true)]
+        [ValidateSet("Backend", "Frontend")]
+        [string] $Role,
         [Parameter(Mandatory = $true)] [int] $Port,
-        [Parameter(Mandatory = $true)] [string] $Label
+        [Parameter(Mandatory = $true)] [string] $Root,
+        [Parameter(Mandatory = $true)] [string] $FrontendDirectory
     )
 
-    $owners = @(Get-NetTCPConnection -State Listen -LocalPort $Port -ErrorAction SilentlyContinue)
-    if ($owners.Count -gt 0) {
-        $ownerIds = ($owners | ForEach-Object { $_.OwningProcess }) -join ","
-        throw "$Label port $Port is already listening (OwningProcess=$ownerIds); it will not be taken over."
+    $ownerIds = @(
+        Get-NetTCPConnection -State Listen -LocalPort $Port -ErrorAction SilentlyContinue |
+            ForEach-Object { [int] $_.OwningProcess } |
+            Sort-Object -Unique
+    )
+    if ($ownerIds.Count -eq 0) {
+        return [pscustomobject]@{
+            Role      = $Role
+            Port      = $Port
+            State     = "Available"
+            OwnerIds  = @()
+            Reason    = "No listener"
+        }
     }
-    Write-Host ("[check] {0} port {1} is available." -f $Label, $Port)
+
+    # Multiple owners or unreadable process metadata are ambiguous and fail closed.
+    if ($ownerIds.Count -ne 1) {
+        return [pscustomobject]@{
+            Role      = $Role
+            Port      = $Port
+            State     = "Occupied"
+            OwnerIds  = $ownerIds
+            Reason    = "Multiple listeners"
+        }
+    }
+
+    $ownerId = [int] $ownerIds[0]
+    $processRecords = @(Get-ProcessSourceChain -ProcessId $ownerId)
+    if ($processRecords.Count -eq 0) {
+        return [pscustomobject]@{
+            Role      = $Role
+            Port      = $Port
+            State     = "Occupied"
+            OwnerIds  = $ownerIds
+            Reason    = "Process source is unreadable"
+        }
+    }
+
+    if ($Role -eq "Frontend") {
+        $sourceMatches = Test-ProcessSourceAssociation `
+            -ProcessRecords $processRecords `
+            -RequiredPath $FrontendDirectory `
+            -RequiredTokens @("vite", "--host", "127.0.0.1", "--port", "3000", "--strictport")
+        $response = Invoke-LocalHttpResponse -Url "http://127.0.0.1:$Port/"
+        $httpMatches = Test-FrontendHttpContract -Response $response
+    }
+    else {
+        $sourceMatches = Test-ProcessSourceAssociation `
+            -ProcessRecords $processRecords `
+            -RequiredPath $Root `
+            -RequiredTokens @("uvicorn", "interfaces.main:app", "--app-dir", "--port", "8005", "--workers", "1") `
+            -RequiredPathArgument "--app-dir"
+        $response = Invoke-LocalHttpResponse -Url "http://127.0.0.1:$Port/health"
+        $httpMatches = Test-BackendHttpContract -Response $response
+    }
+
+    if (-not $sourceMatches -or -not $httpMatches) {
+        return [pscustomobject]@{
+            Role      = $Role
+            Port      = $Port
+            State     = "Occupied"
+            OwnerIds  = $ownerIds
+            Reason    = "Process source or HTTP product contract did not match"
+        }
+    }
+
+    return [pscustomobject]@{
+        Role      = $Role
+        Port      = $Port
+        State     = "Reusable"
+        OwnerIds  = $ownerIds
+        Reason    = "Exact product process source and HTTP contract matched"
+    }
+}
+
+function Get-LauncherPlan {
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateSet("Available", "Reusable", "Occupied")]
+        [string] $BackendState,
+        [Parameter(Mandatory = $true)]
+        [ValidateSet("Available", "Reusable", "Occupied")]
+        [string] $FrontendState,
+        [Parameter(Mandatory = $true)]
+        [ValidateSet("launch", "check")]
+        [string] $LauncherMode
+    )
+
+    if ($BackendState -eq "Occupied" -or $FrontendState -eq "Occupied") {
+        throw "A required WebUI port is occupied by an unrelated, ambiguous, or unhealthy process."
+    }
+
+    return [pscustomobject]@{
+        BackendState  = $BackendState
+        FrontendState = $FrontendState
+        StartBackend  = ($LauncherMode -eq "launch" -and $BackendState -eq "Available")
+        StartFrontend = ($LauncherMode -eq "launch" -and $FrontendState -eq "Available")
+        OpenBrowser   = ($LauncherMode -eq "launch")
+    }
 }
 
 function Wait-HttpReady {
@@ -684,14 +1122,19 @@ function Wait-HttpReady {
         [Parameter(Mandatory = $true)] [string] $Url,
         [Parameter(Mandatory = $true)] [string] $Label,
         [Parameter(Mandatory = $true)] [string] $StandardOutput,
-        [Parameter(Mandatory = $true)] [string] $StandardError
+        [Parameter(Mandatory = $true)] [string] $StandardError,
+        [scriptblock] $Validator
     )
 
     $deadline = (Get-Date).AddSeconds(60)
     do {
         try {
             $response = Invoke-WebRequest -UseBasicParsing -Uri $Url -TimeoutSec 3
-            if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 500) {
+            if (
+                $response.StatusCode -ge 200 -and
+                $response.StatusCode -lt 300 -and
+                ($null -eq $Validator -or [bool] (& $Validator $response))
+            ) {
                 Write-Host ("[ready] {0}" -f $Label)
                 return
             }
@@ -714,6 +1157,12 @@ function Invoke-Launcher {
 
     $root = $PSScriptRoot
     $frontendDirectory = Join-Path $root "frontend"
+    $sourcePythonPathEntries = @((Join-Path $root "backend"), $root)
+    $inheritedPythonPath = [Environment]::GetEnvironmentVariable("PYTHONPATH", "Process")
+    if (-not [string]::IsNullOrWhiteSpace($inheritedPythonPath)) {
+        $sourcePythonPathEntries += $inheritedPythonPath
+    }
+    $sourcePythonPath = $sourcePythonPathEntries -join [IO.Path]::PathSeparator
     $backendPort = 8005
     $frontendPort = 3000
     if (-not [string]::IsNullOrWhiteSpace($env:PLOTPILOT_PROD_DATA_DIR)) {
@@ -726,14 +1175,42 @@ function Invoke-Launcher {
         $dataDirectory = Join-Path $env:LOCALAPPDATA "PlotPilot\data"
     }
 
+    $backendState = Get-PortServiceState `
+        -Role "Backend" `
+        -Port $backendPort `
+        -Root $root `
+        -FrontendDirectory $frontendDirectory
+    $frontendState = Get-PortServiceState `
+        -Role "Frontend" `
+        -Port $frontendPort `
+        -Root $root `
+        -FrontendDirectory $frontendDirectory
+    $plan = Get-LauncherPlan `
+        -BackendState $backendState.State `
+        -FrontendState $frontendState.State `
+        -LauncherMode $LauncherMode
+    Write-Host ("[check] Backend port {0}: {1} ({2})" -f $backendPort, $backendState.State, $backendState.Reason)
+    Write-Host ("[check] Frontend port {0}: {1} ({2})" -f $frontendPort, $frontendState.State, $frontendState.Reason)
+
+    if (
+        $LauncherMode -eq "launch" -and
+        -not $plan.StartBackend -and
+        -not $plan.StartFrontend
+    ) {
+        $browserUrl = "http://127.0.0.1:$frontendPort/"
+        Write-Host ("[ready] Opening the default browser: {0}" -f $browserUrl)
+        Start-Process -FilePath $browserUrl | Out-Null
+        Write-Host "[done] The browser WebUI is running; existing backend and frontend were reused."
+        return 0
+    }
+
     $tools = Resolve-SourceTools -Root $root -FrontendDirectory $frontendDirectory
     Test-SourceEnvironment `
         -Root $root `
         -FrontendDirectory $frontendDirectory `
         -DataDirectory $dataDirectory `
-        -Tools $tools
-    Test-PortAvailable -Port $backendPort -Label "Backend"
-    Test-PortAvailable -Port $frontendPort -Label "Frontend"
+        -Tools $tools `
+        -SourcePythonPath $sourcePythonPath
 
     if ($LauncherMode -eq "check") {
         Write-Host "[pass] --check completed without creating data, starting services, or opening a browser."
@@ -752,56 +1229,69 @@ function Invoke-Launcher {
     $owned = New-Object "System.Collections.Generic.List[object]"
 
     try {
+        $backendAppDirectoryArgument = ConvertTo-QuotedWindowsArgument -Value $root
         $backendEnvironment = @{
             PLOTPILOT_PROD_DATA_DIR = $dataDirectory
             DISABLE_AUTO_DAEMON     = "1"
             PYTHONIOENCODING        = "utf-8"
             PYTHONUNBUFFERED        = "1"
+            PYTHONPATH              = $sourcePythonPath
         }
         if ($null -eq [Environment]::GetEnvironmentVariable("VECTOR_STORE_ENABLED")) {
             $backendEnvironment["VECTOR_STORE_ENABLED"] = "false"
         }
 
-        Write-Host ("[start] Backend: 127.0.0.1:{0}" -f $backendPort)
-        [void] (Start-OwnedGuard `
-            -Name "backend" `
-            -FilePath $tools.Python `
-            -Arguments @(
-                "-m", "uvicorn", "interfaces.main:app",
-                "--host", "127.0.0.1",
-                "--port", "$backendPort",
-                "--workers", "1",
-                "--log-level", "info"
-            ) `
-            -WorkingDirectory $root `
-            -StandardOutput $backendOutput `
-            -StandardError $backendError `
-            -OwnedIdentities $owned `
-            -Environment $backendEnvironment)
+        if ($plan.StartBackend) {
+            Write-Host ("[start] Backend: 127.0.0.1:{0}" -f $backendPort)
+            [void] (Start-OwnedGuard `
+                -Name "backend" `
+                -FilePath $tools.Python `
+                -Arguments @(
+                    "-m", "uvicorn", "interfaces.main:app",
+                    "--app-dir", $backendAppDirectoryArgument,
+                    "--host", "127.0.0.1",
+                    "--port", "$backendPort",
+                    "--workers", "1",
+                    "--log-level", "info"
+                ) `
+                -WorkingDirectory $root `
+                -StandardOutput $backendOutput `
+                -StandardError $backendError `
+                -OwnedIdentities $owned `
+                -Environment $backendEnvironment)
+        }
 
-        Write-Host ("[start] Frontend: 127.0.0.1:{0}" -f $frontendPort)
-        [void] (Start-OwnedGuard `
-            -Name "frontend" `
-            -FilePath $env:ComSpec `
-            -Arguments @(
-                "/d", "/s", "/c",
-                "pnpm.cmd exec vite --host 127.0.0.1 --port 3000 --strictPort"
-            ) `
-            -WorkingDirectory $frontendDirectory `
-            -StandardOutput $frontendOutput `
-            -StandardError $frontendError `
-            -OwnedIdentities $owned)
+        if ($plan.StartFrontend) {
+            Write-Host ("[start] Frontend: 127.0.0.1:{0}" -f $frontendPort)
+            [void] (Start-OwnedGuard `
+                -Name "frontend" `
+                -FilePath $env:ComSpec `
+                -Arguments @(
+                    "/d", "/s", "/c",
+                    "pnpm.cmd exec vite --host 127.0.0.1 --port 3000 --strictPort"
+                ) `
+                -WorkingDirectory $frontendDirectory `
+                -StandardOutput $frontendOutput `
+                -StandardError $frontendError `
+                -OwnedIdentities $owned)
+        }
 
-        Wait-HttpReady `
-            -Url "http://127.0.0.1:$backendPort/health" `
-            -Label "Backend" `
-            -StandardOutput $backendOutput `
-            -StandardError $backendError
-        Wait-HttpReady `
-            -Url "http://127.0.0.1:$frontendPort/" `
-            -Label "Frontend" `
-            -StandardOutput $frontendOutput `
-            -StandardError $frontendError
+        if ($plan.StartBackend) {
+            Wait-HttpReady `
+                -Url "http://127.0.0.1:$backendPort/health" `
+                -Label "Backend" `
+                -StandardOutput $backendOutput `
+                -StandardError $backendError `
+                -Validator { param($response) Test-BackendHttpContract -Response $response }
+        }
+        if ($plan.StartFrontend) {
+            Wait-HttpReady `
+                -Url "http://127.0.0.1:$frontendPort/" `
+                -Label "Frontend" `
+                -StandardOutput $frontendOutput `
+                -StandardError $frontendError `
+                -Validator { param($response) Test-FrontendHttpContract -Response $response }
+        }
 
         $browserUrl = "http://127.0.0.1:$frontendPort/"
         Write-Host ("[ready] Opening the default browser: {0}" -f $browserUrl)
@@ -834,6 +1324,9 @@ if (-not [string]::IsNullOrWhiteSpace($GuardPayload)) {
 
 try {
     switch ($Mode) {
+        "self-test-plan" {
+            exit (Invoke-LauncherPlanSelfTest)
+        }
         "self-test-cleanup" {
             exit (Invoke-OwnedCleanupSelfTest -TestMode "cleanup")
         }
