@@ -623,6 +623,15 @@ function ConvertFrom-WindowsCommandLine {
     return @($tokens)
 }
 
+function ConvertTo-QuotedWindowsArgument {
+    param([Parameter(Mandatory = $true)] [string] $Value)
+
+    if ($Value.Contains('"')) {
+        throw "A Windows command-line path argument cannot contain a quote."
+    }
+    return '"' + $Value + '"'
+}
+
 function Test-ExactToken {
     param(
         [Parameter(Mandatory = $true)] [string[]] $Tokens,

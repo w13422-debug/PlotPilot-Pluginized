@@ -93,6 +93,46 @@ def test_launcher_is_one_observe_plan_start_wait_reobserve_open_flow() -> None:
     assert launcher.count('Get-PortServiceState -Role "Frontend"') == 2
 
 
+@pytest.mark.skipif(os.name != "nt", reason="PowerShell launcher logic is Windows-specific")
+def test_backend_available_plans_quote_spaced_app_dir_before_start() -> None:
+    source = _ps_source()
+    assert source.index("function ConvertTo-QuotedWindowsArgument") < source.index(
+        "(ConvertTo-QuotedWindowsArgument -Value $root)"
+    )
+    escaped_path = str(PS_LAUNCHER).replace("'", "''")
+    program = rf"""
+$path = '{escaped_path}'
+$source = [IO.File]::ReadAllText($path)
+$definitions = $source.Substring(0, $source.IndexOf('if (-not [string]::IsNullOrWhiteSpace($GuardPayload))'))
+. ([scriptblock]::Create($definitions))
+
+$spacedRoot = 'C:\Path With Spaces\PlotPilot-Pluginized'
+$quoted = ConvertTo-QuotedWindowsArgument -Value $spacedRoot
+if ($quoted -ne ('"' + $spacedRoot + '"')) {{ throw 'spaced app-dir was not quoted exactly' }}
+$quoteRejected = $false
+try {{ [void] (ConvertTo-QuotedWindowsArgument -Value 'C:\bad"path') }} catch {{ $quoteRejected = $true }}
+if (-not $quoteRejected) {{ throw 'embedded quote was accepted' }}
+
+$bothAvailable = Get-LauncherPlan -BackendState Available -FrontendState Available -LauncherMode launch
+$backendPartial = Get-LauncherPlan -BackendState Available -FrontendState Reusable -LauncherMode launch
+if (-not $bothAvailable.StartBackend) {{ throw 'both-available backend start branch is unreachable' }}
+if (-not $backendPartial.StartBackend) {{ throw 'backend-partial start branch is unreachable' }}
+'backend app-dir quoting ok'
+"""
+    result = subprocess.run(
+        ["powershell.exe", "-NoProfile", "-Command", program],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "backend app-dir quoting ok" in result.stdout
+
+
 def test_reuse_uses_the_direct_listener_owner_with_bound_arguments() -> None:
     source = _ps_source()
     classifier = source[source.index("function Get-LoopbackListenerOwner") : source.index("function Get-LauncherPlan")]
