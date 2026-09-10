@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import socket
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -26,22 +27,14 @@ def _port_is_listening(port: int) -> bool:
         return probe.connect_ex(("127.0.0.1", port)) == 0
 
 
-def test_cmd_is_a_thin_fixed_mode_wrapper() -> None:
-    source = _cmd_source()
-    lowered = source.lower()
+def test_cmd_remains_a_thin_fixed_mode_wrapper() -> None:
+    source = _cmd_source().lower()
 
     assert len(source.splitlines()) < 35
-    assert 'powershell.exe -noprofile -executionpolicy bypass -file "%~dp0start-webui.ps1"' in lowered
-    assert '-mode "%plotpilot_mode%"' in lowered
-    assert "--check" in lowered
-    assert "--self-test-owned-cleanup" in lowered
-    assert "--self-test-owned-cleanup-mismatch" in lowered
-    assert "--self-test-owned-cleanup-exited" in lowered
-    assert "--self-test-owned-capture-failure" in lowered
-    assert "pause" in lowered
-    assert "uvicorn" not in lowered
-    assert "vite" not in lowered
-    assert "win32_process" not in lowered
+    assert 'powershell.exe -noprofile -executionpolicy bypass -file "%~dp0start-webui.ps1"' in source
+    assert '-mode "%plotpilot_mode%"' in source
+    assert "uvicorn" not in source
+    assert "vite" not in source
 
 
 def test_source_contract_is_browser_only_and_uses_hidden_local_services() -> None:
@@ -56,8 +49,8 @@ def test_source_contract_is_browser_only_and_uses_hidden_local_services() -> Non
     assert launcher_source.count('"--workers"') == 1
     assert "--reload" not in lowered
     assert "pnpm.cmd exec vite --host 127.0.0.1 --port 3000 --strictport" in lowered
-    assert 'start-process -filepath $browserurl' in lowered
-    assert '-WindowStyle Hidden' in source
+    assert "start-process -filepath $browserurl" in lowered
+    assert "-WindowStyle Hidden" in source
     assert 'WindowStyle            = "Hidden"' in source
 
     assert "PLOTPILOT_PROD_DATA_DIR" in source
@@ -65,8 +58,9 @@ def test_source_contract_is_browser_only_and_uses_hidden_local_services() -> Non
     assert 'DISABLE_AUTO_DAEMON     = "1"' in source
     assert "VECTOR_STORE_ENABLED" in source
     assert 'PYTHONPATH              = $sourcePythonPath' in source
-    assert 'Join-Path $root "backend"' in source
-    assert "source SDK + migrations verified" in source
+    assert "$sourcePythonPath = $root" in launcher_source
+    assert 'Join-Path $root "backend"' not in launcher_source
+    assert "source SDK identity and migrations verified" in source
 
     forbidden = (
         "ta" + "uri",
@@ -78,64 +72,73 @@ def test_source_contract_is_browser_only_and_uses_hidden_local_services() -> Non
     assert not any(token in lowered for token in forbidden)
 
 
-def test_launcher_classifies_both_ports_before_building_a_plan_or_creating_data() -> None:
+def test_launcher_is_one_observe_plan_start_wait_reobserve_open_flow() -> None:
+    source = _ps_source()
+    launcher = source[source.index("function Invoke-Launcher {") :]
+
+    assert source.count("Start-Process -FilePath $browserUrl") == 1
+    assert "Get-ProcessSourceChain" not in source
+    assert "Test-ProcessSourceAssociation" not in source
+    assert "Single flow: observe both roles, plan, validate/start only missing roles, wait, then reobserve both." in source
+
+    initial_backend = launcher.index('$backendState = Get-PortServiceState')
+    initial_frontend = launcher.index('$frontendState = Get-PortServiceState')
+    plan = launcher.index('$plan = Get-LauncherPlan')
+    validate = launcher.index('$tools = Resolve-SourceTools')
+    final_backend = launcher.index('$finalBackend = Get-PortServiceState')
+    final_frontend = launcher.index('$finalFrontend = Get-PortServiceState')
+    browser = launcher.index("Start-Process -FilePath $browserUrl")
+    assert initial_backend < initial_frontend < plan < validate < final_backend < final_frontend < browser
+    assert launcher.count('Get-PortServiceState -Role "Backend"') == 2
+    assert launcher.count('Get-PortServiceState -Role "Frontend"') == 2
+
+
+def test_reuse_uses_the_direct_listener_owner_with_bound_arguments() -> None:
+    source = _ps_source()
+    classifier = source[source.index("function Get-LoopbackListenerOwner") : source.index("function Get-LauncherPlan")]
+
+    assert "Get-NetTCPConnection -State Listen -LocalPort $Port" in classifier
+    assert "Get-ProcessIdentity -ProcessId $ownerIds[0]" in classifier
+    assert "StartTicks" in classifier
+    assert "Test-OptionValuePair" in classifier
+    assert '"--app-dir"' in classifier
+    assert '"--host"' in classifier
+    assert '"--port"' in classifier
+    assert '"--workers"' in classifier
+    assert "Test-ViteScriptUnderFrontendRoot" in classifier
+    assert '"vite.js"' in source
+    assert "ParentProcessId" not in classifier
+
+
+def test_http_reuse_contract_rejects_redirects_and_nonfinal_loopback_uris() -> None:
     source = _ps_source()
 
-    assert 'function Get-PortServiceState' in source
-    assert 'function Get-LauncherPlan' in source
-    assert '"Available", "Reusable", "Occupied"' in source
-    assert 'State     = "Reusable"' in source
-    assert 'State     = "Occupied"' in source
-    assert 'Test-ProcessSourceAssociation' in source
-    assert 'Test-FrontendHttpContract' in source
-    assert 'Test-BackendHttpContract' in source
-    assert source.index('$backendState = Get-PortServiceState') < source.index(
-        'CreateDirectory($dataDirectory)'
-    )
-    assert source.index('$frontendState = Get-PortServiceState') < source.index(
-        'CreateDirectory($dataDirectory)'
-    )
-    assert source.index('Get-LauncherPlan') < source.index(
-        'CreateDirectory($dataDirectory)'
-    )
-
-
-def test_reuse_requires_process_source_and_role_specific_http_contracts() -> None:
-    source = _ps_source()
-    lowered = source.lower()
-
-    assert 'Get-ProcessSourceChain -ProcessId $ownerId' in source
-    assert 'RequiredPath $FrontendDirectory' in source
-    assert 'RequiredPath $Root' in source
-    assert 'RequiredTokens @("vite", "--host", "127.0.0.1", "--port", "3000", "--strictport")' in source
-    assert 'RequiredTokens @("uvicorn", "interfaces.main:app", "--app-dir", "--port", "8005", "--workers", "1")' in source
-    assert '-RequiredPathArgument "--app-dir"' in source
-    assert 'foreach ($record in @($ProcessRecords))' in source
-    assert 'combined path and tokens from different process records' in source
-    assert 'src="/src/main.ts"' in source
+    assert "-MaximumRedirection 0" in source
+    assert "Response.BaseResponse.ResponseUri.AbsoluteUri" in source
+    assert "Test-ExactLoopbackResponse" in source
+    assert "Test-RoleEvidence" in source
     assert 'id="app"' in source
     assert 'id="boot-splash"' in source
-    assert 'status -eq "healthy"' in source
-    assert 'build_id' in source
-    assert 'StatusCode -ge 200' in source
-    assert 'StatusCode -lt 300' in source
-    assert 'title-only' in lowered
-    assert 'StartBackend  = ($LauncherMode -eq "launch" -and $BackendState -eq "Available")' in source
-    assert 'StartFrontend = ($LauncherMode -eq "launch" -and $FrontendState -eq "Available")' in source
+    assert 'src="/src/main.ts"' in source
+    assert 'payload.status -eq "healthy"' in source
+    assert "Direct owner, identity, or exact HTTP marker did not match" in source
 
 
-def test_backend_app_dir_is_quoted_and_frontend_uses_supported_vite_arguments() -> None:
+def test_missing_role_tools_and_check_probe_are_scoped_and_bytecode_safe() -> None:
     source = _ps_source()
+    launcher = source[source.index("function Invoke-Launcher {") :]
 
-    assert '$backendAppDirectoryArgument = ConvertTo-QuotedWindowsArgument -Value $root' in source
-    assert '"--app-dir", $backendAppDirectoryArgument' in source
-    assert '"interfaces.main:app"' in source
-    assert '"--port", "$backendPort"' in source
-    assert '"pnpm.cmd exec vite --host 127.0.0.1 --port 3000 --strictPort"' in source
-    assert '--root' not in source.lower()
-    assert 'Reusable' in source
-    assert '$owned' in source
-    assert 'State     = "Reusable"' in source
+    assert 'ValidateBackend  = ($BackendState -eq "Available")' in source
+    assert 'ValidateFrontend = ($FrontendState -eq "Available")' in source
+    assert "if ($NeedBackend)" in source
+    assert "if ($NeedFrontend)" in source
+    assert "Resolve-SourceTools -NeedBackend $plan.ValidateBackend -NeedFrontend $plan.ValidateFrontend" in source
+    assert "$sourcePythonPath = $root" in launcher
+    assert 'Join-Path $root "backend"' not in launcher
+    assert "& $Tools.Python -B -c $sdkProbe" in source
+    assert 'PYTHONDONTWRITEBYTECODE = "1"' in source
+    assert "without creating data, starting services, opening a browser, or writing bytecode" in source
+    assert launcher.index('if ($LauncherMode -eq "check")') < launcher.index("Start-Process -FilePath $browserUrl")
 
 
 def test_guard_retains_exact_identity_before_releasing_unique_sentinel() -> None:
@@ -179,7 +182,7 @@ def test_cleanup_uses_one_immutable_snapshot_and_never_substitutes_a_reused_pid(
 def test_self_tests_cover_real_tree_pid_reuse_exited_root_and_capture_failure() -> None:
     source = _ps_source()
     start = source.index("function Invoke-OwnedCleanupSelfTest")
-    end = source.index("function Invoke-LauncherPlanSelfTest")
+    end = source.index("function ConvertFrom-WindowsCommandLine")
     self_test = source[start:end]
 
     assert "Start-OwnedGuard" in self_test
@@ -195,41 +198,20 @@ def test_self_tests_cover_real_tree_pid_reuse_exited_root_and_capture_failure() 
     assert "http://" not in self_test.lower()
 
 
-@pytest.mark.skipif(os.name != "nt", reason="PowerShell plan self-test requires Windows")
-def test_controlled_plan_self_test_covers_reuse_and_adversarial_http_cases() -> None:
-    result = subprocess.run(
-        [
-            "powershell.exe",
-            "-NoProfile",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-File",
-            str(PS_LAUNCHER),
-            "-Mode",
-            "self-test-plan",
-        ],
-        cwd=ROOT,
-        stdin=subprocess.DEVNULL,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        timeout=30,
-        check=False,
-    )
-
-    output = result.stdout + result.stderr
-    assert result.returncode == 0, output
-    assert "service classification and pure launcher plans passed" in output
-
-
 def test_check_branch_precedes_data_creation_and_owned_service_launches() -> None:
     source = _ps_source()
+    launcher = source[source.index("function Invoke-Launcher {") :]
     check_branch = 'if ($LauncherMode -eq "check")'
-    assert check_branch in source
-    assert source.index(check_branch) < source.index("CreateDirectory($dataDirectory)")
-    assert source.index(check_branch) < source.index('Write-Host ("[start] Backend')
-    assert "without creating data, starting services, or opening a browser" in source
+
+    assert check_branch in launcher
+    assert launcher.index(check_branch) < launcher.index("CreateDirectory($dataDirectory)")
+    assert launcher.index(check_branch) < launcher.index(
+        'Start-OwnedGuard -Name "backend"'
+    )
+    assert launcher.index(check_branch) < launcher.index(
+        'Start-OwnedGuard -Name "frontend"'
+    )
+    assert "without creating data, starting services, opening a browser, or writing bytecode" in source
 
 
 def test_launcher_files_have_the_required_encodings_and_no_trailing_whitespace() -> None:
@@ -243,6 +225,323 @@ def test_launcher_files_have_the_required_encodings_and_no_trailing_whitespace()
     assert b"\r\n" not in ps_raw
     assert ps_raw.endswith(b"\n")
     assert all(not line.endswith((b" ", b"\t")) for line in ps_raw.split(b"\n"))
+
+
+def test_sdk_canonical_and_top_level_imports_are_one_module_and_one_exception_class(
+    tmp_path: Path,
+) -> None:
+    probe = """
+import sys
+import backend.plotpilot_plugin_sdk as backend_sdk
+import plotpilot_plugin_sdk as public_sdk
+from backend.plotpilot_plugin_sdk import ContractError as backend_error
+from plotpilot_plugin_sdk import ContractError as public_error
+from backend.plotpilot_plugin_sdk.errors import ContractError as backend_error_module
+from plotpilot_plugin_sdk.errors import ContractError as public_error_module
+assert public_sdk is backend_sdk
+assert sys.modules['plotpilot_plugin_sdk'] is backend_sdk
+assert public_error is backend_error
+assert public_error_module is backend_error_module is backend_error
+print('sdk identity ok')
+"""
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(ROOT)
+    result = subprocess.run(
+        [sys.executable, "-B", "-c", probe],
+        cwd=ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "sdk identity ok" in result.stdout
+
+    legacy_probe = """
+import sys
+from pathlib import Path
+root = Path.cwd()
+sys.path.insert(0, str(root / "backend"))
+import plotpilot_plugin_sdk as public_sdk
+import backend.plotpilot_plugin_sdk as backend_sdk
+from plotpilot_plugin_sdk import ContractError as public_error
+from backend.plotpilot_plugin_sdk import ContractError as backend_error
+assert public_sdk is backend_sdk
+assert public_error is backend_error
+print('sdk top-level redirect ok')
+"""
+    legacy = subprocess.run(
+        [sys.executable, "-B", "-c", legacy_probe],
+        cwd=ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+        timeout=30,
+    )
+    assert legacy.returncode == 0, legacy.stdout + legacy.stderr
+    assert "sdk top-level redirect ok" in legacy.stdout
+
+    unrelated_root = tmp_path / "unrelated"
+    unrelated_backend = unrelated_root / "backend"
+    unrelated_backend.mkdir(parents=True)
+    (unrelated_backend / "__init__.py").write_text("", encoding="utf-8")
+    unrelated_backend_probe = """
+import sys
+from pathlib import Path
+unrelated_root = Path(sys.argv[1])
+product_backend = Path(sys.argv[2])
+sys.path.insert(0, str(product_backend))
+sys.path.insert(0, str(unrelated_root))
+assert 'backend' not in sys.modules
+import plotpilot_plugin_sdk as public_sdk
+from plotpilot_plugin_sdk import ContractError as public_error
+from plotpilot_plugin_sdk.errors import ContractError as public_error_module
+assert public_sdk.__name__ == 'plotpilot_plugin_sdk'
+assert sys.modules['plotpilot_plugin_sdk'] is public_sdk
+assert public_sdk.ContractError is public_error is public_error_module
+assert 'backend' not in sys.modules
+print('sdk unrelated backend namespace fallback ok')
+"""
+    unrelated_backend_result = subprocess.run(
+        [
+            sys.executable,
+            "-B",
+            "-c",
+            unrelated_backend_probe,
+            str(unrelated_root),
+            str(ROOT / "backend"),
+        ],
+        cwd=ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+        timeout=30,
+    )
+    assert unrelated_backend_result.returncode == 0, (
+        unrelated_backend_result.stdout + unrelated_backend_result.stderr
+    )
+    assert "sdk unrelated backend namespace fallback ok" in (
+        unrelated_backend_result.stdout
+    )
+
+    unrelated_missing_probe = """
+import importlib.abc
+import sys
+from pathlib import Path
+root = Path.cwd()
+import backend
+class UnrelatedMissingFinder(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname == 'backend.plotpilot_plugin_sdk':
+            raise ModuleNotFoundError(
+                "No module named 'sdk_internal_dependency'",
+                name='sdk_internal_dependency',
+            )
+        return None
+sys.meta_path.insert(0, UnrelatedMissingFinder())
+sys.path.insert(0, str(root / 'backend'))
+try:
+    import plotpilot_plugin_sdk
+except ModuleNotFoundError as exc:
+    assert exc.name == 'sdk_internal_dependency'
+else:
+    raise AssertionError('an unrelated backend import failure was swallowed')
+print('sdk unrelated import failure preserved')
+"""
+    unrelated_missing = subprocess.run(
+        [sys.executable, "-B", "-c", unrelated_missing_probe],
+        cwd=ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+        timeout=30,
+    )
+    assert unrelated_missing.returncode == 0, (
+        unrelated_missing.stdout + unrelated_missing.stderr
+    )
+    assert "sdk unrelated import failure preserved" in unrelated_missing.stdout
+
+
+@pytest.mark.skipif(os.name != "nt", reason="PowerShell launcher logic is Windows-specific")
+def test_pure_proof_matrix_covers_plans_impersonation_redirect_and_owner_swap() -> None:
+    escaped_path = str(PS_LAUNCHER).replace("'", "''")
+    program = rf'''
+$path = '{escaped_path}'
+$source = [IO.File]::ReadAllText($path)
+$definitions = $source.Substring(0, $source.IndexOf('if (-not [string]::IsNullOrWhiteSpace($GuardPayload))'))
+. ([scriptblock]::Create($definitions))
+
+$bothAvailable = Get-LauncherPlan -BackendState Available -FrontendState Available -LauncherMode launch
+if (-not ($bothAvailable.StartBackend -and $bothAvailable.StartFrontend -and $bothAvailable.ValidateBackend -and $bothAvailable.ValidateFrontend)) {{ throw 'both Available plan failed' }}
+$backendOnly = Get-LauncherPlan -BackendState Available -FrontendState Reusable -LauncherMode launch
+if (-not ($backendOnly.StartBackend -and -not $backendOnly.StartFrontend -and $backendOnly.ValidateBackend -and -not $backendOnly.ValidateFrontend)) {{ throw 'frontend Reusable/backend Available plan failed' }}
+$frontendOnly = Get-LauncherPlan -BackendState Reusable -FrontendState Available -LauncherMode launch
+if (-not (-not $frontendOnly.StartBackend -and $frontendOnly.StartFrontend -and -not $frontendOnly.ValidateBackend -and $frontendOnly.ValidateFrontend)) {{ throw 'backend Reusable/frontend Available plan failed' }}
+$bothReusable = Get-LauncherPlan -BackendState Reusable -FrontendState Reusable -LauncherMode launch
+if ($bothReusable.StartBackend -or $bothReusable.StartFrontend -or $bothReusable.ValidateBackend -or $bothReusable.ValidateFrontend) {{ throw 'both Reusable plan failed' }}
+$checkAvailable = Get-LauncherPlan -BackendState Available -FrontendState Reusable -LauncherMode check
+if ($checkAvailable.StartBackend -or $checkAvailable.StartFrontend -or -not $checkAvailable.ValidateBackend -or $checkAvailable.ValidateFrontend) {{ throw 'check plan failed' }}
+$occupiedRejected = $false
+try {{ [void] (Get-LauncherPlan -BackendState Occupied -FrontendState Available -LauncherMode launch) }} catch {{ $occupiedRejected = $true }}
+if (-not $occupiedRejected) {{ throw 'foreign owner was accepted' }}
+
+$front = [pscustomobject]@{{
+    StatusCode = 200
+    Content = '<title>PlotPilot</title><div id="app"></div><div id="boot-splash"></div><script src="/src/main.ts"></script>'
+    BaseResponse = [pscustomobject]@{{ ResponseUri = [Uri] 'http://127.0.0.1:3000/' }}
+}}
+if (-not (Test-ExactLoopbackResponse -Response $front -ExpectedUri 'http://127.0.0.1:3000/' -Validator {{ param($response) Test-FrontendHttpContract -Response $response }})) {{ throw 'exact frontend marker rejected' }}
+$front.BaseResponse.ResponseUri = [Uri] 'http://127.0.0.1:3000/redirect'
+if (Test-ExactLoopbackResponse -Response $front -ExpectedUri 'http://127.0.0.1:3000/' -Validator {{ param($response) Test-FrontendHttpContract -Response $response }}) {{ throw 'redirect accepted' }}
+if (Test-RoleEvidence -OwnerMatches $true -HttpMatches $false) {{ throw 'path-only impersonation accepted' }}
+if (Test-RoleEvidence -OwnerMatches $false -HttpMatches $true) {{ throw 'HTTP-only impersonation accepted' }}
+if (Test-OptionValuePair -Tokens @('--host', 'wrong', '127.0.0.1', '--port', '3000') -Option '--host' -ExpectedValue '127.0.0.1') {{ throw 'wrong option/value adjacency accepted' }}
+$initial = [pscustomobject]@{{ Role = 'Frontend'; State = 'Reusable'; Owner = [pscustomobject]@{{ Id = 7; StartTicks = 11 }} }}
+$swapped = [pscustomobject]@{{ Role = 'Frontend'; State = 'Reusable'; Owner = [pscustomobject]@{{ Id = 7; StartTicks = 12 }} }}
+$swapRejected = $false
+try {{ Assert-FinalServiceState -Initial $initial -Final $swapped -Started $false }} catch {{ $swapRejected = $true }}
+if (-not $swapRejected) {{ throw 'owner swap accepted' }}
+'proof matrix ok'
+'''
+    result = subprocess.run(
+        ["powershell.exe", "-NoProfile", "-Command", program],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "proof matrix ok" in result.stdout
+
+
+@pytest.mark.skipif(os.name != "nt", reason="PowerShell launcher logic is Windows-specific")
+def test_port_service_state_combines_direct_owner_argv_http_and_creation_ticks() -> None:
+    escaped_path = str(PS_LAUNCHER).replace("'", "''")
+    escaped_root = str(ROOT).replace("'", "''")
+    escaped_frontend = str(ROOT / "frontend").replace("'", "''")
+    program = rf'''
+$path = '{escaped_path}'
+$root = '{escaped_root}'
+$frontend = '{escaped_frontend}'
+$source = [IO.File]::ReadAllText($path)
+$definitions = $source.Substring(0, $source.IndexOf('if (-not [string]::IsNullOrWhiteSpace($GuardPayload))'))
+. ([scriptblock]::Create($definitions))
+
+$script:MockCommandLine = ''
+$script:MockHttpMatches = $false
+$script:MockTicks = @([Int64] 101, [Int64] 101)
+$script:IdentityCalls = 0
+
+function Get-NetTCPConnection {{
+    [CmdletBinding()]
+    param([string] $State, [int] $LocalPort)
+    return [pscustomobject]@{{ LocalAddress = '127.0.0.1'; OwningProcess = 4242 }}
+}}
+
+function Get-ProcessIdentity {{
+    param([int] $ProcessId)
+    $index = [Math]::Min($script:IdentityCalls, $script:MockTicks.Count - 1)
+    $ticks = [Int64] $script:MockTicks[$index]
+    $script:IdentityCalls += 1
+    return [pscustomobject]@{{
+        Id = 4242
+        StartTicks = $ticks
+        Raw = [pscustomobject]@{{ CommandLine = $script:MockCommandLine }}
+    }}
+}}
+
+function Invoke-ExactLoopbackRequest {{
+    param([string] $Url, [scriptblock] $Validator)
+    if ($script:MockHttpMatches) {{
+        return [pscustomobject]@{{ Url = $Url; Marker = 'exact' }}
+    }}
+    return $null
+}}
+
+function Assert-MockedState {{
+    param(
+        [string] $Label,
+        [string] $Role,
+        [int] $Port,
+        [string] $CommandLine,
+        [bool] $HttpMatches,
+        [Int64[]] $Ticks,
+        [string] $Expected
+    )
+    $script:MockCommandLine = $CommandLine
+    $script:MockHttpMatches = $HttpMatches
+    $script:MockTicks = @($Ticks)
+    $script:IdentityCalls = 0
+    $actual = Get-PortServiceState -Role $Role -Port $Port -Root $root -FrontendDirectory $frontend
+    if ($actual.State -ne $Expected) {{
+        throw "$Label expected $Expected but got $($actual.State): $($actual.Reason)"
+    }}
+}}
+
+$viteScript = Join-Path $frontend 'node_modules\vite\bin\vite.js'
+$backendExact = 'python.exe -B -m uvicorn interfaces.main:app --app-dir "' + $root + '" --host 127.0.0.1 --port 8005 --workers 1 --log-level info'
+$frontendExact = 'node.exe "' + $viteScript + '" --host 127.0.0.1 --port 3000 --strictPort'
+$wrongAdjacency = 'node.exe "' + $viteScript + '" --host wrong 127.0.0.1 --port 3000 --strictPort'
+$httpOnly = 'node.exe C:\unrelated\vite.js --host 127.0.0.1 --port 3000 --strictPort'
+
+Assert-MockedState -Label 'backend exact owner plus marker' -Role Backend -Port 8005 -CommandLine $backendExact -HttpMatches $true -Ticks @(101, 101) -Expected Reusable
+Assert-MockedState -Label 'frontend exact owner plus marker' -Role Frontend -Port 3000 -CommandLine $frontendExact -HttpMatches $true -Ticks @(101, 101) -Expected Reusable
+Assert-MockedState -Label 'wrong option adjacency' -Role Frontend -Port 3000 -CommandLine $wrongAdjacency -HttpMatches $true -Ticks @(101, 101) -Expected Occupied
+Assert-MockedState -Label 'HTTP only' -Role Frontend -Port 3000 -CommandLine $httpOnly -HttpMatches $true -Ticks @(101, 101) -Expected Occupied
+Assert-MockedState -Label 'path only' -Role Frontend -Port 3000 -CommandLine $frontendExact -HttpMatches $false -Ticks @(101, 101) -Expected Occupied
+Assert-MockedState -Label 'same PID creation ticks changed' -Role Frontend -Port 3000 -CommandLine $frontendExact -HttpMatches $true -Ticks @(101, 102) -Expected Occupied
+'Get-PortServiceState mock matrix ok'
+'''
+    result = subprocess.run(
+        ["powershell.exe", "-NoProfile", "-Command", program],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "Get-PortServiceState mock matrix ok" in result.stdout
+
+
+@pytest.mark.skipif(os.name != "nt", reason="PowerShell parser is Windows-specific")
+def test_launcher_parses_without_execution() -> None:
+    result = subprocess.run(
+        [
+            "powershell.exe",
+            "-NoProfile",
+            "-Command",
+            "[void][scriptblock]::Create([IO.File]::ReadAllText('"
+            + str(PS_LAUNCHER).replace("'", "''")
+            + "')); 'parser ok'",
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "parser ok" in result.stdout
 
 
 @pytest.mark.skipif(os.name != "nt", reason="cmd launcher acceptance requires Windows")
