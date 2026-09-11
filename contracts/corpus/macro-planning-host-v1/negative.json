@@ -85,7 +85,7 @@
     },
     {
       "case_id": "macro-wrapped-secret-result-leak",
-      "expected": "recursive_secret_redaction",
+      "expected": "structural_secret_response_provenance",
       "fixture": "secret_success_exchange",
       "kind": "secret_exchange",
       "mutation": {
@@ -99,7 +99,7 @@
     },
     {
       "case_id": "macro-wrapped-secret-error-leak",
-      "expected": "recursive_secret_redaction",
+      "expected": "fixed_error_mapping",
       "fixture": "secret_error_exchange",
       "kind": "secret_exchange",
       "mutation": {

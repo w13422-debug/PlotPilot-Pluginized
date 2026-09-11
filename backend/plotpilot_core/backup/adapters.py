@@ -18,6 +18,10 @@ from backend.plotpilot_plugin_sdk.canonical import (
 from backend.plotpilot_plugin_sdk.context_identity import (
     derive_operation_context_identity,
 )
+from backend.plotpilot_plugin_sdk.macro_planning_v2 import (
+    parse_model_config_v2,
+    parse_model_profile_revision_v1,
+)
 from backend.plotpilot_plugin_sdk.framing import decode_frame
 from backend.plotpilot_plugin_sdk.verifier import (
     assert_valid,
@@ -43,6 +47,7 @@ sys.modules.setdefault("plotpilot_plugin_sdk", _sdk_package)
 
 from ..assets import AssetStore
 from ..plugins.package import VerifiedPackage, verify_package
+from ..plugins.generation import validate_generation
 from ..plugins.store import PackageStore
 from .models import BackupBarrier, BackupMode, CoreSnapshotCapture, PluginBackupFile
 
@@ -133,6 +138,11 @@ _CORE_TABLE_ORDER = (
     "publication_receipt",
     "p2_plugin_generation",
     "p2_plugin_generation_pointer",
+    "p1_local_secret_value",
+    "p1_model_profile_revision",
+    "p1_plan_revision_reference",
+    "p1_workspace_plan_selection",
+    "p1_configuration_operation",
     "p2_plugin_install_attempt",
     "p2_plugin_release_retirement",
     "p2_plugin_retirement_attention",
@@ -229,7 +239,9 @@ class SqliteWorkspaceDatabaseProjector:
     """
 
     @staticmethod
-    def _validate_schema(connection: sqlite3.Connection) -> tuple[dict[str, str], list[str]]:
+    def _validate_schema(
+        connection: sqlite3.Connection,
+    ) -> tuple[dict[str, str], list[str], list[str]]:
         query = (
             "SELECT type,name,tbl_name,sql FROM sqlite_schema "
             "WHERE name NOT LIKE 'sqlite_%' ORDER BY type,name"
@@ -273,7 +285,12 @@ class SqliteWorkspaceDatabaseProjector:
                 for object_type, _name, _table_name, sql in expected_objects
                 if object_type == "index" and sql is not None
             ]
-            return table_sql, index_sql
+            trigger_sql = [
+                str(sql)
+                for object_type, _name, _table_name, sql in expected_objects
+                if object_type == "trigger" and sql is not None
+            ]
+            return table_sql, index_sql, trigger_sql
         finally:
             canonical.close()
 
@@ -353,11 +370,17 @@ class SqliteWorkspaceDatabaseProjector:
             ),
             parameters=(workspace_id,),
         )
-        # A Workspace bundle intentionally excludes global P2 lifecycle and
-        # Supervisor authority.  The one synthetic pointer is the neutral row
-        # that the accepted lifecycle migration would have created in a fresh
-        # database; source current/LKG/safe-mode values never cross the scope.
-        selected["p2_plugin_generation"] = []
+        # P1 configuration rows are a strict reference closure of the target
+        # Workspace's complete Plan-selection history.  Only immutable
+        # Generation witnesses actually named by that history cross scope.
+        selected.update(
+            SqliteWorkspaceDatabaseProjector._select_p1_configuration_closure(
+                connection, workspace_id, workspace[0]
+            )
+        )
+        # The mutable global Generation pointer never crosses a Workspace
+        # boundary.  Restore starts neutral even when immutable witnesses are
+        # needed to satisfy P1 Plan-reference foreign keys.
         selected["p2_plugin_generation_pointer"] = [
             {
                 "singleton": 1,
@@ -466,6 +489,398 @@ class SqliteWorkspaceDatabaseProjector:
         return selected
 
     @staticmethod
+    def _canonical_json_mapping(raw: object, label: str) -> dict[str, object]:
+        value = SqliteWorkspaceDatabaseProjector._json_mapping(raw, label)
+        if canonical_bytes(value).decode("utf-8") != raw:
+            raise WorkspaceProjectionError(f"{label} is not canonical JSON")
+        return value
+
+    @staticmethod
+    def _select_p1_configuration_closure(
+        connection: sqlite3.Connection,
+        workspace_id: str,
+        workspace: Mapping[str, object],
+    ) -> dict[str, list[dict[str, object]]]:
+        """Return the exact P1/Generation closure for one Workspace."""
+
+        selections = _rows(
+            connection,
+            "p1_workspace_plan_selection",
+            where='"workspace_id"=?',
+            parameters=(workspace_id,),
+        )
+        latest: dict[str, object] | None = None
+        if selections:
+            if any(
+                not isinstance(row.get("workspace_revision"), int)
+                or isinstance(row.get("workspace_revision"), bool)
+                for row in selections
+            ):
+                raise WorkspaceProjectionError(
+                    "P1 Workspace Plan selection revision is invalid"
+                )
+            latest = max(selections, key=lambda row: int(row["workspace_revision"]))
+            if latest.get("plan_revision_id") != workspace.get(
+                "current_plan_revision_id"
+            ):
+                raise WorkspaceProjectionError(
+                    "latest P1 Plan selection does not bind the Workspace pointer"
+                )
+
+        all_plan_references = _rows(connection, "p1_plan_revision_reference")
+        plan_reference_by_key: dict[tuple[str, str], dict[str, object]] = {}
+        required_plan_keys: set[tuple[str, str]] = set()
+        required_generation_ids: set[str] = set()
+        required_profile_hashes: dict[str, str] = {}
+        selection_by_operation: dict[str, dict[str, object]] = {}
+        for selection in selections:
+            generation_id = selection.get("active_generation_id")
+            plan_revision_id = selection.get("plan_revision_id")
+            profile_revision_id = selection.get("model_profile_revision_id")
+            profile_revision_hash = selection.get("model_profile_revision_hash")
+            operation_key = selection.get("operation_key")
+            if not all(
+                isinstance(value, str) and value
+                for value in (
+                    generation_id,
+                    plan_revision_id,
+                    profile_revision_id,
+                    profile_revision_hash,
+                    operation_key,
+                )
+            ):
+                raise WorkspaceProjectionError(
+                    "P1 Workspace Plan selection identity is invalid"
+                )
+            assert isinstance(generation_id, str)
+            assert isinstance(plan_revision_id, str)
+            assert isinstance(profile_revision_id, str)
+            assert isinstance(profile_revision_hash, str)
+            assert isinstance(operation_key, str)
+            key = (generation_id, plan_revision_id)
+            required_plan_keys.add(key)
+            required_generation_ids.add(generation_id)
+            prior_hash = required_profile_hashes.setdefault(
+                profile_revision_id, profile_revision_hash
+            )
+            if prior_hash != profile_revision_hash:
+                raise WorkspaceProjectionError(
+                    "P1 selection profile hash is inconsistent"
+                )
+            if operation_key in selection_by_operation:
+                raise WorkspaceProjectionError(
+                    "P1 selection operation identity is ambiguous"
+                )
+            selection_by_operation[operation_key] = selection
+
+        for row in all_plan_references:
+            key = (str(row.get("generation_id")), str(row.get("plan_revision_id")))
+            if key in plan_reference_by_key:
+                raise WorkspaceProjectionError("P1 Plan reference identity is ambiguous")
+            plan_reference_by_key[key] = row
+        for selection in selections:
+            key = (
+                str(selection["active_generation_id"]),
+                str(selection["plan_revision_id"]),
+            )
+            reference = plan_reference_by_key.get(key)
+            if (
+                reference is None
+                or reference.get("plan_revision_hash")
+                != selection.get("plan_revision_hash")
+            ):
+                raise WorkspaceProjectionError(
+                    "P1 selection lacks its exact Plan/Generation reference"
+                )
+        selected_plan_references = [
+            row
+            for row in all_plan_references
+            if (str(row.get("generation_id")), str(row.get("plan_revision_id")))
+            in required_plan_keys
+        ]
+
+        all_generations = _rows(connection, "p2_plugin_generation")
+        generation_by_id = {
+            str(row.get("generation_id")): row for row in all_generations
+        }
+        if len(generation_by_id) != len(all_generations):
+            raise WorkspaceProjectionError("plugin Generation identity is ambiguous")
+        for generation_id in required_generation_ids:
+            row = generation_by_id.get(generation_id)
+            if row is None:
+                raise WorkspaceProjectionError(
+                    "P1 Plan reference lacks its immutable Generation witness"
+                )
+            payload = SqliteWorkspaceDatabaseProjector._canonical_json_mapping(
+                row.get("payload_json"), "P1 Generation witness"
+            )
+            try:
+                generation = validate_generation(payload)
+            except Exception as exc:
+                raise WorkspaceProjectionError(
+                    "P1 Generation witness is invalid"
+                ) from exc
+            if (
+                generation.get("generation_id") != generation_id
+                or hashlib.sha256(canonical_bytes(generation)).hexdigest()
+                != row.get("payload_hash")
+            ):
+                raise WorkspaceProjectionError(
+                    "P1 Generation witness identity/hash is invalid"
+                )
+        selected_generations = [
+            row
+            for row in all_generations
+            if row.get("generation_id") in required_generation_ids
+        ]
+
+        all_profiles = _rows(connection, "p1_model_profile_revision")
+        profile_by_id = {
+            str(row.get("revision_id")): row for row in all_profiles
+        }
+        if len(profile_by_id) != len(all_profiles):
+            raise WorkspaceProjectionError("P1 profile revision identity is ambiguous")
+        required_profile_ids: set[str] = set()
+        profile_payloads: dict[str, dict[str, object]] = {}
+        required_secret_ids: set[str] = set()
+        pending = list(required_profile_hashes)
+        while pending:
+            revision_id = pending.pop()
+            if revision_id in required_profile_ids:
+                continue
+            row = profile_by_id.get(revision_id)
+            if row is None:
+                raise WorkspaceProjectionError(
+                    "P1 selected profile parent closure is incomplete"
+                )
+            payload_raw = SqliteWorkspaceDatabaseProjector._canonical_json_mapping(
+                row.get("payload_json"), "P1 model profile revision"
+            )
+            try:
+                payload = parse_model_profile_revision_v1(payload_raw)
+            except Exception as exc:
+                raise WorkspaceProjectionError(
+                    "P1 model profile revision is invalid"
+                ) from exc
+            expected_row_fields = {
+                "revision_id": payload["revision_id"],
+                "profile_id": payload["profile_id"],
+                "revision_number": payload["revision_number"],
+                "parent_revision_id": payload["parent_revision_id"],
+                "revision_hash": payload["revision_hash"],
+                "created_at": payload["created_at"],
+            }
+            if any(row.get(name) != value for name, value in expected_row_fields.items()):
+                raise WorkspaceProjectionError(
+                    "P1 profile row does not bind its normalized payload"
+                )
+            root_hash = required_profile_hashes.get(revision_id)
+            if root_hash is not None and root_hash != payload["revision_hash"]:
+                raise WorkspaceProjectionError(
+                    "P1 selection profile hash does not bind its revision"
+                )
+            secret_id = row.get("secret_id")
+            if (
+                not isinstance(secret_id, str)
+                or not secret_id
+                or payload["provider"]["api_key_ref"] != f"secret://{secret_id}"
+            ):
+                raise WorkspaceProjectionError(
+                    "P1 profile local Secret reference is invalid"
+                )
+            required_profile_ids.add(revision_id)
+            required_secret_ids.add(secret_id)
+            profile_payloads[revision_id] = payload
+            parent = payload["parent_revision_id"]
+            if parent is not None:
+                pending.append(str(parent))
+        for revision_id in required_profile_ids:
+            payload = profile_payloads[revision_id]
+            parent_id = payload["parent_revision_id"]
+            if parent_id is None:
+                continue
+            parent = profile_payloads.get(str(parent_id))
+            if (
+                parent is None
+                or parent["profile_id"] != payload["profile_id"]
+                or parent["revision_number"] + 1 != payload["revision_number"]
+            ):
+                raise WorkspaceProjectionError(
+                    "P1 profile parent chain is not contiguous"
+                )
+        selected_profiles = [
+            row for row in all_profiles if row.get("revision_id") in required_profile_ids
+        ]
+
+        all_secrets = _rows(connection, "p1_local_secret_value")
+        secret_by_id = {str(row.get("secret_id")): row for row in all_secrets}
+        if len(secret_by_id) != len(all_secrets):
+            raise WorkspaceProjectionError("P1 local Secret identity is ambiguous")
+        for secret_id in required_secret_ids:
+            row = secret_by_id.get(secret_id)
+            value = None if row is None else row.get("value")
+            if (
+                row is None
+                or not isinstance(value, str)
+                or hashlib.sha256(value.encode("utf-8")).hexdigest()
+                != row.get("value_hash")
+            ):
+                raise WorkspaceProjectionError(
+                    "P1 local Secret value/hash closure is invalid"
+                )
+        selected_secrets = [
+            row for row in all_secrets if row.get("secret_id") in required_secret_ids
+        ]
+
+        all_operations = _rows(connection, "p1_configuration_operation")
+        selected_operations: list[dict[str, object]] = []
+        secret_producer_hashes: dict[str, set[str]] = defaultdict(set)
+        profile_producers: set[str] = set()
+        plan_producers: set[str] = set()
+        for operation in all_operations:
+            route_id = operation.get("route_id")
+            if route_id == "project-planning.start":
+                raise WorkspaceProjectionError(
+                    "P1 project-planning.start operation ledger must be empty"
+                )
+            if route_id not in {
+                "model-secret.put",
+                "model-profile.revise",
+                "workspace-plan.select",
+            }:
+                raise WorkspaceProjectionError(
+                    "P1 configuration operation route is unclassified"
+                )
+            response_raw = SqliteWorkspaceDatabaseProjector._canonical_json_mapping(
+                operation.get("response_json"), "P1 configuration response"
+            )
+            try:
+                response = parse_model_config_v2(response_raw)
+            except Exception as exc:
+                raise WorkspaceProjectionError(
+                    "P1 configuration response is invalid"
+                ) from exc
+            operation_key = operation.get("operation_key")
+            if (
+                response.get("operation_key") != operation_key
+                or response.get("idempotent") is not False
+            ):
+                raise WorkspaceProjectionError(
+                    "P1 configuration response operation identity is invalid"
+                )
+
+            include = False
+            if route_id == "model-secret.put":
+                secret_id = response.get("secret_id")
+                expected_status = 201 if response.get("created") is True else 200
+                value_hash = operation.get("value_hash")
+                if (
+                    response.get("schema") != "model-secret-put-result/v2"
+                    or operation.get("success_status") != expected_status
+                    or not isinstance(value_hash, str)
+                    or len(value_hash) != 64
+                ):
+                    raise WorkspaceProjectionError(
+                        "P1 Secret operation response is invalid"
+                    )
+                if secret_id in required_secret_ids:
+                    assert isinstance(secret_id, str)
+                    secret_producer_hashes[secret_id].add(value_hash)
+                    include = True
+            elif route_id == "model-profile.revise":
+                revision = response.get("revision")
+                revision_id = (
+                    revision.get("revision_id")
+                    if isinstance(revision, Mapping)
+                    else None
+                )
+                if (
+                    response.get("schema") != "model-profile-revise-result/v2"
+                    or operation.get("success_status") != 201
+                    or operation.get("value_hash") is not None
+                ):
+                    raise WorkspaceProjectionError(
+                        "P1 profile operation response is invalid"
+                    )
+                if revision_id in required_profile_ids:
+                    if revision != profile_payloads[str(revision_id)]:
+                        raise WorkspaceProjectionError(
+                            "P1 profile operation does not bind its revision"
+                        )
+                    profile_producers.add(str(revision_id))
+                    include = True
+            else:
+                selection = selection_by_operation.get(str(operation_key))
+                if (
+                    response.get("schema") != "workspace-plan-selection-result/v2"
+                    or operation.get("success_status") != 200
+                    or operation.get("value_hash") is not None
+                ):
+                    raise WorkspaceProjectionError(
+                        "P1 Plan operation response is invalid"
+                    )
+                if selection is not None:
+                    expected_response = {
+                        "schema": "workspace-plan-selection-result/v2",
+                        "operation_key": selection["operation_key"],
+                        "workspace_id": selection["workspace_id"],
+                        "workspace_revision": selection["workspace_revision"],
+                        "previous_plan_revision_id": selection[
+                            "previous_plan_revision_id"
+                        ],
+                        "previous_plan_revision_hash": selection[
+                            "previous_plan_revision_hash"
+                        ],
+                        "selection_mode": selection["selection_mode"],
+                        "plan_revision_id": selection["plan_revision_id"],
+                        "plan_revision_hash": selection["plan_revision_hash"],
+                        "model_profile_revision_id": selection[
+                            "model_profile_revision_id"
+                        ],
+                        "model_profile_revision_hash": selection[
+                            "model_profile_revision_hash"
+                        ],
+                        "active_generation_id": selection[
+                            "active_generation_id"
+                        ],
+                        "idempotent": False,
+                    }
+                    if response != expected_response:
+                        raise WorkspaceProjectionError(
+                            "P1 Plan operation does not bind its selection"
+                        )
+                    plan_producers.add(str(operation_key))
+                    include = True
+            if include:
+                selected_operations.append(operation)
+
+        if any(
+            secret_by_id[secret_id]["value_hash"]
+            not in secret_producer_hashes.get(secret_id, set())
+            for secret_id in required_secret_ids
+        ):
+            raise WorkspaceProjectionError(
+                "P1 selected Secret lacks its current producer operation"
+            )
+        if profile_producers != required_profile_ids:
+            raise WorkspaceProjectionError(
+                "P1 selected profile closure lacks producer operations"
+            )
+        if plan_producers != set(selection_by_operation):
+            raise WorkspaceProjectionError(
+                "P1 selection history lacks producer operations"
+            )
+
+        return {
+            "p2_plugin_generation": selected_generations,
+            "p1_local_secret_value": selected_secrets,
+            "p1_model_profile_revision": selected_profiles,
+            "p1_plan_revision_reference": selected_plan_references,
+            "p1_workspace_plan_selection": selections,
+            "p1_configuration_operation": selected_operations,
+        }
+
+    @staticmethod
     def _validate_boundaries(
         *,
         connection: sqlite3.Connection,
@@ -479,8 +894,17 @@ class SqliteWorkspaceDatabaseProjector:
         candidate_ids = set(candidate_items)
         endpoint_ids = document_ids | node_ids
         workspace_plan = selected["workspace"][0].get("current_plan_revision_id")
-        if workspace_plan is not None and workspace_plan not in revision_ids:
-            raise WorkspaceProjectionError("workspace plan revision crosses the selected boundary")
+        selections = selected["p1_workspace_plan_selection"]
+        if selections:
+            latest = max(selections, key=lambda row: int(row["workspace_revision"]))
+            if latest.get("plan_revision_id") != workspace_plan:
+                raise WorkspaceProjectionError(
+                    "latest P1 Plan selection does not bind the Workspace pointer"
+                )
+        elif workspace_plan is not None and workspace_plan not in revision_ids:
+            raise WorkspaceProjectionError(
+                "workspace plan revision crosses the selected boundary"
+            )
         for document in selected["document"]:
             current_revision = document.get("current_revision_id")
             if current_revision is not None:
@@ -608,12 +1032,40 @@ class SqliteWorkspaceDatabaseProjector:
                     "chapter generation writer fence crosses Workspace or chapter authority"
                 )
 
+        p1_selections_by_workspace: dict[str, list[dict[str, object]]] = defaultdict(list)
+        for selection in _rows(connection, "p1_workspace_plan_selection"):
+            selection_workspace = selection.get("workspace_id")
+            if not isinstance(selection_workspace, str):
+                raise WorkspaceProjectionError(
+                    "P1 selection Workspace identity is invalid"
+                )
+            require(
+                workspace_owner,
+                selection_workspace,
+                "P1 selection Workspace",
+            )
+            p1_selections_by_workspace[selection_workspace].append(selection)
+
         for row in _rows(connection, "workspace"):
             current = row.get("current_plan_revision_id")
-            if current is not None and require(
+            p1_selections = p1_selections_by_workspace.get(
+                str(row["workspace_id"]), []
+            )
+            if p1_selections:
+                latest = max(
+                    p1_selections,
+                    key=lambda selection: int(selection["workspace_revision"]),
+                )
+                if latest.get("plan_revision_id") != current:
+                    raise WorkspaceProjectionError(
+                        "latest P1 Plan selection does not bind the Workspace pointer"
+                    )
+            elif current is not None and require(
                 revision_owner, current, "workspace plan revision"
             ) != row.get("workspace_id"):
-                raise WorkspaceProjectionError("workspace plan revision crosses Workspace")
+                raise WorkspaceProjectionError(
+                    "workspace plan revision crosses Workspace"
+                )
         for document_id, row in document_rows.items():
             current = row.get("current_revision_id")
             if current is not None:
@@ -2015,7 +2467,7 @@ class SqliteWorkspaceDatabaseProjector:
         source = sqlite3.connect(_sqlite_uri(source_path), uri=True)
         target: sqlite3.Connection | None = None
         try:
-            table_sql, index_sql = self._validate_schema(source)
+            table_sql, index_sql, trigger_sql = self._validate_schema(source)
             selected = self._selected_rows(source, workspace_id)
             page_size = int(source.execute("PRAGMA page_size").fetchone()[0])
             user_version = int(source.execute("PRAGMA user_version").fetchone()[0])
@@ -2040,6 +2492,8 @@ class SqliteWorkspaceDatabaseProjector:
                     (int(sequence_row[0]),),
                 )
             for sql in index_sql:
+                target.execute(sql)
+            for sql in trigger_sql:
                 target.execute(sql)
             target.execute(f"PRAGMA user_version={user_version}")
             target.execute(f"PRAGMA application_id={application_id}")

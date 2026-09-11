@@ -17,6 +17,7 @@ sys.path.insert(0, str(ROOT / "tools" / "integration"))
 from plotpilot_plugin_sdk.errors import ContractError  # noqa: E402
 from plotpilot_plugin_sdk.m4_m5_http_v2 import validate_http_exchange  # noqa: E402
 from plotpilot_plugin_sdk.macro_planning_v2 import (  # noqa: E402
+    FIXED_HTTP_ERROR_MESSAGES,
     JSON_MAX_SAFE_INTEGER,
     WIRE_WHITESPACE_CODEPOINTS,
     contains_wire_whitespace,
@@ -31,6 +32,7 @@ from plotpilot_plugin_sdk.macro_planning_v2 import (  # noqa: E402
     planner_runtime_input_hash,
     validate_project_planning_start,
     validate_project_planning_start_exchange,
+    validate_fixed_model_planning_http_error_v2,
     validate_secret_put_exchange,
     validate_workspace_plan_selection,
 )
@@ -101,6 +103,9 @@ def test_macro_planning_proof_gate_is_complete() -> None:
         "integer_vector_result_digest": "d4cfe7ec27c052badd2f67723fa5a4123becd60b6c1be11ce37b07b58f00f13d",
         "wire_whitespace_codepoints": 30,
         "representative_whitespace_cases": 12,
+        "secret_collision_positive_cases": 7,
+        "secret_structural_negative_cases": 8,
+        "fixed_error_messages": 9,
         "corpus_files": 11,
         "model_profile_revision_hash": "9570e425de7546804e3efe66fa09dd9dfac73510285e066d9aaceab5032dd8ed",
         "planner_runtime_input_hash": "881cb610c9e018a25078364c4b89fdbf6e3ef014231290b9f9c5b731b178acbd",
@@ -165,17 +170,68 @@ def test_all_five_routes_require_exact_trusted_path_identity() -> None:
         )
 
 
-def test_raw_secret_is_input_only_and_recursively_rejected_from_outputs() -> None:
+def test_secret_output_uses_structural_provenance_not_text_coincidence() -> None:
     fixtures = _positive()["fixtures"]
-    command = fixtures["model_secret_put_command"]
-    validate_secret_put_exchange(command, fixtures["model_secret_put_result"])
-    validate_secret_put_exchange(command, fixtures["model_secret_error"])
-    raw = command["value"]
-    for response in (
-        {"nested": [{"message": f"wrapped:{raw}:value"}]},
-        {"nested": {f"wrapped:{raw}:key": "redacted"}},
+    with pytest.raises(TypeError):
+        FIXED_HTTP_ERROR_MESSAGES["malformed_request"] = "mutable"  # type: ignore[index]
+    base_command = fixtures["model_secret_put_command"]
+    success = fixtures["model_secret_put_result"]
+    error = fixtures["model_secret_error"]
+    for collision in (
+        "Request",
+        "model",
+        "a",
+        base_command["secret_id"],
+        base_command["operation_key"],
+        FIXED_HTTP_ERROR_MESSAGES["malformed_request"],
+        FIXED_HTTP_ERROR_MESSAGES["secret_value_rejected"],
     ):
-        _rejected(lambda response=response: validate_secret_put_exchange(command, response))
+        command = {**base_command, "value": collision}
+        validate_secret_put_exchange(command, success)
+        validate_secret_put_exchange(command, error)
+
+    validate_fixed_model_planning_http_error_v2(error)
+    raw = base_command["value"]
+    invalid_responses = []
+    for mutation in (
+        {**success, "value": raw},
+        {**success, "echo": {"value": raw}},
+        {**success, "api_key_ref": f"secret://provider-main/{raw}"},
+        {**success, "operation_key": "other-operation"},
+        {**success, "secret_id": "other-secret"},
+        {**error, "message": raw},
+        {**error, "error_code": "malformed_request"},
+        {**error, "retryable": True},
+    ):
+        invalid_responses.append(mutation)
+    for response in invalid_responses:
+        _rejected(
+            lambda response=response: validate_secret_put_exchange(
+                base_command, response
+            )
+        )
+
+    for code, message in FIXED_HTTP_ERROR_MESSAGES.items():
+        schema = (
+            "model-secret-http-error/v2"
+            if code in {"secret_value_rejected", "malformed_request", "unknown_reference", "duplicate_operation"}
+            else "workspace-planning-http-error/v2"
+        )
+        identity = (
+            {"secret_id": "provider-main"}
+            if schema == "model-secret-http-error/v2"
+            else {"workspace_id": "workspace-1"}
+        )
+        validate_fixed_model_planning_http_error_v2(
+            {
+                "schema": schema,
+                **identity,
+                "error_code": code,
+                "message": message,
+                "retryable": False,
+                "operation_key": None,
+            }
+        )
 
     config = json.loads((SCHEMA_DIR / SCHEMA_FILES[0]).read_text(encoding="utf-8"))
     value_branches = [

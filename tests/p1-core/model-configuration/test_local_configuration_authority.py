@@ -174,6 +174,35 @@ def test_secret_operation_conflict_is_fixed_and_does_not_change_value(tmp_path) 
         repository.close()
 
 
+@pytest.mark.parametrize(
+    "value",
+    (
+        "Request",
+        "model",
+        "a",
+        "provider-main",
+        "secret-operation-1",
+        "Request is malformed.",
+        "Secret value was rejected.",
+    ),
+)
+def test_secret_value_text_overlap_is_structurally_accepted(tmp_path, value: str) -> None:
+    repository = CoreAuthorityRepository(tmp_path / "core.db")
+    authority = _authority(repository)
+    try:
+        result = authority.put_secret(_secret_command(value=value))
+        assert result["api_key_ref"] == "secret://provider-main"
+        assert authority.resolve_secret_value("secret://provider-main") == value
+        with repository.read_connection() as connection:
+            operation = connection.execute(
+                "SELECT value_hash,response_json FROM p1_configuration_operation"
+            ).fetchone()
+        assert operation["value_hash"] == hashlib.sha256(value.encode()).hexdigest()
+        assert json.loads(operation["response_json"]) == result
+    finally:
+        repository.close()
+
+
 def test_secret_create_and_replace_roll_back_with_operation_receipt(tmp_path) -> None:
     repository = CoreAuthorityRepository(tmp_path / "core.db")
     authority = _authority(repository)

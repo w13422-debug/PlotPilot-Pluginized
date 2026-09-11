@@ -192,15 +192,17 @@ class WorkspacePlanAuthority:
         workspace_id: str,
         current_plan_revision_id: str | None,
     ) -> str | None:
-        if current_plan_revision_id is None:
-            return None
         row = connection.execute(
-            "SELECT plan_revision_hash FROM p1_workspace_plan_selection "
-            "WHERE workspace_id=? AND plan_revision_id=? "
+            "SELECT plan_revision_id,plan_revision_hash "
+            "FROM p1_workspace_plan_selection WHERE workspace_id=? "
             "ORDER BY workspace_revision DESC LIMIT 1",
-            (workspace_id, current_plan_revision_id),
+            (workspace_id,),
         ).fetchone()
-        if row is None:
+        if current_plan_revision_id is None:
+            if row is not None:
+                raise UnknownConfigurationReferenceError()
+            return None
+        if row is None or row["plan_revision_id"] != current_plan_revision_id:
             raise UnknownConfigurationReferenceError()
         return str(row["plan_revision_hash"])
 
@@ -481,22 +483,18 @@ class WorkspacePlanAuthority:
                     workspace_id, "planner_package_missing"
                 )
 
-            current_plan_id = workspace["current_plan_revision_id"]
-            if current_plan_id is None:
-                return self._availability_result(
-                    workspace_id, "workspace_plan_missing"
-                )
             selection = connection.execute(
                 "SELECT * FROM p1_workspace_plan_selection WHERE workspace_id=? "
-                "AND plan_revision_id=? AND active_generation_id=? "
                 "ORDER BY workspace_revision DESC LIMIT 1",
-                (
-                    workspace_id,
-                    current_plan_id,
-                    generation_id,
-                ),
+                (workspace_id,),
             ).fetchone()
-            if selection is None:
+            current_plan_id = workspace["current_plan_revision_id"]
+            if (
+                selection is None
+                or current_plan_id is None
+                or selection["plan_revision_id"] != current_plan_id
+                or selection["active_generation_id"] != generation_id
+            ):
                 return self._availability_result(
                     workspace_id, "workspace_plan_missing"
                 )

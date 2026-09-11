@@ -8,6 +8,9 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from backend.plotpilot_plugin_sdk import canonical_bytes
+from backend.plotpilot_plugin_sdk.macro_planning_v2 import (
+    FIXED_HTTP_ERROR_MESSAGES as SDK_FIXED_HTTP_ERROR_MESSAGES,
+)
 from backend.plotpilot_core.api.v2.configuration import (
     ROUTE_ALLOWLIST,
     build_configuration_router,
@@ -20,6 +23,7 @@ from backend.plotpilot_core.configuration.plan_authority import (
     PROJECT_BRIEF_DOCUMENT_TYPE,
     PROJECT_BRIEF_PAYLOAD_SCHEMA,
 )
+from backend.plotpilot_core.configuration.authority import FIXED_ERROR_MESSAGES
 from backend.plotpilot_core.domain import Document, Workspace
 from backend.plotpilot_core.plugins.generation import validate_generation
 from backend.plotpilot_core.repositories.authority import CoreAuthorityRepository
@@ -174,6 +178,10 @@ def test_router_is_exact_five_route_allowlist_without_plan_registration(tmp_path
         repository.close()
 
 
+def test_core_and_sdk_share_the_adjudicated_fixed_error_messages() -> None:
+    assert FIXED_ERROR_MESSAGES == SDK_FIXED_HTTP_ERROR_MESSAGES
+
+
 def test_secret_http_create_replace_replay_conflict_and_no_raw_echo(tmp_path) -> None:
     repository, _, _, client = _stack(tmp_path)
     try:
@@ -259,6 +267,34 @@ def test_trusted_path_and_closed_body_identity_reject_before_mutation(tmp_path) 
             assert connection.execute(
                 "SELECT count(*) FROM p1_local_secret_value"
             ).fetchone()[0] == 0
+    finally:
+        client.close()
+        repository.close()
+
+
+@pytest.mark.parametrize(
+    "value",
+    (
+        "Request",
+        "model",
+        "a",
+        "provider-main",
+        "secret-operation-1",
+        "Request is malformed.",
+        "Secret value was rejected.",
+    ),
+)
+def test_secret_http_accepts_coincidental_fixed_response_overlap(
+    tmp_path, value: str
+) -> None:
+    repository, _, _, client = _stack(tmp_path)
+    try:
+        response = client.put(
+            "/api/v2/core/secrets/provider-main",
+            json=_secret_command(value=value),
+        )
+        assert response.status_code == 201
+        assert response.json()["api_key_ref"] == "secret://provider-main"
     finally:
         client.close()
         repository.close()

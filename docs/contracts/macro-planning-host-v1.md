@@ -42,11 +42,17 @@ top-level variant has a unique `schema` discriminator:
 
 ### Secrets and model profiles
 
-Only `model-secret-put-command/v2` has a raw `value`. A Secret PUT exchange
-searches the complete response recursively, including object keys, objects,
-arrays, and string substrings; any occurrence of the submitted raw value is
-rejected before response parsing. The returned reference is exactly
-`secret://{secret_id}`.
+Only `model-secret-put-command/v2` has a raw `value`. Secret PUT output uses a
+structural no-reflection rule: the closed success object contains only its fixed
+discriminator, request-bound operation/Secret identities, server booleans, and
+the exact `secret://{secret_id}` reference. Error identity and operation key are
+request/path-bound, `retryable` is false, and every error code has one fixed
+message. Additional/nested echo fields, altered references or identities, and
+dynamic error text are rejected. Coincidental equality between a submitted
+value and legitimate fixed/identity text remains valid because wire objects do
+not carry runtime string provenance. Fixed-message provenance is an exchange
+check with route/status context; shape-only parsing remains compatible with the
+frozen positive fixture bytes.
 
 All `api_key_ref` values use the Host opaque-reference grammar rooted at
 `secret://`. Raw key text, aliases, leading/trailing whitespace, empty path

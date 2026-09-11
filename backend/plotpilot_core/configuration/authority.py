@@ -14,6 +14,7 @@ import sqlite3
 import uuid
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from types import MappingProxyType
 from typing import Any
 
 from backend.plotpilot_plugin_sdk import (
@@ -32,7 +33,7 @@ from ..repositories.authority import CoreAuthorityRepository
 MODEL_SECRET_PUT_ROUTE = "model-secret.put"
 MODEL_PROFILE_REVISE_ROUTE = "model-profile.revise"
 
-FIXED_ERROR_MESSAGES = {
+FIXED_ERROR_MESSAGES = MappingProxyType({
     "malformed_request": "Request is malformed.",
     "unknown_reference": "Referenced authority record was not found.",
     "cross_workspace": "Referenced authority record belongs to another Workspace.",
@@ -42,7 +43,7 @@ FIXED_ERROR_MESSAGES = {
     "secret_value_rejected": "Secret value was rejected.",
     "generation_conflict": "Active plugin Generation does not match.",
     "planning_unavailable": "Project planning is unavailable.",
-}
+})
 
 
 class ConfigurationAuthorityError(RuntimeError):
@@ -277,9 +278,9 @@ class ModelConfigurationAuthority:
             try:
                 _, response = validate_secret_put_exchange(parsed, response)
             except Exception:
-                # The fixed contract forbids a raw value in any output field.
-                # Roll back instead of persisting an unrepresentable response.
-                raise SecretValueRejectedError() from None
+                raise RuntimeError(
+                    "server-generated secret PUT response is invalid"
+                ) from None
             record_operation(
                 connection,
                 route_id=MODEL_SECRET_PUT_ROUTE,

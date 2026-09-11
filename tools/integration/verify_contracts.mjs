@@ -370,6 +370,17 @@ function verifyMacroPlanningHost() {
   const secretRef = /^secret:\/\/[A-Za-z0-9](?:[A-Za-z0-9._~-]{0,127})(?:\/[A-Za-z0-9](?:[A-Za-z0-9._~-]{0,127}))*$/u
   const secretId = /^[A-Za-z0-9][A-Za-z0-9._~-]{0,127}$/u
   const jsonMaxSafeInteger = 9007199254740991
+  const fixedHttpErrorMessages = Object.freeze({
+    malformed_request: 'Request is malformed.',
+    unknown_reference: 'Referenced authority record was not found.',
+    cross_workspace: 'Referenced authority record belongs to another Workspace.',
+    stale_cas: 'Authority compare-and-swap is stale.',
+    duplicate_operation: 'Operation key was reused with different input.',
+    invalid_secret_reference: 'Secret reference is not a local opaque reference.',
+    secret_value_rejected: 'Secret value was rejected.',
+    generation_conflict: 'Active plugin Generation does not match.',
+    planning_unavailable: 'Project planning is unavailable.',
+  })
   const wireWhitespaceCodepoints = Object.freeze([
     ...Array.from({ length: 5 }, (_, offset) => 0x0009 + offset),
     ...Array.from({ length: 5 }, (_, offset) => 0x001c + offset),
@@ -498,20 +509,21 @@ function verifyMacroPlanningHost() {
     else if (value.schema === 'project-planner-model-output/v1') validateModelOutput(value)
     return value
   }
+  const validateFixedHttpError = (input) => {
+    const value = parseMacro(input)
+    if (!['model-secret-http-error/v2', 'model-profile-http-error/v2', 'workspace-planning-http-error/v2'].includes(value.schema)) fail('fixed HTTP error received a different variant')
+    if (fixedHttpErrorMessages[value.error_code] !== value.message) fail('HTTP error message is not fixed for its error_code')
+    if (value.retryable !== false) fail('HTTP error retryable must be false')
+    return value
+  }
   const validateSecretExchange = (commandInput, responseInput) => {
     const command = parseMacro(commandInput)
     if (command.schema !== 'model-secret-put-command/v2') fail('secret exchange command variant mismatch')
-    const containsRaw = (value) => {
-      if (typeof value === 'string') return value.includes(command.value)
-      if (Array.isArray(value)) return value.some(containsRaw)
-      if (value !== null && typeof value === 'object') return Object.entries(value).some(([key, child]) => key.includes(command.value) || containsRaw(child))
-      return false
-    }
-    if (containsRaw(responseInput)) fail('secret response contains raw value')
     const response = parseMacro(responseInput)
     if (response.schema === 'model-secret-put-result/v2') {
       if (response.operation_key !== command.operation_key || response.secret_id !== command.secret_id) fail('secret result binding mismatch')
     } else if (response.schema === 'model-secret-http-error/v2') {
+      validateFixedHttpError(response)
       if (response.secret_id !== command.secret_id || (response.operation_key !== null && response.operation_key !== command.operation_key)) fail('secret error binding mismatch')
     } else fail('secret exchange response variant mismatch')
     return [command, response]
@@ -568,6 +580,46 @@ function verifyMacroPlanningHost() {
   const runtimeInput = fixtures.project_planner_runtime_input
   if (profileHash(profile) !== profile.revision_hash || positive.expected.model_profile_revision_hash !== profile.revision_hash) fail('profile hash golden drift')
   if (runtimeInputHash(runtimeInput) !== runtimeInput.input_hash || positive.expected.planner_runtime_input_hash !== runtimeInput.input_hash) fail('runtime input hash golden drift')
+
+  const secretCommand = fixtures.model_secret_put_command
+  const secretSuccess = fixtures.model_secret_put_result
+  const secretError = fixtures.model_secret_error
+  const secretCollisionValues = [
+    'Request',
+    'model',
+    'a',
+    secretCommand.secret_id,
+    secretCommand.operation_key,
+    fixedHttpErrorMessages.malformed_request,
+    fixedHttpErrorMessages.secret_value_rejected,
+  ]
+  for (const collision of secretCollisionValues) {
+    validateSecretExchange({ ...secretCommand, value: collision }, secretSuccess)
+    validateSecretExchange({ ...secretCommand, value: collision }, secretError)
+  }
+  for (const [errorCode, message] of Object.entries(fixedHttpErrorMessages)) {
+    const secretSchema = ['malformed_request', 'unknown_reference', 'duplicate_operation', 'secret_value_rejected'].includes(errorCode)
+    validateFixedHttpError({
+      schema: secretSchema ? 'model-secret-http-error/v2' : 'workspace-planning-http-error/v2',
+      ...(secretSchema ? { secret_id: 'provider-main' } : { workspace_id: 'workspace-1' }),
+      error_code: errorCode,
+      message,
+      retryable: false,
+      operation_key: null,
+    })
+  }
+  const rawSecret = secretCommand.value
+  const secretStructuralNegatives = [
+    { ...secretSuccess, value: rawSecret },
+    { ...secretSuccess, echo: { value: rawSecret } },
+    { ...secretSuccess, api_key_ref: `secret://provider-main/${rawSecret}` },
+    { ...secretSuccess, operation_key: 'other-operation' },
+    { ...secretSuccess, secret_id: 'other-secret' },
+    { ...secretError, message: rawSecret },
+    { ...secretError, error_code: 'malformed_request' },
+    { ...secretError, retryable: true },
+  ]
+  for (const response of secretStructuralNegatives) if (!rejected(() => validateSecretExchange(secretCommand, response))) fail('structurally reflected secret response was accepted')
 
   if (jsonMaxSafeInteger !== Number.MAX_SAFE_INTEGER) fail('JSON safe integer maximum drift')
   const maximumProfile = structuredClone(profile)
@@ -663,7 +715,7 @@ function verifyMacroPlanningHost() {
     } else {
       const failure = route.failure_statuses.find((item) => item.status === exchange.status)
       if (!failure || exchange.response.schema !== route.error_schema || !failure.error_codes.includes(exchange.response.error_code)) fail('HTTP error status/code mismatch')
-      response = parseMacro(exchange.response)
+      response = validateFixedHttpError(exchange.response)
     }
     for (const name of route.path_identity) if (response[name] !== pathParams[name]) fail(`response trusted path mismatch: ${name}`)
     for (const name of ['workspace_id', 'profile_id', 'secret_id']) if (hasOwn(request, name) && hasOwn(response, name) && request[name] !== response[name]) fail(`HTTP response identity mismatch: ${name}`)
@@ -680,7 +732,7 @@ function verifyMacroPlanningHost() {
   if (!jsonEqual(exchanges.map((item) => item.route_id), macroRouteIds)) fail('positive HTTP route coverage drift')
   for (const exchange of exchanges) parseHttpExchange(exchange)
   parseHttpExchange({ route_id: 'model-secret.put', path_params: { secret_id: 'provider-main' }, request: fixtures.model_secret_put_command, status: 400, response: fixtures.model_secret_error })
-  parseHttpExchange({ route_id: 'model-profile.revise', path_params: { profile_id: 'model-profile-planner' }, request: fixtures.model_profile_revise_command, status: 409, response: fixtures.model_profile_error })
+  parseHttpExchange({ route_id: 'model-profile.revise', path_params: { profile_id: 'model-profile-planner' }, request: fixtures.model_profile_revise_command, status: 409, response: { ...fixtures.model_profile_error, message: fixedHttpErrorMessages.stale_cas } })
   parseHttpExchange({ route_id: 'project-planning.start', path_params: { workspace_id: 'workspace-1' }, request: fixtures.project_planning_start_command, status: 409, response: fixtures.workspace_planning_error })
 
   const corpusFixtures = { ...fixtures }
@@ -689,7 +741,7 @@ function verifyMacroPlanningHost() {
   corpusFixtures.secret_error_exchange = { command: fixtures.model_secret_put_command, response: fixtures.model_secret_error }
   corpusFixtures.plan_selection_exchange = { command: fixtures.workspace_plan_selection_command, result: fixtures.workspace_plan_selection_result }
   corpusFixtures.planning_start_exchange = { command: fixtures.project_planning_start_command, result: fixtures.project_planning_start_result }
-  corpusFixtures['http.model-profile.revise.error'] = { route_id: 'model-profile.revise', path_params: { profile_id: 'model-profile-planner' }, request: fixtures.model_profile_revise_command, status: 409, response: fixtures.model_profile_error }
+  corpusFixtures['http.model-profile.revise.error'] = { route_id: 'model-profile.revise', path_params: { profile_id: 'model-profile-planner' }, request: fixtures.model_profile_revise_command, status: 409, response: { ...fixtures.model_profile_error, message: fixedHttpErrorMessages.stale_cas } }
   const mutate = (input, mutation) => {
     const output = structuredClone(input)
     let target = output
@@ -865,7 +917,7 @@ function verifyMacroPlanningHost() {
   }
   if (!jsonEqual(router.frozen_v1, { manifest: 'manifest.json', sha256: 'bcaafab242980366546c34c824256a0396ed370345d70f3e5b1582090a68ce77' })) fail('frozen corpus identity drift')
   const caseDigest = sha256(Buffer.from(JSON.stringify([...seen].sort()), 'utf8'))
-  return { routes: Object.keys(routes).length, schemas: Object.keys(schemas).length, fixtures: Object.keys(fixtures).length, http_exchanges: exchanges.length, negative_cases: seen.size, negative_case_digest: caseDigest, safe_integer_boundary_fields: 5, canonical_integer_fields: 8, integer_vector_count: integerVectorResults.length, integer_vector_accepted: integerVectorResults.filter((result) => result.accepted).length, integer_vector_rejected: integerVectorResults.filter((result) => !result.accepted).length, integer_vector_source_sha256: integerVectorSourceSha256, integer_vector_result_digest: integerVectorResultDigest, wire_whitespace_codepoints: wireWhitespaceCodepoints.length, representative_whitespace_cases: whitespaceCaseIds.length, corpus_files: router.files.length - 2, model_profile_revision_hash: profile.revision_hash, planner_runtime_input_hash: runtimeInput.input_hash }
+  return { routes: Object.keys(routes).length, schemas: Object.keys(schemas).length, fixtures: Object.keys(fixtures).length, http_exchanges: exchanges.length, negative_cases: seen.size, negative_case_digest: caseDigest, safe_integer_boundary_fields: 5, canonical_integer_fields: 8, integer_vector_count: integerVectorResults.length, integer_vector_accepted: integerVectorResults.filter((result) => result.accepted).length, integer_vector_rejected: integerVectorResults.filter((result) => !result.accepted).length, integer_vector_source_sha256: integerVectorSourceSha256, integer_vector_result_digest: integerVectorResultDigest, wire_whitespace_codepoints: wireWhitespaceCodepoints.length, representative_whitespace_cases: whitespaceCaseIds.length, secret_collision_positive_cases: secretCollisionValues.length, secret_structural_negative_cases: secretStructuralNegatives.length, fixed_error_messages: Object.keys(fixedHttpErrorMessages).length, corpus_files: router.files.length - 2, model_profile_revision_hash: profile.revision_hash, planner_runtime_input_hash: runtimeInput.input_hash }
 }
 
 async function verifyPromptSkill() {

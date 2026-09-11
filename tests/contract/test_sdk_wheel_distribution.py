@@ -137,11 +137,13 @@ def _probe_script(
             parse_model_profile_revision_v1,
             parse_project_planner_model_output_v1,
             parse_project_planner_runtime_input_v2,
+            validate_secret_put_exchange,
             validate_model_provider_rpc_success_v2,
         )
         from plotpilot_plugin_sdk.errors import ContractError, ContractValidationError
         from plotpilot_plugin_sdk.m4_m5_http_v2 import validate_http_exchange
         from plotpilot_plugin_sdk.macro_planning_v2 import (
+            FIXED_HTTP_ERROR_MESSAGES,
             JSON_MAX_SAFE_INTEGER,
             WIRE_WHITESPACE_CODEPOINTS,
             contains_wire_whitespace,
@@ -149,6 +151,7 @@ def _probe_script(
             is_wire_whitespace_character,
             model_profile_revision_hash,
             planner_runtime_input_hash,
+            validate_fixed_model_planning_http_error_v2,
         )
         from plotpilot_plugin_sdk.rpc import build_meta, build_request
         from plotpilot_plugin_sdk.verifier import SCHEMA_DIR, assert_valid, validate_rpc_request, validate_rpc_response
@@ -340,6 +343,69 @@ def _probe_script(
             macro_fixtures["project_planner_model_output"]
         )
 
+        secret_command = macro_fixtures["model_secret_put_command"]
+        secret_success = macro_fixtures["model_secret_put_result"]
+        secret_error = macro_fixtures["model_secret_error"]
+        secret_collision_values = (
+            "Request",
+            "model",
+            "a",
+            secret_command["secret_id"],
+            secret_command["operation_key"],
+            FIXED_HTTP_ERROR_MESSAGES["malformed_request"],
+            FIXED_HTTP_ERROR_MESSAGES["secret_value_rejected"],
+        )
+        for collision in secret_collision_values:
+            validate_secret_put_exchange(
+                {{**secret_command, "value": collision}}, secret_success
+            )
+            validate_secret_put_exchange(
+                {{**secret_command, "value": collision}}, secret_error
+            )
+        validate_fixed_model_planning_http_error_v2(secret_error)
+        for error_code, message in FIXED_HTTP_ERROR_MESSAGES.items():
+            secret_schema = error_code in {{
+                "malformed_request",
+                "unknown_reference",
+                "duplicate_operation",
+                "secret_value_rejected",
+            }}
+            validate_fixed_model_planning_http_error_v2(
+                {{
+                    "schema": (
+                        "model-secret-http-error/v2"
+                        if secret_schema
+                        else "workspace-planning-http-error/v2"
+                    ),
+                    **(
+                        {{"secret_id": "provider-main"}}
+                        if secret_schema
+                        else {{"workspace_id": "workspace-1"}}
+                    ),
+                    "error_code": error_code,
+                    "message": message,
+                    "retryable": False,
+                    "operation_key": None,
+                }}
+            )
+        raw_secret = secret_command["value"]
+        secret_structural_negatives = (
+            {{**secret_success, "value": raw_secret}},
+            {{**secret_success, "echo": {{"value": raw_secret}}}},
+            {{**secret_success, "api_key_ref": f"secret://provider-main/{{raw_secret}}"}},
+            {{**secret_success, "operation_key": "other-operation"}},
+            {{**secret_success, "secret_id": "other-secret"}},
+            {{**secret_error, "message": raw_secret}},
+            {{**secret_error, "error_code": "malformed_request"}},
+            {{**secret_error, "retryable": True}},
+        )
+        for response in secret_structural_negatives:
+            _expect_rejected(
+                lambda response=response: validate_secret_put_exchange(
+                    secret_command, response
+                )
+            )
+
         assert JSON_MAX_SAFE_INTEGER == 9_007_199_254_740_991
         maximum_profile = copy.deepcopy(macro_fixtures["model_profile_revision"])
         maximum_profile["revision_number"] = JSON_MAX_SAFE_INTEGER
@@ -490,6 +556,9 @@ def _probe_script(
                     "macro_integer_vector_source_sha256": integer_vector_source_sha256,
                     "macro_integer_vector_result_digest": integer_vector_result_digest,
                     "macro_wire_whitespace_codepoints": len(WIRE_WHITESPACE_CODEPOINTS),
+                    "macro_secret_collision_positive_cases": len(secret_collision_values),
+                    "macro_secret_structural_negative_cases": len(secret_structural_negatives),
+                    "macro_fixed_error_messages": len(FIXED_HTTP_ERROR_MESSAGES),
                     "model_provider_method": MODEL_PROVIDER_INVOKE_METHOD_V1,
                     "model_provider_terminal_states": provider_terminal_states,
                     "model_provider_operation_digest": model_provider_operation_digest_v2(
@@ -622,6 +691,9 @@ def test_real_sdk_wheel_installs_authoritative_verifier_schemas() -> None:
             "d4cfe7ec27c052badd2f67723fa5a4123becd60b6c1be11ce37b07b58f00f13d"
         )
         assert proof["macro_wire_whitespace_codepoints"] == 30
+        assert proof["macro_secret_collision_positive_cases"] == 7
+        assert proof["macro_secret_structural_negative_cases"] == 8
+        assert proof["macro_fixed_error_messages"] == 9
         assert proof["model_provider_method"] == "model.provider.invoke/v1"
         assert proof["model_provider_terminal_states"] == [
             "receipted",

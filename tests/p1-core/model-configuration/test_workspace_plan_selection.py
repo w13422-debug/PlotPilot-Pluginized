@@ -7,8 +7,12 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
 from backend.plotpilot_plugin_sdk import canonical_bytes
+from backend.plotpilot_core.api.v1.core import CoreHttpAdapter, create_core_router
+from backend.plotpilot_core.assets import AssetStore
 from backend.plotpilot_core.configuration import (
     DuplicateConfigurationOperationError,
     GenerationConfigurationConflictError,
@@ -26,6 +30,10 @@ from backend.plotpilot_core.configuration.plan_authority import (
 from backend.plotpilot_core.domain import Document, Workspace
 from backend.plotpilot_core.plugins.generation import validate_generation
 from backend.plotpilot_core.repositories.authority import CoreAuthorityRepository
+from backend.plotpilot_core.repositories.authority_application import (
+    CoreAuthorityApplication,
+)
+from backend.plotpilot_core.publication import PublicationService
 
 NOW = "2030-01-02T03:04:05Z"
 PROVIDER_ID = "com.plotpilot.provider.local"
@@ -324,6 +332,74 @@ def test_second_selection_advances_once_and_preserves_hash_bound_history(
         repository.close()
 
 
+def test_workspace_delete_with_plan_history_returns_closed_409_without_effect(
+    tmp_path,
+) -> None:
+    repository = CoreAuthorityRepository(tmp_path / "core.db")
+    _, planning, profile = _configuration(repository)
+    generation = _generation()
+    _install_generation(repository, generation)
+    planning.register_verified_plan_reference(
+        generation_id=generation["generation_id"],
+        plan_revision_id="plan-revision-1",
+        plan_revision_hash=PLAN_HASH,
+    )
+    planning.select_workspace_plan(_selection_command(profile))
+    assets = AssetStore(tmp_path / "assets")
+    publication = PublicationService(repository, assets)
+    authority = CoreAuthorityApplication(repository, publication)
+    adapter = CoreHttpAdapter(authority, publication, assets)
+    app = FastAPI()
+    app.include_router(create_core_router(adapter))
+    client = TestClient(app)
+    try:
+        with repository.read_connection() as connection:
+            before = {
+                table: connection.execute(
+                    f'SELECT count(*) FROM "{table}"'
+                ).fetchone()[0]
+                for table in (
+                    "workspace",
+                    "p1_workspace_plan_selection",
+                    "p1_configuration_operation",
+                    "core_authority_operation",
+                    "schema_migration",
+                )
+            }
+        response = client.request(
+            "DELETE",
+            "/api/v1/core/workspaces/workspace-1",
+            json={
+                "schema": "core-workspace-delete-command/v1",
+                "operation_key": "delete-workspace-with-plan",
+                "workspace_id": "workspace-1",
+                "expected_revision": 1,
+            },
+        )
+        assert response.status_code == 409
+        assert response.json() == {
+            "schema": "core-http-error/v1",
+            "error_code": "stale_cas",
+            "message": "workspace has dependent authority",
+            "retryable": False,
+        }
+        with repository.read_connection() as connection:
+            after = {
+                table: connection.execute(
+                    f'SELECT count(*) FROM "{table}"'
+                ).fetchone()[0]
+                for table in before
+            }
+            assert connection.execute(
+                "SELECT current_plan_revision_id FROM workspace "
+                "WHERE workspace_id='workspace-1'"
+            ).fetchone()[0] == "plan-revision-1"
+        assert after == before
+    finally:
+        client.close()
+        repository.close()
+
+
 def test_plan_registration_is_internal_generation_bound_and_immutable(tmp_path) -> None:
     repository = CoreAuthorityRepository(tmp_path / "core.db")
     planning = WorkspacePlanAuthority(repository, clock=lambda: NOW)
@@ -577,6 +653,93 @@ def test_planning_availability_provider_and_prompt_fail_closed(
         availability = planning.planning_availability("workspace-1")
         assert availability["available"] is False
         assert availability["reason"] == reason
+    finally:
+        repository.close()
+
+
+def test_latest_selection_blocks_generation_rollback_until_new_explicit_cas(
+    tmp_path,
+) -> None:
+    repository = CoreAuthorityRepository(tmp_path / "core.db")
+    _, planning, profile = _configuration(repository)
+    _add_brief(repository)
+    generation_one = _generation("generation-1")
+    generation_two = _generation("generation-2")
+    plan_id = "plan-shared"
+    hash_one = "1" * 64
+    hash_two = "2" * 64
+    try:
+        _install_generation(repository, generation_one)
+        planning.register_verified_plan_reference(
+            generation_id="generation-1",
+            plan_revision_id=plan_id,
+            plan_revision_hash=hash_one,
+        )
+        planning.select_workspace_plan(
+            _selection_command(
+                profile,
+                operation_key="select-generation-1",
+                plan_revision_id=plan_id,
+                plan_revision_hash=hash_one,
+                generation_id="generation-1",
+            )
+        )
+
+        _install_generation(repository, generation_two)
+        planning.register_verified_plan_reference(
+            generation_id="generation-2",
+            plan_revision_id=plan_id,
+            plan_revision_hash=hash_two,
+        )
+        planning.select_workspace_plan(
+            _selection_command(
+                profile,
+                operation_key="select-generation-2",
+                expected_workspace_revision=1,
+                expected_plan_id=plan_id,
+                expected_plan_hash=hash_one,
+                plan_revision_id=plan_id,
+                plan_revision_hash=hash_two,
+                generation_id="generation-2",
+            )
+        )
+        assert planning.planning_availability("workspace-1")["reason"] == "ready"
+
+        with repository.transaction() as connection:
+            connection.execute(
+                "UPDATE p2_plugin_generation_pointer SET current_generation_id=? "
+                "WHERE singleton=1",
+                ("generation-1",),
+            )
+        rolled_back = planning.planning_availability("workspace-1")
+        assert rolled_back == {
+            "schema": "project-planning-availability-result/v2",
+            "workspace_id": "workspace-1",
+            "available": False,
+            "reason": "workspace_plan_missing",
+        }
+
+        selected = planning.select_workspace_plan(
+            _selection_command(
+                profile,
+                operation_key="reselect-generation-1",
+                expected_workspace_revision=2,
+                expected_plan_id=plan_id,
+                expected_plan_hash=hash_two,
+                plan_revision_id=plan_id,
+                plan_revision_hash=hash_one,
+                generation_id="generation-1",
+            )
+        )
+        assert selected["workspace_revision"] == 3
+        assert planning.planning_availability("workspace-1")["reason"] == "ready"
+        with repository.read_connection() as connection:
+            latest = connection.execute(
+                "SELECT active_generation_id,plan_revision_hash,workspace_revision "
+                "FROM p1_workspace_plan_selection WHERE workspace_id='workspace-1' "
+                "ORDER BY workspace_revision DESC LIMIT 1"
+            ).fetchone()
+        assert tuple(latest) == ("generation-1", hash_one, 3)
     finally:
         repository.close()
 

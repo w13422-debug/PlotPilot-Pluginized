@@ -68,6 +68,7 @@ from plotpilot_plugin_sdk.m4_m5_http_v2 import (  # noqa: E402
     validate_http_exchange,
 )
 from plotpilot_plugin_sdk.macro_planning_v2 import (  # noqa: E402
+    FIXED_HTTP_ERROR_MESSAGES,
     JSON_MAX_SAFE_INTEGER,
     WIRE_WHITESPACE_CODEPOINTS,
     contains_wire_whitespace,
@@ -82,6 +83,7 @@ from plotpilot_plugin_sdk.macro_planning_v2 import (  # noqa: E402
     planner_runtime_input_hash,
     validate_project_planning_start,
     validate_project_planning_start_exchange,
+    validate_fixed_model_planning_http_error_v2,
     validate_secret_put_exchange,
     validate_workspace_plan_selection,
 )
@@ -1371,6 +1373,68 @@ def verify_macro_planning_host() -> dict[str, Any]:
     parse_project_planning_v2(fixtures["project_planning_availability_ready"])
     parse_project_planning_v2(fixtures["project_planning_availability_unavailable"])
 
+    secret_command = fixtures["model_secret_put_command"]
+    secret_success = fixtures["model_secret_put_result"]
+    secret_error = fixtures["model_secret_error"]
+    secret_collision_values = (
+        "Request",
+        "model",
+        "a",
+        secret_command["secret_id"],
+        secret_command["operation_key"],
+        FIXED_HTTP_ERROR_MESSAGES["malformed_request"],
+        FIXED_HTTP_ERROR_MESSAGES["secret_value_rejected"],
+    )
+    for collision in secret_collision_values:
+        command = {**secret_command, "value": collision}
+        validate_secret_put_exchange(command, secret_success)
+        validate_secret_put_exchange(command, secret_error)
+
+    fixed_error_contexts = {
+        "model-secret-http-error/v2": {"secret_id": "provider-main"},
+        "workspace-planning-http-error/v2": {"workspace_id": "workspace-1"},
+    }
+    for code, message in FIXED_HTTP_ERROR_MESSAGES.items():
+        schema = (
+            "model-secret-http-error/v2"
+            if code
+            in {
+                "malformed_request",
+                "unknown_reference",
+                "duplicate_operation",
+                "secret_value_rejected",
+            }
+            else "workspace-planning-http-error/v2"
+        )
+        validate_fixed_model_planning_http_error_v2(
+            {
+                "schema": schema,
+                **fixed_error_contexts[schema],
+                "error_code": code,
+                "message": message,
+                "retryable": False,
+                "operation_key": None,
+            }
+        )
+
+    raw = secret_command["value"]
+    secret_structural_negatives = (
+        {**secret_success, "value": raw},
+        {**secret_success, "echo": {"value": raw}},
+        {**secret_success, "api_key_ref": f"secret://provider-main/{raw}"},
+        {**secret_success, "operation_key": "other-operation"},
+        {**secret_success, "secret_id": "other-secret"},
+        {**secret_error, "message": raw},
+        {**secret_error, "error_code": "malformed_request"},
+        {**secret_error, "retryable": True},
+    )
+    for response in secret_structural_negatives:
+        _expect_failure(
+            lambda response=response: validate_secret_put_exchange(
+                secret_command, response
+            )
+        )
+
     if JSON_MAX_SAFE_INTEGER != 9_007_199_254_740_991:
         raise AssertionError("P0A JSON safe integer maximum drift")
     maximum_profile = copy.deepcopy(profile)
@@ -1770,7 +1834,10 @@ def verify_macro_planning_host() -> dict[str, Any]:
                 "path_params": {"profile_id": "model-profile-planner"},
                 "request": fixtures["model_profile_revise_command"],
                 "status": 409,
-                "response": fixtures["model_profile_error"],
+                "response": {
+                    **fixtures["model_profile_error"],
+                    "message": FIXED_HTTP_ERROR_MESSAGES["stale_cas"],
+                },
             },
         }
     )
@@ -1924,6 +1991,9 @@ def verify_macro_planning_host() -> dict[str, Any]:
         "integer_vector_result_digest": integer_vector_result_digest,
         "wire_whitespace_codepoints": len(expected_wire_whitespace),
         "representative_whitespace_cases": len(whitespace_case_ids),
+        "secret_collision_positive_cases": len(secret_collision_values),
+        "secret_structural_negative_cases": len(secret_structural_negatives),
+        "fixed_error_messages": len(FIXED_HTTP_ERROR_MESSAGES),
         # The accepted P0A projection predates the two P0B corpus files.
         "corpus_files": len(router_records) - 2,
         "model_profile_revision_hash": profile["revision_hash"],
