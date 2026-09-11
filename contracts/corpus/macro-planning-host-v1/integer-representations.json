@@ -1,0 +1,500 @@
+{
+  "accepted_count": 19,
+  "field_count": 8,
+  "fields": [
+    {
+      "field_id": "model-profile-revision-number",
+      "fixture": "model_profile_revision",
+      "maximum": 9007199254740991,
+      "minimum": 1,
+      "path": [
+        "revision_number"
+      ]
+    },
+    {
+      "field_id": "plan-expected-workspace-revision",
+      "fixture": "workspace_plan_selection_command",
+      "maximum": 9007199254740991,
+      "minimum": 0,
+      "path": [
+        "expected_workspace_revision"
+      ]
+    },
+    {
+      "field_id": "plan-result-workspace-revision",
+      "fixture": "workspace_plan_selection_result",
+      "maximum": 9007199254740991,
+      "minimum": 1,
+      "path": [
+        "workspace_revision"
+      ]
+    },
+    {
+      "field_id": "planning-start-writer-epoch",
+      "fixture": "project_planning_start_result",
+      "maximum": 9007199254740991,
+      "minimum": 1,
+      "path": [
+        "writer_epoch"
+      ]
+    },
+    {
+      "field_id": "planner-runtime-writer-epoch",
+      "fixture": "project_planner_runtime_input",
+      "maximum": 9007199254740991,
+      "minimum": 1,
+      "path": [
+        "writer_epoch"
+      ]
+    },
+    {
+      "field_id": "model-option-max-output-tokens",
+      "fixture": "model_profile_revision",
+      "maximum": 10000000,
+      "minimum": 1,
+      "path": [
+        "provider",
+        "options",
+        "max_output_tokens"
+      ]
+    },
+    {
+      "field_id": "model-option-timeout-seconds",
+      "fixture": "model_profile_revision",
+      "maximum": 86400,
+      "minimum": 1,
+      "path": [
+        "provider",
+        "options",
+        "timeout_seconds"
+      ]
+    },
+    {
+      "field_id": "model-option-max-retries",
+      "fixture": "model_profile_revision",
+      "maximum": 16,
+      "minimum": 0,
+      "path": [
+        "provider",
+        "options",
+        "max_retries"
+      ]
+    }
+  ],
+  "hash_equivalence_groups": [
+    "profile-max-output-4096",
+    "profile-max-retries-zero",
+    "profile-revision-one",
+    "profile-timeout-120",
+    "runtime-writer-max"
+  ],
+  "json_schema_dialect": "https://json-schema.org/draft/2020-12/schema",
+  "rejected_count": 15,
+  "schema": "macro-planning-integer-representations/v1",
+  "semantic_authority": "mathematical-json-integer",
+  "vector_count": 34,
+  "vectors": [
+    {
+      "case_id": "profile-revision-one-integer",
+      "expected": "accept",
+      "field_id": "model-profile-revision-number",
+      "fixture": "model_profile_revision",
+      "hash_equivalence_group": "profile-revision-one",
+      "normalized": 1,
+      "path": [
+        "revision_number"
+      ],
+      "raw_token": "1"
+    },
+    {
+      "case_id": "profile-revision-one-decimal",
+      "expected": "accept",
+      "field_id": "model-profile-revision-number",
+      "fixture": "model_profile_revision",
+      "hash_equivalence_group": "profile-revision-one",
+      "normalized": 1,
+      "path": [
+        "revision_number"
+      ],
+      "raw_token": "1.0"
+    },
+    {
+      "case_id": "profile-revision-one-exponent",
+      "expected": "accept",
+      "field_id": "model-profile-revision-number",
+      "fixture": "model_profile_revision",
+      "hash_equivalence_group": "profile-revision-one",
+      "normalized": 1,
+      "path": [
+        "revision_number"
+      ],
+      "raw_token": "1e0"
+    },
+    {
+      "case_id": "profile-result-revision-one-decimal",
+      "expected": "accept",
+      "field_id": "model-profile-revision-number",
+      "fixture": "model_profile_revise_result",
+      "hash_equivalence_group": "profile-revision-one",
+      "normalized": 1,
+      "path": [
+        "revision",
+        "revision_number"
+      ],
+      "raw_token": "1.0"
+    },
+    {
+      "case_id": "runtime-writer-max-integer",
+      "expected": "accept",
+      "field_id": "planner-runtime-writer-epoch",
+      "fixture": "project_planner_runtime_input",
+      "hash_equivalence_group": "runtime-writer-max",
+      "normalized": 9007199254740991,
+      "path": [
+        "writer_epoch"
+      ],
+      "raw_token": "9007199254740991"
+    },
+    {
+      "case_id": "runtime-writer-max-decimal",
+      "expected": "accept",
+      "field_id": "planner-runtime-writer-epoch",
+      "fixture": "project_planner_runtime_input",
+      "hash_equivalence_group": "runtime-writer-max",
+      "normalized": 9007199254740991,
+      "path": [
+        "writer_epoch"
+      ],
+      "raw_token": "9007199254740991.0"
+    },
+    {
+      "case_id": "plan-expected-zero-integer",
+      "expected": "accept",
+      "field_id": "plan-expected-workspace-revision",
+      "fixture": "workspace_plan_selection_command",
+      "normalized": 0,
+      "path": [
+        "expected_workspace_revision"
+      ],
+      "raw_token": "0"
+    },
+    {
+      "case_id": "plan-expected-zero-decimal",
+      "expected": "accept",
+      "field_id": "plan-expected-workspace-revision",
+      "fixture": "workspace_plan_selection_command",
+      "normalized": 0,
+      "path": [
+        "expected_workspace_revision"
+      ],
+      "raw_token": "0.0"
+    },
+    {
+      "case_id": "plan-result-minimum-decimal",
+      "expected": "accept",
+      "field_id": "plan-result-workspace-revision",
+      "fixture": "workspace_plan_selection_result",
+      "normalized": 1,
+      "path": [
+        "workspace_revision"
+      ],
+      "raw_token": "1.0"
+    },
+    {
+      "case_id": "planning-start-writer-minimum-exponent",
+      "expected": "accept",
+      "field_id": "planning-start-writer-epoch",
+      "fixture": "project_planning_start_result",
+      "normalized": 1,
+      "path": [
+        "writer_epoch"
+      ],
+      "raw_token": "1e0"
+    },
+    {
+      "case_id": "profile-max-output-4096-integer",
+      "expected": "accept",
+      "field_id": "model-option-max-output-tokens",
+      "fixture": "model_profile_revision",
+      "hash_equivalence_group": "profile-max-output-4096",
+      "normalized": 4096,
+      "path": [
+        "provider",
+        "options",
+        "max_output_tokens"
+      ],
+      "raw_token": "4096"
+    },
+    {
+      "case_id": "profile-max-output-4096-decimal",
+      "expected": "accept",
+      "field_id": "model-option-max-output-tokens",
+      "fixture": "model_profile_revision",
+      "hash_equivalence_group": "profile-max-output-4096",
+      "normalized": 4096,
+      "path": [
+        "provider",
+        "options",
+        "max_output_tokens"
+      ],
+      "raw_token": "4096.0"
+    },
+    {
+      "case_id": "profile-timeout-120-integer",
+      "expected": "accept",
+      "field_id": "model-option-timeout-seconds",
+      "fixture": "model_profile_revision",
+      "hash_equivalence_group": "profile-timeout-120",
+      "normalized": 120,
+      "path": [
+        "provider",
+        "options",
+        "timeout_seconds"
+      ],
+      "raw_token": "120"
+    },
+    {
+      "case_id": "profile-timeout-120-exponent",
+      "expected": "accept",
+      "field_id": "model-option-timeout-seconds",
+      "fixture": "model_profile_revision",
+      "hash_equivalence_group": "profile-timeout-120",
+      "normalized": 120,
+      "path": [
+        "provider",
+        "options",
+        "timeout_seconds"
+      ],
+      "raw_token": "1.2e2"
+    },
+    {
+      "case_id": "profile-max-retries-zero-integer",
+      "expected": "accept",
+      "field_id": "model-option-max-retries",
+      "fixture": "model_profile_revision",
+      "hash_equivalence_group": "profile-max-retries-zero",
+      "normalized": 0,
+      "path": [
+        "provider",
+        "options",
+        "max_retries"
+      ],
+      "raw_token": "0"
+    },
+    {
+      "case_id": "profile-max-retries-zero-decimal",
+      "expected": "accept",
+      "field_id": "model-option-max-retries",
+      "fixture": "model_profile_revision",
+      "hash_equivalence_group": "profile-max-retries-zero",
+      "normalized": 0,
+      "path": [
+        "provider",
+        "options",
+        "max_retries"
+      ],
+      "raw_token": "0.0"
+    },
+    {
+      "case_id": "command-max-output-minimum-exponent",
+      "expected": "accept",
+      "field_id": "model-option-max-output-tokens",
+      "fixture": "model_profile_revise_command",
+      "normalized": 1,
+      "path": [
+        "provider",
+        "options",
+        "max_output_tokens"
+      ],
+      "raw_token": "1e0"
+    },
+    {
+      "case_id": "command-timeout-maximum-decimal",
+      "expected": "accept",
+      "field_id": "model-option-timeout-seconds",
+      "fixture": "model_profile_revise_command",
+      "normalized": 86400,
+      "path": [
+        "provider",
+        "options",
+        "timeout_seconds"
+      ],
+      "raw_token": "86400.0"
+    },
+    {
+      "case_id": "command-max-retries-maximum-exponent",
+      "expected": "accept",
+      "field_id": "model-option-max-retries",
+      "fixture": "model_profile_revise_command",
+      "normalized": 16,
+      "path": [
+        "provider",
+        "options",
+        "max_retries"
+      ],
+      "raw_token": "16e0"
+    },
+    {
+      "case_id": "profile-revision-bool",
+      "expected": "reject",
+      "field_id": "model-profile-revision-number",
+      "fixture": "model_profile_revision",
+      "path": [
+        "revision_number"
+      ],
+      "raw_token": "true"
+    },
+    {
+      "case_id": "profile-revision-non-integral",
+      "expected": "reject",
+      "field_id": "model-profile-revision-number",
+      "fixture": "model_profile_revision",
+      "path": [
+        "revision_number"
+      ],
+      "raw_token": "1.5"
+    },
+    {
+      "case_id": "profile-revision-non-finite",
+      "expected": "reject",
+      "field_id": "model-profile-revision-number",
+      "fixture": "model_profile_revision",
+      "path": [
+        "revision_number"
+      ],
+      "raw_token": "1e999"
+    },
+    {
+      "case_id": "profile-revision-overflow-integer",
+      "expected": "reject",
+      "field_id": "model-profile-revision-number",
+      "fixture": "model_profile_revision",
+      "path": [
+        "revision_number"
+      ],
+      "raw_token": "9007199254740992"
+    },
+    {
+      "case_id": "profile-revision-overflow-decimal",
+      "expected": "reject",
+      "field_id": "model-profile-revision-number",
+      "fixture": "model_profile_revision",
+      "path": [
+        "revision_number"
+      ],
+      "raw_token": "9007199254740992.0"
+    },
+    {
+      "case_id": "plan-expected-below-minimum",
+      "expected": "reject",
+      "field_id": "plan-expected-workspace-revision",
+      "fixture": "workspace_plan_selection_command",
+      "path": [
+        "expected_workspace_revision"
+      ],
+      "raw_token": "-1"
+    },
+    {
+      "case_id": "plan-result-below-minimum-decimal",
+      "expected": "reject",
+      "field_id": "plan-result-workspace-revision",
+      "fixture": "workspace_plan_selection_result",
+      "path": [
+        "workspace_revision"
+      ],
+      "raw_token": "0.0"
+    },
+    {
+      "case_id": "planning-start-writer-non-integral",
+      "expected": "reject",
+      "field_id": "planning-start-writer-epoch",
+      "fixture": "project_planning_start_result",
+      "path": [
+        "writer_epoch"
+      ],
+      "raw_token": "1.25"
+    },
+    {
+      "case_id": "runtime-writer-overflow-decimal",
+      "expected": "reject",
+      "field_id": "planner-runtime-writer-epoch",
+      "fixture": "project_planner_runtime_input",
+      "path": [
+        "writer_epoch"
+      ],
+      "raw_token": "9007199254740992.0"
+    },
+    {
+      "case_id": "profile-max-output-below-minimum",
+      "expected": "reject",
+      "field_id": "model-option-max-output-tokens",
+      "fixture": "model_profile_revision",
+      "path": [
+        "provider",
+        "options",
+        "max_output_tokens"
+      ],
+      "raw_token": "0"
+    },
+    {
+      "case_id": "profile-max-output-overflow-decimal",
+      "expected": "reject",
+      "field_id": "model-option-max-output-tokens",
+      "fixture": "model_profile_revision",
+      "path": [
+        "provider",
+        "options",
+        "max_output_tokens"
+      ],
+      "raw_token": "10000001.0"
+    },
+    {
+      "case_id": "profile-timeout-below-minimum",
+      "expected": "reject",
+      "field_id": "model-option-timeout-seconds",
+      "fixture": "model_profile_revision",
+      "path": [
+        "provider",
+        "options",
+        "timeout_seconds"
+      ],
+      "raw_token": "0e0"
+    },
+    {
+      "case_id": "profile-timeout-overflow",
+      "expected": "reject",
+      "field_id": "model-option-timeout-seconds",
+      "fixture": "model_profile_revision",
+      "path": [
+        "provider",
+        "options",
+        "timeout_seconds"
+      ],
+      "raw_token": "86401"
+    },
+    {
+      "case_id": "profile-max-retries-below-minimum",
+      "expected": "reject",
+      "field_id": "model-option-max-retries",
+      "fixture": "model_profile_revision",
+      "path": [
+        "provider",
+        "options",
+        "max_retries"
+      ],
+      "raw_token": "-1.0"
+    },
+    {
+      "case_id": "profile-max-retries-overflow",
+      "expected": "reject",
+      "field_id": "model-option-max-retries",
+      "fixture": "model_profile_revision",
+      "path": [
+        "provider",
+        "options",
+        "max_retries"
+      ],
+      "raw_token": "17e0"
+    }
+  ]
+}

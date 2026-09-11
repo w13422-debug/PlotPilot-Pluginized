@@ -27,7 +27,17 @@
     "active_job",
     "retire_failed",
     "rollback_failed",
-    "publication_forbidden"
+    "publication_forbidden",
+    "invalid_secret_reference",
+    "secret_value_rejected",
+    "planning_unavailable"
+  ],
+  "macro_planning_routes": [
+    "model-secret.put",
+    "model-profile.revise",
+    "workspace-plan.select",
+    "project-planning.get",
+    "project-planning.start"
   ],
   "plugin_publication_allowed": false,
   "publication_owner": "core",
@@ -722,6 +732,202 @@
       "route_id": "plugin.rollback",
       "success_statuses": [
         200
+      ]
+    },
+    {
+      "cursor_domain": null,
+      "error_schema": "model-secret-http-error/v2",
+      "failure_statuses": [
+        {
+          "error_codes": [
+            "malformed_request",
+            "secret_value_rejected"
+          ],
+          "status": 400
+        },
+        {
+          "error_codes": [
+            "unknown_reference"
+          ],
+          "status": 404
+        },
+        {
+          "error_codes": [
+            "duplicate_operation"
+          ],
+          "status": 409
+        }
+      ],
+      "method": "PUT",
+      "operation_key_required": true,
+      "owner": "host",
+      "path_identity": [
+        "secret_id"
+      ],
+      "path_template": "/api/v2/core/secrets/{secret_id}",
+      "read_only": false,
+      "request_schema": "model-secret-put-command/v2",
+      "result_schema": "model-secret-put-result/v2",
+      "route_id": "model-secret.put",
+      "success_statuses": [
+        200,
+        201
+      ]
+    },
+    {
+      "cursor_domain": null,
+      "error_schema": "model-profile-http-error/v2",
+      "failure_statuses": [
+        {
+          "error_codes": [
+            "malformed_request",
+            "invalid_secret_reference"
+          ],
+          "status": 400
+        },
+        {
+          "error_codes": [
+            "unknown_reference"
+          ],
+          "status": 404
+        },
+        {
+          "error_codes": [
+            "stale_cas",
+            "duplicate_operation"
+          ],
+          "status": 409
+        }
+      ],
+      "method": "POST",
+      "operation_key_required": true,
+      "owner": "host",
+      "path_identity": [
+        "profile_id"
+      ],
+      "path_template": "/api/v2/core/model-profiles/{profile_id}/revisions",
+      "read_only": false,
+      "request_schema": "model-profile-revise-command/v2",
+      "result_schema": "model-profile-revise-result/v2",
+      "route_id": "model-profile.revise",
+      "success_statuses": [
+        201
+      ]
+    },
+    {
+      "cursor_domain": null,
+      "error_schema": "workspace-planning-http-error/v2",
+      "failure_statuses": [
+        {
+          "error_codes": [
+            "malformed_request"
+          ],
+          "status": 400
+        },
+        {
+          "error_codes": [
+            "unknown_reference"
+          ],
+          "status": 404
+        },
+        {
+          "error_codes": [
+            "stale_cas",
+            "generation_conflict",
+            "duplicate_operation"
+          ],
+          "status": 409
+        }
+      ],
+      "method": "POST",
+      "operation_key_required": true,
+      "owner": "host",
+      "path_identity": [
+        "workspace_id"
+      ],
+      "path_template": "/api/v2/core/workspaces/{workspace_id}/plans:select",
+      "read_only": false,
+      "request_schema": "workspace-plan-selection-command/v2",
+      "result_schema": "workspace-plan-selection-result/v2",
+      "route_id": "workspace-plan.select",
+      "success_statuses": [
+        200
+      ]
+    },
+    {
+      "cursor_domain": null,
+      "error_schema": "workspace-planning-http-error/v2",
+      "failure_statuses": [
+        {
+          "error_codes": [
+            "malformed_request"
+          ],
+          "status": 400
+        },
+        {
+          "error_codes": [
+            "unknown_reference",
+            "cross_workspace"
+          ],
+          "status": 404
+        }
+      ],
+      "method": "GET",
+      "operation_key_required": false,
+      "owner": "host",
+      "path_identity": [
+        "workspace_id"
+      ],
+      "path_template": "/api/v2/core/workspaces/{workspace_id}/project-planning",
+      "read_only": true,
+      "request_schema": "project-planning-query/v2",
+      "result_schema": "project-planning-availability-result/v2",
+      "route_id": "project-planning.get",
+      "success_statuses": [
+        200
+      ]
+    },
+    {
+      "cursor_domain": null,
+      "error_schema": "workspace-planning-http-error/v2",
+      "failure_statuses": [
+        {
+          "error_codes": [
+            "malformed_request",
+            "planning_unavailable"
+          ],
+          "status": 400
+        },
+        {
+          "error_codes": [
+            "unknown_reference",
+            "cross_workspace"
+          ],
+          "status": 404
+        },
+        {
+          "error_codes": [
+            "stale_cas",
+            "generation_conflict",
+            "duplicate_operation",
+            "planning_unavailable"
+          ],
+          "status": 409
+        }
+      ],
+      "method": "POST",
+      "operation_key_required": true,
+      "owner": "host",
+      "path_identity": [
+        "workspace_id"
+      ],
+      "path_template": "/api/v2/core/workspaces/{workspace_id}/project-planning",
+      "read_only": false,
+      "request_schema": "project-planning-start-command/v2",
+      "result_schema": "project-planning-start-result/v2",
+      "route_id": "project-planning.start",
+      "success_statuses": [
+        201
       ]
     }
   ],

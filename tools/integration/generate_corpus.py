@@ -1,20 +1,40 @@
 """Generate additive corpus records without rewriting frozen M0 §84.13 bytes."""
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 from pathlib import Path
 from typing import Any
 
+if __package__:
+    from .contract_inventory import contract_file_paths, relative
+else:
+    from contract_inventory import contract_file_paths, relative
+
 
 ROOT = Path(__file__).resolve().parents[2]
 CORPUS = ROOT / "contracts" / "corpus"
 V2_CORPUS = CORPUS / "m4-m5-public-surface-v2"
+MACRO_CORPUS = CORPUS / "macro-planning-host-v1"
+CORPUS_V2_MANIFEST = CORPUS / "manifest-v2.json"
+FROZEN_V1_MANIFEST_SHA256 = "bcaafab242980366546c34c824256a0396ed370345d70f3e5b1582090a68ce77"
+JSON_MAX_SAFE_INTEGER = 9_007_199_254_740_991
+_CHECK_MODE = False
+_DRIFT: list[str] = []
+_EXPECTED_BYTES: dict[Path, bytes] = {}
 
 
 def dump(path: Path, value: Any) -> None:
+    data = (json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    _EXPECTED_BYTES[path.resolve()] = data
+    if _CHECK_MODE:
+        if not path.is_file() or path.read_bytes() != data:
+            _DRIFT.append(relative(path))
+        return
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+    if not path.is_file() or path.read_bytes() != data:
+        path.write_bytes(data)
 
 
 def load_frozen_m0_groups() -> list[dict[str, Any]]:
@@ -169,6 +189,198 @@ def v2_groups() -> list[dict[str, Any]]:
     ]
 
 
+def macro_planning_groups() -> list[dict[str, Any]]:
+    """Executable P0A negatives shared by the Python and Node gates."""
+
+    return [
+        {
+            "schema": "macro-planning-host-corpus/v1",
+            "group_id": "macro-planning-host-v1-01",
+            "title": "Host planning identity, CAS, hash and secret boundaries",
+            "positive": [
+                "model_secret_put_command",
+                "model_secret_put_result",
+                "model_profile_revise_command",
+                "model_profile_revision",
+                "model_profile_revise_result",
+                "workspace_plan_selection_command",
+                "workspace_plan_selection_result",
+                "project_planning_query",
+                "project_planning_availability_ready",
+                "project_planning_availability_unavailable",
+                "project_planning_start_command",
+                "project_planning_start_result",
+                "project_planner_runtime_input",
+                "project_planner_model_output",
+            ],
+            "negative": [
+                {"case_id": "macro-unknown-field-secret-command", "fixture": "model_secret_put_command", "kind": "parse", "mutation": {"op": "set", "path": ["unexpected"], "value": True}, "expected": "closed_schema_rejection"},
+                {"case_id": "macro-wrong-discriminator", "fixture": "project_planner_model_output", "kind": "parse", "mutation": {"op": "set", "path": ["schema"], "value": "project-planner-model-output/v2"}, "expected": "discriminator_rejection"},
+                {"case_id": "macro-raw-secret-ref-profile-command", "fixture": "model_profile_revise_command", "kind": "parse", "mutation": {"op": "set", "path": ["provider", "api_key_ref"], "value": "sk-live-not-a-reference"}, "expected": "opaque_secret_reference"},
+                {"case_id": "macro-alias-secret-ref-profile-command", "fixture": "model_profile_revise_command", "kind": "parse", "mutation": {"op": "set", "path": ["provider", "api_key_ref"], "value": "provider-main"}, "expected": "opaque_secret_reference"},
+                {"case_id": "macro-whitespace-secret-ref-profile-command", "fixture": "model_profile_revise_command", "kind": "parse", "mutation": {"op": "set", "path": ["provider", "api_key_ref"], "value": " secret://provider-main"}, "expected": "opaque_secret_reference"},
+                {"case_id": "macro-malformed-secret-ref-profile-command", "fixture": "model_profile_revise_command", "kind": "parse", "mutation": {"op": "set", "path": ["provider", "api_key_ref"], "value": "secret:///provider-main"}, "expected": "opaque_secret_reference"},
+                {"case_id": "macro-wrapped-secret-result-leak", "fixture": "secret_success_exchange", "kind": "secret_exchange", "mutation": {"op": "set", "path": ["response", "api_key_ref"], "value": "secret://provider-main/rawSecret47A"}, "expected": "recursive_secret_redaction"},
+                {"case_id": "macro-wrapped-secret-error-leak", "fixture": "secret_error_exchange", "kind": "secret_exchange", "mutation": {"op": "set", "path": ["response", "message"], "value": "rejected:rawSecret47A:wrapped"}, "expected": "recursive_secret_redaction"},
+                {"case_id": "macro-missing-trusted-path-params", "fixture": "http.model-secret.put", "kind": "http_exchange", "mutation": {"op": "set", "path": ["path_params"], "value": None}, "expected": "trusted_path_required"},
+                {"case_id": "macro-extra-trusted-path-param", "fixture": "http.model-secret.put", "kind": "http_exchange", "mutation": {"op": "set", "path": ["path_params", "extra"], "value": "forbidden"}, "expected": "trusted_path_exact"},
+                {"case_id": "macro-path-body-mismatch", "fixture": "http.model-secret.put", "kind": "http_exchange", "mutation": {"op": "set", "path": ["path_params", "secret_id"], "value": "provider-other"}, "expected": "trusted_path_binding"},
+                {"case_id": "macro-cross-workspace-response", "fixture": "http.project-planning.start", "kind": "http_exchange", "mutation": {"op": "set", "path": ["response", "workspace_id"], "value": "workspace-other"}, "expected": "cross_workspace"},
+                {"case_id": "macro-stale-brief-revision-cas", "fixture": "project_planning_start_command", "kind": "project_brief_cas", "mutation": {"op": "set", "path": ["expected_project_brief", "revision_id"], "value": "revision-project-brief-stale"}, "expected": "stale_brief_cas"},
+                {"case_id": "macro-stale-brief-hash-cas", "fixture": "project_planning_start_command", "kind": "project_brief_cas", "mutation": {"op": "set", "path": ["expected_project_brief", "content_hash"], "value": "0000000000000000000000000000000000000000000000000000000000000000"}, "expected": "stale_brief_cas"},
+                {"case_id": "macro-stale-workspace-plan-cas", "fixture": "workspace_plan_selection_command", "kind": "plan_cas", "mutation": {"op": "set", "path": ["expected_workspace_revision"], "value": 6}, "expected": "stale_plan_cas"},
+                {"case_id": "macro-plan-hash-tamper", "fixture": "plan_selection_exchange", "kind": "plan_exchange", "mutation": {"op": "set", "path": ["command", "plan_revision_hash"], "value": "0000000000000000000000000000000000000000000000000000000000000000"}, "expected": "plan_hash_binding"},
+                {"case_id": "macro-profile-hash-tamper", "fixture": "model_profile_revision", "kind": "model_profile", "mutation": {"op": "set", "path": ["revision_hash"], "value": "0000000000000000000000000000000000000000000000000000000000000000"}, "expected": "profile_hash_binding"},
+                {"case_id": "macro-runtime-input-hash-tamper", "fixture": "project_planner_runtime_input", "kind": "runtime_input", "mutation": {"op": "set", "path": ["input_hash"], "value": "0000000000000000000000000000000000000000000000000000000000000000"}, "expected": "runtime_hash_binding"},
+                {"case_id": "macro-caller-job-authority-injection", "fixture": "project_planning_start_command", "kind": "parse", "mutation": {"op": "set", "path": ["job_id"], "value": "caller-job"}, "expected": "caller_authority_rejection"},
+                {"case_id": "macro-caller-generation-authority-injection", "fixture": "project_planning_start_command", "kind": "parse", "mutation": {"op": "set", "path": ["generation_id"], "value": "caller-generation"}, "expected": "caller_authority_rejection"},
+                {"case_id": "macro-legacy-planner-input", "fixture": "project_planner_runtime_input", "kind": "runtime_input", "mutation": {"op": "set", "path": ["schema"], "value": "project-planner-runtime-input/v1"}, "expected": "legacy_input_rejection"},
+                {"case_id": "macro-runtime-attempt-authority-injection", "fixture": "project_planner_runtime_input", "kind": "runtime_input", "mutation": {"op": "set", "path": ["attempt_id"], "value": "caller-attempt"}, "expected": "caller_authority_rejection"},
+                {"case_id": "macro-empty-model-output", "fixture": "project_planner_model_output", "kind": "model_output", "mutation": {"op": "set", "path": ["setting"], "value": "   "}, "expected": "nonblank_output"},
+                {"case_id": "macro-output-auto-accept-injection", "fixture": "project_planner_model_output", "kind": "model_output", "mutation": {"op": "set", "path": ["auto_accept"], "value": True}, "expected": "manual_publication_only"},
+                {"case_id": "macro-availability-fail-open", "fixture": "project_planning_availability_unavailable", "kind": "availability", "mutation": {"op": "set", "path": ["available"], "value": True}, "expected": "fail_closed_availability"},
+                {"case_id": "macro-profile-parent-missing", "fixture": "model_profile_revision", "kind": "model_profile", "mutation": {"op": "set", "path": ["revision_number"], "value": 2}, "expected": "append_only_parent"},
+                {"case_id": "macro-automatic-plan-selection", "fixture": "workspace_plan_selection_command", "kind": "parse", "mutation": {"op": "set", "path": ["selection_mode"], "value": "automatic"}, "expected": "explicit_selection_only"},
+                {"case_id": "macro-planning-result-operation-mismatch", "fixture": "planning_start_exchange", "kind": "planning_start_exchange", "mutation": {"op": "set", "path": ["result", "operation_key"], "value": "planning-operation-other"}, "expected": "operation_binding"},
+                {"case_id": "macro-error-path-identity-mismatch", "fixture": "http.model-profile.revise.error", "kind": "http_exchange", "mutation": {"op": "set", "path": ["response", "profile_id"], "value": "model-profile-other"}, "expected": "trusted_path_binding"},
+                {"case_id": "macro-unsafe-profile-revision-number", "fixture": "model_profile_revision", "kind": "model_profile", "mutation": {"op": "set", "path": ["revision_number"], "value": 9_007_199_254_740_992}, "expected": "json_safe_integer"},
+                {"case_id": "macro-unsafe-plan-expected-workspace-revision", "fixture": "workspace_plan_selection_command", "kind": "parse", "mutation": {"op": "set", "path": ["expected_workspace_revision"], "value": 9_007_199_254_740_992}, "expected": "json_safe_integer"},
+                {"case_id": "macro-unsafe-plan-workspace-revision-result", "fixture": "workspace_plan_selection_result", "kind": "parse", "mutation": {"op": "set", "path": ["workspace_revision"], "value": 9_007_199_254_740_992}, "expected": "json_safe_integer"},
+                {"case_id": "macro-unsafe-planning-start-writer-epoch", "fixture": "project_planning_start_result", "kind": "parse", "mutation": {"op": "set", "path": ["writer_epoch"], "value": 9_007_199_254_740_992}, "expected": "json_safe_integer"},
+                {"case_id": "macro-unsafe-runtime-input-writer-epoch", "fixture": "project_planner_runtime_input", "kind": "runtime_input", "mutation": {"op": "set", "path": ["writer_epoch"], "value": 9_007_199_254_740_992}, "expected": "json_safe_integer"},
+                {"case_id": "macro-wire-whitespace-endpoint-u0085", "fixture": "model_profile_revise_command", "kind": "parse", "mutation": {"op": "set", "path": ["provider", "endpoint"], "value": "https://models.example.test/v1\u0085suffix"}, "expected": "wire_whitespace"},
+                {"case_id": "macro-wire-whitespace-endpoint-ufeff", "fixture": "model_profile_revise_command", "kind": "parse", "mutation": {"op": "set", "path": ["provider", "endpoint"], "value": "https://models.example.test/v1\ufeffsuffix"}, "expected": "wire_whitespace"},
+                {"case_id": "macro-wire-whitespace-endpoint-u00a0", "fixture": "model_profile_revise_command", "kind": "parse", "mutation": {"op": "set", "path": ["provider", "endpoint"], "value": "https://models.example.test/v1\u00a0suffix"}, "expected": "wire_whitespace"},
+                {"case_id": "macro-wire-whitespace-model-name-u0085", "fixture": "model_profile_revise_command", "kind": "parse", "mutation": {"op": "set", "path": ["provider", "model_name"], "value": "\u0085planner-model-1"}, "expected": "wire_whitespace"},
+                {"case_id": "macro-wire-whitespace-model-name-ufeff", "fixture": "model_profile_revise_command", "kind": "parse", "mutation": {"op": "set", "path": ["provider", "model_name"], "value": "\ufeffplanner-model-1"}, "expected": "wire_whitespace"},
+                {"case_id": "macro-wire-whitespace-model-name-u00a0", "fixture": "model_profile_revise_command", "kind": "parse", "mutation": {"op": "set", "path": ["provider", "model_name"], "value": "\u00a0planner-model-1"}, "expected": "wire_whitespace"},
+                {"case_id": "macro-wire-whitespace-error-message-u0085", "fixture": "model_profile_error", "kind": "parse", "mutation": {"op": "set", "path": ["message"], "value": "\u0085"}, "expected": "wire_nonblank"},
+                {"case_id": "macro-wire-whitespace-error-message-ufeff", "fixture": "model_profile_error", "kind": "parse", "mutation": {"op": "set", "path": ["message"], "value": "\ufeff"}, "expected": "wire_nonblank"},
+                {"case_id": "macro-wire-whitespace-error-message-u00a0", "fixture": "model_profile_error", "kind": "parse", "mutation": {"op": "set", "path": ["message"], "value": "\u00a0"}, "expected": "wire_nonblank"},
+                {"case_id": "macro-wire-whitespace-output-setting-u0085", "fixture": "project_planner_model_output", "kind": "model_output", "mutation": {"op": "set", "path": ["setting"], "value": "\u0085"}, "expected": "wire_nonblank"},
+                {"case_id": "macro-wire-whitespace-output-bible-ufeff", "fixture": "project_planner_model_output", "kind": "model_output", "mutation": {"op": "set", "path": ["bible"], "value": "\ufeff"}, "expected": "wire_nonblank"},
+                {"case_id": "macro-wire-whitespace-output-outline-u00a0", "fixture": "project_planner_model_output", "kind": "model_output", "mutation": {"op": "set", "path": ["outline"], "value": "\u00a0"}, "expected": "wire_nonblank"},
+            ],
+        }
+    ]
+
+
+def macro_integer_representations() -> dict[str, Any]:
+    """Return the one raw-token source for P0A mathematical integers."""
+
+    fields = [
+        {"field_id": "model-profile-revision-number", "fixture": "model_profile_revision", "path": ["revision_number"], "minimum": 1, "maximum": JSON_MAX_SAFE_INTEGER},
+        {"field_id": "plan-expected-workspace-revision", "fixture": "workspace_plan_selection_command", "path": ["expected_workspace_revision"], "minimum": 0, "maximum": JSON_MAX_SAFE_INTEGER},
+        {"field_id": "plan-result-workspace-revision", "fixture": "workspace_plan_selection_result", "path": ["workspace_revision"], "minimum": 1, "maximum": JSON_MAX_SAFE_INTEGER},
+        {"field_id": "planning-start-writer-epoch", "fixture": "project_planning_start_result", "path": ["writer_epoch"], "minimum": 1, "maximum": JSON_MAX_SAFE_INTEGER},
+        {"field_id": "planner-runtime-writer-epoch", "fixture": "project_planner_runtime_input", "path": ["writer_epoch"], "minimum": 1, "maximum": JSON_MAX_SAFE_INTEGER},
+        {"field_id": "model-option-max-output-tokens", "fixture": "model_profile_revision", "path": ["provider", "options", "max_output_tokens"], "minimum": 1, "maximum": 10_000_000},
+        {"field_id": "model-option-timeout-seconds", "fixture": "model_profile_revision", "path": ["provider", "options", "timeout_seconds"], "minimum": 1, "maximum": 86_400},
+        {"field_id": "model-option-max-retries", "fixture": "model_profile_revision", "path": ["provider", "options", "max_retries"], "minimum": 0, "maximum": 16},
+    ]
+
+    def accept(
+        case_id: str,
+        field_id: str,
+        fixture: str,
+        path: list[str],
+        raw_token: str,
+        normalized: int,
+        *,
+        equivalence_group: str | None = None,
+    ) -> dict[str, Any]:
+        result: dict[str, Any] = {
+            "case_id": case_id,
+            "field_id": field_id,
+            "fixture": fixture,
+            "path": path,
+            "raw_token": raw_token,
+            "expected": "accept",
+            "normalized": normalized,
+        }
+        if equivalence_group is not None:
+            result["hash_equivalence_group"] = equivalence_group
+        return result
+
+    def reject(
+        case_id: str,
+        field_id: str,
+        fixture: str,
+        path: list[str],
+        raw_token: str,
+    ) -> dict[str, Any]:
+        return {
+            "case_id": case_id,
+            "field_id": field_id,
+            "fixture": fixture,
+            "path": path,
+            "raw_token": raw_token,
+            "expected": "reject",
+        }
+
+    profile_revision = ["revision_number"]
+    profile_result_revision = ["revision", "revision_number"]
+    runtime_epoch = ["writer_epoch"]
+    max_output_tokens = ["provider", "options", "max_output_tokens"]
+    timeout_seconds = ["provider", "options", "timeout_seconds"]
+    max_retries = ["provider", "options", "max_retries"]
+    vectors = [
+        accept("profile-revision-one-integer", "model-profile-revision-number", "model_profile_revision", profile_revision, "1", 1, equivalence_group="profile-revision-one"),
+        accept("profile-revision-one-decimal", "model-profile-revision-number", "model_profile_revision", profile_revision, "1.0", 1, equivalence_group="profile-revision-one"),
+        accept("profile-revision-one-exponent", "model-profile-revision-number", "model_profile_revision", profile_revision, "1e0", 1, equivalence_group="profile-revision-one"),
+        accept("profile-result-revision-one-decimal", "model-profile-revision-number", "model_profile_revise_result", profile_result_revision, "1.0", 1, equivalence_group="profile-revision-one"),
+        accept("runtime-writer-max-integer", "planner-runtime-writer-epoch", "project_planner_runtime_input", runtime_epoch, "9007199254740991", JSON_MAX_SAFE_INTEGER, equivalence_group="runtime-writer-max"),
+        accept("runtime-writer-max-decimal", "planner-runtime-writer-epoch", "project_planner_runtime_input", runtime_epoch, "9007199254740991.0", JSON_MAX_SAFE_INTEGER, equivalence_group="runtime-writer-max"),
+        accept("plan-expected-zero-integer", "plan-expected-workspace-revision", "workspace_plan_selection_command", ["expected_workspace_revision"], "0", 0),
+        accept("plan-expected-zero-decimal", "plan-expected-workspace-revision", "workspace_plan_selection_command", ["expected_workspace_revision"], "0.0", 0),
+        accept("plan-result-minimum-decimal", "plan-result-workspace-revision", "workspace_plan_selection_result", ["workspace_revision"], "1.0", 1),
+        accept("planning-start-writer-minimum-exponent", "planning-start-writer-epoch", "project_planning_start_result", ["writer_epoch"], "1e0", 1),
+        accept("profile-max-output-4096-integer", "model-option-max-output-tokens", "model_profile_revision", max_output_tokens, "4096", 4096, equivalence_group="profile-max-output-4096"),
+        accept("profile-max-output-4096-decimal", "model-option-max-output-tokens", "model_profile_revision", max_output_tokens, "4096.0", 4096, equivalence_group="profile-max-output-4096"),
+        accept("profile-timeout-120-integer", "model-option-timeout-seconds", "model_profile_revision", timeout_seconds, "120", 120, equivalence_group="profile-timeout-120"),
+        accept("profile-timeout-120-exponent", "model-option-timeout-seconds", "model_profile_revision", timeout_seconds, "1.2e2", 120, equivalence_group="profile-timeout-120"),
+        accept("profile-max-retries-zero-integer", "model-option-max-retries", "model_profile_revision", max_retries, "0", 0, equivalence_group="profile-max-retries-zero"),
+        accept("profile-max-retries-zero-decimal", "model-option-max-retries", "model_profile_revision", max_retries, "0.0", 0, equivalence_group="profile-max-retries-zero"),
+        accept("command-max-output-minimum-exponent", "model-option-max-output-tokens", "model_profile_revise_command", max_output_tokens, "1e0", 1),
+        accept("command-timeout-maximum-decimal", "model-option-timeout-seconds", "model_profile_revise_command", timeout_seconds, "86400.0", 86_400),
+        accept("command-max-retries-maximum-exponent", "model-option-max-retries", "model_profile_revise_command", max_retries, "16e0", 16),
+        reject("profile-revision-bool", "model-profile-revision-number", "model_profile_revision", profile_revision, "true"),
+        reject("profile-revision-non-integral", "model-profile-revision-number", "model_profile_revision", profile_revision, "1.5"),
+        reject("profile-revision-non-finite", "model-profile-revision-number", "model_profile_revision", profile_revision, "1e999"),
+        reject("profile-revision-overflow-integer", "model-profile-revision-number", "model_profile_revision", profile_revision, "9007199254740992"),
+        reject("profile-revision-overflow-decimal", "model-profile-revision-number", "model_profile_revision", profile_revision, "9007199254740992.0"),
+        reject("plan-expected-below-minimum", "plan-expected-workspace-revision", "workspace_plan_selection_command", ["expected_workspace_revision"], "-1"),
+        reject("plan-result-below-minimum-decimal", "plan-result-workspace-revision", "workspace_plan_selection_result", ["workspace_revision"], "0.0"),
+        reject("planning-start-writer-non-integral", "planning-start-writer-epoch", "project_planning_start_result", ["writer_epoch"], "1.25"),
+        reject("runtime-writer-overflow-decimal", "planner-runtime-writer-epoch", "project_planner_runtime_input", runtime_epoch, "9007199254740992.0"),
+        reject("profile-max-output-below-minimum", "model-option-max-output-tokens", "model_profile_revision", max_output_tokens, "0"),
+        reject("profile-max-output-overflow-decimal", "model-option-max-output-tokens", "model_profile_revision", max_output_tokens, "10000001.0"),
+        reject("profile-timeout-below-minimum", "model-option-timeout-seconds", "model_profile_revision", timeout_seconds, "0e0"),
+        reject("profile-timeout-overflow", "model-option-timeout-seconds", "model_profile_revision", timeout_seconds, "86401"),
+        reject("profile-max-retries-below-minimum", "model-option-max-retries", "model_profile_revision", max_retries, "-1.0"),
+        reject("profile-max-retries-overflow", "model-option-max-retries", "model_profile_revision", max_retries, "17e0"),
+    ]
+    accepted = sum(vector["expected"] == "accept" for vector in vectors)
+    return {
+        "schema": "macro-planning-integer-representations/v1",
+        "json_schema_dialect": "https://json-schema.org/draft/2020-12/schema",
+        "semantic_authority": "mathematical-json-integer",
+        "field_count": len(fields),
+        "fields": fields,
+        "vector_count": len(vectors),
+        "accepted_count": accepted,
+        "rejected_count": len(vectors) - accepted,
+        "hash_equivalence_groups": sorted(
+            {
+                vector["hash_equivalence_group"]
+                for vector in vectors
+                if "hash_equivalence_group" in vector
+            }
+        ),
+        "vectors": vectors,
+    }
+
+
 def write_v2_corpus() -> None:
     groups = v2_groups()
     for group in groups:
@@ -226,7 +438,133 @@ def write_v2_corpus() -> None:
     )
 
 
+def write_macro_planning_corpus() -> None:
+    groups = macro_planning_groups()
+    integer_representations = macro_integer_representations()
+    integer_path = MACRO_CORPUS / "integer-representations.json"
+    for group in groups:
+        dump(MACRO_CORPUS / "negative.json", group)
+    dump(integer_path, integer_representations)
+    integer_bytes = _EXPECTED_BYTES[integer_path.resolve()]
+    dump(
+        MACRO_CORPUS / "manifest.json",
+        {
+            "schema": "macro-planning-host-corpus-manifest/v1",
+            "group_ids": [group["group_id"] for group in groups],
+            "group_count": len(groups),
+            "negative_case_count": sum(len(group["negative"]) for group in groups),
+            "positive_fixture": "contracts/examples/fixtures/macro-planning-host-positive.json",
+            "golden": "contracts/golden/macro-planning-host-v1/positive.json",
+            "integer_representations": {
+                "path": "contracts/corpus/macro-planning-host-v1/integer-representations.json",
+                "sha256": hashlib.sha256(integer_bytes).hexdigest(),
+                "field_count": integer_representations["field_count"],
+                "vector_count": integer_representations["vector_count"],
+                "accepted_count": integer_representations["accepted_count"],
+                "rejected_count": integer_representations["rejected_count"],
+            },
+            "semantic_assertions": [
+                "closed_schema_rejection",
+                "discriminator_rejection",
+                "opaque_secret_reference",
+                "recursive_secret_redaction",
+                "trusted_path_required",
+                "trusted_path_exact",
+                "trusted_path_binding",
+                "cross_workspace",
+                "stale_brief_cas",
+                "stale_plan_cas",
+                "plan_hash_binding",
+                "profile_hash_binding",
+                "runtime_hash_binding",
+                "caller_authority_rejection",
+                "legacy_input_rejection",
+                "nonblank_output",
+                "manual_publication_only",
+                "fail_closed_availability",
+                "append_only_parent",
+                "explicit_selection_only",
+                "operation_binding",
+                "json_safe_integer",
+                "wire_whitespace",
+                "wire_nonblank",
+                "mathematical_json_integer_normalization",
+            ],
+        },
+    )
+
+
+def _expected_or_current_bytes(path: Path) -> bytes:
+    expected = _EXPECTED_BYTES.get(path.resolve())
+    if expected is not None:
+        return expected
+    if not path.is_file():
+        raise FileNotFoundError(relative(path))
+    return path.read_bytes()
+
+
+def write_corpus_v2_manifest() -> None:
+    frozen_v1 = CORPUS / "manifest.json"
+    frozen_bytes = _expected_or_current_bytes(frozen_v1)
+    frozen_hash = hashlib.sha256(frozen_bytes).hexdigest()
+    if frozen_hash != FROZEN_V1_MANIFEST_SHA256:
+        raise ValueError("frozen corpus/manifest.json bytes drifted")
+
+    paths = [
+        path
+        for path in contract_file_paths("v2")
+        if path.is_relative_to(CORPUS) and path.resolve() != CORPUS_V2_MANIFEST.resolve()
+    ]
+    records = []
+    for path in paths:
+        data = _expected_or_current_bytes(path)
+        records.append(
+            {
+                "path": path.relative_to(CORPUS).as_posix(),
+                "bytes": len(data),
+                "sha256": hashlib.sha256(data).hexdigest(),
+            }
+        )
+    records.sort(key=lambda item: item["path"].encode("utf-8"))
+    route_paths = [
+        "m4-m5-public-surface-v2/manifest.json",
+        "prompt-skill-rpc-v2/manifest.json",
+        "macro-planning-host-v1/manifest.json",
+    ]
+    routes = []
+    for route_path in route_paths:
+        path = CORPUS / route_path
+        data = _expected_or_current_bytes(path)
+        routes.append(
+            {
+                "manifest": route_path,
+                "sha256": hashlib.sha256(data).hexdigest(),
+            }
+        )
+    dump(
+        CORPUS_V2_MANIFEST,
+        {
+            "schema": "contract-corpus/v2",
+            "frozen_v1": {
+                "manifest": "manifest.json",
+                "sha256": frozen_hash,
+            },
+            "routes": routes,
+            "file_count_excluding_router": len(records),
+            "router_self_excluded": True,
+            "files": records,
+        },
+    )
+
+
 def main() -> int:
+    global _CHECK_MODE
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--check", action="store_true")
+    args = parser.parse_args()
+    _CHECK_MODE = args.check
+    _DRIFT.clear()
+    _EXPECTED_BYTES.clear()
     groups = load_frozen_m0_groups()
     path_cases = {
         "schema": "windows-path-corpus/v1",
@@ -283,7 +621,17 @@ def main() -> int:
     dump(CORPUS / publication_path, publication_cases)
     dump(CORPUS / "manifest.json", {"schema": "contract-corpus/v1", "negative_groups": [group["group_id"] for group in groups], "required_group_count": 14, "additional_negative_profiles": [publication_path], "path_corpus": "paths/windows-paths.json", "compatibility": ["compatibility/valid.json", "compatibility/invalid.json"], "history": "history/v1-raw.json"})
     write_v2_corpus()
-    print(f"generated 14 negative groups, {len(publication_cases['cases'])} contract-publication probes and {len(v2_groups())} v2 groups")
+    write_macro_planning_corpus()
+    write_corpus_v2_manifest()
+    if _DRIFT:
+        print("corpus drift: " + ", ".join(sorted(set(_DRIFT))))
+        return 1
+    action = "checked" if _CHECK_MODE else "generated"
+    print(
+        f"{action} 14 frozen groups, {len(publication_cases['cases'])} contract-publication probes, "
+        f"{len(v2_groups())} M4/M5 groups, {sum(len(group['negative']) for group in macro_planning_groups())} "
+        f"macro-planning negatives and {macro_integer_representations()['vector_count']} raw integer vectors"
+    )
     return 0
 
 

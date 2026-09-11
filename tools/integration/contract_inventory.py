@@ -17,6 +17,34 @@ SCHEMAS = CONTRACTS / "json-schema"
 V1_NEGATIVE = CONTRACTS / "corpus" / "negative" / "84.13"
 SchemaScope = Literal["v1", "v2", "all"]
 
+# These contracts were published after the frozen M0/v1 inventory even though
+# two of their public discriminators intentionally remain ``/v1``.  Version
+# classification is therefore a publication fact, not a filename heuristic.
+# Keeping the exceptions here gives schema, corpus and manifest producers one
+# authoritative partition and prevents new P0A bytes from entering manifest-v1.
+ADDITIVE_V2_EXACT_PATHS = frozenset(
+    {
+        "contracts/corpus/manifest-v2.json",
+        "contracts/examples/fixtures/macro-planning-host-positive.json",
+        "contracts/json-schema/model-profile-revision-v1.schema.json",
+        "contracts/json-schema/project-planner-model-output-v1.schema.json",
+    }
+)
+ADDITIVE_V2_PREFIXES = (
+    "contracts/corpus/macro-planning-host-v1/",
+    "contracts/golden/macro-planning-host-v1/",
+)
+CONTRACT_FILE_ROOTS = (
+    CONTRACTS / "json-schema",
+    CONTRACTS / "examples",
+    CONTRACTS / "golden",
+    CONTRACTS / "corpus",
+)
+EXPLICIT_CONTRACT_FILES = (
+    CONTRACTS / "unicode-casefold-v1.json",
+    CONTRACTS / ".gitattributes",
+)
+
 
 def relative(path: Path) -> str:
     """Return a repository-relative POSIX path or raise for foreign paths."""
@@ -27,11 +55,39 @@ def relative(path: Path) -> str:
 def is_v2_contract_path(path: Path) -> bool:
     """Classify additive v2 contract artifacts from their frozen path grammar."""
 
-    components = relative(path).split("/")
+    normalized = relative(path)
+    if normalized in ADDITIVE_V2_EXACT_PATHS or normalized.startswith(ADDITIVE_V2_PREFIXES):
+        return True
+    components = normalized.split("/")
     leaf = components[-1]
     return any(component.endswith("-v2") for component in components[:-1]) or leaf.endswith(
         ("-v2.schema.json", ".v2.json")
     )
+
+
+def contract_file_paths(scope: SchemaScope = "v1") -> tuple[Path, ...]:
+    """Return the complete classified contract-file set for one publication.
+
+    Manifests consume this projection directly and verifiers compare their
+    declared path set back to it.  The manifest files at ``contracts/`` are
+    deliberately outside the classified roots so a manifest never hashes
+    itself.
+    """
+
+    if scope not in {"v1", "v2", "all"}:
+        raise ValueError(f"unsupported contract file scope: {scope!r}")
+    paths = {
+        path
+        for root in CONTRACT_FILE_ROOTS
+        for path in root.rglob("*")
+        if path.is_file()
+    }
+    paths.update(path for path in EXPLICIT_CONTRACT_FILES if path.is_file())
+    ordered = tuple(sorted(paths, key=lambda path: relative(path).encode("utf-8")))
+    if scope == "all":
+        return ordered
+    want_v2 = scope == "v2"
+    return tuple(path for path in ordered if is_v2_contract_path(path) is want_v2)
 
 
 def contract_schema_paths(scope: SchemaScope = "v1") -> tuple[Path, ...]:

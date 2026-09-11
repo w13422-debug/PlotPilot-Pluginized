@@ -11,7 +11,11 @@ BACKEND = ROOT / "backend"
 if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
 
-from verify_contracts import verify_goldens, verify_v2_public_surface  # type: ignore  # noqa: E402
+from verify_contracts import (  # type: ignore  # noqa: E402
+    verify_goldens,
+    verify_macro_planning_host,
+    verify_v2_public_surface,
+)
 
 
 def main() -> int:
@@ -49,7 +53,33 @@ def main() -> int:
     node_v2 = node.get("v2")
     if node_v2 != python_v2:
         raise SystemExit(f"v2 cross-language mismatch:\npython={python_v2}\nnode={node_v2}")
-    print(json.dumps({"status": "ok", "python": actual, "node": expected, "v2": python_v2}, ensure_ascii=False, sort_keys=True, indent=2))
+    python_macro = verify_macro_planning_host()
+    node_macro = node.get("macro_planning_host")
+    if node_macro != python_macro:
+        raise SystemExit(
+            f"macro-planning cross-language mismatch:\npython={python_macro}\nnode={node_macro}"
+        )
+    integer_evidence = {
+        key: python_macro.get(key)
+        for key in (
+            "canonical_integer_fields",
+            "integer_vector_count",
+            "integer_vector_accepted",
+            "integer_vector_rejected",
+            "integer_vector_source_sha256",
+            "integer_vector_result_digest",
+        )
+    }
+    if integer_evidence != {
+        "canonical_integer_fields": 8,
+        "integer_vector_count": 34,
+        "integer_vector_accepted": 19,
+        "integer_vector_rejected": 15,
+        "integer_vector_source_sha256": "2d9c72efdf8f593deb399567557229f6bcbccad1c95e961d01e819809bbbf88b",
+        "integer_vector_result_digest": "d4cfe7ec27c052badd2f67723fa5a4123becd60b6c1be11ce37b07b58f00f13d",
+    }:
+        raise SystemExit(f"macro-planning integer vector evidence drift: {integer_evidence}")
+    print(json.dumps({"status": "ok", "python": actual, "node": expected, "v2": python_v2, "macro_planning_host": python_macro}, ensure_ascii=False, sort_keys=True, indent=2))
     return 0
 
 

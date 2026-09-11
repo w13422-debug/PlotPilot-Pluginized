@@ -1,0 +1,132 @@
+{
+  "$id": "https://plotpilot.local/contracts/model-profile-revision-v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "created_at": {
+      "pattern": "^(?:[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z|[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.(?!000)[0-9]{3}Z)$",
+      "type": "string"
+    },
+    "parent_revision_id": {
+      "anyOf": [
+        {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "profile_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+      "type": "string"
+    },
+    "provider": {
+      "additionalProperties": false,
+      "properties": {
+        "api_key_ref": {
+          "maxLength": 512,
+          "minLength": 10,
+          "pattern": "^secret://[A-Za-z0-9](?:[A-Za-z0-9._~-]{0,127})(?:/[A-Za-z0-9](?:[A-Za-z0-9._~-]{0,127}))*$",
+          "type": "string"
+        },
+        "endpoint": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "pattern": "^https?://[^\\u0009-\\u000D\\u001C-\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF?#]+(?:/[^\\u0009-\\u000D\\u001C-\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF?#]*)?(?!(?:.|\\u000A|\\u000D|\\u2028|\\u2029))",
+          "type": "string"
+        },
+        "model_name": {
+          "maxLength": 256,
+          "minLength": 1,
+          "pattern": "^[^\\u0009-\\u000D\\u001C-\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF](?:[^\\u000A\\u000D\\u2028\\u2029]*[^\\u0009-\\u000D\\u001C-\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])?(?!(?:.|\\u000A|\\u000D|\\u2028|\\u2029))",
+          "type": "string"
+        },
+        "options": {
+          "additionalProperties": false,
+          "properties": {
+            "max_output_tokens": {
+              "maximum": 10000000,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "max_retries": {
+              "maximum": 16,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "temperature": {
+              "maximum": 2,
+              "minimum": 0,
+              "type": "number"
+            },
+            "timeout_seconds": {
+              "maximum": 86400,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "top_p": {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            }
+          },
+          "required": [
+            "temperature",
+            "top_p",
+            "max_output_tokens",
+            "timeout_seconds",
+            "max_retries"
+          ],
+          "type": "object"
+        },
+        "plugin_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "release_id": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "plugin_id",
+        "release_id",
+        "endpoint",
+        "model_name",
+        "options",
+        "api_key_ref"
+      ],
+      "type": "object"
+    },
+    "revision_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "revision_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+      "type": "string"
+    },
+    "revision_number": {
+      "maximum": 9007199254740991,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "schema": {
+      "const": "model-profile-revision/v1"
+    }
+  },
+  "required": [
+    "schema",
+    "profile_id",
+    "revision_id",
+    "revision_number",
+    "parent_revision_id",
+    "provider",
+    "created_at",
+    "revision_hash"
+  ],
+  "title": "PlotPilot model-profile-revision-v1",
+  "type": "object"
+}

@@ -1,0 +1,80 @@
+{
+  "file_count_excluding_router": 11,
+  "files": [
+    {
+      "bytes": 5468,
+      "path": "m4-m5-public-surface-v2/01-candidate.json",
+      "sha256": "2e78b86709b75349cfcda9706d3421c0cf2881290fffff6594fc8401c4248bbc"
+    },
+    {
+      "bytes": 4994,
+      "path": "m4-m5-public-surface-v2/02-review-publication.json",
+      "sha256": "4a48dbaae3a7068fc9360cbcc0dd7122c5dd80b0e5f33be499bd8445453db171"
+    },
+    {
+      "bytes": 3370,
+      "path": "m4-m5-public-surface-v2/03-story-state.json",
+      "sha256": "091ea4b81b8c803e0e9a8f5989aa478bf35d43815f0742563d01585e78f6f317"
+    },
+    {
+      "bytes": 5098,
+      "path": "m4-m5-public-surface-v2/04-job-sse.json",
+      "sha256": "b75defebad5dd6e91d0fdd1ea697cdae6b7d2b88be80c7c97d7a6b8deb5bbf85"
+    },
+    {
+      "bytes": 4377,
+      "path": "m4-m5-public-surface-v2/05-plugin-lifecycle.json",
+      "sha256": "4dca497087e893c1e15ec900f000c0f19bdd7e7e91ce9c1633a2edaab4e71061"
+    },
+    {
+      "bytes": 1458,
+      "path": "m4-m5-public-surface-v2/manifest.json",
+      "sha256": "e60a16dcf49422cbd3000a84c76449e52053ef4bc8dab85789ee0f52e65c0e29"
+    },
+    {
+      "bytes": 13174,
+      "path": "macro-planning-host-v1/integer-representations.json",
+      "sha256": "2d9c72efdf8f593deb399567557229f6bcbccad1c95e961d01e819809bbbf88b"
+    },
+    {
+      "bytes": 1353,
+      "path": "macro-planning-host-v1/manifest.json",
+      "sha256": "ed0151790ab07fe543525ae3e8e48d93d073821d196850d1e5c8f33b9df73743"
+    },
+    {
+      "bytes": 16179,
+      "path": "macro-planning-host-v1/negative.json",
+      "sha256": "098c8ac356c87f0a2725d93c53cfc4ff32a954d0382f6dab6735fc80ba2b87fe"
+    },
+    {
+      "bytes": 12806,
+      "path": "prompt-skill-rpc-v2/01-execute.json",
+      "sha256": "49c476fe83d7d6e6bf8bd6b5d453c7cd9f0dfe85daa1bb505cdbbffcb2553e49"
+    },
+    {
+      "bytes": 216,
+      "path": "prompt-skill-rpc-v2/manifest.json",
+      "sha256": "454abc197960dc3ca95544c33b894c8283198fd985d04ac0ad0efdee591cfa12"
+    }
+  ],
+  "frozen_v1": {
+    "manifest": "manifest.json",
+    "sha256": "bcaafab242980366546c34c824256a0396ed370345d70f3e5b1582090a68ce77"
+  },
+  "router_self_excluded": true,
+  "routes": [
+    {
+      "manifest": "m4-m5-public-surface-v2/manifest.json",
+      "sha256": "e60a16dcf49422cbd3000a84c76449e52053ef4bc8dab85789ee0f52e65c0e29"
+    },
+    {
+      "manifest": "prompt-skill-rpc-v2/manifest.json",
+      "sha256": "454abc197960dc3ca95544c33b894c8283198fd985d04ac0ad0efdee591cfa12"
+    },
+    {
+      "manifest": "macro-planning-host-v1/manifest.json",
+      "sha256": "ed0151790ab07fe543525ae3e8e48d93d073821d196850d1e5c8f33b9df73743"
+    }
+  ],
+  "schema": "contract-corpus/v2"
+}

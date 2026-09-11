@@ -66,6 +66,24 @@ from plotpilot_plugin_sdk.m4_m5_http_v2 import (  # noqa: E402
     parse_http_response,
     validate_http_exchange,
 )
+from plotpilot_plugin_sdk.macro_planning_v2 import (  # noqa: E402
+    JSON_MAX_SAFE_INTEGER,
+    WIRE_WHITESPACE_CODEPOINTS,
+    contains_wire_whitespace,
+    has_non_wire_whitespace_character,
+    is_wire_whitespace_character,
+    model_profile_revision_hash,
+    parse_macro_planning,
+    parse_model_profile_revision_v1,
+    parse_project_planner_model_output_v1,
+    parse_project_planner_runtime_input_v2,
+    parse_project_planning_v2,
+    planner_runtime_input_hash,
+    validate_project_planning_start,
+    validate_project_planning_start_exchange,
+    validate_secret_put_exchange,
+    validate_workspace_plan_selection,
+)
 from plotpilot_plugin_sdk.package import build_files_sha256, normalize_relative_path, package_hash  # noqa: E402
 from plotpilot_plugin_sdk.prompt_skill_rpc_v2 import (  # noqa: E402
     PromptSkillOperationLedgerV2,
@@ -119,6 +137,11 @@ from plotpilot_plugin_sdk.verifier import (  # noqa: E402
     verify_job_snapshot,
     verify_history_bytes,
     snapshot_hash,
+)
+from contract_inventory import (  # noqa: E402
+    contract_file_paths,
+    contract_schema_paths,
+    relative as contract_relative,
 )
 
 CONTRACTS = ROOT / "contracts"
@@ -658,11 +681,11 @@ def verify_schemas() -> dict[str, Any]:
     )
     if check.returncode:
         raise AssertionError(check.stdout + check.stderr)
-    paths = sorted(SCHEMA_DIR.glob("*.schema.json"))
-    v1_paths = [path for path in paths if not path.name.endswith("-v2.schema.json")]
-    v2_paths = [path for path in paths if path.name.endswith("-v2.schema.json")]
-    if len(v1_paths) != 55 or len(v2_paths) != 9:
-        raise AssertionError(f"expected 55 v1 + 9 v2 Draft 2020-12 schemas, found {len(v1_paths)} + {len(v2_paths)}")
+    paths = list(contract_schema_paths("all"))
+    v1_paths = list(contract_schema_paths("v1"))
+    v2_paths = list(contract_schema_paths("v2"))
+    if len(v1_paths) != 55 or len(v2_paths) != 15:
+        raise AssertionError(f"expected 55 frozen-v1 + 15 additive Draft 2020-12 schemas, found {len(v1_paths)} + {len(v2_paths)}")
     for path in paths:
         schema = load_strict_json(path)
         Draft202012Validator.check_schema(schema)
@@ -682,6 +705,24 @@ def verify_schemas() -> dict[str, Any]:
         schema = load_strict_json(SCHEMA_DIR / name)
         if "oneOf" in schema and schema.get("unevaluatedProperties") is not False:
             raise AssertionError(f"union root {name} must set unevaluatedProperties:false")
+    macro_schema_names = (
+        "model-config-command-query-v2.schema.json",
+        "model-profile-revision-v1.schema.json",
+        "model-planning-http-error-v2.schema.json",
+        "project-planning-command-query-v2.schema.json",
+        "project-planner-runtime-input-v2.schema.json",
+        "project-planner-model-output-v1.schema.json",
+    )
+    discriminators: list[str] = []
+    for name in macro_schema_names:
+        schema = load_strict_json(SCHEMA_DIR / name)
+        branches = schema.get("oneOf", [schema])
+        values = [branch.get("properties", {}).get("schema", {}).get("const") for branch in branches]
+        if not values or any(not isinstance(value, str) for value in values):
+            raise AssertionError(f"macro-planning schema lacks a stable discriminator: {name}")
+        discriminators.extend(values)
+    if len(discriminators) != len(set(discriminators)):
+        raise AssertionError("macro-planning top-level discriminators are not unique")
     return {"schemas": len(paths), "v1_schemas": len(v1_paths), "v2_schemas": len(v2_paths), "generator_check": check.stdout.strip()}
 
 
@@ -715,6 +756,9 @@ def verify_contract_manifest() -> dict[str, Any]:
         seen.add(record["path"])
         if path.stat().st_size != record["bytes"] or hashlib.sha256(path.read_bytes()).hexdigest() != record["sha256"]:
             raise AssertionError(f"contract manifest hash drift: {record['path']}")
+    actual_v1_paths = {contract_relative(path) for path in contract_file_paths("v1")}
+    if seen != actual_v1_paths:
+        raise AssertionError("v1 contract manifest path set is not the complete classified v1 set")
     if manifest["inventory"]["schema_count"] != 55 or manifest["inventory"]["negative_group_count"] != 14:
         raise AssertionError("contract manifest inventory does not cover the full M0 contract set")
     v2_manifest_path = ROOT / "contracts" / "manifest-v2.json"
@@ -724,25 +768,57 @@ def verify_contract_manifest() -> dict[str, Any]:
     if v2_manifest.get("v1_immutable", {}).get("manifest_sha256") != hashlib.sha256(manifest_path.read_bytes()).hexdigest():
         raise AssertionError("v2 manifest does not retain the v1 manifest identity")
     v2_inventory = v2_manifest.get("inventory", {})
-    if v2_inventory.get("v2_schema_count") != 9 or v2_inventory.get("negative_group_count_v2") != 5:
+    if v2_inventory.get("v2_schema_count") != 15 or v2_inventory.get("negative_group_count_v2") != 5:
         raise AssertionError("v2 manifest inventory does not cover the additive surface")
     if (
-        v2_inventory.get("schema_count") != 64
+        v2_inventory.get("schema_count") != 70
         or v2_inventory.get("v1_schema_count") != 55
-        or v2_inventory.get("file_count_excluding_manifest") != 170
+        or v2_inventory.get("file_count_excluding_manifest") != 182
         or v2_inventory.get("v1_file_count") != 141
-        or v2_inventory.get("v2_file_count") != 29
+        or v2_inventory.get("v2_file_count") != 41
         or v2_inventory.get("prompt_skill_schema_count") != 3
         or v2_inventory.get("prompt_skill_negative_group_count_v2") != 1
+        or v2_inventory.get("macro_planning_schema_count") != 6
+        or v2_inventory.get("macro_planning_negative_group_count") != 1
+        or v2_inventory.get("macro_planning_negative_case_count") != 46
+        or v2_inventory.get("macro_planning_integer_field_count") != 8
+        or v2_inventory.get("macro_planning_integer_vector_count") != 34
     ):
         raise AssertionError("Prompt-Skill or additive manifest inventory drift")
+    if v2_manifest.get("macro_planning_host_v1", {}).get("integer_representations") != {
+        "path": "contracts/corpus/macro-planning-host-v1/integer-representations.json",
+        "sha256": "2d9c72efdf8f593deb399567557229f6bcbccad1c95e961d01e819809bbbf88b",
+        "field_count": 8,
+        "vector_count": 34,
+        "accepted_count": 19,
+        "rejected_count": 15,
+    }:
+        raise AssertionError("P0A integer representation manifest binding drift")
     v2_records = v2_manifest.get("files")
-    if not isinstance(v2_records, list):
+    if not isinstance(v2_records, list) or len(v2_records) != v2_inventory.get("file_count_excluding_manifest"):
         raise AssertionError("v2 manifest has no file inventory")
+    declared_paths: list[str] = []
     for record in v2_records:
+        record_path = record.get("path")
+        if (
+            not isinstance(record_path, str)
+            or not record_path
+            or "\\" in record_path
+            or record_path.startswith("/")
+            or any(part in {"", ".", ".."} for part in record_path.split("/"))
+        ):
+            raise AssertionError(f"v2 manifest path is not normalized: {record_path!r}")
+        declared_paths.append(record_path)
         path = ROOT / record["path"]
         if not path.is_file() or path.stat().st_size != record["bytes"] or hashlib.sha256(path.read_bytes()).hexdigest() != record["sha256"]:
             raise AssertionError(f"v2 contract manifest hash drift: {record['path']}")
+    if len(declared_paths) != len(set(declared_paths)):
+        raise AssertionError("v2 contract manifest contains duplicate paths")
+    actual_all_paths = {contract_relative(path) for path in contract_file_paths("all")}
+    if set(declared_paths) != actual_all_paths:
+        missing = sorted(actual_all_paths - set(declared_paths))
+        extra = sorted(set(declared_paths) - actual_all_paths)
+        raise AssertionError(f"v2 manifest is not the complete classified file set: missing={missing}, extra={extra}")
     return {
         "files": len(records),
         "schemas": manifest["inventory"]["schema_count"],
@@ -842,9 +918,23 @@ def verify_v2_public_surface() -> dict[str, Any]:
     matrix = load_strict_json(SCHEMA_DIR / "core-api-method-matrix.v2.json")
     if matrix.get("schema") != "core-api-method-matrix/v2" or matrix.get("publication_path") != "publication.accept" or matrix.get("publication_owner") != "core" or matrix.get("plugin_publication_allowed") is not False:
         raise AssertionError("v2 method matrix does not keep Core as the sole Publication owner")
-    routes = matrix.get("routes")
-    if not isinstance(routes, list) or len(routes) != 19:
-        raise AssertionError("v2 method matrix route inventory drift")
+    all_routes = matrix.get("routes")
+    macro_route_ids = {
+        "model-secret.put",
+        "model-profile.revise",
+        "workspace-plan.select",
+        "project-planning.get",
+        "project-planning.start",
+    }
+    if (
+        not isinstance(all_routes, list)
+        or len(all_routes) != 24
+        or set(matrix.get("macro_planning_routes", [])) != macro_route_ids
+    ):
+        raise AssertionError("v2 method matrix combined route inventory drift")
+    routes = [route for route in all_routes if route.get("route_id") not in macro_route_ids]
+    if len(routes) != 19:
+        raise AssertionError("M4/M5 v2 method matrix route inventory drift")
     route_ids = [route.get("route_id") for route in routes]
     if len(route_ids) != len(set(route_ids)) or route_ids.count("publication.accept") != 1:
         raise AssertionError("v2 method matrix has duplicate or missing Publication route")
@@ -852,9 +942,9 @@ def verify_v2_public_surface() -> dict[str, Any]:
         raise AssertionError("v2 matrix exposes a second Publication path")
     expected_placeholders = {
         route["route_id"]: re.findall(r"\{([^{}]+)\}", route["path_template"])
-        for route in routes
+        for route in all_routes
     }
-    if any(route.get("path_identity") != expected_placeholders[route["route_id"]] for route in routes):
+    if any(route.get("path_identity") != expected_placeholders[route["route_id"]] for route in all_routes):
         raise AssertionError("v2 path identity is not derived from its template")
     if set(matrix.get("roots", {})) != {"core", "jobs", "plugins"}:
         raise AssertionError("v2 API root inventory drift")
@@ -1163,6 +1253,607 @@ def verify_v2_public_surface() -> dict[str, Any]:
         "http_exchanges": len(http_exchanges),
         "publication_path": matrix["publication_path"],
         "cursor_domains": sorted(matrix["cursor_domains"]),
+    }
+
+
+def verify_macro_planning_host() -> dict[str, Any]:
+    """Verify the structurally isolated P0A host/planner contract slice."""
+
+    golden_path = GOLDEN_DIR / "macro-planning-host-v1" / "positive.json"
+    fixture_path = FIXTURES_DIR / "macro-planning-host-positive.json"
+    if golden_path.read_bytes() != fixture_path.read_bytes():
+        raise AssertionError("macro-planning fixture and golden bytes differ")
+    positive = load_strict_json(golden_path)
+    fixtures = positive.get("fixtures")
+    exchanges = positive.get("exchanges")
+    if (
+        positive.get("schema") != "macro-planning-host-positive/v1"
+        or not isinstance(fixtures, dict)
+        or positive.get("fixture_count") != len(fixtures)
+        or len(fixtures) != 17
+        or not isinstance(exchanges, list)
+        or positive.get("exchange_count") != len(exchanges)
+        or len(exchanges) != 5
+    ):
+        raise AssertionError("macro-planning positive inventory drift")
+
+    for value in fixtures.values():
+        parse_macro_planning(value)
+    profile = fixtures["model_profile_revision"]
+    runtime_input = fixtures["project_planner_runtime_input"]
+    expected = positive.get("expected", {})
+    if (
+        parse_model_profile_revision_v1(profile)["revision_hash"]
+        != model_profile_revision_hash(profile)
+        or expected.get("model_profile_revision_hash") != profile["revision_hash"]
+    ):
+        raise AssertionError("macro-planning profile hash golden drift")
+    if (
+        parse_project_planner_runtime_input_v2(runtime_input)["input_hash"]
+        != planner_runtime_input_hash(runtime_input)
+        or expected.get("planner_runtime_input_hash") != runtime_input["input_hash"]
+    ):
+        raise AssertionError("macro-planning runtime input hash golden drift")
+    parse_project_planner_model_output_v1(fixtures["project_planner_model_output"])
+    parse_project_planning_v2(fixtures["project_planning_availability_ready"])
+    parse_project_planning_v2(fixtures["project_planning_availability_unavailable"])
+
+    if JSON_MAX_SAFE_INTEGER != 9_007_199_254_740_991:
+        raise AssertionError("P0A JSON safe integer maximum drift")
+    maximum_profile = copy.deepcopy(profile)
+    maximum_profile["revision_number"] = JSON_MAX_SAFE_INTEGER
+    maximum_profile["parent_revision_id"] = "revision-model-profile-parent-max-safe"
+    maximum_profile["revision_hash"] = model_profile_revision_hash(maximum_profile)
+    parse_model_profile_revision_v1(maximum_profile)
+
+    maximum_plan_command = copy.deepcopy(fixtures["workspace_plan_selection_command"])
+    maximum_plan_command["expected_workspace_revision"] = JSON_MAX_SAFE_INTEGER
+    parse_macro_planning(maximum_plan_command)
+    monotonic_plan_command = copy.deepcopy(maximum_plan_command)
+    monotonic_plan_command["expected_workspace_revision"] = JSON_MAX_SAFE_INTEGER - 1
+    maximum_plan_result = copy.deepcopy(fixtures["workspace_plan_selection_result"])
+    maximum_plan_result["workspace_revision"] = JSON_MAX_SAFE_INTEGER
+    validate_workspace_plan_selection(monotonic_plan_command, maximum_plan_result)
+
+    maximum_start_result = copy.deepcopy(fixtures["project_planning_start_result"])
+    maximum_start_result["writer_epoch"] = JSON_MAX_SAFE_INTEGER
+    parse_project_planning_v2(maximum_start_result)
+
+    maximum_runtime_input = copy.deepcopy(runtime_input)
+    maximum_runtime_input["writer_epoch"] = JSON_MAX_SAFE_INTEGER
+    maximum_runtime_input["input_hash"] = planner_runtime_input_hash(maximum_runtime_input)
+    parse_project_planner_runtime_input_v2(maximum_runtime_input)
+
+    integer_vector_path = CORPUS_DIR / "macro-planning-host-v1" / "integer-representations.json"
+    integer_vector_bytes = integer_vector_path.read_bytes()
+    integer_vectors = load_strict_json(integer_vector_path)
+    expected_integer_fields = [
+        {"field_id": "model-profile-revision-number", "fixture": "model_profile_revision", "path": ["revision_number"], "minimum": 1, "maximum": JSON_MAX_SAFE_INTEGER},
+        {"field_id": "plan-expected-workspace-revision", "fixture": "workspace_plan_selection_command", "path": ["expected_workspace_revision"], "minimum": 0, "maximum": JSON_MAX_SAFE_INTEGER},
+        {"field_id": "plan-result-workspace-revision", "fixture": "workspace_plan_selection_result", "path": ["workspace_revision"], "minimum": 1, "maximum": JSON_MAX_SAFE_INTEGER},
+        {"field_id": "planning-start-writer-epoch", "fixture": "project_planning_start_result", "path": ["writer_epoch"], "minimum": 1, "maximum": JSON_MAX_SAFE_INTEGER},
+        {"field_id": "planner-runtime-writer-epoch", "fixture": "project_planner_runtime_input", "path": ["writer_epoch"], "minimum": 1, "maximum": JSON_MAX_SAFE_INTEGER},
+        {"field_id": "model-option-max-output-tokens", "fixture": "model_profile_revision", "path": ["provider", "options", "max_output_tokens"], "minimum": 1, "maximum": 10_000_000},
+        {"field_id": "model-option-timeout-seconds", "fixture": "model_profile_revision", "path": ["provider", "options", "timeout_seconds"], "minimum": 1, "maximum": 86_400},
+        {"field_id": "model-option-max-retries", "fixture": "model_profile_revision", "path": ["provider", "options", "max_retries"], "minimum": 0, "maximum": 16},
+    ]
+    vectors = integer_vectors.get("vectors")
+    if (
+        integer_vectors.get("schema") != "macro-planning-integer-representations/v1"
+        or integer_vectors.get("json_schema_dialect") != "https://json-schema.org/draft/2020-12/schema"
+        or integer_vectors.get("semantic_authority") != "mathematical-json-integer"
+        or integer_vectors.get("fields") != expected_integer_fields
+        or integer_vectors.get("field_count") != len(expected_integer_fields)
+        or not isinstance(vectors, list)
+        or integer_vectors.get("vector_count") != len(vectors)
+        or len(vectors) != 34
+        or integer_vectors.get("accepted_count") != 19
+        or integer_vectors.get("rejected_count") != 15
+    ):
+        raise AssertionError("P0A raw integer vector inventory drift")
+
+    allowed_vector_targets = {
+        "model-profile-revision-number": {
+            ("model_profile_revision", ("revision_number",)),
+            ("model_profile_revise_result", ("revision", "revision_number")),
+        },
+        "plan-expected-workspace-revision": {
+            ("workspace_plan_selection_command", ("expected_workspace_revision",)),
+        },
+        "plan-result-workspace-revision": {
+            ("workspace_plan_selection_result", ("workspace_revision",)),
+        },
+        "planning-start-writer-epoch": {
+            ("project_planning_start_result", ("writer_epoch",)),
+        },
+        "planner-runtime-writer-epoch": {
+            ("project_planner_runtime_input", ("writer_epoch",)),
+        },
+        "model-option-max-output-tokens": {
+            (fixture, ("provider", "options", "max_output_tokens"))
+            for fixture in ("model_profile_revision", "model_profile_revise_command")
+        },
+        "model-option-timeout-seconds": {
+            (fixture, ("provider", "options", "timeout_seconds"))
+            for fixture in ("model_profile_revision", "model_profile_revise_command")
+        },
+        "model-option-max-retries": {
+            (fixture, ("provider", "options", "max_retries"))
+            for fixture in ("model_profile_revision", "model_profile_revise_command")
+        },
+    }
+
+    def vector_value_at_path(value: Mapping[str, Any], path: list[str]) -> Any:
+        current: Any = value
+        for token in path:
+            current = current[token]
+        return current
+
+    integer_vector_results: list[dict[str, Any]] = []
+    integer_vector_case_ids: set[str] = set()
+    equivalence_hashes: dict[str, set[str]] = {}
+    for vector in vectors:
+        case_id = vector["case_id"]
+        if case_id in integer_vector_case_ids:
+            raise AssertionError(f"duplicate P0A raw integer vector: {case_id}")
+        integer_vector_case_ids.add(case_id)
+        field_id = vector["field_id"]
+        fixture_name = vector["fixture"]
+        path = vector["path"]
+        if (fixture_name, tuple(path)) not in allowed_vector_targets.get(field_id, set()):
+            raise AssertionError(f"P0A raw integer vector target drift: {case_id}")
+        raw_token = vector["raw_token"]
+        token_value = json.loads(raw_token)
+        value = _v2_mutate(
+            fixtures[fixture_name],
+            {"op": "set", "path": path, "value": token_value},
+        )
+        accepted = False
+        normalized: int | None = None
+        canonical_hash: str | None = None
+        try:
+            if fixture_name == "model_profile_revision":
+                hash_input = copy.deepcopy(value)
+                canonical_hash = model_profile_revision_hash(value)
+                if value != hash_input:
+                    raise AssertionError(f"profile hash mutated raw vector input: {case_id}")
+                value["revision_hash"] = canonical_hash
+            elif fixture_name == "model_profile_revise_result":
+                hash_input = copy.deepcopy(value["revision"])
+                canonical_hash = model_profile_revision_hash(value["revision"])
+                if value["revision"] != hash_input:
+                    raise AssertionError(f"nested profile hash mutated raw vector input: {case_id}")
+                value["revision"]["revision_hash"] = canonical_hash
+            elif fixture_name == "project_planner_runtime_input":
+                hash_input = copy.deepcopy(value)
+                canonical_hash = planner_runtime_input_hash(value)
+                if value != hash_input:
+                    raise AssertionError(f"runtime hash mutated raw vector input: {case_id}")
+                value["input_hash"] = canonical_hash
+            parse_input = copy.deepcopy(value)
+            parsed = parse_macro_planning(value)
+            if value != parse_input:
+                raise AssertionError(f"parser mutated raw vector input: {case_id}")
+            normalized = vector_value_at_path(parsed, path)
+            accepted = True
+        except ContractError:
+            pass
+
+        expected_accept = vector["expected"] == "accept"
+        if accepted is not expected_accept:
+            raise AssertionError(f"P0A raw integer vector outcome drift: {case_id}")
+        if accepted and (
+            type(normalized) is not int or normalized != vector.get("normalized")
+        ):
+            raise AssertionError(f"P0A raw integer normalization drift: {case_id}")
+        if not accepted and "normalized" in vector:
+            raise AssertionError(f"rejected P0A raw integer vector declares a normalized value: {case_id}")
+        group_id = vector.get("hash_equivalence_group")
+        if group_id is not None:
+            if not accepted or canonical_hash is None:
+                raise AssertionError(f"P0A hash equivalence vector did not hash: {case_id}")
+            equivalence_hashes.setdefault(group_id, set()).add(canonical_hash)
+        integer_vector_results.append(
+            {
+                "case_id": case_id,
+                "field_id": field_id,
+                "raw_token": raw_token,
+                "accepted": accepted,
+                "normalized": normalized,
+                "canonical_hash": canonical_hash,
+            }
+        )
+    expected_equivalence_groups = integer_vectors.get("hash_equivalence_groups")
+    if (
+        sorted(equivalence_hashes) != expected_equivalence_groups
+        or any(len(hashes) != 1 for hashes in equivalence_hashes.values())
+    ):
+        raise AssertionError("P0A raw integer hash equivalence drift")
+    integer_vector_result_digest = hashlib.sha256(
+        json.dumps(
+            integer_vector_results,
+            ensure_ascii=True,
+            separators=(",", ":"),
+        ).encode("ascii")
+    ).hexdigest()
+    integer_vector_source_sha256 = hashlib.sha256(integer_vector_bytes).hexdigest()
+
+    expected_wire_whitespace = tuple(
+        [*range(0x0009, 0x000E)]
+        + [*range(0x001C, 0x0021)]
+        + [
+            0x0085,
+            0x00A0,
+            0x1680,
+            *range(0x2000, 0x200B),
+            0x2028,
+            0x2029,
+            0x202F,
+            0x205F,
+            0x3000,
+            0xFEFF,
+        ]
+    )
+    if WIRE_WHITESPACE_CODEPOINTS != expected_wire_whitespace or len(set(expected_wire_whitespace)) != 30:
+        raise AssertionError("P0A wire-whitespace set drift")
+
+    internal_space_model_name = copy.deepcopy(fixtures["model_profile_revise_command"])
+    internal_space_model_name["provider"]["model_name"] = "planner model 1"
+    parse_macro_planning(internal_space_model_name)
+
+    output_roles = ("setting", "bible", "outline")
+    for index, codepoint in enumerate(expected_wire_whitespace):
+        character = chr(codepoint)
+        if (
+            not is_wire_whitespace_character(character)
+            or not contains_wire_whitespace(f"left{character}right")
+            or has_non_wire_whitespace_character(character)
+            or not has_non_wire_whitespace_character(f"{character}content")
+        ):
+            raise AssertionError(f"wire-whitespace helper drift at U+{codepoint:04X}")
+
+        endpoint = copy.deepcopy(fixtures["model_profile_revise_command"])
+        endpoint["provider"]["endpoint"] = f"https://models.example.test/v1{character}suffix"
+        _expect_failure(lambda endpoint=endpoint: parse_macro_planning(endpoint))
+
+        for model_name in (f"{character}planner-model-1", f"planner-model-1{character}"):
+            model = copy.deepcopy(fixtures["model_profile_revise_command"])
+            model["provider"]["model_name"] = model_name
+            _expect_failure(lambda model=model: parse_macro_planning(model))
+
+        error = copy.deepcopy(fixtures["model_profile_error"])
+        error["message"] = character
+        _expect_failure(lambda error=error: parse_macro_planning(error))
+
+        output = copy.deepcopy(fixtures["project_planner_model_output"])
+        output[output_roles[index % len(output_roles)]] = character
+        _expect_failure(lambda output=output: parse_project_planner_model_output_v1(output))
+
+    matrix = load_strict_json(SCHEMA_DIR / "core-api-method-matrix.v2.json")
+    macro_route_ids = [
+        "model-secret.put",
+        "model-profile.revise",
+        "workspace-plan.select",
+        "project-planning.get",
+        "project-planning.start",
+    ]
+    if matrix.get("macro_planning_routes") != macro_route_ids:
+        raise AssertionError("macro-planning route order drift")
+    routes = {route["route_id"]: route for route in matrix["routes"] if route["route_id"] in macro_route_ids}
+    expected_routes = {
+        "model-secret.put": {
+            "method": "PUT",
+            "path_template": "/api/v2/core/secrets/{secret_id}",
+            "path_identity": ["secret_id"],
+            "request_schema": "model-secret-put-command/v2",
+            "result_schema": "model-secret-put-result/v2",
+            "error_schema": "model-secret-http-error/v2",
+            "success_statuses": [200, 201],
+            "failure_statuses": [
+                {"status": 400, "error_codes": ["malformed_request", "secret_value_rejected"]},
+                {"status": 404, "error_codes": ["unknown_reference"]},
+                {"status": 409, "error_codes": ["duplicate_operation"]},
+            ],
+            "read_only": False,
+            "operation_key_required": True,
+            "cursor_domain": None,
+            "owner": "host",
+        },
+        "model-profile.revise": {
+            "method": "POST",
+            "path_template": "/api/v2/core/model-profiles/{profile_id}/revisions",
+            "path_identity": ["profile_id"],
+            "request_schema": "model-profile-revise-command/v2",
+            "result_schema": "model-profile-revise-result/v2",
+            "error_schema": "model-profile-http-error/v2",
+            "success_statuses": [201],
+            "failure_statuses": [
+                {"status": 400, "error_codes": ["malformed_request", "invalid_secret_reference"]},
+                {"status": 404, "error_codes": ["unknown_reference"]},
+                {"status": 409, "error_codes": ["stale_cas", "duplicate_operation"]},
+            ],
+            "read_only": False,
+            "operation_key_required": True,
+            "cursor_domain": None,
+            "owner": "host",
+        },
+        "workspace-plan.select": {
+            "method": "POST",
+            "path_template": "/api/v2/core/workspaces/{workspace_id}/plans:select",
+            "path_identity": ["workspace_id"],
+            "request_schema": "workspace-plan-selection-command/v2",
+            "result_schema": "workspace-plan-selection-result/v2",
+            "error_schema": "workspace-planning-http-error/v2",
+            "success_statuses": [200],
+            "failure_statuses": [
+                {"status": 400, "error_codes": ["malformed_request"]},
+                {"status": 404, "error_codes": ["unknown_reference"]},
+                {"status": 409, "error_codes": ["stale_cas", "generation_conflict", "duplicate_operation"]},
+            ],
+            "read_only": False,
+            "operation_key_required": True,
+            "cursor_domain": None,
+            "owner": "host",
+        },
+        "project-planning.get": {
+            "method": "GET",
+            "path_template": "/api/v2/core/workspaces/{workspace_id}/project-planning",
+            "path_identity": ["workspace_id"],
+            "request_schema": "project-planning-query/v2",
+            "result_schema": "project-planning-availability-result/v2",
+            "error_schema": "workspace-planning-http-error/v2",
+            "success_statuses": [200],
+            "failure_statuses": [
+                {"status": 400, "error_codes": ["malformed_request"]},
+                {"status": 404, "error_codes": ["unknown_reference", "cross_workspace"]},
+            ],
+            "read_only": True,
+            "operation_key_required": False,
+            "cursor_domain": None,
+            "owner": "host",
+        },
+        "project-planning.start": {
+            "method": "POST",
+            "path_template": "/api/v2/core/workspaces/{workspace_id}/project-planning",
+            "path_identity": ["workspace_id"],
+            "request_schema": "project-planning-start-command/v2",
+            "result_schema": "project-planning-start-result/v2",
+            "error_schema": "workspace-planning-http-error/v2",
+            "success_statuses": [201],
+            "failure_statuses": [
+                {"status": 400, "error_codes": ["malformed_request", "planning_unavailable"]},
+                {"status": 404, "error_codes": ["unknown_reference", "cross_workspace"]},
+                {"status": 409, "error_codes": ["stale_cas", "generation_conflict", "duplicate_operation", "planning_unavailable"]},
+            ],
+            "read_only": False,
+            "operation_key_required": True,
+            "cursor_domain": None,
+            "owner": "host",
+        },
+    }
+    if set(routes) != set(expected_routes):
+        raise AssertionError("macro-planning route set drift")
+    for route_id, route_expected in expected_routes.items():
+        observed = {key: value for key, value in routes[route_id].items() if key != "route_id"}
+        if observed != route_expected:
+            raise AssertionError(f"macro-planning route metadata drift: {route_id}")
+
+    observed_exchange_ids: list[str] = []
+    for exchange in exchanges:
+        route_id = exchange["route_id"]
+        observed_exchange_ids.append(route_id)
+        validate_http_exchange(
+            route_id,
+            exchange["request"],
+            exchange["status"],
+            exchange["response"],
+            path_params=exchange["path_params"],
+        )
+    if observed_exchange_ids != macro_route_ids:
+        raise AssertionError("macro-planning positive exchanges do not cover each route once in order")
+
+    parse_http_response(
+        "model-secret.put",
+        400,
+        fixtures["model_secret_error"],
+        path_params={"secret_id": "provider-main"},
+    )
+    parse_http_response(
+        "model-profile.revise",
+        409,
+        fixtures["model_profile_error"],
+        path_params={"profile_id": "model-profile-planner"},
+    )
+    parse_http_response(
+        "project-planning.start",
+        409,
+        fixtures["workspace_planning_error"],
+        path_params={"workspace_id": "workspace-1"},
+    )
+
+    exchange_by_id = {f"http.{item['route_id']}": item for item in exchanges}
+    corpus_fixtures: dict[str, Any] = dict(fixtures)
+    corpus_fixtures.update(exchange_by_id)
+    corpus_fixtures.update(
+        {
+            "secret_success_exchange": {
+                "command": fixtures["model_secret_put_command"],
+                "response": fixtures["model_secret_put_result"],
+            },
+            "secret_error_exchange": {
+                "command": fixtures["model_secret_put_command"],
+                "response": fixtures["model_secret_error"],
+            },
+            "plan_selection_exchange": {
+                "command": fixtures["workspace_plan_selection_command"],
+                "result": fixtures["workspace_plan_selection_result"],
+            },
+            "planning_start_exchange": {
+                "command": fixtures["project_planning_start_command"],
+                "result": fixtures["project_planning_start_result"],
+            },
+            "http.model-profile.revise.error": {
+                "route_id": "model-profile.revise",
+                "path_params": {"profile_id": "model-profile-planner"},
+                "request": fixtures["model_profile_revise_command"],
+                "status": 409,
+                "response": fixtures["model_profile_error"],
+            },
+        }
+    )
+
+    corpus_root = CORPUS_DIR / "macro-planning-host-v1"
+    corpus_manifest = load_strict_json(corpus_root / "manifest.json")
+    group = load_strict_json(corpus_root / "negative.json")
+    cases = group.get("negative")
+    if (
+        corpus_manifest.get("schema") != "macro-planning-host-corpus-manifest/v1"
+        or corpus_manifest.get("group_ids") != [group.get("group_id")]
+        or corpus_manifest.get("group_count") != 1
+        or not isinstance(cases, list)
+        or corpus_manifest.get("negative_case_count") != len(cases)
+        or len(cases) != 46
+        or corpus_manifest.get("integer_representations")
+        != {
+            "path": "contracts/corpus/macro-planning-host-v1/integer-representations.json",
+            "sha256": integer_vector_source_sha256,
+            "field_count": 8,
+            "vector_count": 34,
+            "accepted_count": 19,
+            "rejected_count": 15,
+        }
+    ):
+        raise AssertionError("macro-planning corpus inventory drift")
+    seen_cases: set[str] = set()
+    brief_authority = {
+        "document_id": "document-project-brief",
+        "revision_id": "revision-project-brief-3",
+        "content_hash": "c" * 64,
+    }
+    for case in cases:
+        case_id = case["case_id"]
+        if case_id in seen_cases:
+            raise AssertionError(f"duplicate macro-planning case: {case_id}")
+        seen_cases.add(case_id)
+        value = _v2_mutate(corpus_fixtures[case["fixture"]], case["mutation"])
+        kind = case["kind"]
+        if kind == "parse":
+            action = lambda value=value: parse_macro_planning(value)
+        elif kind == "secret_exchange":
+            action = lambda value=value: validate_secret_put_exchange(value["command"], value["response"])
+        elif kind == "http_exchange":
+            action = lambda value=value: validate_http_exchange(
+                value["route_id"],
+                value["request"],
+                value["status"],
+                value["response"],
+                path_params=value.get("path_params"),
+            )
+        elif kind == "project_brief_cas":
+            action = lambda value=value: validate_project_planning_start(
+                value,
+                expected_project_brief=brief_authority,
+            )
+        elif kind == "plan_cas":
+            action = lambda value=value: validate_workspace_plan_selection(
+                value,
+                expected_workspace_revision=7,
+                expected_current_plan_revision_id=None,
+                expected_current_plan_revision_hash=None,
+                active_generation_id="generation-planning-1",
+            )
+        elif kind == "plan_exchange":
+            action = lambda value=value: validate_workspace_plan_selection(value["command"], value["result"])
+        elif kind == "model_profile":
+            action = lambda value=value: parse_model_profile_revision_v1(value)
+        elif kind == "runtime_input":
+            action = lambda value=value: parse_project_planner_runtime_input_v2(value)
+        elif kind == "model_output":
+            action = lambda value=value: parse_project_planner_model_output_v1(value)
+        elif kind == "availability":
+            action = lambda value=value: parse_project_planning_v2(value)
+        elif kind == "planning_start_exchange":
+            action = lambda value=value: validate_project_planning_start_exchange(value["command"], value["result"])
+        else:
+            raise AssertionError(f"unknown macro-planning corpus kind: {kind}")
+        _expect_failure(action)
+
+    integer_case_ids = {case["case_id"] for case in cases if case.get("expected") == "json_safe_integer"}
+    whitespace_case_ids = {
+        case["case_id"]
+        for case in cases
+        if case.get("expected") in {"wire_whitespace", "wire_nonblank"}
+    }
+    if integer_case_ids != {
+        "macro-unsafe-profile-revision-number",
+        "macro-unsafe-plan-expected-workspace-revision",
+        "macro-unsafe-plan-workspace-revision-result",
+        "macro-unsafe-planning-start-writer-epoch",
+        "macro-unsafe-runtime-input-writer-epoch",
+    }:
+        raise AssertionError("P0A shared JSON-safe-integer corpus coverage drift")
+    if whitespace_case_ids != {
+        f"macro-wire-whitespace-{surface}-{suffix}"
+        for surface in ("endpoint", "model-name", "error-message")
+        for suffix in ("u0085", "ufeff", "u00a0")
+    } | {
+        "macro-wire-whitespace-output-setting-u0085",
+        "macro-wire-whitespace-output-bible-ufeff",
+        "macro-wire-whitespace-output-outline-u00a0",
+    }:
+        raise AssertionError("P0A shared wire-whitespace corpus coverage drift")
+
+    router = load_strict_json(CORPUS_DIR / "manifest-v2.json")
+    router_records = router.get("files")
+    if (
+        router.get("schema") != "contract-corpus/v2"
+        or router.get("router_self_excluded") is not True
+        or not isinstance(router_records, list)
+        or router.get("file_count_excluding_router") != len(router_records)
+    ):
+        raise AssertionError("versioned corpus router inventory drift")
+    router_paths = [record["path"] for record in router_records]
+    if len(router_paths) != len(set(router_paths)):
+        raise AssertionError("versioned corpus router has duplicate paths")
+    actual_corpus_paths = {
+        path.relative_to(CORPUS_DIR).as_posix()
+        for path in contract_file_paths("v2")
+        if path.is_relative_to(CORPUS_DIR) and path.name != "manifest-v2.json"
+    }
+    if set(router_paths) != actual_corpus_paths:
+        raise AssertionError("versioned corpus router is not the complete additive corpus set")
+    for record in router_records:
+        path = CORPUS_DIR / record["path"]
+        if len(path.read_bytes()) != record["bytes"] or hashlib.sha256(path.read_bytes()).hexdigest() != record["sha256"]:
+            raise AssertionError(f"versioned corpus router hash drift: {record['path']}")
+    if router.get("frozen_v1") != {
+        "manifest": "manifest.json",
+        "sha256": "bcaafab242980366546c34c824256a0396ed370345d70f3e5b1582090a68ce77",
+    }:
+        raise AssertionError("versioned corpus router does not retain frozen v1 identity")
+
+    case_digest = hashlib.sha256(
+        json.dumps(sorted(seen_cases), ensure_ascii=True, separators=(",", ":")).encode("ascii")
+    ).hexdigest()
+    return {
+        "routes": len(routes),
+        "schemas": 6,
+        "fixtures": len(fixtures),
+        "http_exchanges": len(exchanges),
+        "negative_cases": len(seen_cases),
+        "negative_case_digest": case_digest,
+        "safe_integer_boundary_fields": 5,
+        "canonical_integer_fields": 8,
+        "integer_vector_count": len(integer_vector_results),
+        "integer_vector_accepted": sum(result["accepted"] for result in integer_vector_results),
+        "integer_vector_rejected": sum(not result["accepted"] for result in integer_vector_results),
+        "integer_vector_source_sha256": integer_vector_source_sha256,
+        "integer_vector_result_digest": integer_vector_result_digest,
+        "wire_whitespace_codepoints": len(expected_wire_whitespace),
+        "representative_whitespace_cases": len(whitespace_case_ids),
+        "corpus_files": len(router_records),
+        "model_profile_revision_hash": profile["revision_hash"],
+        "planner_runtime_input_hash": runtime_input["input_hash"],
     }
 
 
@@ -1561,6 +2252,17 @@ def verify_positive_fixtures() -> dict[str, Any]:
 
 
 def verify_corpus() -> dict[str, Any]:
+    generator = ROOT / "tools" / "integration" / "generate_corpus.py"
+    check = subprocess.run(
+        [sys.executable, str(generator), "--check"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if check.returncode:
+        raise AssertionError(check.stdout + check.stderr)
     path_corpus = load_strict_json(CORPUS_DIR / "paths" / "windows-paths.json")
     for path in path_corpus["valid"]:
         normalize_relative_path(path)
@@ -1576,7 +2278,7 @@ def verify_corpus() -> dict[str, Any]:
     raw = bytes.fromhex(history["raw_asset_bytes_hex"])
     if hashlib.sha256(raw).hexdigest() != history["raw_sha256"]:
         raise AssertionError("history fixture raw hash mismatch")
-    return {"path_valid": len(path_corpus["valid"]), "path_invalid": len(path_corpus["invalid"]), "compatibility_invalid": len(load_strict_json(CORPUS_DIR / "compatibility" / "invalid.json")), "history": "raw-bytes-preserved"}
+    return {"path_valid": len(path_corpus["valid"]), "path_invalid": len(path_corpus["invalid"]), "compatibility_invalid": len(load_strict_json(CORPUS_DIR / "compatibility" / "invalid.json")), "history": "raw-bytes-preserved", "generator_check": check.stdout.strip()}
 
 
 def verify_negative_groups() -> dict[str, Any]:
@@ -3687,6 +4389,7 @@ def verify_all() -> dict[str, Any]:
         "schemas": verify_schemas(),
         "prompt_skill_rpc_v2": verify_prompt_skill_rpc_v2(),
         "v2_public_surface": verify_v2_public_surface(),
+        "macro_planning_host": verify_macro_planning_host(),
         "goldens": verify_goldens(),
         "positive": verify_positive_fixtures(),
         "corpus": verify_corpus(),

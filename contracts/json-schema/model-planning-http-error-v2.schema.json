@@ -1,0 +1,169 @@
+{
+  "$id": "https://plotpilot.local/contracts/model-planning-http-error-v2",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "additionalProperties": false,
+      "properties": {
+        "error_code": {
+          "enum": [
+            "malformed_request",
+            "unknown_reference",
+            "cross_workspace",
+            "stale_cas",
+            "duplicate_operation",
+            "invalid_secret_reference",
+            "secret_value_rejected",
+            "generation_conflict",
+            "planning_unavailable"
+          ]
+        },
+        "message": {
+          "minLength": 1,
+          "pattern": "[^\\u0009-\\u000D\\u001C-\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF]",
+          "type": "string"
+        },
+        "operation_key": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "schema": {
+          "const": "model-secret-http-error/v2"
+        },
+        "secret_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "secret_id",
+        "error_code",
+        "message",
+        "retryable",
+        "operation_key"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "error_code": {
+          "enum": [
+            "malformed_request",
+            "unknown_reference",
+            "cross_workspace",
+            "stale_cas",
+            "duplicate_operation",
+            "invalid_secret_reference",
+            "secret_value_rejected",
+            "generation_conflict",
+            "planning_unavailable"
+          ]
+        },
+        "message": {
+          "minLength": 1,
+          "pattern": "[^\\u0009-\\u000D\\u001C-\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF]",
+          "type": "string"
+        },
+        "operation_key": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "profile_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "schema": {
+          "const": "model-profile-http-error/v2"
+        }
+      },
+      "required": [
+        "schema",
+        "profile_id",
+        "error_code",
+        "message",
+        "retryable",
+        "operation_key"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "error_code": {
+          "enum": [
+            "malformed_request",
+            "unknown_reference",
+            "cross_workspace",
+            "stale_cas",
+            "duplicate_operation",
+            "invalid_secret_reference",
+            "secret_value_rejected",
+            "generation_conflict",
+            "planning_unavailable"
+          ]
+        },
+        "message": {
+          "minLength": 1,
+          "pattern": "[^\\u0009-\\u000D\\u001C-\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF]",
+          "type": "string"
+        },
+        "operation_key": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "schema": {
+          "const": "workspace-planning-http-error/v2"
+        },
+        "workspace_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "workspace_id",
+        "error_code",
+        "message",
+        "retryable",
+        "operation_key"
+      ],
+      "type": "object"
+    }
+  ],
+  "title": "PlotPilot model-planning-http-error-v2",
+  "unevaluatedProperties": false
+}

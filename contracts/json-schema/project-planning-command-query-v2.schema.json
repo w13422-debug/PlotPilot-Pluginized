@@ -1,0 +1,161 @@
+{
+  "$id": "https://plotpilot.local/contracts/project-planning-command-query-v2",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "project-planning-query/v2"
+        },
+        "workspace_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "workspace_id"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "available": {
+          "type": "boolean"
+        },
+        "reason": {
+          "enum": [
+            "ready",
+            "project_brief_missing",
+            "planner_package_missing",
+            "active_generation_missing",
+            "workspace_plan_missing",
+            "model_profile_missing",
+            "provider_unavailable",
+            "prompt_skill_unavailable"
+          ]
+        },
+        "schema": {
+          "const": "project-planning-availability-result/v2"
+        },
+        "workspace_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "workspace_id",
+        "available",
+        "reason"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "expected_project_brief": {
+          "additionalProperties": false,
+          "properties": {
+            "content_hash": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "revision_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "revision_id",
+            "content_hash"
+          ],
+          "type": "object"
+        },
+        "operation_key": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "project_brief_document_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "requested_mode": {
+          "const": "plugin"
+        },
+        "schema": {
+          "const": "project-planning-start-command/v2"
+        },
+        "workspace_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "operation_key",
+        "workspace_id",
+        "requested_mode",
+        "project_brief_document_id",
+        "expected_project_brief"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "idempotent": {
+          "type": "boolean"
+        },
+        "job_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "operation_key": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "run_snapshot_asset_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "run_snapshot_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "run_snapshot_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "schema": {
+          "const": "project-planning-start-result/v2"
+        },
+        "workspace_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "writer_epoch": {
+          "maximum": 9007199254740991,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "schema",
+        "operation_key",
+        "workspace_id",
+        "job_id",
+        "run_snapshot_id",
+        "run_snapshot_asset_id",
+        "run_snapshot_hash",
+        "writer_epoch",
+        "idempotent"
+      ],
+      "type": "object"
+    }
+  ],
+  "title": "PlotPilot project-planning-command-query-v2",
+  "unevaluatedProperties": false
+}
