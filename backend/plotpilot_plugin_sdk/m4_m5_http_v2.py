@@ -28,6 +28,13 @@ from .core_api_v2 import (
     validate_plugin_lifecycle_v2,
     validate_publication_v2,
 )
+from .macro_planning_v2 import (
+    parse_macro_planning,
+    validate_model_profile_revision_exchange,
+    validate_project_planning_start_exchange,
+    validate_secret_put_exchange,
+    validate_workspace_plan_selection,
+)
 
 
 CORE_API_MATRIX_V2 = __import__("json").loads(
@@ -35,6 +42,15 @@ CORE_API_MATRIX_V2 = __import__("json").loads(
 )
 _PLACEHOLDER = re.compile(r"\{([^{}]+)\}")
 _ROUTES = {route["route_id"]: route for route in CORE_API_MATRIX_V2["routes"]}
+_MACRO_ROUTE_IDS = frozenset(
+    {
+        "model-secret.put",
+        "model-profile.revise",
+        "workspace-plan.select",
+        "project-planning.get",
+        "project-planning.start",
+    }
+)
 
 
 def _fail(message: str) -> None:
@@ -50,6 +66,22 @@ def route_for(route_id: str) -> dict[str, Any]:
 
 def _parse_payload(value: Mapping[str, Any]) -> dict[str, Any]:
     schema = value.get("schema")
+    if schema in {
+        "model-secret-put-command/v2",
+        "model-secret-put-result/v2",
+        "model-profile-revise-command/v2",
+        "model-profile-revise-result/v2",
+        "workspace-plan-selection-command/v2",
+        "workspace-plan-selection-result/v2",
+        "model-secret-http-error/v2",
+        "model-profile-http-error/v2",
+        "workspace-planning-http-error/v2",
+        "project-planning-query/v2",
+        "project-planning-availability-result/v2",
+        "project-planning-start-command/v2",
+        "project-planning-start-result/v2",
+    }:
+        return parse_macro_planning(value)
     if schema == "story-state-projection-input/v2":
         return parse_story_state_projection_input_v2(value)
     if schema == "candidate-list-query/v2" or schema == "candidate-list-result/v2" or schema == "candidate-get-query/v2" or schema == "candidate-get-result/v2" or schema == "candidate-preview-query/v2" or schema == "candidate-preview-result/v2" or schema == "candidate/v2":
@@ -118,7 +150,60 @@ def _validate_plugin_discovery_cursor(parsed: Mapping[str, Any]) -> None:
         _cursor(parsed["next_cursor"], "core")
 
 
-def parse_http_request(route_id: str, request: Mapping[str, Any]) -> dict[str, Any]:
+def _trusted_path_params(
+    route_id: str,
+    route: Mapping[str, Any],
+    path_params: Mapping[str, str] | None,
+) -> dict[str, str] | None:
+    required = route_id in _MACRO_ROUTE_IDS
+    if path_params is None:
+        if required:
+            _fail(f"{route_id} requires trusted parsed path_params")
+        return None
+    if not isinstance(path_params, Mapping):
+        _fail("path_params must be an object")
+    expected_names = list(route.get("path_identity", []))
+    if set(path_params) != set(expected_names) or len(path_params) != len(expected_names):
+        _fail(f"path_params are not the exact identity set for {route_id}")
+    trusted: dict[str, str] = {}
+    for name in expected_names:
+        value = path_params.get(name)
+        if not isinstance(value, str) or not value:
+            _fail(f"path_params {name} must be a non-empty string")
+        trusted[name] = value
+    return trusted
+
+
+def _bind_trusted_path(
+    route_id: str,
+    parsed: Mapping[str, Any],
+    path_params: Mapping[str, str] | None,
+    *,
+    direction: str,
+) -> None:
+    if path_params is None:
+        return
+    for name, trusted_value in path_params.items():
+        represented = _response_bound_id(parsed, name)
+        if represented != trusted_value:
+            _fail(f"{route_id} {direction} {name} does not match trusted path_params")
+
+
+def _request_identity_bytes(
+    request: Mapping[str, Any],
+    path_params: Mapping[str, str] | None,
+) -> bytes:
+    if path_params is None:
+        return canonical_bytes(request)
+    return canonical_bytes({"path_params": dict(path_params), "request": dict(request)})
+
+
+def parse_http_request(
+    route_id: str,
+    request: Mapping[str, Any],
+    *,
+    path_params: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
     route = _ROUTES.get(route_id)
     if route is None:
         _fail(f"unknown route: {route_id}")
@@ -126,6 +211,7 @@ def parse_http_request(route_id: str, request: Mapping[str, Any]) -> dict[str, A
         _fail("request must be an object")
     if request.get("schema") != route["request_schema"]:
         _fail(f"request schema is not bound to {route_id}")
+    trusted_path = _trusted_path_params(route_id, route, path_params)
     for placeholder in _PLACEHOLDER.findall(route["path_template"]):
         value = request.get(placeholder)
         if not isinstance(value, str) or not value:
@@ -133,6 +219,7 @@ def parse_http_request(route_id: str, request: Mapping[str, Any]) -> dict[str, A
     if route.get("operation_key_required") and _operation_key(request) is None:
         _fail(f"{route_id} requires an operation key")
     parsed = _parse_payload(request)
+    _bind_trusted_path(route_id, parsed, trusted_path, direction="request")
     _validate_route_variant(route, parsed)
     _validate_plugin_discovery_cursor(parsed)
     if parsed.get("schema") == "plugin-lifecycle-command/v2":
@@ -149,13 +236,21 @@ def parse_http_request(route_id: str, request: Mapping[str, Any]) -> dict[str, A
     return parsed
 
 
-def parse_http_response(route_id: str, status: int, response: Mapping[str, Any]) -> dict[str, Any]:
+def parse_http_response(
+    route_id: str,
+    status: int,
+    response: Mapping[str, Any],
+    *,
+    path_params: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
     route = _ROUTES.get(route_id)
     if route is None:
         _fail(f"unknown route: {route_id}")
     if not isinstance(status, int) or isinstance(status, bool):
         _fail("status must be an integer")
+    trusted_path = _trusted_path_params(route_id, route, path_params)
     parsed = _parse_payload(response)
+    _bind_trusted_path(route_id, parsed, trusted_path, direction="response")
     _validate_route_variant(route, parsed)
     _validate_plugin_discovery_cursor(parsed)
     if status in route["success_statuses"]:
@@ -206,7 +301,7 @@ def _validate_exchange_binding(
     if "workspace_id" in request and "workspace_id" in response and response["workspace_id"] != request["workspace_id"]:
         _fail(f"{route_id} response crosses Workspace identity")
 
-    for field_name in ("candidate_id", "job_id", "plugin_id"):
+    for field_name in ("candidate_id", "job_id", "plugin_id", "profile_id", "secret_id"):
         request_value = request.get(field_name)
         if request_value is None:
             continue
@@ -248,6 +343,15 @@ def _validate_exchange_binding(
             expected_workspace_id=request.get("workspace_id"),
         )
 
+    if route_id == "model-secret.put":
+        validate_secret_put_exchange(request, response)
+    elif route_id == "model-profile.revise" and status in route["success_statuses"]:
+        validate_model_profile_revision_exchange(request, response)
+    elif route_id == "workspace-plan.select" and status in route["success_statuses"]:
+        validate_workspace_plan_selection(request, response)
+    elif route_id == "project-planning.start" and status in route["success_statuses"]:
+        validate_project_planning_start_exchange(request, response)
+
 
 def validate_http_exchange(
     route_id: str,
@@ -256,11 +360,12 @@ def validate_http_exchange(
     response: Mapping[str, Any],
     *,
     candidate: Mapping[str, Any] | None = None,
+    path_params: Mapping[str, str] | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Validate and bind a complete v2 HTTP exchange."""
 
-    parsed_request = parse_http_request(route_id, request)
-    parsed_response = parse_http_response(route_id, status, response)
+    parsed_request = parse_http_request(route_id, request, path_params=path_params)
+    parsed_response = parse_http_response(route_id, status, response, path_params=path_params)
     route = _ROUTES[route_id]
     _validate_exchange_binding(route_id, route, parsed_request, status, parsed_response, candidate=candidate)
     return parsed_request, parsed_response
@@ -284,13 +389,21 @@ class OperationKeyLedgerV2:
         response: Mapping[str, Any],
         *,
         candidate: Mapping[str, Any] | None = None,
+        path_params: Mapping[str, str] | None = None,
     ) -> tuple[int, dict[str, Any], bool]:
-        parsed_request, parsed_response = validate_http_exchange(route_id, request, status, response, candidate=candidate)
+        parsed_request, parsed_response = validate_http_exchange(
+            route_id,
+            request,
+            status,
+            response,
+            candidate=candidate,
+            path_params=path_params,
+        )
         operation_key = _operation_key(parsed_request)
         if operation_key is None:
             _fail("operation replay requires an operation key")
         identity = (route_id, operation_key)
-        payload = canonical_bytes(parsed_request)
+        payload = _request_identity_bytes(parsed_request, path_params)
         existing = self._entries.get(identity)
         if existing is not None:
             if existing[0] != payload:
@@ -301,12 +414,18 @@ class OperationKeyLedgerV2:
         self._entries[identity] = (payload, status, copy.deepcopy(parsed_response))
         return status, copy.deepcopy(parsed_response), False
 
-    def replay(self, route_id: str, request: Mapping[str, Any]) -> tuple[int, dict[str, Any], bool]:
-        parsed_request = parse_http_request(route_id, request)
+    def replay(
+        self,
+        route_id: str,
+        request: Mapping[str, Any],
+        *,
+        path_params: Mapping[str, str] | None = None,
+    ) -> tuple[int, dict[str, Any], bool]:
+        parsed_request = parse_http_request(route_id, request, path_params=path_params)
         operation_key = _operation_key(parsed_request)
         if operation_key is None or (route_id, operation_key) not in self._entries:
             _fail("operation key has no recorded response")
-        payload = canonical_bytes(parsed_request)
+        payload = _request_identity_bytes(parsed_request, path_params)
         expected, status, response = self._entries[(route_id, operation_key)]
         if expected != payload:
             _fail("same operation key was reused with a different payload")
@@ -327,17 +446,31 @@ class HttpSSEFixtureV2:
         response: Mapping[str, Any],
         *,
         candidate: Mapping[str, Any] | None = None,
+        path_params: Mapping[str, str] | None = None,
     ) -> None:
-        parsed_request, parsed_response = validate_http_exchange(route_id, request, status, response, candidate=candidate)
-        request_bytes = canonical_bytes(parsed_request)
+        parsed_request, parsed_response = validate_http_exchange(
+            route_id,
+            request,
+            status,
+            response,
+            candidate=candidate,
+            path_params=path_params,
+        )
+        request_bytes = _request_identity_bytes(parsed_request, path_params)
         entries = self.exchanges.setdefault(route_id, [])
         if any(item[0] == request_bytes for item in entries):
             _fail(f"duplicate frozen request: {route_id}")
         entries.append((request_bytes, status, parsed_response))
 
-    def request(self, route_id: str, request: Mapping[str, Any]) -> tuple[int, dict[str, Any]]:
-        parsed = parse_http_request(route_id, request)
-        request_bytes = canonical_bytes(parsed)
+    def request(
+        self,
+        route_id: str,
+        request: Mapping[str, Any],
+        *,
+        path_params: Mapping[str, str] | None = None,
+    ) -> tuple[int, dict[str, Any]]:
+        parsed = parse_http_request(route_id, request, path_params=path_params)
+        request_bytes = _request_identity_bytes(parsed, path_params)
         for expected, status, response in self.exchanges.get(route_id, []):
             if expected == request_bytes:
                 return status, copy.deepcopy(response)

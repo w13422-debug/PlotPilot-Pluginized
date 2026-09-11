@@ -1137,10 +1137,436 @@ V2_ENTITY_KIND = enum("document", "node_structure", "relation_set")
 # Candidate records and therefore must not be representable on the public
 # Candidate query/review surface.
 V2_CANDIDATE_STATUS = enum("complete", "partial")
+JSON_MAX_SAFE_INTEGER = 9_007_199_254_740_991
+JSON_SAFE_POS_INT = {
+    "type": "integer",
+    "minimum": 1,
+    "maximum": JSON_MAX_SAFE_INTEGER,
+}
+JSON_SAFE_NONNEG_INT = {
+    "type": "integer",
+    "minimum": 0,
+    "maximum": JSON_MAX_SAFE_INTEGER,
+}
+WIRE_WHITESPACE_CODEPOINT_CLASS = (
+    r"\u0009-\u000D"
+    r"\u001C-\u0020"
+    r"\u0085"
+    r"\u00A0"
+    r"\u1680"
+    r"\u2000-\u200A"
+    r"\u2028"
+    r"\u2029"
+    r"\u202F"
+    r"\u205F"
+    r"\u3000"
+    r"\uFEFF"
+)
+WIRE_ANY_CODEPOINT = r"(?:.|\u000A|\u000D|\u2028|\u2029)"
+MODEL_NAME_INTERIOR_CODEPOINT = r"[^\u000A\u000D\u2028\u2029]"
+HOST_SECRET_ID = {
+    "type": "string",
+    "minLength": 1,
+    "maxLength": 128,
+    "pattern": r"^[A-Za-z0-9][A-Za-z0-9._~-]{0,127}$",
+}
+HOST_SECRET_REF = {
+    "type": "string",
+    "minLength": 10,
+    "maxLength": 512,
+    "pattern": r"^secret://[A-Za-z0-9](?:[A-Za-z0-9._~-]{0,127})(?:/[A-Za-z0-9](?:[A-Za-z0-9._~-]{0,127}))*$",
+}
+MODEL_ENDPOINT = {
+    "type": "string",
+    "minLength": 1,
+    "maxLength": 2048,
+    "pattern": rf"^https?://[^{WIRE_WHITESPACE_CODEPOINT_CLASS}?#]+(?:/[^{WIRE_WHITESPACE_CODEPOINT_CLASS}?#]*)?(?!{WIRE_ANY_CODEPOINT})",
+}
+MODEL_NAME = {
+    "type": "string",
+    "minLength": 1,
+    "maxLength": 256,
+    "pattern": rf"^[^{WIRE_WHITESPACE_CODEPOINT_CLASS}](?:{MODEL_NAME_INTERIOR_CODEPOINT}*[^{WIRE_WHITESPACE_CODEPOINT_CLASS}])?(?!{WIRE_ANY_CODEPOINT})",
+}
+NONBLANK = {
+    "type": "string",
+    "minLength": 1,
+    "pattern": rf"[^{WIRE_WHITESPACE_CODEPOINT_CLASS}]",
+}
 
 
 def v2_union(*branches: dict[str, Any]) -> dict[str, Any]:
     return {"oneOf": list(branches), "unevaluatedProperties": False}
+
+
+def model_options() -> dict[str, Any]:
+    """Closed provider-neutral generation options frozen by a profile revision."""
+
+    return obj(
+        {
+            "temperature": {"type": "number", "minimum": 0, "maximum": 2},
+            "top_p": {"type": "number", "minimum": 0, "maximum": 1},
+            "max_output_tokens": {"type": "integer", "minimum": 1, "maximum": 10_000_000},
+            "timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 86_400},
+            "max_retries": {"type": "integer", "minimum": 0, "maximum": 16},
+        },
+        ("temperature", "top_p", "max_output_tokens", "timeout_seconds", "max_retries"),
+    )
+
+
+def model_provider_profile() -> dict[str, Any]:
+    return obj(
+        {
+            "plugin_id": ID,
+            "release_id": HASH,
+            "endpoint": MODEL_ENDPOINT,
+            "model_name": MODEL_NAME,
+            "options": model_options(),
+            "api_key_ref": HOST_SECRET_REF,
+        },
+        ("plugin_id", "release_id", "endpoint", "model_name", "options", "api_key_ref"),
+    )
+
+
+def model_profile_revision() -> dict[str, Any]:
+    return obj(
+        {
+            "schema": const("model-profile-revision/v1"),
+            "profile_id": ID,
+            "revision_id": ID,
+            "revision_number": JSON_SAFE_POS_INT,
+            "parent_revision_id": nullable(ID),
+            "provider": model_provider_profile(),
+            "created_at": UTC,
+            "revision_hash": HASH,
+        },
+        (
+            "schema",
+            "profile_id",
+            "revision_id",
+            "revision_number",
+            "parent_revision_id",
+            "provider",
+            "created_at",
+            "revision_hash",
+        ),
+    )
+
+
+def model_config_schemas() -> dict[str, dict[str, Any]]:
+    secret_command = obj(
+        {
+            "schema": const("model-secret-put-command/v2"),
+            "operation_key": ID,
+            "secret_id": HOST_SECRET_ID,
+            "value": {"type": "string", "minLength": 1, "maxLength": 65_536},
+        },
+        ("schema", "operation_key", "secret_id", "value"),
+    )
+    secret_result = obj(
+        {
+            "schema": const("model-secret-put-result/v2"),
+            "operation_key": ID,
+            "secret_id": HOST_SECRET_ID,
+            "api_key_ref": HOST_SECRET_REF,
+            "created": BOOL,
+            "idempotent": BOOL,
+        },
+        ("schema", "operation_key", "secret_id", "api_key_ref", "created", "idempotent"),
+    )
+    profile_command = obj(
+        {
+            "schema": const("model-profile-revise-command/v2"),
+            "operation_key": ID,
+            "profile_id": ID,
+            "expected_parent_revision_id": nullable(ID),
+            "provider": model_provider_profile(),
+        },
+        ("schema", "operation_key", "profile_id", "expected_parent_revision_id", "provider"),
+    )
+    profile_result = obj(
+        {
+            "schema": const("model-profile-revise-result/v2"),
+            "operation_key": ID,
+            "profile_id": ID,
+            "revision": model_profile_revision(),
+            "idempotent": BOOL,
+        },
+        ("schema", "operation_key", "profile_id", "revision", "idempotent"),
+    )
+    plan_command = obj(
+        {
+            "schema": const("workspace-plan-selection-command/v2"),
+            "operation_key": ID,
+            "workspace_id": ID,
+            "expected_workspace_revision": JSON_SAFE_NONNEG_INT,
+            "expected_current_plan_revision_id": nullable(ID),
+            "expected_current_plan_revision_hash": nullable(HASH),
+            "selection_mode": const("explicit"),
+            "plan_revision_id": ID,
+            "plan_revision_hash": HASH,
+            "model_profile_revision_id": ID,
+            "model_profile_revision_hash": HASH,
+            "expected_active_generation_id": ID,
+        },
+        (
+            "schema",
+            "operation_key",
+            "workspace_id",
+            "expected_workspace_revision",
+            "expected_current_plan_revision_id",
+            "expected_current_plan_revision_hash",
+            "selection_mode",
+            "plan_revision_id",
+            "plan_revision_hash",
+            "model_profile_revision_id",
+            "model_profile_revision_hash",
+            "expected_active_generation_id",
+        ),
+    )
+    plan_result = obj(
+        {
+            "schema": const("workspace-plan-selection-result/v2"),
+            "operation_key": ID,
+            "workspace_id": ID,
+            "workspace_revision": JSON_SAFE_POS_INT,
+            "previous_plan_revision_id": nullable(ID),
+            "previous_plan_revision_hash": nullable(HASH),
+            "selection_mode": const("explicit"),
+            "plan_revision_id": ID,
+            "plan_revision_hash": HASH,
+            "model_profile_revision_id": ID,
+            "model_profile_revision_hash": HASH,
+            "active_generation_id": ID,
+            "idempotent": BOOL,
+        },
+        (
+            "schema",
+            "operation_key",
+            "workspace_id",
+            "workspace_revision",
+            "previous_plan_revision_id",
+            "previous_plan_revision_hash",
+            "selection_mode",
+            "plan_revision_id",
+            "plan_revision_hash",
+            "model_profile_revision_id",
+            "model_profile_revision_hash",
+            "active_generation_id",
+            "idempotent",
+        ),
+    )
+    return {
+        "model-config-command-query-v2": v2_union(
+            secret_command,
+            secret_result,
+            profile_command,
+            profile_result,
+            plan_command,
+            plan_result,
+        ),
+        "model-profile-revision-v1": model_profile_revision(),
+    }
+
+
+def model_planning_http_error_schemas() -> dict[str, dict[str, Any]]:
+    codes = enum(
+        "malformed_request",
+        "unknown_reference",
+        "cross_workspace",
+        "stale_cas",
+        "duplicate_operation",
+        "invalid_secret_reference",
+        "secret_value_rejected",
+        "generation_conflict",
+        "planning_unavailable",
+    )
+
+    def error(discriminator: str, identity_name: str, identity_schema: dict[str, Any]) -> dict[str, Any]:
+        return obj(
+            {
+                "schema": const(discriminator),
+                identity_name: identity_schema,
+                "error_code": codes,
+                "message": NONBLANK,
+                "retryable": BOOL,
+                "operation_key": nullable(ID),
+            },
+            ("schema", identity_name, "error_code", "message", "retryable", "operation_key"),
+        )
+
+    return {
+        "model-planning-http-error-v2": v2_union(
+            error("model-secret-http-error/v2", "secret_id", HOST_SECRET_ID),
+            error("model-profile-http-error/v2", "profile_id", ID),
+            error("workspace-planning-http-error/v2", "workspace_id", ID),
+        )
+    }
+
+
+def planning_document_ref() -> dict[str, Any]:
+    return obj(
+        {
+            "workspace_id": ID,
+            "document_id": ID,
+            "revision_id": ID,
+            "content_hash": HASH,
+        },
+        ("workspace_id", "document_id", "revision_id", "content_hash"),
+    )
+
+
+def project_planning_schemas() -> dict[str, dict[str, Any]]:
+    query = obj(
+        {"schema": const("project-planning-query/v2"), "workspace_id": ID},
+        ("schema", "workspace_id"),
+    )
+    availability = obj(
+        {
+            "schema": const("project-planning-availability-result/v2"),
+            "workspace_id": ID,
+            "available": BOOL,
+            "reason": enum(
+                "ready",
+                "project_brief_missing",
+                "planner_package_missing",
+                "active_generation_missing",
+                "workspace_plan_missing",
+                "model_profile_missing",
+                "provider_unavailable",
+                "prompt_skill_unavailable",
+            ),
+        },
+        ("schema", "workspace_id", "available", "reason"),
+    )
+    start = obj(
+        {
+            "schema": const("project-planning-start-command/v2"),
+            "operation_key": ID,
+            "workspace_id": ID,
+            "requested_mode": const("plugin"),
+            "project_brief_document_id": ID,
+            "expected_project_brief": obj(
+                {"revision_id": ID, "content_hash": HASH},
+                ("revision_id", "content_hash"),
+            ),
+        },
+        (
+            "schema",
+            "operation_key",
+            "workspace_id",
+            "requested_mode",
+            "project_brief_document_id",
+            "expected_project_brief",
+        ),
+    )
+    start_result = obj(
+        {
+            "schema": const("project-planning-start-result/v2"),
+            "operation_key": ID,
+            "workspace_id": ID,
+            "job_id": ID,
+            "run_snapshot_id": ID,
+            "run_snapshot_asset_id": ID,
+            "run_snapshot_hash": HASH,
+            "writer_epoch": JSON_SAFE_POS_INT,
+            "idempotent": BOOL,
+        },
+        (
+            "schema",
+            "operation_key",
+            "workspace_id",
+            "job_id",
+            "run_snapshot_id",
+            "run_snapshot_asset_id",
+            "run_snapshot_hash",
+            "writer_epoch",
+            "idempotent",
+        ),
+    )
+    return {
+        "project-planning-command-query-v2": v2_union(
+            query,
+            availability,
+            start,
+            start_result,
+        )
+    }
+
+
+def planner_runtime_input_schemas() -> dict[str, dict[str, Any]]:
+    selection = obj(
+        {
+            "active_generation_id": ID,
+            "plan_revision_id": ID,
+            "plan_revision_hash": HASH,
+            "model_profile_revision_id": ID,
+            "model_profile_revision_hash": HASH,
+            "planner_release_id": HASH,
+            "planner_package_hash": HASH,
+            "planner_settings_revision_id": ID,
+            "prompt_skill_id": ID,
+            "prompt_skill_release_id": HASH,
+            "prompt_skill_package_hash": HASH,
+        },
+        (
+            "active_generation_id",
+            "plan_revision_id",
+            "plan_revision_hash",
+            "model_profile_revision_id",
+            "model_profile_revision_hash",
+            "planner_release_id",
+            "planner_package_hash",
+            "planner_settings_revision_id",
+            "prompt_skill_id",
+            "prompt_skill_release_id",
+            "prompt_skill_package_hash",
+        ),
+    )
+    runtime_input = obj(
+        {
+            "schema": const("project-planner-runtime-input/v2"),
+            "input_id": ID,
+            "workspace_id": ID,
+            "project_brief": planning_document_ref(),
+            "targets": obj(
+                {
+                    "setting": planning_document_ref(),
+                    "bible": planning_document_ref(),
+                    "outline": planning_document_ref(),
+                },
+                ("setting", "bible", "outline"),
+            ),
+            "selection": selection,
+            "writer_epoch": JSON_SAFE_POS_INT,
+            "input_hash": HASH,
+        },
+        (
+            "schema",
+            "input_id",
+            "workspace_id",
+            "project_brief",
+            "targets",
+            "selection",
+            "writer_epoch",
+            "input_hash",
+        ),
+    )
+    return {"project-planner-runtime-input-v2": runtime_input}
+
+
+def planner_model_output_schemas() -> dict[str, dict[str, Any]]:
+    return {
+        "project-planner-model-output-v1": obj(
+            {
+                "schema": const("project-planner-model-output/v1"),
+                "setting": NONBLANK,
+                "bible": NONBLANK,
+                "outline": NONBLANK,
+            },
+            ("schema", "setting", "bible", "outline"),
+        )
+    }
 
 
 def v2_target() -> dict[str, Any]:
@@ -1377,26 +1803,29 @@ def v2_plugin_api_schemas() -> dict[str, dict[str, Any]]:
 
 
 def core_api_method_matrix_v2() -> dict[str, Any]:
-    def route(route_id: str, method: str, path: str, request_schema: str, result_schema: str, *, read_only: bool, operation_key_required: bool, cursor_domain: str | None = None, success_statuses: tuple[int, ...] = (200,), failures: tuple[tuple[int, tuple[str, ...]], ...] = ((400, ("malformed_request",)), (404, ("unknown_reference",)))) -> dict[str, Any]:
+    def route(route_id: str, method: str, path: str, request_schema: str, result_schema: str, *, read_only: bool, operation_key_required: bool, cursor_domain: str | None = None, success_statuses: tuple[int, ...] = (200,), failures: tuple[tuple[int, tuple[str, ...]], ...] = ((400, ("malformed_request",)), (404, ("unknown_reference",))), error_schema: str | None = None, owner: str | None = None) -> dict[str, Any]:
         placeholders = re.findall(r"\{([^{}]+)\}", path)
-        error_schema = {
+        resolved_error_schema = error_schema or {
             "job": "job-http-error/v2",
             "plugin": "plugin-http-error/v2",
         }.get(route_id.split(".", 1)[0], "core-http-error/v2")
-        return {
+        record = {
             "route_id": route_id,
             "method": method,
             "path_template": path,
             "path_identity": placeholders,
             "request_schema": request_schema,
             "result_schema": result_schema,
-            "error_schema": error_schema,
+            "error_schema": resolved_error_schema,
             "success_statuses": list(success_statuses),
             "failure_statuses": [{"status": status, "error_codes": list(codes)} for status, codes in failures],
             "read_only": read_only,
             "operation_key_required": operation_key_required,
             "cursor_domain": cursor_domain,
         }
+        if owner is not None:
+            record["owner"] = owner
+        return record
 
     routes = [
         route("candidate.list", "GET", "/api/v2/core/workspaces/{workspace_id}/candidates", "candidate-list-query/v2", "candidate-list-result/v2", read_only=True, operation_key_required=False, cursor_domain="candidate", failures=((400, ("malformed_request", "cursor_domain_mismatch")), (404, ("unknown_reference",)))),
@@ -1418,6 +1847,11 @@ def core_api_method_matrix_v2() -> dict[str, Any]:
         route("plugin.upgrade", "POST", "/api/v2/plugins/{plugin_id}/upgrade", "plugin-lifecycle-command/v2", "plugin-lifecycle-result/v2", read_only=False, operation_key_required=True, failures=((400, ("malformed_request",)), (404, ("unknown_plugin", "release_missing")), (409, ("generation_conflict", "duplicate_operation")))),
         route("plugin.retire", "POST", "/api/v2/plugins/{plugin_id}/retire", "plugin-lifecycle-command/v2", "plugin-lifecycle-result/v2", read_only=False, operation_key_required=True, failures=((400, ("malformed_request",)), (404, ("unknown_plugin",)), (409, ("pinned_release", "active_job", "retire_failed", "duplicate_operation")))),
         route("plugin.rollback", "POST", "/api/v2/plugins/{plugin_id}/rollback", "plugin-lifecycle-command/v2", "plugin-lifecycle-result/v2", read_only=False, operation_key_required=True, failures=((400, ("malformed_request",)), (404, ("unknown_plugin",)), (409, ("generation_conflict", "rollback_failed", "duplicate_operation")))),
+        route("model-secret.put", "PUT", "/api/v2/core/secrets/{secret_id}", "model-secret-put-command/v2", "model-secret-put-result/v2", read_only=False, operation_key_required=True, success_statuses=(200, 201), failures=((400, ("malformed_request", "secret_value_rejected")), (404, ("unknown_reference",)), (409, ("duplicate_operation",))), error_schema="model-secret-http-error/v2", owner="host"),
+        route("model-profile.revise", "POST", "/api/v2/core/model-profiles/{profile_id}/revisions", "model-profile-revise-command/v2", "model-profile-revise-result/v2", read_only=False, operation_key_required=True, success_statuses=(201,), failures=((400, ("malformed_request", "invalid_secret_reference")), (404, ("unknown_reference",)), (409, ("stale_cas", "duplicate_operation"))), error_schema="model-profile-http-error/v2", owner="host"),
+        route("workspace-plan.select", "POST", "/api/v2/core/workspaces/{workspace_id}/plans:select", "workspace-plan-selection-command/v2", "workspace-plan-selection-result/v2", read_only=False, operation_key_required=True, failures=((400, ("malformed_request",)), (404, ("unknown_reference",)), (409, ("stale_cas", "generation_conflict", "duplicate_operation"))), error_schema="workspace-planning-http-error/v2", owner="host"),
+        route("project-planning.get", "GET", "/api/v2/core/workspaces/{workspace_id}/project-planning", "project-planning-query/v2", "project-planning-availability-result/v2", read_only=True, operation_key_required=False, failures=((400, ("malformed_request",)), (404, ("unknown_reference", "cross_workspace"))), error_schema="workspace-planning-http-error/v2", owner="host"),
+        route("project-planning.start", "POST", "/api/v2/core/workspaces/{workspace_id}/project-planning", "project-planning-start-command/v2", "project-planning-start-result/v2", read_only=False, operation_key_required=True, success_statuses=(201,), failures=((400, ("malformed_request", "planning_unavailable")), (404, ("unknown_reference", "cross_workspace")), (409, ("stale_cas", "generation_conflict", "duplicate_operation", "planning_unavailable"))), error_schema="workspace-planning-http-error/v2", owner="host"),
     ]
     return {
         "schema": "core-api-method-matrix/v2",
@@ -1425,7 +1859,8 @@ def core_api_method_matrix_v2() -> dict[str, Any]:
         "roots": {"core": "/api/v2/core", "jobs": "/api/v2/jobs", "plugins": "/api/v2/plugins"},
         "routes": routes,
         "cursor_domains": {"candidate": "candidate/*", "job": "job/{job_id}/{seq}", "core": "core/{seq}"},
-        "error_codes": ["malformed_request", "unknown_reference", "cross_workspace", "stale_cas", "duplicate_operation", "candidate_not_publishable", "unknown_job", "stale_revision", "cursor_ahead", "cursor_domain_mismatch", "sse_recovery_required", "terminal_job", "invalid_transition", "candidate_not_ready", "unknown_plugin", "release_missing", "generation_conflict", "pinned_release", "active_job", "retire_failed", "rollback_failed", "publication_forbidden"],
+        "error_codes": ["malformed_request", "unknown_reference", "cross_workspace", "stale_cas", "duplicate_operation", "candidate_not_publishable", "unknown_job", "stale_revision", "cursor_ahead", "cursor_domain_mismatch", "sse_recovery_required", "terminal_job", "invalid_transition", "candidate_not_ready", "unknown_plugin", "release_missing", "generation_conflict", "pinned_release", "active_job", "retire_failed", "rollback_failed", "publication_forbidden", "invalid_secret_reference", "secret_value_rejected", "planning_unavailable"],
+        "macro_planning_routes": ["model-secret.put", "model-profile.revise", "workspace-plan.select", "project-planning.get", "project-planning.start"],
         "publication_path": "publication.accept",
         "publication_owner": "core",
         "plugin_publication_allowed": False,
@@ -1458,6 +1893,11 @@ def schema_inventory() -> dict[str, dict[str, Any]]:
         **v2_story_state_projection_schemas(),
         **v2_job_http_schemas(),
         **v2_plugin_api_schemas(),
+        **model_config_schemas(),
+        **model_planning_http_error_schemas(),
+        **project_planning_schemas(),
+        **planner_runtime_input_schemas(),
+        **planner_model_output_schemas(),
         "compatibility-v1": compatibility_schema(),
     }
     return schemas
@@ -1498,10 +1938,15 @@ def write() -> None:
     SCHEMA_DIR.mkdir(parents=True, exist_ok=True)
     rendered = render()
     for relative, data in rendered.items():
-        (SCHEMA_DIR / relative).write_bytes(data)
+        destination = SCHEMA_DIR / relative
+        if not destination.is_file() or destination.read_bytes() != data:
+            destination.write_bytes(data)
     PACKAGE_RESOURCE_DIR.mkdir(parents=True, exist_ok=True)
     for name, source in PACKAGE_RESOURCE_SOURCES.items():
-        (PACKAGE_RESOURCE_DIR / name).write_bytes(source.read_bytes())
+        destination = PACKAGE_RESOURCE_DIR / name
+        data = source.read_bytes()
+        if not destination.is_file() or destination.read_bytes() != data:
+            destination.write_bytes(data)
     print(f"generated {len(rendered)} schema/matrix artifacts and {len(PACKAGE_RESOURCE_SOURCES)} package resources")
 
 

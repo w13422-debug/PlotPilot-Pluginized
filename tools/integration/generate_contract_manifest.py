@@ -9,15 +9,15 @@ from typing import Any
 
 if __package__:
     from .contract_inventory import (
+        contract_file_paths,
         contract_schema_paths,
-        is_v2_contract_path,
         v1_contract_inventory,
         v1_negative_group_paths,
     )
 else:
     from contract_inventory import (
+        contract_file_paths,
         contract_schema_paths,
-        is_v2_contract_path,
         v1_contract_inventory,
         v1_negative_group_paths,
     )
@@ -64,31 +64,17 @@ def relative(path: Path) -> str:
     return path.relative_to(ROOT).as_posix()
 
 
-def _is_v2_path(path: Path) -> bool:
-    """Compatibility wrapper around the single inventory path classifier."""
-
-    return is_v2_contract_path(path)
-
-
 def file_records(*, include_v2: bool = False) -> list[dict[str, Any]]:
-    records: list[dict[str, Any]] = []
-    for root in (CONTRACTS / "json-schema", CONTRACTS / "examples", CONTRACTS / "golden", CONTRACTS / "corpus"):
-        for path in sorted(root.rglob("*")):
-            if path.is_file():
-                if not include_v2 and _is_v2_path(path):
-                    continue
-                records.append({"path": relative(path), "bytes": path.stat().st_size, "sha256": sha256(path)})
-    # This is a checked-in runtime contract rather than a schema/example/golden
-    # or corpus fixture.  Keep the explicit record here so the Unicode identity
-    # rule is content-addressed by the same manifest consumed at runtime.
-    for explicit_contract in (CONTRACTS / "unicode-casefold-v1.json", CONTRACTS / ".gitattributes"):
-        if explicit_contract.is_file():
-            records.append({
-                "path": relative(explicit_contract),
-                "bytes": explicit_contract.stat().st_size,
-                "sha256": sha256(explicit_contract),
-            })
-    return sorted(records, key=lambda item: item["path"].encode("utf-8"))
+    scope = "all" if include_v2 else "v1"
+    paths = contract_file_paths(scope)
+    records = [
+        {"path": relative(path), "bytes": path.stat().st_size, "sha256": sha256(path)}
+        for path in paths
+    ]
+    normalized = [record["path"] for record in records]
+    if len(normalized) != len(set(normalized)):
+        raise ValueError("classified contract file set contains duplicate paths")
+    return records
 
 
 def schema_records(*, include_v2: bool = False) -> list[dict[str, Any]]:
@@ -153,6 +139,33 @@ def prompt_skill_negative_records() -> list[dict[str, Any]]:
     return records
 
 
+def macro_planning_negative_records() -> list[dict[str, Any]]:
+    path = CONTRACTS / "corpus" / "macro-planning-host-v1" / "negative.json"
+    value = json.loads(path.read_text(encoding="utf-8"))
+    return [
+        {
+            "group_id": value["group_id"],
+            "path": relative(path),
+            "sha256": sha256(path),
+            "negative_case_count": len(value["negative"]),
+            "positive_fixture_ids": value["positive"],
+        }
+    ]
+
+
+def macro_planning_integer_representations() -> dict[str, Any]:
+    path = CONTRACTS / "corpus" / "macro-planning-host-v1" / "integer-representations.json"
+    value = json.loads(path.read_text(encoding="utf-8"))
+    return {
+        "path": relative(path),
+        "sha256": sha256(path),
+        "field_count": value["field_count"],
+        "vector_count": value["vector_count"],
+        "accepted_count": value["accepted_count"],
+        "rejected_count": value["rejected_count"],
+    }
+
+
 def golden_vectors() -> dict[str, Any]:
     values: dict[str, Any] = {}
     for name in ("package", "skill", "run-snapshot", "backup", "contract-publication-v1", "core-http-request-failure-v1"):
@@ -177,6 +190,18 @@ def prompt_skill_golden_vectors() -> dict[str, Any]:
     if not expected_path.exists():
         return {}
     return json.loads(expected_path.read_text(encoding="utf-8"))
+
+
+def macro_planning_golden_vectors() -> dict[str, Any]:
+    golden_path = CONTRACTS / "golden" / "macro-planning-host-v1" / "positive.json"
+    value = json.loads(golden_path.read_text(encoding="utf-8"))
+    return {
+        "path": relative(golden_path),
+        "sha256": sha256(golden_path),
+        "fixture_count": value["fixture_count"],
+        "exchange_count": value["exchange_count"],
+        "expected": value["expected"],
+    }
 
 
 def render() -> dict[str, Any]:
@@ -227,19 +252,27 @@ def render_v2() -> dict[str, Any]:
     if len(schemas) != v1_inventory["schema_count"] + len(v2_schemas):
         raise ValueError("v1/v2 schema projection partition drift")
     files = file_records(include_v2=True)
+    v1_files = file_records()
+    classified_v2_files = contract_file_paths("v2")
+    if len(files) != len(v1_files) + len(classified_v2_files):
+        raise ValueError("classified v1/v2 file partition drift")
     v2_groups = v2_negative_records()
     prompt_skill_groups = prompt_skill_negative_records()
+    macro_planning_groups = macro_planning_negative_records()
     prompt_skill_expected = prompt_skill_golden_vectors()
+    macro_planning_expected = macro_planning_golden_vectors()
+    macro_integer_representations = macro_planning_integer_representations()
     v1_manifest_bytes = manifest_bytes(v1)
     return {
         "schema": "plotpilot-contract-manifest/v2",
-        "contract_version": "2.0.0",
+        "contract_version": "2.1.0",
         "source": {
             "formal_design": DESIGN_PATH,
-            "version": "v1.2-plus-adr-044",
+            "version": "v1.2-plus-adr-044-plus-macro-planning-p0a",
             "sha256": DESIGN_SHA256,
             "adr": "docs/contracts/adr-044-m4-m5-public-surface-v2.md",
             "adjudication": "coordination/PPA-00/post-e0/public-surface-adjudication-v2.json",
+            "macro_planning": "docs/contracts/macro-planning-host-v1.md",
         },
         "v1_immutable": {
             "manifest_path": relative(OUTPUT),
@@ -253,14 +286,19 @@ def render_v2() -> dict[str, Any]:
             "v1_schema_count": v1_inventory["schema_count"],
             "v2_schema_count": len(v2_schemas),
             "file_count_excluding_manifest": len(files),
-            "v1_file_count": len(file_records()),
-            "v2_file_count": len(files) - len(file_records()),
+            "v1_file_count": len(v1_files),
+            "v2_file_count": len(classified_v2_files),
             "negative_group_count_v1": len(negative_records()),
             "negative_group_count_v2": len(v2_groups),
             "negative_case_count_v2": sum(item["negative_case_count"] for item in v2_groups),
             "prompt_skill_schema_count": 3,
             "prompt_skill_negative_group_count_v2": len(prompt_skill_groups),
             "prompt_skill_negative_case_count_v2": sum(item["negative_case_count"] for item in prompt_skill_groups),
+            "macro_planning_schema_count": 6,
+            "macro_planning_negative_group_count": len(macro_planning_groups),
+            "macro_planning_negative_case_count": sum(item["negative_case_count"] for item in macro_planning_groups),
+            "macro_planning_integer_field_count": macro_integer_representations["field_count"],
+            "macro_planning_integer_vector_count": macro_integer_representations["vector_count"],
         },
         "contract_families": [
             "candidate/v2",
@@ -269,16 +307,34 @@ def render_v2() -> dict[str, Any]:
             "story-state-projection-input/v2",
             "job-http/v2",
             "plugin-lifecycle/v2",
+            "model-config-command-query/v2",
+            "model-profile-revision/v1",
+            "model-planning-http-error/v2",
+            "project-planning-command-query/v2",
+            "project-planner-runtime-input/v2",
+            "project-planner-model-output/v1",
         ],
         "schemas": schemas,
-        "golden_vectors": {"v1": golden_vectors(), "v2": v2_golden_vectors(), "prompt_skill_v2": prompt_skill_expected},
-        "negative_groups": {"v1": negative_records(), "v2": v2_groups, "prompt_skill_v2": prompt_skill_groups},
+        "golden_vectors": {"v1": golden_vectors(), "v2": v2_golden_vectors(), "prompt_skill_v2": prompt_skill_expected, "macro_planning_host_v1": macro_planning_expected},
+        "negative_groups": {"v1": negative_records(), "v2": v2_groups, "prompt_skill_v2": prompt_skill_groups, "macro_planning_host_v1": macro_planning_groups},
         "prompt_skill_v2": {
             "schema_count": 3,
             "golden": prompt_skill_expected,
             "negative_groups": prompt_skill_groups,
             "negative_group_count": len(prompt_skill_groups),
             "negative_case_count": sum(item["negative_case_count"] for item in prompt_skill_groups),
+        },
+        "macro_planning_host_v1": {
+            "schema_count": 6,
+            "golden": macro_planning_expected,
+            "negative_groups": macro_planning_groups,
+            "negative_group_count": len(macro_planning_groups),
+            "negative_case_count": sum(item["negative_case_count"] for item in macro_planning_groups),
+            "integer_representations": macro_integer_representations,
+            "corpus_router": {
+                "path": "contracts/corpus/manifest-v2.json",
+                "sha256": sha256(CONTRACTS / "corpus" / "manifest-v2.json"),
+            },
         },
         "files": files,
     }

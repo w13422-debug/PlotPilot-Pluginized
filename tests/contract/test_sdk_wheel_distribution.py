@@ -1,6 +1,7 @@
 """Regression coverage for the SDK wheel's verifier schema payload."""
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
@@ -105,20 +106,48 @@ def _venv_python(venv_root: Path) -> Path:
     return venv_root / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 
 
-def _probe_script(expected_schema_names: list[str]) -> str:
+def _probe_script(
+    expected_schema_names: list[str],
+    macro_positive: dict[str, object],
+    integer_vectors: dict[str, object],
+    integer_vector_source_sha256: str,
+) -> str:
     expected = json.dumps(expected_schema_names)
+    macro = json.dumps(macro_positive, separators=(",", ":"))
+    integers = json.dumps(integer_vectors, separators=(",", ":"))
     return textwrap.dedent(
         f"""\
+        import copy
+        import hashlib
         import json
         import sys
         from pathlib import Path
 
         import plotpilot_plugin_sdk
+        from plotpilot_plugin_sdk import (
+            parse_macro_planning,
+            parse_model_profile_revision_v1,
+            parse_project_planner_model_output_v1,
+            parse_project_planner_runtime_input_v2,
+        )
         from plotpilot_plugin_sdk.errors import ContractError, ContractValidationError
+        from plotpilot_plugin_sdk.m4_m5_http_v2 import validate_http_exchange
+        from plotpilot_plugin_sdk.macro_planning_v2 import (
+            JSON_MAX_SAFE_INTEGER,
+            WIRE_WHITESPACE_CODEPOINTS,
+            contains_wire_whitespace,
+            has_non_wire_whitespace_character,
+            is_wire_whitespace_character,
+            model_profile_revision_hash,
+            planner_runtime_input_hash,
+        )
         from plotpilot_plugin_sdk.rpc import build_meta, build_request
         from plotpilot_plugin_sdk.verifier import SCHEMA_DIR, assert_valid, validate_rpc_request, validate_rpc_response
 
         expected = {expected}
+        macro = json.loads({macro!r})
+        integer_vectors = json.loads({integers!r})
+        integer_vector_source_sha256 = {integer_vector_source_sha256!r}
         schema_dir = Path(sys.prefix) / "Lib" / "contracts" / "json-schema"
         assert SCHEMA_DIR == schema_dir, (SCHEMA_DIR, schema_dir)
         actual = sorted(path.name for path in schema_dir.glob("*.json"))
@@ -230,6 +259,165 @@ def _probe_script(expected_schema_names: list[str]) -> str:
         else:
             raise AssertionError("unknown contract ids must fail closed")
 
+        macro_fixtures = macro["fixtures"]
+        for value in macro_fixtures.values():
+            parse_macro_planning(value)
+        parsed_profile = parse_model_profile_revision_v1(
+            macro_fixtures["model_profile_revision"]
+        )
+        parsed_profile["provider"]["model_name"] = "defensive-copy-probe"
+        assert (
+            macro_fixtures["model_profile_revision"]["provider"]["model_name"]
+            == "planner-model-1"
+        )
+        parsed_runtime = parse_project_planner_runtime_input_v2(
+            macro_fixtures["project_planner_runtime_input"]
+        )
+        parsed_runtime["targets"]["setting"]["document_id"] = "defensive-copy-probe"
+        assert (
+            macro_fixtures["project_planner_runtime_input"]["targets"]["setting"]["document_id"]
+            == "document-setting"
+        )
+        parse_project_planner_model_output_v1(
+            macro_fixtures["project_planner_model_output"]
+        )
+
+        assert JSON_MAX_SAFE_INTEGER == 9_007_199_254_740_991
+        maximum_profile = copy.deepcopy(macro_fixtures["model_profile_revision"])
+        maximum_profile["revision_number"] = JSON_MAX_SAFE_INTEGER
+        maximum_profile["parent_revision_id"] = "revision-model-profile-parent-max-safe"
+        maximum_profile["revision_hash"] = model_profile_revision_hash(maximum_profile)
+        parse_model_profile_revision_v1(maximum_profile)
+        unsafe_profile = copy.deepcopy(maximum_profile)
+        unsafe_profile["revision_number"] = JSON_MAX_SAFE_INTEGER + 1
+        _expect_rejected(lambda: model_profile_revision_hash(unsafe_profile))
+
+        maximum_runtime = copy.deepcopy(macro_fixtures["project_planner_runtime_input"])
+        maximum_runtime["writer_epoch"] = JSON_MAX_SAFE_INTEGER
+        maximum_runtime["input_hash"] = planner_runtime_input_hash(maximum_runtime)
+        parse_project_planner_runtime_input_v2(maximum_runtime)
+        unsafe_runtime = copy.deepcopy(maximum_runtime)
+        unsafe_runtime["writer_epoch"] = JSON_MAX_SAFE_INTEGER + 1
+        _expect_rejected(lambda: planner_runtime_input_hash(unsafe_runtime))
+
+        def _set_path(value, path, replacement):
+            target = value
+            for token in path[:-1]:
+                target = target[token]
+            target[path[-1]] = replacement
+
+        def _value_at_path(value, path):
+            current = value
+            for token in path:
+                current = current[token]
+            return current
+
+        assert integer_vectors["schema"] == "macro-planning-integer-representations/v1"
+        assert integer_vectors["field_count"] == 8
+        assert integer_vectors["vector_count"] == 34
+        assert integer_vectors["accepted_count"] == 19
+        assert integer_vectors["rejected_count"] == 15
+        integer_results = []
+        for vector in integer_vectors["vectors"]:
+            value = copy.deepcopy(macro_fixtures[vector["fixture"]])
+            _set_path(value, vector["path"], json.loads(vector["raw_token"]))
+            accepted = False
+            normalized = None
+            canonical_hash = None
+            try:
+                if vector["fixture"] == "model_profile_revision":
+                    before_hash = copy.deepcopy(value)
+                    canonical_hash = model_profile_revision_hash(value)
+                    assert value == before_hash
+                    value["revision_hash"] = canonical_hash
+                elif vector["fixture"] == "model_profile_revise_result":
+                    before_hash = copy.deepcopy(value["revision"])
+                    canonical_hash = model_profile_revision_hash(value["revision"])
+                    assert value["revision"] == before_hash
+                    value["revision"]["revision_hash"] = canonical_hash
+                elif vector["fixture"] == "project_planner_runtime_input":
+                    before_hash = copy.deepcopy(value)
+                    canonical_hash = planner_runtime_input_hash(value)
+                    assert value == before_hash
+                    value["input_hash"] = canonical_hash
+                before_parse = copy.deepcopy(value)
+                parsed = parse_macro_planning(value)
+                assert value == before_parse
+                normalized = _value_at_path(parsed, vector["path"])
+                accepted = True
+            except ContractError:
+                pass
+            assert accepted is (vector["expected"] == "accept"), vector["case_id"]
+            if accepted:
+                assert type(normalized) is int, vector["case_id"]
+                assert normalized == vector["normalized"], vector["case_id"]
+            integer_results.append(
+                {{
+                    "case_id": vector["case_id"],
+                    "field_id": vector["field_id"],
+                    "raw_token": vector["raw_token"],
+                    "accepted": accepted,
+                    "normalized": normalized,
+                    "canonical_hash": canonical_hash,
+                }}
+            )
+        integer_vector_result_digest = hashlib.sha256(
+            json.dumps(
+                integer_results,
+                ensure_ascii=True,
+                separators=(",", ":"),
+            ).encode("ascii")
+        ).hexdigest()
+        assert integer_vector_result_digest == "d4cfe7ec27c052badd2f67723fa5a4123becd60b6c1be11ce37b07b58f00f13d"
+
+        expected_wire_whitespace = tuple(
+            [*range(0x0009, 0x000E)]
+            + [*range(0x001C, 0x0021)]
+            + [
+                0x0085,
+                0x00A0,
+                0x1680,
+                *range(0x2000, 0x200B),
+                0x2028,
+                0x2029,
+                0x202F,
+                0x205F,
+                0x3000,
+                0xFEFF,
+            ]
+        )
+        assert WIRE_WHITESPACE_CODEPOINTS == expected_wire_whitespace
+        assert len(expected_wire_whitespace) == 30
+        for codepoint in expected_wire_whitespace:
+            character = chr(codepoint)
+            assert is_wire_whitespace_character(character)
+            assert contains_wire_whitespace("left" + character + "right")
+            assert not has_non_wire_whitespace_character(character)
+
+        for index, codepoint in enumerate((0x0085, 0xFEFF, 0x00A0)):
+            character = chr(codepoint)
+            endpoint = copy.deepcopy(macro_fixtures["model_profile_revise_command"])
+            endpoint["provider"]["endpoint"] += character + "suffix"
+            _expect_rejected(lambda endpoint=endpoint: parse_macro_planning(endpoint))
+            model_name = copy.deepcopy(macro_fixtures["model_profile_revise_command"])
+            model_name["provider"]["model_name"] = character + "planner-model-1"
+            _expect_rejected(lambda model_name=model_name: parse_macro_planning(model_name))
+            error = copy.deepcopy(macro_fixtures["model_profile_error"])
+            error["message"] = character
+            _expect_rejected(lambda error=error: parse_macro_planning(error))
+            output = copy.deepcopy(macro_fixtures["project_planner_model_output"])
+            output[("setting", "bible", "outline")[index]] = character
+            _expect_rejected(lambda output=output: parse_project_planner_model_output_v1(output))
+
+        for exchange in macro["exchanges"]:
+            validate_http_exchange(
+                exchange["route_id"],
+                exchange["request"],
+                exchange["status"],
+                exchange["response"],
+                path_params=exchange["path_params"],
+            )
+
         print(
             json.dumps(
                 {{
@@ -237,6 +425,13 @@ def _probe_script(expected_schema_names: list[str]) -> str:
                     "schema_dir": str(schema_dir),
                     "schema_names": actual,
                     "validated_job_methods": validated_job_methods,
+                    "macro_fixture_count": len(macro_fixtures),
+                    "macro_routes": [item["route_id"] for item in macro["exchanges"]],
+                    "macro_json_max_safe_integer": JSON_MAX_SAFE_INTEGER,
+                    "macro_integer_vector_count": len(integer_results),
+                    "macro_integer_vector_source_sha256": integer_vector_source_sha256,
+                    "macro_integer_vector_result_digest": integer_vector_result_digest,
+                    "macro_wire_whitespace_codepoints": len(WIRE_WHITESPACE_CODEPOINTS),
                 }},
                 sort_keys=True,
             )
@@ -249,6 +444,24 @@ def test_real_sdk_wheel_installs_authoritative_verifier_schemas() -> None:
     """Build, inspect, install, and execute the actual 0.1.2 SDK distribution."""
     expected_schema_names = sorted(path.name for path in AUTHORITATIVE_SCHEMA_DIR.glob("*.json"))
     assert expected_schema_names
+    macro_positive = json.loads(
+        (ROOT / "contracts" / "golden" / "macro-planning-host-v1" / "positive.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    integer_vector_path = (
+        ROOT
+        / "contracts"
+        / "corpus"
+        / "macro-planning-host-v1"
+        / "integer-representations.json"
+    )
+    integer_vector_bytes = integer_vector_path.read_bytes()
+    integer_vectors = json.loads(integer_vector_bytes)
+    integer_vector_source_sha256 = hashlib.sha256(integer_vector_bytes).hexdigest()
+    assert integer_vector_source_sha256 == (
+        "2d9c72efdf8f593deb399567557229f6bcbccad1c95e961d01e819809bbbf88b"
+    )
 
     temp_root = _temporary_root()
     try:
@@ -308,7 +521,15 @@ def test_real_sdk_wheel_installs_authoritative_verifier_schemas() -> None:
         )
 
         probe = temp_root / "installed_probe.py"
-        probe.write_text(_probe_script(expected_schema_names), encoding="utf-8")
+        probe.write_text(
+            _probe_script(
+                expected_schema_names,
+                macro_positive,
+                integer_vectors,
+                integer_vector_source_sha256,
+            ),
+            encoding="utf-8",
+        )
         result = _run([str(venv_python), str(probe)], cwd=temp_root, env=env)
         proof = json.loads(result.stdout)
         assert Path(proof["schema_dir"]).resolve() == (
@@ -317,5 +538,22 @@ def test_real_sdk_wheel_installs_authoritative_verifier_schemas() -> None:
         assert proof["schema_names"] == expected_schema_names
         assert Path(proof["module_file"]).resolve().is_relative_to(venv_root.resolve())
         assert proof["validated_job_methods"] == ["job.start", "job.resume"]
+        assert proof["macro_fixture_count"] == 17
+        assert proof["macro_json_max_safe_integer"] == 9_007_199_254_740_991
+        assert proof["macro_integer_vector_count"] == 34
+        assert proof["macro_integer_vector_source_sha256"] == (
+            "2d9c72efdf8f593deb399567557229f6bcbccad1c95e961d01e819809bbbf88b"
+        )
+        assert proof["macro_integer_vector_result_digest"] == (
+            "d4cfe7ec27c052badd2f67723fa5a4123becd60b6c1be11ce37b07b58f00f13d"
+        )
+        assert proof["macro_wire_whitespace_codepoints"] == 30
+        assert proof["macro_routes"] == [
+            "model-secret.put",
+            "model-profile.revise",
+            "workspace-plan.select",
+            "project-planning.get",
+            "project-planning.start",
+        ]
     finally:
         shutil.rmtree(temp_root, ignore_errors=True)

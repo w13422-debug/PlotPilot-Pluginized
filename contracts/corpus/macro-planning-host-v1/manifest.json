@@ -1,0 +1,45 @@
+{
+  "golden": "contracts/golden/macro-planning-host-v1/positive.json",
+  "group_count": 1,
+  "group_ids": [
+    "macro-planning-host-v1-01"
+  ],
+  "integer_representations": {
+    "accepted_count": 19,
+    "field_count": 8,
+    "path": "contracts/corpus/macro-planning-host-v1/integer-representations.json",
+    "rejected_count": 15,
+    "sha256": "2d9c72efdf8f593deb399567557229f6bcbccad1c95e961d01e819809bbbf88b",
+    "vector_count": 34
+  },
+  "negative_case_count": 46,
+  "positive_fixture": "contracts/examples/fixtures/macro-planning-host-positive.json",
+  "schema": "macro-planning-host-corpus-manifest/v1",
+  "semantic_assertions": [
+    "closed_schema_rejection",
+    "discriminator_rejection",
+    "opaque_secret_reference",
+    "recursive_secret_redaction",
+    "trusted_path_required",
+    "trusted_path_exact",
+    "trusted_path_binding",
+    "cross_workspace",
+    "stale_brief_cas",
+    "stale_plan_cas",
+    "plan_hash_binding",
+    "profile_hash_binding",
+    "runtime_hash_binding",
+    "caller_authority_rejection",
+    "legacy_input_rejection",
+    "nonblank_output",
+    "manual_publication_only",
+    "fail_closed_availability",
+    "append_only_parent",
+    "explicit_selection_only",
+    "operation_binding",
+    "json_safe_integer",
+    "wire_whitespace",
+    "wire_nonblank",
+    "mathematical_json_integer_normalization"
+  ]
+}

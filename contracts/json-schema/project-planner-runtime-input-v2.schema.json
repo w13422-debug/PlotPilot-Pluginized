@@ -1,0 +1,225 @@
+{
+  "$id": "https://plotpilot.local/contracts/project-planner-runtime-input-v2",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "input_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "input_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+      "type": "string"
+    },
+    "project_brief": {
+      "additionalProperties": false,
+      "properties": {
+        "content_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "document_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "revision_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "workspace_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "workspace_id",
+        "document_id",
+        "revision_id",
+        "content_hash"
+      ],
+      "type": "object"
+    },
+    "schema": {
+      "const": "project-planner-runtime-input/v2"
+    },
+    "selection": {
+      "additionalProperties": false,
+      "properties": {
+        "active_generation_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "model_profile_revision_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "model_profile_revision_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "plan_revision_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "plan_revision_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "planner_package_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "planner_release_id": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "planner_settings_revision_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "prompt_skill_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+          "type": "string"
+        },
+        "prompt_skill_package_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "prompt_skill_release_id": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "active_generation_id",
+        "plan_revision_id",
+        "plan_revision_hash",
+        "model_profile_revision_id",
+        "model_profile_revision_hash",
+        "planner_release_id",
+        "planner_package_hash",
+        "planner_settings_revision_id",
+        "prompt_skill_id",
+        "prompt_skill_release_id",
+        "prompt_skill_package_hash"
+      ],
+      "type": "object"
+    },
+    "targets": {
+      "additionalProperties": false,
+      "properties": {
+        "bible": {
+          "additionalProperties": false,
+          "properties": {
+            "content_hash": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "document_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            "revision_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            "workspace_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "workspace_id",
+            "document_id",
+            "revision_id",
+            "content_hash"
+          ],
+          "type": "object"
+        },
+        "outline": {
+          "additionalProperties": false,
+          "properties": {
+            "content_hash": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "document_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            "revision_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            "workspace_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "workspace_id",
+            "document_id",
+            "revision_id",
+            "content_hash"
+          ],
+          "type": "object"
+        },
+        "setting": {
+          "additionalProperties": false,
+          "properties": {
+            "content_hash": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "document_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            "revision_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            "workspace_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "workspace_id",
+            "document_id",
+            "revision_id",
+            "content_hash"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "setting",
+        "bible",
+        "outline"
+      ],
+      "type": "object"
+    },
+    "workspace_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+      "type": "string"
+    },
+    "writer_epoch": {
+      "maximum": 9007199254740991,
+      "minimum": 1,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "schema",
+    "input_id",
+    "workspace_id",
+    "project_brief",
+    "targets",
+    "selection",
+    "writer_epoch",
+    "input_hash"
+  ],
+  "title": "PlotPilot project-planner-runtime-input-v2",
+  "type": "object"
+}

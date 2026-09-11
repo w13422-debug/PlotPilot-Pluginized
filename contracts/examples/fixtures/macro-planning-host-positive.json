@@ -1,0 +1,401 @@
+{
+  "exchange_count": 5,
+  "exchanges": [
+    {
+      "path_params": {
+        "secret_id": "provider-main"
+      },
+      "request": {
+        "operation_key": "secret-operation-1",
+        "schema": "model-secret-put-command/v2",
+        "secret_id": "provider-main",
+        "value": "rawSecret47A"
+      },
+      "response": {
+        "api_key_ref": "secret://provider-main",
+        "created": true,
+        "idempotent": false,
+        "operation_key": "secret-operation-1",
+        "schema": "model-secret-put-result/v2",
+        "secret_id": "provider-main"
+      },
+      "route_id": "model-secret.put",
+      "status": 201
+    },
+    {
+      "path_params": {
+        "profile_id": "model-profile-planner"
+      },
+      "request": {
+        "expected_parent_revision_id": null,
+        "operation_key": "profile-operation-1",
+        "profile_id": "model-profile-planner",
+        "provider": {
+          "api_key_ref": "secret://provider-main",
+          "endpoint": "https://models.example.test/v1",
+          "model_name": "planner-model-1",
+          "options": {
+            "max_output_tokens": 4096,
+            "max_retries": 0,
+            "temperature": 0.4,
+            "timeout_seconds": 120,
+            "top_p": 0.9
+          },
+          "plugin_id": "com.plotpilot.provider.local",
+          "release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "schema": "model-profile-revise-command/v2"
+      },
+      "response": {
+        "idempotent": false,
+        "operation_key": "profile-operation-1",
+        "profile_id": "model-profile-planner",
+        "revision": {
+          "created_at": "2030-01-02T03:04:05Z",
+          "parent_revision_id": null,
+          "profile_id": "model-profile-planner",
+          "provider": {
+            "api_key_ref": "secret://provider-main",
+            "endpoint": "https://models.example.test/v1",
+            "model_name": "planner-model-1",
+            "options": {
+              "max_output_tokens": 4096,
+              "max_retries": 0,
+              "temperature": 0.4,
+              "timeout_seconds": 120,
+              "top_p": 0.9
+            },
+            "plugin_id": "com.plotpilot.provider.local",
+            "release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "revision_hash": "9570e425de7546804e3efe66fa09dd9dfac73510285e066d9aaceab5032dd8ed",
+          "revision_id": "model-profile-revision-1",
+          "revision_number": 1,
+          "schema": "model-profile-revision/v1"
+        },
+        "schema": "model-profile-revise-result/v2"
+      },
+      "route_id": "model-profile.revise",
+      "status": 201
+    },
+    {
+      "path_params": {
+        "workspace_id": "workspace-1"
+      },
+      "request": {
+        "expected_active_generation_id": "generation-planning-1",
+        "expected_current_plan_revision_hash": null,
+        "expected_current_plan_revision_id": null,
+        "expected_workspace_revision": 7,
+        "model_profile_revision_hash": "9570e425de7546804e3efe66fa09dd9dfac73510285e066d9aaceab5032dd8ed",
+        "model_profile_revision_id": "model-profile-revision-1",
+        "operation_key": "plan-operation-1",
+        "plan_revision_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "plan_revision_id": "plan-revision-7",
+        "schema": "workspace-plan-selection-command/v2",
+        "selection_mode": "explicit",
+        "workspace_id": "workspace-1"
+      },
+      "response": {
+        "active_generation_id": "generation-planning-1",
+        "idempotent": false,
+        "model_profile_revision_hash": "9570e425de7546804e3efe66fa09dd9dfac73510285e066d9aaceab5032dd8ed",
+        "model_profile_revision_id": "model-profile-revision-1",
+        "operation_key": "plan-operation-1",
+        "plan_revision_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "plan_revision_id": "plan-revision-7",
+        "previous_plan_revision_hash": null,
+        "previous_plan_revision_id": null,
+        "schema": "workspace-plan-selection-result/v2",
+        "selection_mode": "explicit",
+        "workspace_id": "workspace-1",
+        "workspace_revision": 8
+      },
+      "route_id": "workspace-plan.select",
+      "status": 200
+    },
+    {
+      "path_params": {
+        "workspace_id": "workspace-1"
+      },
+      "request": {
+        "schema": "project-planning-query/v2",
+        "workspace_id": "workspace-1"
+      },
+      "response": {
+        "available": true,
+        "reason": "ready",
+        "schema": "project-planning-availability-result/v2",
+        "workspace_id": "workspace-1"
+      },
+      "route_id": "project-planning.get",
+      "status": 200
+    },
+    {
+      "path_params": {
+        "workspace_id": "workspace-1"
+      },
+      "request": {
+        "expected_project_brief": {
+          "content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "revision_id": "revision-project-brief-3"
+        },
+        "operation_key": "planning-operation-1",
+        "project_brief_document_id": "document-project-brief",
+        "requested_mode": "plugin",
+        "schema": "project-planning-start-command/v2",
+        "workspace_id": "workspace-1"
+      },
+      "response": {
+        "idempotent": false,
+        "job_id": "job-planning-1",
+        "operation_key": "planning-operation-1",
+        "run_snapshot_asset_id": "asset-run-snapshot-planning-1",
+        "run_snapshot_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "run_snapshot_id": "run-snapshot-planning-1",
+        "schema": "project-planning-start-result/v2",
+        "workspace_id": "workspace-1",
+        "writer_epoch": 1
+      },
+      "route_id": "project-planning.start",
+      "status": 201
+    }
+  ],
+  "expected": {
+    "model_profile_revision_hash": "9570e425de7546804e3efe66fa09dd9dfac73510285e066d9aaceab5032dd8ed",
+    "planner_runtime_input_hash": "881cb610c9e018a25078364c4b89fdbf6e3ef014231290b9f9c5b731b178acbd"
+  },
+  "fixture_count": 17,
+  "fixtures": {
+    "model_profile_error": {
+      "error_code": "stale_cas",
+      "message": "Profile parent revision is stale.",
+      "operation_key": "profile-operation-1",
+      "profile_id": "model-profile-planner",
+      "retryable": false,
+      "schema": "model-profile-http-error/v2"
+    },
+    "model_profile_revise_command": {
+      "expected_parent_revision_id": null,
+      "operation_key": "profile-operation-1",
+      "profile_id": "model-profile-planner",
+      "provider": {
+        "api_key_ref": "secret://provider-main",
+        "endpoint": "https://models.example.test/v1",
+        "model_name": "planner-model-1",
+        "options": {
+          "max_output_tokens": 4096,
+          "max_retries": 0,
+          "temperature": 0.4,
+          "timeout_seconds": 120,
+          "top_p": 0.9
+        },
+        "plugin_id": "com.plotpilot.provider.local",
+        "release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "schema": "model-profile-revise-command/v2"
+    },
+    "model_profile_revise_result": {
+      "idempotent": false,
+      "operation_key": "profile-operation-1",
+      "profile_id": "model-profile-planner",
+      "revision": {
+        "created_at": "2030-01-02T03:04:05Z",
+        "parent_revision_id": null,
+        "profile_id": "model-profile-planner",
+        "provider": {
+          "api_key_ref": "secret://provider-main",
+          "endpoint": "https://models.example.test/v1",
+          "model_name": "planner-model-1",
+          "options": {
+            "max_output_tokens": 4096,
+            "max_retries": 0,
+            "temperature": 0.4,
+            "timeout_seconds": 120,
+            "top_p": 0.9
+          },
+          "plugin_id": "com.plotpilot.provider.local",
+          "release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "revision_hash": "9570e425de7546804e3efe66fa09dd9dfac73510285e066d9aaceab5032dd8ed",
+        "revision_id": "model-profile-revision-1",
+        "revision_number": 1,
+        "schema": "model-profile-revision/v1"
+      },
+      "schema": "model-profile-revise-result/v2"
+    },
+    "model_profile_revision": {
+      "created_at": "2030-01-02T03:04:05Z",
+      "parent_revision_id": null,
+      "profile_id": "model-profile-planner",
+      "provider": {
+        "api_key_ref": "secret://provider-main",
+        "endpoint": "https://models.example.test/v1",
+        "model_name": "planner-model-1",
+        "options": {
+          "max_output_tokens": 4096,
+          "max_retries": 0,
+          "temperature": 0.4,
+          "timeout_seconds": 120,
+          "top_p": 0.9
+        },
+        "plugin_id": "com.plotpilot.provider.local",
+        "release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "revision_hash": "9570e425de7546804e3efe66fa09dd9dfac73510285e066d9aaceab5032dd8ed",
+      "revision_id": "model-profile-revision-1",
+      "revision_number": 1,
+      "schema": "model-profile-revision/v1"
+    },
+    "model_secret_error": {
+      "error_code": "secret_value_rejected",
+      "message": "Secret value was rejected.",
+      "operation_key": "secret-operation-1",
+      "retryable": false,
+      "schema": "model-secret-http-error/v2",
+      "secret_id": "provider-main"
+    },
+    "model_secret_put_command": {
+      "operation_key": "secret-operation-1",
+      "schema": "model-secret-put-command/v2",
+      "secret_id": "provider-main",
+      "value": "rawSecret47A"
+    },
+    "model_secret_put_result": {
+      "api_key_ref": "secret://provider-main",
+      "created": true,
+      "idempotent": false,
+      "operation_key": "secret-operation-1",
+      "schema": "model-secret-put-result/v2",
+      "secret_id": "provider-main"
+    },
+    "project_planner_model_output": {
+      "bible": "Mara protects forbidden recollections while every ally pays a personal cost.",
+      "outline": "Act I reveals the debt; Act II fractures the crew; Act III makes memory public.",
+      "schema": "project-planner-model-output/v1",
+      "setting": "A flooded orbital city governed by memory debt."
+    },
+    "project_planner_runtime_input": {
+      "input_hash": "881cb610c9e018a25078364c4b89fdbf6e3ef014231290b9f9c5b731b178acbd",
+      "input_id": "planner-input-1",
+      "project_brief": {
+        "content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "document_id": "document-project-brief",
+        "revision_id": "revision-project-brief-3",
+        "workspace_id": "workspace-1"
+      },
+      "schema": "project-planner-runtime-input/v2",
+      "selection": {
+        "active_generation_id": "generation-planning-1",
+        "model_profile_revision_hash": "9570e425de7546804e3efe66fa09dd9dfac73510285e066d9aaceab5032dd8ed",
+        "model_profile_revision_id": "model-profile-revision-1",
+        "plan_revision_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "plan_revision_id": "plan-revision-7",
+        "planner_package_hash": "3333333333333333333333333333333333333333333333333333333333333333",
+        "planner_release_id": "2222222222222222222222222222222222222222222222222222222222222222",
+        "planner_settings_revision_id": "planner-settings-revision-4",
+        "prompt_skill_id": "project-planner-main",
+        "prompt_skill_package_hash": "5555555555555555555555555555555555555555555555555555555555555555",
+        "prompt_skill_release_id": "4444444444444444444444444444444444444444444444444444444444444444"
+      },
+      "targets": {
+        "bible": {
+          "content_hash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "document_id": "document-bible",
+          "revision_id": "revision-bible-1",
+          "workspace_id": "workspace-1"
+        },
+        "outline": {
+          "content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+          "document_id": "document-outline",
+          "revision_id": "revision-outline-1",
+          "workspace_id": "workspace-1"
+        },
+        "setting": {
+          "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "document_id": "document-setting",
+          "revision_id": "revision-setting-1",
+          "workspace_id": "workspace-1"
+        }
+      },
+      "workspace_id": "workspace-1",
+      "writer_epoch": 1
+    },
+    "project_planning_availability_ready": {
+      "available": true,
+      "reason": "ready",
+      "schema": "project-planning-availability-result/v2",
+      "workspace_id": "workspace-1"
+    },
+    "project_planning_availability_unavailable": {
+      "available": false,
+      "reason": "active_generation_missing",
+      "schema": "project-planning-availability-result/v2",
+      "workspace_id": "workspace-1"
+    },
+    "project_planning_query": {
+      "schema": "project-planning-query/v2",
+      "workspace_id": "workspace-1"
+    },
+    "project_planning_start_command": {
+      "expected_project_brief": {
+        "content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "revision_id": "revision-project-brief-3"
+      },
+      "operation_key": "planning-operation-1",
+      "project_brief_document_id": "document-project-brief",
+      "requested_mode": "plugin",
+      "schema": "project-planning-start-command/v2",
+      "workspace_id": "workspace-1"
+    },
+    "project_planning_start_result": {
+      "idempotent": false,
+      "job_id": "job-planning-1",
+      "operation_key": "planning-operation-1",
+      "run_snapshot_asset_id": "asset-run-snapshot-planning-1",
+      "run_snapshot_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "run_snapshot_id": "run-snapshot-planning-1",
+      "schema": "project-planning-start-result/v2",
+      "workspace_id": "workspace-1",
+      "writer_epoch": 1
+    },
+    "workspace_plan_selection_command": {
+      "expected_active_generation_id": "generation-planning-1",
+      "expected_current_plan_revision_hash": null,
+      "expected_current_plan_revision_id": null,
+      "expected_workspace_revision": 7,
+      "model_profile_revision_hash": "9570e425de7546804e3efe66fa09dd9dfac73510285e066d9aaceab5032dd8ed",
+      "model_profile_revision_id": "model-profile-revision-1",
+      "operation_key": "plan-operation-1",
+      "plan_revision_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "plan_revision_id": "plan-revision-7",
+      "schema": "workspace-plan-selection-command/v2",
+      "selection_mode": "explicit",
+      "workspace_id": "workspace-1"
+    },
+    "workspace_plan_selection_result": {
+      "active_generation_id": "generation-planning-1",
+      "idempotent": false,
+      "model_profile_revision_hash": "9570e425de7546804e3efe66fa09dd9dfac73510285e066d9aaceab5032dd8ed",
+      "model_profile_revision_id": "model-profile-revision-1",
+      "operation_key": "plan-operation-1",
+      "plan_revision_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "plan_revision_id": "plan-revision-7",
+      "previous_plan_revision_hash": null,
+      "previous_plan_revision_id": null,
+      "schema": "workspace-plan-selection-result/v2",
+      "selection_mode": "explicit",
+      "workspace_id": "workspace-1",
+      "workspace_revision": 8
+    },
+    "workspace_planning_error": {
+      "error_code": "planning_unavailable",
+      "message": "Project planning is unavailable.",
+      "operation_key": "planning-operation-1",
+      "retryable": false,
+      "schema": "workspace-planning-http-error/v2",
+      "workspace_id": "workspace-1"
+    }
+  },
+  "schema": "macro-planning-host-positive/v1"
+}

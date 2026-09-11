@@ -150,6 +150,22 @@ _SCHEMA_FOR_DISCRIMINATOR = {
     "plugin-lifecycle-command/v2": "plugin-api-command-query-v2",
     "plugin-lifecycle-result/v2": "plugin-api-command-query-v2",
     "plugin-http-error/v2": "plugin-api-command-query-v2",
+    "model-secret-put-command/v2": "model-config-command-query-v2",
+    "model-secret-put-result/v2": "model-config-command-query-v2",
+    "model-profile-revise-command/v2": "model-config-command-query-v2",
+    "model-profile-revise-result/v2": "model-config-command-query-v2",
+    "workspace-plan-selection-command/v2": "model-config-command-query-v2",
+    "workspace-plan-selection-result/v2": "model-config-command-query-v2",
+    "model-profile-revision/v1": "model-profile-revision-v1",
+    "model-secret-http-error/v2": "model-planning-http-error-v2",
+    "model-profile-http-error/v2": "model-planning-http-error-v2",
+    "workspace-planning-http-error/v2": "model-planning-http-error-v2",
+    "project-planning-query/v2": "project-planning-command-query-v2",
+    "project-planning-availability-result/v2": "project-planning-command-query-v2",
+    "project-planning-start-command/v2": "project-planning-command-query-v2",
+    "project-planning-start-result/v2": "project-planning-command-query-v2",
+    "project-planner-runtime-input/v2": "project-planner-runtime-input-v2",
+    "project-planner-model-output/v1": "project-planner-model-output-v1",
 }
 
 

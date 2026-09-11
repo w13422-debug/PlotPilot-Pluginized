@@ -5,9 +5,15 @@
     "publication-command/v2",
     "story-state-projection-input/v2",
     "job-http/v2",
-    "plugin-lifecycle/v2"
+    "plugin-lifecycle/v2",
+    "model-config-command-query/v2",
+    "model-profile-revision/v1",
+    "model-planning-http-error/v2",
+    "project-planning-command-query/v2",
+    "project-planner-runtime-input/v2",
+    "project-planner-model-output/v1"
   ],
-  "contract_version": "2.0.0",
+  "contract_version": "2.1.0",
   "files": [
     {
       "bytes": 123,
@@ -68,6 +74,26 @@
       "bytes": 1458,
       "path": "contracts/corpus/m4-m5-public-surface-v2/manifest.json",
       "sha256": "e60a16dcf49422cbd3000a84c76449e52053ef4bc8dab85789ee0f52e65c0e29"
+    },
+    {
+      "bytes": 13174,
+      "path": "contracts/corpus/macro-planning-host-v1/integer-representations.json",
+      "sha256": "2d9c72efdf8f593deb399567557229f6bcbccad1c95e961d01e819809bbbf88b"
+    },
+    {
+      "bytes": 1353,
+      "path": "contracts/corpus/macro-planning-host-v1/manifest.json",
+      "sha256": "ed0151790ab07fe543525ae3e8e48d93d073821d196850d1e5c8f33b9df73743"
+    },
+    {
+      "bytes": 16179,
+      "path": "contracts/corpus/macro-planning-host-v1/negative.json",
+      "sha256": "098c8ac356c87f0a2725d93c53cfc4ff32a954d0382f6dab6735fc80ba2b87fe"
+    },
+    {
+      "bytes": 2673,
+      "path": "contracts/corpus/manifest-v2.json",
+      "sha256": "25309bec97cfb50c2edbba011bb70b93374918e5d3f1b63de3762a4502f0193a"
     },
     {
       "bytes": 575,
@@ -198,6 +224,11 @@
       "bytes": 615,
       "path": "contracts/examples/fixtures/job-snapshot.json",
       "sha256": "3ec4adb14bdff892d7ee48a37213d22cd5eedd9752904fae13e28e9b1d078ad1"
+    },
+    {
+      "bytes": 15766,
+      "path": "contracts/examples/fixtures/macro-planning-host-positive.json",
+      "sha256": "b84c13701dde2fbad631bc06d039726dba68926f3d3f1bbe59f149097a7f6d5f"
     },
     {
       "bytes": 633,
@@ -440,6 +471,11 @@
       "sha256": "63eb937f08e9fdd7fec4f7049780df1b5d900757ead5d1dbedf99d440efcfe84"
     },
     {
+      "bytes": 15766,
+      "path": "contracts/golden/macro-planning-host-v1/positive.json",
+      "sha256": "b84c13701dde2fbad631bc06d039726dba68926f3d3f1bbe59f149097a7f6d5f"
+    },
+    {
       "bytes": 20,
       "path": "contracts/golden/package/data/rules.json",
       "sha256": "54bfa55d6557dcf1a11f3e845e6492e4fe34f35a0d6751f45e0e8ae77df36e78"
@@ -580,9 +616,9 @@
       "sha256": "69afdda8043c3df9fac2fc1e909f741c290d6d19c1aa1a73e7d8862d5a705b4f"
     },
     {
-      "bytes": 17785,
+      "bytes": 22977,
       "path": "contracts/json-schema/core-api-method-matrix.v2.json",
-      "sha256": "8044aba7c819b7d916eff089f28d49cdebe835879feddbfced523608ee03eac7"
+      "sha256": "5c00351f9d69762567c78daaf669e8d30131cb4ed28b7ce5c633214853d8eb0d"
     },
     {
       "bytes": 43782,
@@ -638,6 +674,21 @@
       "bytes": 5174,
       "path": "contracts/json-schema/job-snapshot-v1.schema.json",
       "sha256": "1ee52f372fd06896fef491eab863324f949c03cf69a9ea634cea239d8eb2fd78"
+    },
+    {
+      "bytes": 15607,
+      "path": "contracts/json-schema/model-config-command-query-v2.schema.json",
+      "sha256": "2a5d4772028b7e2beed24f3b1459c17c4ac7c3e123368aad0a7eb9c3c80cc61a"
+    },
+    {
+      "bytes": 4406,
+      "path": "contracts/json-schema/model-planning-http-error-v2.schema.json",
+      "sha256": "38304bd891774c128f9e42a1b6506aeb40975880149d3a59ea0047d17f510199"
+    },
+    {
+      "bytes": 3915,
+      "path": "contracts/json-schema/model-profile-revision-v1.schema.json",
+      "sha256": "67d9528c22dfaacb8e292e55fea83c9ab0c41114f7f3ce9c377aeeb0f238c103"
     },
     {
       "bytes": 2904,
@@ -718,6 +769,21 @@
       "bytes": 21465,
       "path": "contracts/json-schema/plugin-ui-tree-v1.schema.json",
       "sha256": "9dcd17fe33adb0786d0baf0677ce583c29b8e9c5edb55fae6d4458a8f652afb7"
+    },
+    {
+      "bytes": 1023,
+      "path": "contracts/json-schema/project-planner-model-output-v1.schema.json",
+      "sha256": "32bb38601b75343a32320e665e9b0068522b2a0adef30936dbb5b7e5c6783029"
+    },
+    {
+      "bytes": 6158,
+      "path": "contracts/json-schema/project-planner-runtime-input-v2.schema.json",
+      "sha256": "4c91ddee12d221e6758d5690496f12a8c15eabbce085e74530c3165687b3f117"
+    },
+    {
+      "bytes": 4178,
+      "path": "contracts/json-schema/project-planning-command-query-v2.schema.json",
+      "sha256": "06a5142a8bef4b42d1342207132eb5a73e75e1c435ccc2b265ae3d762593c639"
     },
     {
       "bytes": 8817,
@@ -861,6 +927,16 @@
     }
   ],
   "golden_vectors": {
+    "macro_planning_host_v1": {
+      "exchange_count": 5,
+      "expected": {
+        "model_profile_revision_hash": "9570e425de7546804e3efe66fa09dd9dfac73510285e066d9aaceab5032dd8ed",
+        "planner_runtime_input_hash": "881cb610c9e018a25078364c4b89fdbf6e3ef014231290b9f9c5b731b178acbd"
+      },
+      "fixture_count": 17,
+      "path": "contracts/golden/macro-planning-host-v1/positive.json",
+      "sha256": "b84c13701dde2fbad631bc06d039726dba68926f3d3f1bbe59f149097a7f6d5f"
+    },
     "prompt_skill_v2": {
       "fixture_files": {
         "execute.json": "09b568443e3a933d8fbf4be6a283bfeaa8a9f9de02af1a168d53bb0561ddb725"
@@ -1017,20 +1093,100 @@
     }
   },
   "inventory": {
-    "file_count_excluding_manifest": 170,
+    "file_count_excluding_manifest": 182,
+    "macro_planning_integer_field_count": 8,
+    "macro_planning_integer_vector_count": 34,
+    "macro_planning_negative_case_count": 46,
+    "macro_planning_negative_group_count": 1,
+    "macro_planning_schema_count": 6,
     "negative_case_count_v2": 62,
     "negative_group_count_v1": 14,
     "negative_group_count_v2": 5,
     "prompt_skill_negative_case_count_v2": 43,
     "prompt_skill_negative_group_count_v2": 1,
     "prompt_skill_schema_count": 3,
-    "schema_count": 64,
+    "schema_count": 70,
     "v1_file_count": 141,
     "v1_schema_count": 55,
-    "v2_file_count": 29,
-    "v2_schema_count": 9
+    "v2_file_count": 41,
+    "v2_schema_count": 15
+  },
+  "macro_planning_host_v1": {
+    "corpus_router": {
+      "path": "contracts/corpus/manifest-v2.json",
+      "sha256": "25309bec97cfb50c2edbba011bb70b93374918e5d3f1b63de3762a4502f0193a"
+    },
+    "golden": {
+      "exchange_count": 5,
+      "expected": {
+        "model_profile_revision_hash": "9570e425de7546804e3efe66fa09dd9dfac73510285e066d9aaceab5032dd8ed",
+        "planner_runtime_input_hash": "881cb610c9e018a25078364c4b89fdbf6e3ef014231290b9f9c5b731b178acbd"
+      },
+      "fixture_count": 17,
+      "path": "contracts/golden/macro-planning-host-v1/positive.json",
+      "sha256": "b84c13701dde2fbad631bc06d039726dba68926f3d3f1bbe59f149097a7f6d5f"
+    },
+    "integer_representations": {
+      "accepted_count": 19,
+      "field_count": 8,
+      "path": "contracts/corpus/macro-planning-host-v1/integer-representations.json",
+      "rejected_count": 15,
+      "sha256": "2d9c72efdf8f593deb399567557229f6bcbccad1c95e961d01e819809bbbf88b",
+      "vector_count": 34
+    },
+    "negative_case_count": 46,
+    "negative_group_count": 1,
+    "negative_groups": [
+      {
+        "group_id": "macro-planning-host-v1-01",
+        "negative_case_count": 46,
+        "path": "contracts/corpus/macro-planning-host-v1/negative.json",
+        "positive_fixture_ids": [
+          "model_secret_put_command",
+          "model_secret_put_result",
+          "model_profile_revise_command",
+          "model_profile_revision",
+          "model_profile_revise_result",
+          "workspace_plan_selection_command",
+          "workspace_plan_selection_result",
+          "project_planning_query",
+          "project_planning_availability_ready",
+          "project_planning_availability_unavailable",
+          "project_planning_start_command",
+          "project_planning_start_result",
+          "project_planner_runtime_input",
+          "project_planner_model_output"
+        ],
+        "sha256": "098c8ac356c87f0a2725d93c53cfc4ff32a954d0382f6dab6735fc80ba2b87fe"
+      }
+    ],
+    "schema_count": 6
   },
   "negative_groups": {
+    "macro_planning_host_v1": [
+      {
+        "group_id": "macro-planning-host-v1-01",
+        "negative_case_count": 46,
+        "path": "contracts/corpus/macro-planning-host-v1/negative.json",
+        "positive_fixture_ids": [
+          "model_secret_put_command",
+          "model_secret_put_result",
+          "model_profile_revise_command",
+          "model_profile_revision",
+          "model_profile_revise_result",
+          "workspace_plan_selection_command",
+          "workspace_plan_selection_result",
+          "project_planning_query",
+          "project_planning_availability_ready",
+          "project_planning_availability_unavailable",
+          "project_planning_start_command",
+          "project_planning_start_result",
+          "project_planner_runtime_input",
+          "project_planner_model_output"
+        ],
+        "sha256": "098c8ac356c87f0a2725d93c53cfc4ff32a954d0382f6dab6735fc80ba2b87fe"
+      }
+    ],
     "prompt_skill_v2": [
       {
         "group_id": "prompt-skill-rpc-v2-execute",
@@ -1488,6 +1644,27 @@
       "sha256": "1ee52f372fd06896fef491eab863324f949c03cf69a9ea634cea239d8eb2fd78"
     },
     {
+      "bytes": 15607,
+      "contract_id": "model-config-command-query-v2",
+      "path": "contracts/json-schema/model-config-command-query-v2.schema.json",
+      "schema_id": "https://plotpilot.local/contracts/model-config-command-query-v2",
+      "sha256": "2a5d4772028b7e2beed24f3b1459c17c4ac7c3e123368aad0a7eb9c3c80cc61a"
+    },
+    {
+      "bytes": 4406,
+      "contract_id": "model-planning-http-error-v2",
+      "path": "contracts/json-schema/model-planning-http-error-v2.schema.json",
+      "schema_id": "https://plotpilot.local/contracts/model-planning-http-error-v2",
+      "sha256": "38304bd891774c128f9e42a1b6506aeb40975880149d3a59ea0047d17f510199"
+    },
+    {
+      "bytes": 3915,
+      "contract_id": "model-profile-revision-v1",
+      "path": "contracts/json-schema/model-profile-revision-v1.schema.json",
+      "schema_id": "https://plotpilot.local/contracts/model-profile-revision-v1",
+      "sha256": "67d9528c22dfaacb8e292e55fea83c9ab0c41114f7f3ce9c377aeeb0f238c103"
+    },
+    {
       "bytes": 2904,
       "contract_id": "operation-context-identity-v1",
       "path": "contracts/json-schema/operation-context-identity-v1.schema.json",
@@ -1598,6 +1775,27 @@
       "path": "contracts/json-schema/plugin-ui-tree-v1.schema.json",
       "schema_id": "https://plotpilot.local/contracts/plugin-ui-tree-v1",
       "sha256": "9dcd17fe33adb0786d0baf0677ce583c29b8e9c5edb55fae6d4458a8f652afb7"
+    },
+    {
+      "bytes": 1023,
+      "contract_id": "project-planner-model-output-v1",
+      "path": "contracts/json-schema/project-planner-model-output-v1.schema.json",
+      "schema_id": "https://plotpilot.local/contracts/project-planner-model-output-v1",
+      "sha256": "32bb38601b75343a32320e665e9b0068522b2a0adef30936dbb5b7e5c6783029"
+    },
+    {
+      "bytes": 6158,
+      "contract_id": "project-planner-runtime-input-v2",
+      "path": "contracts/json-schema/project-planner-runtime-input-v2.schema.json",
+      "schema_id": "https://plotpilot.local/contracts/project-planner-runtime-input-v2",
+      "sha256": "4c91ddee12d221e6758d5690496f12a8c15eabbce085e74530c3165687b3f117"
+    },
+    {
+      "bytes": 4178,
+      "contract_id": "project-planning-command-query-v2",
+      "path": "contracts/json-schema/project-planning-command-query-v2.schema.json",
+      "schema_id": "https://plotpilot.local/contracts/project-planning-command-query-v2",
+      "sha256": "06a5142a8bef4b42d1342207132eb5a73e75e1c435ccc2b265ae3d762593c639"
     },
     {
       "bytes": 8817,
@@ -1779,8 +1977,9 @@
     "adjudication": "coordination/PPA-00/post-e0/public-surface-adjudication-v2.json",
     "adr": "docs/contracts/adr-044-m4-m5-public-surface-v2.md",
     "formal_design": "C:\\Users\\Administrator\\Desktop\\交接文档\\PlotPilot-Pluginized正式设计规划-2026-08-25-v1.md",
+    "macro_planning": "docs/contracts/macro-planning-host-v1.md",
     "sha256": "e70f450b75cfa753148cf620d13855d0073f7d61294e7599ea9cc98f3e612b7b",
-    "version": "v1.2-plus-adr-044"
+    "version": "v1.2-plus-adr-044-plus-macro-planning-p0a"
   },
   "v1_immutable": {
     "file_count_excluding_manifest": 141,

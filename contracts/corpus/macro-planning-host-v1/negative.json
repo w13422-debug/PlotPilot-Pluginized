@@ -1,0 +1,641 @@
+{
+  "group_id": "macro-planning-host-v1-01",
+  "negative": [
+    {
+      "case_id": "macro-unknown-field-secret-command",
+      "expected": "closed_schema_rejection",
+      "fixture": "model_secret_put_command",
+      "kind": "parse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "unexpected"
+        ],
+        "value": true
+      }
+    },
+    {
+      "case_id": "macro-wrong-discriminator",
+      "expected": "discriminator_rejection",
+      "fixture": "project_planner_model_output",
+      "kind": "parse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "schema"
+        ],
+        "value": "project-planner-model-output/v2"
+      }
+    },
+    {
+      "case_id": "macro-raw-secret-ref-profile-command",
+      "expected": "opaque_secret_reference",
+      "fixture": "model_profile_revise_command",
+      "kind": "parse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "provider",
+          "api_key_ref"
+        ],
+        "value": "sk-live-not-a-reference"
+      }
+    },
+    {
+      "case_id": "macro-alias-secret-ref-profile-command",
+      "expected": "opaque_secret_reference",
+      "fixture": "model_profile_revise_command",
+      "kind": "parse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "provider",
+          "api_key_ref"
+        ],
+        "value": "provider-main"
+      }
+    },
+    {
+      "case_id": "macro-whitespace-secret-ref-profile-command",
+      "expected": "opaque_secret_reference",
+      "fixture": "model_profile_revise_command",
+      "kind": "parse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "provider",
+          "api_key_ref"
+        ],
+        "value": " secret://provider-main"
+      }
+    },
+    {
+      "case_id": "macro-malformed-secret-ref-profile-command",
+      "expected": "opaque_secret_reference",
+      "fixture": "model_profile_revise_command",
+      "kind": "parse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "provider",
+          "api_key_ref"
+        ],
+        "value": "secret:///provider-main"
+      }
+    },
+    {
+      "case_id": "macro-wrapped-secret-result-leak",
+      "expected": "recursive_secret_redaction",
+      "fixture": "secret_success_exchange",
+      "kind": "secret_exchange",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "response",
+          "api_key_ref"
+        ],
+        "value": "secret://provider-main/rawSecret47A"
+      }
+    },
+    {
+      "case_id": "macro-wrapped-secret-error-leak",
+      "expected": "recursive_secret_redaction",
+      "fixture": "secret_error_exchange",
+      "kind": "secret_exchange",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "response",
+          "message"
+        ],
+        "value": "rejected:rawSecret47A:wrapped"
+      }
+    },
+    {
+      "case_id": "macro-missing-trusted-path-params",
+      "expected": "trusted_path_required",
+      "fixture": "http.model-secret.put",
+      "kind": "http_exchange",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "path_params"
+        ],
+        "value": null
+      }
+    },
+    {
+      "case_id": "macro-extra-trusted-path-param",
+      "expected": "trusted_path_exact",
+      "fixture": "http.model-secret.put",
+      "kind": "http_exchange",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "path_params",
+          "extra"
+        ],
+        "value": "forbidden"
+      }
+    },
+    {
+      "case_id": "macro-path-body-mismatch",
+      "expected": "trusted_path_binding",
+      "fixture": "http.model-secret.put",
+      "kind": "http_exchange",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "path_params",
+          "secret_id"
+        ],
+        "value": "provider-other"
+      }
+    },
+    {
+      "case_id": "macro-cross-workspace-response",
+      "expected": "cross_workspace",
+      "fixture": "http.project-planning.start",
+      "kind": "http_exchange",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "response",
+          "workspace_id"
+        ],
+        "value": "workspace-other"
+      }
+    },
+    {
+      "case_id": "macro-stale-brief-revision-cas",
+      "expected": "stale_brief_cas",
+      "fixture": "project_planning_start_command",
+      "kind": "project_brief_cas",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "expected_project_brief",
+          "revision_id"
+        ],
+        "value": "revision-project-brief-stale"
+      }
+    },
+    {
+      "case_id": "macro-stale-brief-hash-cas",
+      "expected": "stale_brief_cas",
+      "fixture": "project_planning_start_command",
+      "kind": "project_brief_cas",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "expected_project_brief",
+          "content_hash"
+        ],
+        "value": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    {
+      "case_id": "macro-stale-workspace-plan-cas",
+      "expected": "stale_plan_cas",
+      "fixture": "workspace_plan_selection_command",
+      "kind": "plan_cas",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "expected_workspace_revision"
+        ],
+        "value": 6
+      }
+    },
+    {
+      "case_id": "macro-plan-hash-tamper",
+      "expected": "plan_hash_binding",
+      "fixture": "plan_selection_exchange",
+      "kind": "plan_exchange",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "command",
+          "plan_revision_hash"
+        ],
+        "value": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    {
+      "case_id": "macro-profile-hash-tamper",
+      "expected": "profile_hash_binding",
+      "fixture": "model_profile_revision",
+      "kind": "model_profile",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "revision_hash"
+        ],
+        "value": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    {
+      "case_id": "macro-runtime-input-hash-tamper",
+      "expected": "runtime_hash_binding",
+      "fixture": "project_planner_runtime_input",
+      "kind": "runtime_input",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "input_hash"
+        ],
+        "value": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    {
+      "case_id": "macro-caller-job-authority-injection",
+      "expected": "caller_authority_rejection",
+      "fixture": "project_planning_start_command",
+      "kind": "parse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "job_id"
+        ],
+        "value": "caller-job"
+      }
+    },
+    {
+      "case_id": "macro-caller-generation-authority-injection",
+      "expected": "caller_authority_rejection",
+      "fixture": "project_planning_start_command",
+      "kind": "parse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "generation_id"
+        ],
+        "value": "caller-generation"
+      }
+    },
+    {
+      "case_id": "macro-legacy-planner-input",
+      "expected": "legacy_input_rejection",
+      "fixture": "project_planner_runtime_input",
+      "kind": "runtime_input",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "schema"
+        ],
+        "value": "project-planner-runtime-input/v1"
+      }
+    },
+    {
+      "case_id": "macro-runtime-attempt-authority-injection",
+      "expected": "caller_authority_rejection",
+      "fixture": "project_planner_runtime_input",
+      "kind": "runtime_input",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "attempt_id"
+        ],
+        "value": "caller-attempt"
+      }
+    },
+    {
+      "case_id": "macro-empty-model-output",
+      "expected": "nonblank_output",
+      "fixture": "project_planner_model_output",
+      "kind": "model_output",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "setting"
+        ],
+        "value": "   "
+      }
+    },
+    {
+      "case_id": "macro-output-auto-accept-injection",
+      "expected": "manual_publication_only",
+      "fixture": "project_planner_model_output",
+      "kind": "model_output",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "auto_accept"
+        ],
+        "value": true
+      }
+    },
+    {
+      "case_id": "macro-availability-fail-open",
+      "expected": "fail_closed_availability",
+      "fixture": "project_planning_availability_unavailable",
+      "kind": "availability",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "available"
+        ],
+        "value": true
+      }
+    },
+    {
+      "case_id": "macro-profile-parent-missing",
+      "expected": "append_only_parent",
+      "fixture": "model_profile_revision",
+      "kind": "model_profile",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "revision_number"
+        ],
+        "value": 2
+      }
+    },
+    {
+      "case_id": "macro-automatic-plan-selection",
+      "expected": "explicit_selection_only",
+      "fixture": "workspace_plan_selection_command",
+      "kind": "parse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "selection_mode"
+        ],
+        "value": "automatic"
+      }
+    },
+    {
+      "case_id": "macro-planning-result-operation-mismatch",
+      "expected": "operation_binding",
+      "fixture": "planning_start_exchange",
+      "kind": "planning_start_exchange",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "result",
+          "operation_key"
+        ],
+        "value": "planning-operation-other"
+      }
+    },
+    {
+      "case_id": "macro-error-path-identity-mismatch",
+      "expected": "trusted_path_binding",
+      "fixture": "http.model-profile.revise.error",
+      "kind": "http_exchange",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "response",
+          "profile_id"
+        ],
+        "value": "model-profile-other"
+      }
+    },
+    {
+      "case_id": "macro-unsafe-profile-revision-number",
+      "expected": "json_safe_integer",
+      "fixture": "model_profile_revision",
+      "kind": "model_profile",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "revision_number"
+        ],
+        "value": 9007199254740992
+      }
+    },
+    {
+      "case_id": "macro-unsafe-plan-expected-workspace-revision",
+      "expected": "json_safe_integer",
+      "fixture": "workspace_plan_selection_command",
+      "kind": "parse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "expected_workspace_revision"
+        ],
+        "value": 9007199254740992
+      }
+    },
+    {
+      "case_id": "macro-unsafe-plan-workspace-revision-result",
+      "expected": "json_safe_integer",
+      "fixture": "workspace_plan_selection_result",
+      "kind": "parse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "workspace_revision"
+        ],
+        "value": 9007199254740992
+      }
+    },
+    {
+      "case_id": "macro-unsafe-planning-start-writer-epoch",
+      "expected": "json_safe_integer",
+      "fixture": "project_planning_start_result",
+      "kind": "parse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "writer_epoch"
+        ],
+        "value": 9007199254740992
+      }
+    },
+    {
+      "case_id": "macro-unsafe-runtime-input-writer-epoch",
+      "expected": "json_safe_integer",
+      "fixture": "project_planner_runtime_input",
+      "kind": "runtime_input",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "writer_epoch"
+        ],
+        "value": 9007199254740992
+      }
+    },
+    {
+      "case_id": "macro-wire-whitespace-endpoint-u0085",
+      "expected": "wire_whitespace",
+      "fixture": "model_profile_revise_command",
+      "kind": "parse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "provider",
+          "endpoint"
+        ],
+        "value": "https://models.example.test/v1suffix"
+      }
+    },
+    {
+      "case_id": "macro-wire-whitespace-endpoint-ufeff",
+      "expected": "wire_whitespace",
+      "fixture": "model_profile_revise_command",
+      "kind": "parse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "provider",
+          "endpoint"
+        ],
+        "value": "https://models.example.test/v1﻿suffix"
+      }
+    },
+    {
+      "case_id": "macro-wire-whitespace-endpoint-u00a0",
+      "expected": "wire_whitespace",
+      "fixture": "model_profile_revise_command",
+      "kind": "parse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "provider",
+          "endpoint"
+        ],
+        "value": "https://models.example.test/v1 suffix"
+      }
+    },
+    {
+      "case_id": "macro-wire-whitespace-model-name-u0085",
+      "expected": "wire_whitespace",
+      "fixture": "model_profile_revise_command",
+      "kind": "parse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "provider",
+          "model_name"
+        ],
+        "value": "planner-model-1"
+      }
+    },
+    {
+      "case_id": "macro-wire-whitespace-model-name-ufeff",
+      "expected": "wire_whitespace",
+      "fixture": "model_profile_revise_command",
+      "kind": "parse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "provider",
+          "model_name"
+        ],
+        "value": "﻿planner-model-1"
+      }
+    },
+    {
+      "case_id": "macro-wire-whitespace-model-name-u00a0",
+      "expected": "wire_whitespace",
+      "fixture": "model_profile_revise_command",
+      "kind": "parse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "provider",
+          "model_name"
+        ],
+        "value": " planner-model-1"
+      }
+    },
+    {
+      "case_id": "macro-wire-whitespace-error-message-u0085",
+      "expected": "wire_nonblank",
+      "fixture": "model_profile_error",
+      "kind": "parse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "message"
+        ],
+        "value": ""
+      }
+    },
+    {
+      "case_id": "macro-wire-whitespace-error-message-ufeff",
+      "expected": "wire_nonblank",
+      "fixture": "model_profile_error",
+      "kind": "parse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "message"
+        ],
+        "value": "﻿"
+      }
+    },
+    {
+      "case_id": "macro-wire-whitespace-error-message-u00a0",
+      "expected": "wire_nonblank",
+      "fixture": "model_profile_error",
+      "kind": "parse",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "message"
+        ],
+        "value": " "
+      }
+    },
+    {
+      "case_id": "macro-wire-whitespace-output-setting-u0085",
+      "expected": "wire_nonblank",
+      "fixture": "project_planner_model_output",
+      "kind": "model_output",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "setting"
+        ],
+        "value": ""
+      }
+    },
+    {
+      "case_id": "macro-wire-whitespace-output-bible-ufeff",
+      "expected": "wire_nonblank",
+      "fixture": "project_planner_model_output",
+      "kind": "model_output",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "bible"
+        ],
+        "value": "﻿"
+      }
+    },
+    {
+      "case_id": "macro-wire-whitespace-output-outline-u00a0",
+      "expected": "wire_nonblank",
+      "fixture": "project_planner_model_output",
+      "kind": "model_output",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "outline"
+        ],
+        "value": " "
+      }
+    }
+  ],
+  "positive": [
+    "model_secret_put_command",
+    "model_secret_put_result",
+    "model_profile_revise_command",
+    "model_profile_revision",
+    "model_profile_revise_result",
+    "workspace_plan_selection_command",
+    "workspace_plan_selection_result",
+    "project_planning_query",
+    "project_planning_availability_ready",
+    "project_planning_availability_unavailable",
+    "project_planning_start_command",
+    "project_planning_start_result",
+    "project_planner_runtime_input",
+    "project_planner_model_output"
+  ],
+  "schema": "macro-planning-host-corpus/v1",
+  "title": "Host planning identity, CAS, hash and secret boundaries"
+}
