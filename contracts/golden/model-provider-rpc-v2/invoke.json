@@ -1,0 +1,1019 @@
+{
+  "bridge_digest": "e724d3b7ef9ff310dd3e97c251721a6c25d1e914351dba4aae22990fd0cc6dca",
+  "bridge_projection": {
+    "canonical_receipt_identities": {
+      "cancelled": {
+        "profile_revision_id": "model-profile-rev-1",
+        "provider_plugin_id": "com.plotpilot.provider.openai-compatible",
+        "provider_release_id": "9999999999999999999999999999999999999999999999999999999999999999",
+        "receipt_hash": "4f97d6265e05c857561e58cfd3d09f8b5c5926cba39de0bd84f97e3f111d8f6d",
+        "receipt_id": "model-receipt-cancelled-1",
+        "request_hash": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d",
+        "response_asset_id": null,
+        "response_hash": null,
+        "state": "cancelled"
+      },
+      "failed": {
+        "profile_revision_id": "model-profile-rev-1",
+        "provider_plugin_id": "com.plotpilot.provider.openai-compatible",
+        "provider_release_id": "9999999999999999999999999999999999999999999999999999999999999999",
+        "receipt_hash": "6a4926d6e7dc7fcc6e2530e617957ad7b8edcecd3fb377d25aa3977d4996ed9d",
+        "receipt_id": "model-receipt-failed-1",
+        "request_hash": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d",
+        "response_asset_id": null,
+        "response_hash": "fc441604cba97cc007f532c68235d2efdc7c2bd01b931a76148184f3bd47ac02",
+        "state": "failed"
+      },
+      "receipted": {
+        "profile_revision_id": "model-profile-rev-1",
+        "provider_plugin_id": "com.plotpilot.provider.openai-compatible",
+        "provider_release_id": "9999999999999999999999999999999999999999999999999999999999999999",
+        "receipt_hash": "a3e781723978d41a25fca8818fd88acae9b551bd94f1905dde870744f4b8a4f6",
+        "receipt_id": "model-receipt-receipted-1",
+        "request_hash": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d",
+        "response_asset_id": "asset-model-response-1",
+        "response_hash": "8b568e9d868ba8bfb247f6ad7f69bcf64d0146144d3b5342603d809f586abed4",
+        "state": "receipted"
+      },
+      "uncertain": {
+        "profile_revision_id": "model-profile-rev-1",
+        "provider_plugin_id": "com.plotpilot.provider.openai-compatible",
+        "provider_release_id": "9999999999999999999999999999999999999999999999999999999999999999",
+        "receipt_hash": "5ae3c0285fc761daa4cdd506040bbf18c18d9f3e4f9efc178822d464bc2acce7",
+        "receipt_id": "model-receipt-uncertain-1",
+        "request_hash": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d",
+        "response_asset_id": null,
+        "response_hash": "7d440aeee047e1227cfbd8a5517f1f3b6ef9f6d601fe6d90b991b64dcdcb8b30",
+        "state": "uncertain"
+      }
+    },
+    "method": "model.provider.invoke/v1",
+    "prompt_skill_anchor": {
+      "asset_id": "asset-model-receipt-receipted-1",
+      "attempt_id": "attempt-1",
+      "chain_asset_id": "asset-chain-1",
+      "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "chain_id": "chain-1",
+      "content_hash": "8f8db6061486cd03910d34beee284d35d259d45047685e2ca43e6b010e646d5a",
+      "generation_id": "generation-1",
+      "input_asset_id": "asset-input-1",
+      "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "job_id": "job-1",
+      "lease_epoch": 1,
+      "model_profile_revision_id": "model-profile-rev-1",
+      "operation_key": "execute-op-1",
+      "plugin_id": "com.plotpilot.prompt-skill",
+      "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "receipt_hash": "a3e781723978d41a25fca8818fd88acae9b551bd94f1905dde870744f4b8a4f6",
+      "receipt_id": "model-receipt-receipted-1",
+      "run_snapshot_asset_id": "asset-snapshot-1",
+      "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "run_snapshot_id": "snapshot-1",
+      "step_id": "step-1",
+      "workspace_id": "ws-1"
+    },
+    "request": {
+      "id": "123e4567-e89b-42d3-a456-426614174100",
+      "jsonrpc": "2.0",
+      "meta": {
+        "attempt_id": "attempt-1",
+        "context": "attempt",
+        "generation_id": "generation-1",
+        "job_id": "job-1",
+        "lease_epoch": 1,
+        "operation_id": "execute-op-1",
+        "protocol_version": "1",
+        "step_id": "step-1"
+      },
+      "method": "model.provider.invoke/v1",
+      "params": {
+        "model_request_asset": {
+          "asset_id": "asset-model-request-1",
+          "content_hash": "81624f1508f9463023bbe91752d1243fc77972948b8356a4489ce8a621f506c9"
+        },
+        "planner_context": {
+          "attempt_id": "attempt-1",
+          "chain_asset_id": "asset-chain-1",
+          "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+          "chain_id": "chain-1",
+          "generation_id": "generation-1",
+          "input_asset_id": "asset-input-1",
+          "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "job_id": "job-1",
+          "lease_epoch": 1,
+          "model_profile_revision_id": "model-profile-rev-1",
+          "operation_key": "execute-op-1",
+          "plugin_id": "com.plotpilot.prompt-skill",
+          "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "run_snapshot_asset_id": "asset-snapshot-1",
+          "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "run_snapshot_id": "snapshot-1",
+          "step_id": "step-1",
+          "workspace_id": "ws-1"
+        },
+        "schema": "model-provider-invoke-request/v2"
+      }
+    },
+    "terminal_results": {
+      "cancelled": {
+        "model_receipt_anchor": {
+          "asset_id": "asset-model-receipt-cancelled-1",
+          "attempt_id": "attempt-1",
+          "chain_asset_id": "asset-chain-1",
+          "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+          "chain_id": "chain-1",
+          "content_hash": "df2927018d7b51ed66946223080e84fa542dbd75bcbdcaacca5d78a2366ad4c1",
+          "generation_id": "generation-1",
+          "input_asset_id": "asset-input-1",
+          "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "job_id": "job-1",
+          "lease_epoch": 1,
+          "model_profile_revision_id": "model-profile-rev-1",
+          "operation_key": "execute-op-1",
+          "plugin_id": "com.plotpilot.prompt-skill",
+          "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "receipt_hash": "4f97d6265e05c857561e58cfd3d09f8b5c5926cba39de0bd84f97e3f111d8f6d",
+          "receipt_id": "model-receipt-cancelled-1",
+          "run_snapshot_asset_id": "asset-snapshot-1",
+          "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "run_snapshot_id": "snapshot-1",
+          "step_id": "step-1",
+          "workspace_id": "ws-1"
+        },
+        "model_request_asset": {
+          "asset_id": "asset-model-request-1",
+          "content_hash": "81624f1508f9463023bbe91752d1243fc77972948b8356a4489ce8a621f506c9"
+        },
+        "provider_terminal_state": "cancelled",
+        "provider_transport_request_hash": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d",
+        "provider_transport_response_hash": null,
+        "response_asset": null,
+        "schema": "model-provider-invoke-result/v2"
+      },
+      "failed": {
+        "model_receipt_anchor": {
+          "asset_id": "asset-model-receipt-failed-1",
+          "attempt_id": "attempt-1",
+          "chain_asset_id": "asset-chain-1",
+          "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+          "chain_id": "chain-1",
+          "content_hash": "19bad72b1d7f9320353bb616e350d9c51958f34b802bc8f495ce224c480475a6",
+          "generation_id": "generation-1",
+          "input_asset_id": "asset-input-1",
+          "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "job_id": "job-1",
+          "lease_epoch": 1,
+          "model_profile_revision_id": "model-profile-rev-1",
+          "operation_key": "execute-op-1",
+          "plugin_id": "com.plotpilot.prompt-skill",
+          "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "receipt_hash": "6a4926d6e7dc7fcc6e2530e617957ad7b8edcecd3fb377d25aa3977d4996ed9d",
+          "receipt_id": "model-receipt-failed-1",
+          "run_snapshot_asset_id": "asset-snapshot-1",
+          "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "run_snapshot_id": "snapshot-1",
+          "step_id": "step-1",
+          "workspace_id": "ws-1"
+        },
+        "model_request_asset": {
+          "asset_id": "asset-model-request-1",
+          "content_hash": "81624f1508f9463023bbe91752d1243fc77972948b8356a4489ce8a621f506c9"
+        },
+        "provider_terminal_state": "failed",
+        "provider_transport_request_hash": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d",
+        "provider_transport_response_hash": "fc441604cba97cc007f532c68235d2efdc7c2bd01b931a76148184f3bd47ac02",
+        "response_asset": null,
+        "schema": "model-provider-invoke-result/v2"
+      },
+      "receipted": {
+        "model_receipt_anchor": {
+          "asset_id": "asset-model-receipt-receipted-1",
+          "attempt_id": "attempt-1",
+          "chain_asset_id": "asset-chain-1",
+          "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+          "chain_id": "chain-1",
+          "content_hash": "8f8db6061486cd03910d34beee284d35d259d45047685e2ca43e6b010e646d5a",
+          "generation_id": "generation-1",
+          "input_asset_id": "asset-input-1",
+          "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "job_id": "job-1",
+          "lease_epoch": 1,
+          "model_profile_revision_id": "model-profile-rev-1",
+          "operation_key": "execute-op-1",
+          "plugin_id": "com.plotpilot.prompt-skill",
+          "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "receipt_hash": "a3e781723978d41a25fca8818fd88acae9b551bd94f1905dde870744f4b8a4f6",
+          "receipt_id": "model-receipt-receipted-1",
+          "run_snapshot_asset_id": "asset-snapshot-1",
+          "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "run_snapshot_id": "snapshot-1",
+          "step_id": "step-1",
+          "workspace_id": "ws-1"
+        },
+        "model_request_asset": {
+          "asset_id": "asset-model-request-1",
+          "content_hash": "81624f1508f9463023bbe91752d1243fc77972948b8356a4489ce8a621f506c9"
+        },
+        "provider_terminal_state": "receipted",
+        "provider_transport_request_hash": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d",
+        "provider_transport_response_hash": "8b568e9d868ba8bfb247f6ad7f69bcf64d0146144d3b5342603d809f586abed4",
+        "response_asset": {
+          "asset_id": "asset-model-response-1",
+          "content_hash": "4d02c635d52ed562b1d850e0922f785ab3198795260fa79d4a371d6be74dd253"
+        },
+        "schema": "model-provider-invoke-result/v2"
+      },
+      "uncertain": {
+        "model_receipt_anchor": {
+          "asset_id": "asset-model-receipt-uncertain-1",
+          "attempt_id": "attempt-1",
+          "chain_asset_id": "asset-chain-1",
+          "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+          "chain_id": "chain-1",
+          "content_hash": "81ce38027bd49bc1605a347649a115143b2b5b7740a42cf562a947f9bd019c73",
+          "generation_id": "generation-1",
+          "input_asset_id": "asset-input-1",
+          "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "job_id": "job-1",
+          "lease_epoch": 1,
+          "model_profile_revision_id": "model-profile-rev-1",
+          "operation_key": "execute-op-1",
+          "plugin_id": "com.plotpilot.prompt-skill",
+          "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "receipt_hash": "5ae3c0285fc761daa4cdd506040bbf18c18d9f3e4f9efc178822d464bc2acce7",
+          "receipt_id": "model-receipt-uncertain-1",
+          "run_snapshot_asset_id": "asset-snapshot-1",
+          "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "run_snapshot_id": "snapshot-1",
+          "step_id": "step-1",
+          "workspace_id": "ws-1"
+        },
+        "model_request_asset": {
+          "asset_id": "asset-model-request-1",
+          "content_hash": "81624f1508f9463023bbe91752d1243fc77972948b8356a4489ce8a621f506c9"
+        },
+        "provider_terminal_state": "uncertain",
+        "provider_transport_request_hash": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d",
+        "provider_transport_response_hash": "7d440aeee047e1227cfbd8a5517f1f3b6ef9f6d601fe6d90b991b64dcdcb8b30",
+        "response_asset": null,
+        "schema": "model-provider-invoke-result/v2"
+      }
+    }
+  },
+  "canonical_receipts": {
+    "cancelled": {
+      "completion_tokens": null,
+      "cost": null,
+      "endpoint": "https://models.example.test/v1",
+      "error": "cancelled",
+      "input_context": {
+        "attempt_id": "attempt-1",
+        "chain_asset_id": "asset-chain-1",
+        "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+        "chain_id": "chain-1",
+        "chain_index": 0,
+        "generation_id": "generation-1",
+        "input_asset_id": "asset-input-1",
+        "input_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "job_id": "job-1",
+        "lease_epoch": 1,
+        "operation_key": "execute-op-1",
+        "package_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "parameters_asset_id": null,
+        "parameters_hash": null,
+        "plugin_id": "com.plotpilot.prompt-skill",
+        "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "release_id": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "run_snapshot_asset_id": "asset-snapshot-1",
+        "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "run_snapshot_id": "snapshot-1",
+        "skill_id": "skill.prompt",
+        "step_id": "step-1",
+        "workspace_id": "ws-1"
+      },
+      "invocation_id": "provider-invocation-1",
+      "invocation_key": "provider-invocation-key-1",
+      "lifecycle": [
+        "prepared",
+        "cancelled"
+      ],
+      "metadata": {
+        "fixture": "p0b",
+        "terminal_state": "cancelled"
+      },
+      "model": "planner-model-1",
+      "profile_revision": {
+        "endpoint": "https://models.example.test/v1",
+        "model_name": "planner-model-1",
+        "profile_revision_id": "model-profile-rev-1",
+        "provider_plugin_id": "com.plotpilot.provider.openai-compatible",
+        "provider_release_id": "9999999999999999999999999999999999999999999999999999999999999999"
+      },
+      "profile_revision_id": "model-profile-rev-1",
+      "prompt_tokens": null,
+      "provider_plugin_id": "com.plotpilot.provider.openai-compatible",
+      "provider_release_id": "9999999999999999999999999999999999999999999999999999999999999999",
+      "receipt_hash": "4f97d6265e05c857561e58cfd3d09f8b5c5926cba39de0bd84f97e3f111d8f6d",
+      "receipt_id": "model-receipt-cancelled-1",
+      "recovered": false,
+      "request_hash": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d",
+      "response_asset_id": null,
+      "response_hash": null,
+      "retry_count": 0,
+      "schema": "model-receipt/v1",
+      "state": "cancelled",
+      "stream_termination": "cancelled",
+      "total_tokens": null,
+      "uncertain": false
+    },
+    "failed": {
+      "completion_tokens": null,
+      "cost": null,
+      "endpoint": "https://models.example.test/v1",
+      "error": "provider unavailable",
+      "input_context": {
+        "attempt_id": "attempt-1",
+        "chain_asset_id": "asset-chain-1",
+        "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+        "chain_id": "chain-1",
+        "chain_index": 0,
+        "generation_id": "generation-1",
+        "input_asset_id": "asset-input-1",
+        "input_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "job_id": "job-1",
+        "lease_epoch": 1,
+        "operation_key": "execute-op-1",
+        "package_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "parameters_asset_id": null,
+        "parameters_hash": null,
+        "plugin_id": "com.plotpilot.prompt-skill",
+        "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "release_id": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "run_snapshot_asset_id": "asset-snapshot-1",
+        "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "run_snapshot_id": "snapshot-1",
+        "skill_id": "skill.prompt",
+        "step_id": "step-1",
+        "workspace_id": "ws-1"
+      },
+      "invocation_id": "provider-invocation-1",
+      "invocation_key": "provider-invocation-key-1",
+      "lifecycle": [
+        "prepared",
+        "sent",
+        "failed"
+      ],
+      "metadata": {
+        "fixture": "p0b",
+        "terminal_state": "failed"
+      },
+      "model": "planner-model-1",
+      "profile_revision": {
+        "endpoint": "https://models.example.test/v1",
+        "model_name": "planner-model-1",
+        "profile_revision_id": "model-profile-rev-1",
+        "provider_plugin_id": "com.plotpilot.provider.openai-compatible",
+        "provider_release_id": "9999999999999999999999999999999999999999999999999999999999999999"
+      },
+      "profile_revision_id": "model-profile-rev-1",
+      "prompt_tokens": null,
+      "provider_plugin_id": "com.plotpilot.provider.openai-compatible",
+      "provider_release_id": "9999999999999999999999999999999999999999999999999999999999999999",
+      "receipt_hash": "6a4926d6e7dc7fcc6e2530e617957ad7b8edcecd3fb377d25aa3977d4996ed9d",
+      "receipt_id": "model-receipt-failed-1",
+      "recovered": false,
+      "request_hash": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d",
+      "response_asset_id": null,
+      "response_hash": "fc441604cba97cc007f532c68235d2efdc7c2bd01b931a76148184f3bd47ac02",
+      "retry_count": 0,
+      "schema": "model-receipt/v1",
+      "state": "failed",
+      "stream_termination": "http_error",
+      "total_tokens": null,
+      "uncertain": false
+    },
+    "receipted": {
+      "completion_tokens": 7,
+      "cost": "0.0025",
+      "endpoint": "https://models.example.test/v1",
+      "error": null,
+      "input_context": {
+        "attempt_id": "attempt-1",
+        "chain_asset_id": "asset-chain-1",
+        "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+        "chain_id": "chain-1",
+        "chain_index": 0,
+        "generation_id": "generation-1",
+        "input_asset_id": "asset-input-1",
+        "input_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "job_id": "job-1",
+        "lease_epoch": 1,
+        "operation_key": "execute-op-1",
+        "package_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "parameters_asset_id": null,
+        "parameters_hash": null,
+        "plugin_id": "com.plotpilot.prompt-skill",
+        "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "release_id": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "run_snapshot_asset_id": "asset-snapshot-1",
+        "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "run_snapshot_id": "snapshot-1",
+        "skill_id": "skill.prompt",
+        "step_id": "step-1",
+        "workspace_id": "ws-1"
+      },
+      "invocation_id": "provider-invocation-1",
+      "invocation_key": "provider-invocation-key-1",
+      "lifecycle": [
+        "prepared",
+        "sent",
+        "receipted"
+      ],
+      "metadata": {
+        "fixture": "p0b",
+        "terminal_state": "receipted"
+      },
+      "model": "planner-model-1",
+      "profile_revision": {
+        "endpoint": "https://models.example.test/v1",
+        "model_name": "planner-model-1",
+        "profile_revision_id": "model-profile-rev-1",
+        "provider_plugin_id": "com.plotpilot.provider.openai-compatible",
+        "provider_release_id": "9999999999999999999999999999999999999999999999999999999999999999"
+      },
+      "profile_revision_id": "model-profile-rev-1",
+      "prompt_tokens": 11,
+      "provider_plugin_id": "com.plotpilot.provider.openai-compatible",
+      "provider_release_id": "9999999999999999999999999999999999999999999999999999999999999999",
+      "receipt_hash": "a3e781723978d41a25fca8818fd88acae9b551bd94f1905dde870744f4b8a4f6",
+      "receipt_id": "model-receipt-receipted-1",
+      "recovered": false,
+      "request_hash": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d",
+      "response_asset_id": "asset-model-response-1",
+      "response_hash": "8b568e9d868ba8bfb247f6ad7f69bcf64d0146144d3b5342603d809f586abed4",
+      "retry_count": 0,
+      "schema": "model-receipt/v1",
+      "state": "receipted",
+      "stream_termination": "response",
+      "total_tokens": 18,
+      "uncertain": false
+    },
+    "uncertain": {
+      "completion_tokens": null,
+      "cost": null,
+      "endpoint": "https://models.example.test/v1",
+      "error": "sent without terminal acknowledgement",
+      "input_context": {
+        "attempt_id": "attempt-1",
+        "chain_asset_id": "asset-chain-1",
+        "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+        "chain_id": "chain-1",
+        "chain_index": 0,
+        "generation_id": "generation-1",
+        "input_asset_id": "asset-input-1",
+        "input_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "job_id": "job-1",
+        "lease_epoch": 1,
+        "operation_key": "execute-op-1",
+        "package_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "parameters_asset_id": null,
+        "parameters_hash": null,
+        "plugin_id": "com.plotpilot.prompt-skill",
+        "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "release_id": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "run_snapshot_asset_id": "asset-snapshot-1",
+        "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "run_snapshot_id": "snapshot-1",
+        "skill_id": "skill.prompt",
+        "step_id": "step-1",
+        "workspace_id": "ws-1"
+      },
+      "invocation_id": "provider-invocation-1",
+      "invocation_key": "provider-invocation-key-1",
+      "lifecycle": [
+        "prepared",
+        "sent",
+        "uncertain"
+      ],
+      "metadata": {
+        "fixture": "p0b",
+        "terminal_state": "uncertain"
+      },
+      "model": "planner-model-1",
+      "profile_revision": {
+        "endpoint": "https://models.example.test/v1",
+        "model_name": "planner-model-1",
+        "profile_revision_id": "model-profile-rev-1",
+        "provider_plugin_id": "com.plotpilot.provider.openai-compatible",
+        "provider_release_id": "9999999999999999999999999999999999999999999999999999999999999999"
+      },
+      "profile_revision_id": "model-profile-rev-1",
+      "prompt_tokens": null,
+      "provider_plugin_id": "com.plotpilot.provider.openai-compatible",
+      "provider_release_id": "9999999999999999999999999999999999999999999999999999999999999999",
+      "receipt_hash": "5ae3c0285fc761daa4cdd506040bbf18c18d9f3e4f9efc178822d464bc2acce7",
+      "receipt_id": "model-receipt-uncertain-1",
+      "recovered": false,
+      "request_hash": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d",
+      "response_asset_id": null,
+      "response_hash": "7d440aeee047e1227cfbd8a5517f1f3b6ef9f6d601fe6d90b991b64dcdcb8b30",
+      "retry_count": 0,
+      "schema": "model-receipt/v1",
+      "state": "uncertain",
+      "stream_termination": "transport_unknown",
+      "total_tokens": null,
+      "uncertain": true
+    }
+  },
+  "error": {
+    "error": {
+      "code": 1001,
+      "data": {
+        "details_asset_id": null,
+        "error_id": "model-provider-error-1",
+        "retryable": true
+      },
+      "message": "Provider endpoint unavailable before a terminal receipt formed"
+    },
+    "id": "123e4567-e89b-42d3-a456-426614174100",
+    "jsonrpc": "2.0"
+  },
+  "model_request_asset_bytes_hex": "7b226d65737361676573223a5b7b22636f6e74656e74223a2243726561746520746865206d6163726f20706c616e2e222c22726f6c65223a2275736572227d5d2c226f7074696f6e73223a7b2273747265616d223a66616c73652c2274656d7065726174757265223a307d2c2270726f66696c655f7265766973696f6e5f6964223a226d6f64656c2d70726f66696c652d7265762d31222c22736368656d61223a226d6f64656c2d70726f76696465722d726571756573742d61737365742f7631227d",
+  "operation_canonical_bytes_hex": "7b226d6f64656c5f726571756573745f6173736574223a7b2261737365745f6964223a2261737365742d6d6f64656c2d726571756573742d31222c22636f6e74656e745f68617368223a2238313632346631353038663934363330323362626539313735326431323433666337373937323934386238333536613434383963653861363231663530366339227d2c22706c616e6e65725f636f6e74657874223a7b22617474656d70745f6964223a22617474656d70742d31222c22636861696e5f61737365745f6964223a2261737365742d636861696e2d31222c22636861696e5f636f6e74656e745f68617368223a2231313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131222c22636861696e5f6964223a22636861696e2d31222c2267656e65726174696f6e5f6964223a2267656e65726174696f6e2d31222c22696e7075745f61737365745f6964223a2261737365742d696e7075742d31222c22696e7075745f636f6e74656e745f68617368223a2263636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363222c226a6f625f6964223a226a6f622d31222c226c656173655f65706f6368223a312c226d6f64656c5f70726f66696c655f7265766973696f6e5f6964223a226d6f64656c2d70726f66696c652d7265762d31222c226f7065726174696f6e5f6b6579223a22657865637574652d6f702d31222c22706c7567696e5f6964223a22636f6d2e706c6f7470696c6f742e70726f6d70742d736b696c6c222c22706c7567696e5f7061636b6167655f68617368223a2262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262222c22706c7567696e5f72656c656173655f6964223a2261616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161222c2272756e5f736e617073686f745f61737365745f6964223a2261737365742d736e617073686f742d31222c2272756e5f736e617073686f745f68617368223a2262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262222c2272756e5f736e617073686f745f6964223a22736e617073686f742d31222c22737465705f6964223a22737465702d31222c22776f726b73706163655f6964223a2277732d31227d2c22736368656d61223a226d6f64656c2d70726f76696465722d696e766f6b652d726571756573742f7632227d",
+  "operation_digest": "fe7da5a2964ce063c99c692b4a9df92af7133cf1d7a5980a0e8bb6065b7eefcc",
+  "receipt_asset_bytes_hex": {
+    "cancelled": "7b22636f6d706c6574696f6e5f746f6b656e73223a6e756c6c2c22636f7374223a6e756c6c2c22656e64706f696e74223a2268747470733a2f2f6d6f64656c732e6578616d706c652e746573742f7631222c226572726f72223a2263616e63656c6c6564222c22696e7075745f636f6e74657874223a7b22617474656d70745f6964223a22617474656d70742d31222c22636861696e5f61737365745f6964223a2261737365742d636861696e2d31222c22636861696e5f636f6e74656e745f68617368223a2231313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131222c22636861696e5f6964223a22636861696e2d31222c22636861696e5f696e646578223a302c2267656e65726174696f6e5f6964223a2267656e65726174696f6e2d31222c22696e7075745f61737365745f6964223a2261737365742d696e7075742d31222c22696e7075745f68617368223a2263636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363222c226a6f625f6964223a226a6f622d31222c226c656173655f65706f6368223a312c226f7065726174696f6e5f6b6579223a22657865637574652d6f702d31222c227061636b6167655f68617368223a2264646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464222c22706172616d65746572735f61737365745f6964223a6e756c6c2c22706172616d65746572735f68617368223a6e756c6c2c22706c7567696e5f6964223a22636f6d2e706c6f7470696c6f742e70726f6d70742d736b696c6c222c22706c7567696e5f7061636b6167655f68617368223a2262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262222c22706c7567696e5f72656c656173655f6964223a2261616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161222c2272656c656173655f6964223a2263636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363222c2272756e5f736e617073686f745f61737365745f6964223a2261737365742d736e617073686f742d31222c2272756e5f736e617073686f745f68617368223a2262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262222c2272756e5f736e617073686f745f6964223a22736e617073686f742d31222c22736b696c6c5f6964223a22736b696c6c2e70726f6d7074222c22737465705f6964223a22737465702d31222c22776f726b73706163655f6964223a2277732d31227d2c22696e766f636174696f6e5f6964223a2270726f76696465722d696e766f636174696f6e2d31222c22696e766f636174696f6e5f6b6579223a2270726f76696465722d696e766f636174696f6e2d6b65792d31222c226c6966656379636c65223a5b227072657061726564222c2263616e63656c6c6564225d2c226d65746164617461223a7b2266697874757265223a22703062222c227465726d696e616c5f7374617465223a2263616e63656c6c6564227d2c226d6f64656c223a22706c616e6e65722d6d6f64656c2d31222c2270726f66696c655f7265766973696f6e223a7b22656e64706f696e74223a2268747470733a2f2f6d6f64656c732e6578616d706c652e746573742f7631222c226d6f64656c5f6e616d65223a22706c616e6e65722d6d6f64656c2d31222c2270726f66696c655f7265766973696f6e5f6964223a226d6f64656c2d70726f66696c652d7265762d31222c2270726f76696465725f706c7567696e5f6964223a22636f6d2e706c6f7470696c6f742e70726f76696465722e6f70656e61692d636f6d70617469626c65222c2270726f76696465725f72656c656173655f6964223a2239393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939227d2c2270726f66696c655f7265766973696f6e5f6964223a226d6f64656c2d70726f66696c652d7265762d31222c2270726f6d70745f746f6b656e73223a6e756c6c2c2270726f76696465725f706c7567696e5f6964223a22636f6d2e706c6f7470696c6f742e70726f76696465722e6f70656e61692d636f6d70617469626c65222c2270726f76696465725f72656c656173655f6964223a2239393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939222c22726563656970745f68617368223a2234663937643632363565303563383537353631653538636664336430396638623563353932366362613339646530626438346639376533663131316438663664222c22726563656970745f6964223a226d6f64656c2d726563656970742d63616e63656c6c65642d31222c227265636f7665726564223a66616c73652c22726571756573745f68617368223a2263383234386638386230646531613665653462633432346464333036366663396262306465303638376363313436376434616661643238396135303136643264222c22726573706f6e73655f61737365745f6964223a6e756c6c2c22726573706f6e73655f68617368223a6e756c6c2c2272657472795f636f756e74223a302c22736368656d61223a226d6f64656c2d726563656970742f7631222c227374617465223a2263616e63656c6c6564222c2273747265616d5f7465726d696e6174696f6e223a2263616e63656c6c6564222c22746f74616c5f746f6b656e73223a6e756c6c2c22756e6365727461696e223a66616c73657d",
+    "failed": "7b22636f6d706c6574696f6e5f746f6b656e73223a6e756c6c2c22636f7374223a6e756c6c2c22656e64706f696e74223a2268747470733a2f2f6d6f64656c732e6578616d706c652e746573742f7631222c226572726f72223a2270726f766964657220756e617661696c61626c65222c22696e7075745f636f6e74657874223a7b22617474656d70745f6964223a22617474656d70742d31222c22636861696e5f61737365745f6964223a2261737365742d636861696e2d31222c22636861696e5f636f6e74656e745f68617368223a2231313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131222c22636861696e5f6964223a22636861696e2d31222c22636861696e5f696e646578223a302c2267656e65726174696f6e5f6964223a2267656e65726174696f6e2d31222c22696e7075745f61737365745f6964223a2261737365742d696e7075742d31222c22696e7075745f68617368223a2263636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363222c226a6f625f6964223a226a6f622d31222c226c656173655f65706f6368223a312c226f7065726174696f6e5f6b6579223a22657865637574652d6f702d31222c227061636b6167655f68617368223a2264646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464222c22706172616d65746572735f61737365745f6964223a6e756c6c2c22706172616d65746572735f68617368223a6e756c6c2c22706c7567696e5f6964223a22636f6d2e706c6f7470696c6f742e70726f6d70742d736b696c6c222c22706c7567696e5f7061636b6167655f68617368223a2262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262222c22706c7567696e5f72656c656173655f6964223a2261616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161222c2272656c656173655f6964223a2263636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363222c2272756e5f736e617073686f745f61737365745f6964223a2261737365742d736e617073686f742d31222c2272756e5f736e617073686f745f68617368223a2262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262222c2272756e5f736e617073686f745f6964223a22736e617073686f742d31222c22736b696c6c5f6964223a22736b696c6c2e70726f6d7074222c22737465705f6964223a22737465702d31222c22776f726b73706163655f6964223a2277732d31227d2c22696e766f636174696f6e5f6964223a2270726f76696465722d696e766f636174696f6e2d31222c22696e766f636174696f6e5f6b6579223a2270726f76696465722d696e766f636174696f6e2d6b65792d31222c226c6966656379636c65223a5b227072657061726564222c2273656e74222c226661696c6564225d2c226d65746164617461223a7b2266697874757265223a22703062222c227465726d696e616c5f7374617465223a226661696c6564227d2c226d6f64656c223a22706c616e6e65722d6d6f64656c2d31222c2270726f66696c655f7265766973696f6e223a7b22656e64706f696e74223a2268747470733a2f2f6d6f64656c732e6578616d706c652e746573742f7631222c226d6f64656c5f6e616d65223a22706c616e6e65722d6d6f64656c2d31222c2270726f66696c655f7265766973696f6e5f6964223a226d6f64656c2d70726f66696c652d7265762d31222c2270726f76696465725f706c7567696e5f6964223a22636f6d2e706c6f7470696c6f742e70726f76696465722e6f70656e61692d636f6d70617469626c65222c2270726f76696465725f72656c656173655f6964223a2239393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939227d2c2270726f66696c655f7265766973696f6e5f6964223a226d6f64656c2d70726f66696c652d7265762d31222c2270726f6d70745f746f6b656e73223a6e756c6c2c2270726f76696465725f706c7567696e5f6964223a22636f6d2e706c6f7470696c6f742e70726f76696465722e6f70656e61692d636f6d70617469626c65222c2270726f76696465725f72656c656173655f6964223a2239393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939222c22726563656970745f68617368223a2236613439323664366537646337666363366532353330653631373935376164376238656463656364336662333737643235616133393737643439393665643964222c22726563656970745f6964223a226d6f64656c2d726563656970742d6661696c65642d31222c227265636f7665726564223a66616c73652c22726571756573745f68617368223a2263383234386638386230646531613665653462633432346464333036366663396262306465303638376363313436376434616661643238396135303136643264222c22726573706f6e73655f61737365745f6964223a6e756c6c2c22726573706f6e73655f68617368223a2266633434313630346362613937636330303766353332633638323335643265666463376332626430316239333161373631343831383466336264343761633032222c2272657472795f636f756e74223a302c22736368656d61223a226d6f64656c2d726563656970742f7631222c227374617465223a226661696c6564222c2273747265616d5f7465726d696e6174696f6e223a22687474705f6572726f72222c22746f74616c5f746f6b656e73223a6e756c6c2c22756e6365727461696e223a66616c73657d",
+    "receipted": "7b22636f6d706c6574696f6e5f746f6b656e73223a372c22636f7374223a22302e30303235222c22656e64706f696e74223a2268747470733a2f2f6d6f64656c732e6578616d706c652e746573742f7631222c226572726f72223a6e756c6c2c22696e7075745f636f6e74657874223a7b22617474656d70745f6964223a22617474656d70742d31222c22636861696e5f61737365745f6964223a2261737365742d636861696e2d31222c22636861696e5f636f6e74656e745f68617368223a2231313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131222c22636861696e5f6964223a22636861696e2d31222c22636861696e5f696e646578223a302c2267656e65726174696f6e5f6964223a2267656e65726174696f6e2d31222c22696e7075745f61737365745f6964223a2261737365742d696e7075742d31222c22696e7075745f68617368223a2263636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363222c226a6f625f6964223a226a6f622d31222c226c656173655f65706f6368223a312c226f7065726174696f6e5f6b6579223a22657865637574652d6f702d31222c227061636b6167655f68617368223a2264646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464222c22706172616d65746572735f61737365745f6964223a6e756c6c2c22706172616d65746572735f68617368223a6e756c6c2c22706c7567696e5f6964223a22636f6d2e706c6f7470696c6f742e70726f6d70742d736b696c6c222c22706c7567696e5f7061636b6167655f68617368223a2262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262222c22706c7567696e5f72656c656173655f6964223a2261616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161222c2272656c656173655f6964223a2263636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363222c2272756e5f736e617073686f745f61737365745f6964223a2261737365742d736e617073686f742d31222c2272756e5f736e617073686f745f68617368223a2262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262222c2272756e5f736e617073686f745f6964223a22736e617073686f742d31222c22736b696c6c5f6964223a22736b696c6c2e70726f6d7074222c22737465705f6964223a22737465702d31222c22776f726b73706163655f6964223a2277732d31227d2c22696e766f636174696f6e5f6964223a2270726f76696465722d696e766f636174696f6e2d31222c22696e766f636174696f6e5f6b6579223a2270726f76696465722d696e766f636174696f6e2d6b65792d31222c226c6966656379636c65223a5b227072657061726564222c2273656e74222c22726563656970746564225d2c226d65746164617461223a7b2266697874757265223a22703062222c227465726d696e616c5f7374617465223a22726563656970746564227d2c226d6f64656c223a22706c616e6e65722d6d6f64656c2d31222c2270726f66696c655f7265766973696f6e223a7b22656e64706f696e74223a2268747470733a2f2f6d6f64656c732e6578616d706c652e746573742f7631222c226d6f64656c5f6e616d65223a22706c616e6e65722d6d6f64656c2d31222c2270726f66696c655f7265766973696f6e5f6964223a226d6f64656c2d70726f66696c652d7265762d31222c2270726f76696465725f706c7567696e5f6964223a22636f6d2e706c6f7470696c6f742e70726f76696465722e6f70656e61692d636f6d70617469626c65222c2270726f76696465725f72656c656173655f6964223a2239393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939227d2c2270726f66696c655f7265766973696f6e5f6964223a226d6f64656c2d70726f66696c652d7265762d31222c2270726f6d70745f746f6b656e73223a31312c2270726f76696465725f706c7567696e5f6964223a22636f6d2e706c6f7470696c6f742e70726f76696465722e6f70656e61692d636f6d70617469626c65222c2270726f76696465725f72656c656173655f6964223a2239393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939222c22726563656970745f68617368223a2261336537383137323339373864343161323566636138383138666438386163616539623535316264393466313930356464653837303734346634623861346636222c22726563656970745f6964223a226d6f64656c2d726563656970742d7265636569707465642d31222c227265636f7665726564223a66616c73652c22726571756573745f68617368223a2263383234386638386230646531613665653462633432346464333036366663396262306465303638376363313436376434616661643238396135303136643264222c22726573706f6e73655f61737365745f6964223a2261737365742d6d6f64656c2d726573706f6e73652d31222c22726573706f6e73655f68617368223a2238623536386539643836386261386266623234376636616437663639626366363464303134363134346433623533343236303364383039663538366162656434222c2272657472795f636f756e74223a302c22736368656d61223a226d6f64656c2d726563656970742f7631222c227374617465223a22726563656970746564222c2273747265616d5f7465726d696e6174696f6e223a22726573706f6e7365222c22746f74616c5f746f6b656e73223a31382c22756e6365727461696e223a66616c73657d",
+    "uncertain": "7b22636f6d706c6574696f6e5f746f6b656e73223a6e756c6c2c22636f7374223a6e756c6c2c22656e64706f696e74223a2268747470733a2f2f6d6f64656c732e6578616d706c652e746573742f7631222c226572726f72223a2273656e7420776974686f7574207465726d696e616c2061636b6e6f776c656467656d656e74222c22696e7075745f636f6e74657874223a7b22617474656d70745f6964223a22617474656d70742d31222c22636861696e5f61737365745f6964223a2261737365742d636861696e2d31222c22636861696e5f636f6e74656e745f68617368223a2231313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131313131222c22636861696e5f6964223a22636861696e2d31222c22636861696e5f696e646578223a302c2267656e65726174696f6e5f6964223a2267656e65726174696f6e2d31222c22696e7075745f61737365745f6964223a2261737365742d696e7075742d31222c22696e7075745f68617368223a2263636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363222c226a6f625f6964223a226a6f622d31222c226c656173655f65706f6368223a312c226f7065726174696f6e5f6b6579223a22657865637574652d6f702d31222c227061636b6167655f68617368223a2264646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464222c22706172616d65746572735f61737365745f6964223a6e756c6c2c22706172616d65746572735f68617368223a6e756c6c2c22706c7567696e5f6964223a22636f6d2e706c6f7470696c6f742e70726f6d70742d736b696c6c222c22706c7567696e5f7061636b6167655f68617368223a2262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262222c22706c7567696e5f72656c656173655f6964223a2261616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161222c2272656c656173655f6964223a2263636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363222c2272756e5f736e617073686f745f61737365745f6964223a2261737365742d736e617073686f742d31222c2272756e5f736e617073686f745f68617368223a2262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262222c2272756e5f736e617073686f745f6964223a22736e617073686f742d31222c22736b696c6c5f6964223a22736b696c6c2e70726f6d7074222c22737465705f6964223a22737465702d31222c22776f726b73706163655f6964223a2277732d31227d2c22696e766f636174696f6e5f6964223a2270726f76696465722d696e766f636174696f6e2d31222c22696e766f636174696f6e5f6b6579223a2270726f76696465722d696e766f636174696f6e2d6b65792d31222c226c6966656379636c65223a5b227072657061726564222c2273656e74222c22756e6365727461696e225d2c226d65746164617461223a7b2266697874757265223a22703062222c227465726d696e616c5f7374617465223a22756e6365727461696e227d2c226d6f64656c223a22706c616e6e65722d6d6f64656c2d31222c2270726f66696c655f7265766973696f6e223a7b22656e64706f696e74223a2268747470733a2f2f6d6f64656c732e6578616d706c652e746573742f7631222c226d6f64656c5f6e616d65223a22706c616e6e65722d6d6f64656c2d31222c2270726f66696c655f7265766973696f6e5f6964223a226d6f64656c2d70726f66696c652d7265762d31222c2270726f76696465725f706c7567696e5f6964223a22636f6d2e706c6f7470696c6f742e70726f76696465722e6f70656e61692d636f6d70617469626c65222c2270726f76696465725f72656c656173655f6964223a2239393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939227d2c2270726f66696c655f7265766973696f6e5f6964223a226d6f64656c2d70726f66696c652d7265762d31222c2270726f6d70745f746f6b656e73223a6e756c6c2c2270726f76696465725f706c7567696e5f6964223a22636f6d2e706c6f7470696c6f742e70726f76696465722e6f70656e61692d636f6d70617469626c65222c2270726f76696465725f72656c656173655f6964223a2239393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939222c22726563656970745f68617368223a2235616533633032383566633736316461613463646435303630343062626631386331386439663365346639656663313738383232643436346263326163636537222c22726563656970745f6964223a226d6f64656c2d726563656970742d756e6365727461696e2d31222c227265636f7665726564223a66616c73652c22726571756573745f68617368223a2263383234386638386230646531613665653462633432346464333036366663396262306465303638376363313436376434616661643238396135303136643264222c22726573706f6e73655f61737365745f6964223a6e756c6c2c22726573706f6e73655f68617368223a2237643434306165656530343765313232376366626438613535313766316633623665663966366436303166653664393062393931623634646364636238623330222c2272657472795f636f756e74223a302c22736368656d61223a226d6f64656c2d726563656970742f7631222c227374617465223a22756e6365727461696e222c2273747265616d5f7465726d696e6174696f6e223a227472616e73706f72745f756e6b6e6f776e222c22746f74616c5f746f6b656e73223a6e756c6c2c22756e6365727461696e223a747275657d"
+  },
+  "receipt_asset_identities": {
+    "cancelled": {
+      "asset_id": "asset-model-receipt-cancelled-1",
+      "content_hash": "df2927018d7b51ed66946223080e84fa542dbd75bcbdcaacca5d78a2366ad4c1"
+    },
+    "failed": {
+      "asset_id": "asset-model-receipt-failed-1",
+      "content_hash": "19bad72b1d7f9320353bb616e350d9c51958f34b802bc8f495ce224c480475a6"
+    },
+    "receipted": {
+      "asset_id": "asset-model-receipt-receipted-1",
+      "content_hash": "8f8db6061486cd03910d34beee284d35d259d45047685e2ca43e6b010e646d5a"
+    },
+    "uncertain": {
+      "asset_id": "asset-model-receipt-uncertain-1",
+      "content_hash": "81ce38027bd49bc1605a347649a115143b2b5b7740a42cf562a947f9bd019c73"
+    }
+  },
+  "request": {
+    "id": "123e4567-e89b-42d3-a456-426614174100",
+    "jsonrpc": "2.0",
+    "meta": {
+      "attempt_id": "attempt-1",
+      "context": "attempt",
+      "generation_id": "generation-1",
+      "job_id": "job-1",
+      "lease_epoch": 1,
+      "operation_id": "execute-op-1",
+      "protocol_version": "1",
+      "step_id": "step-1"
+    },
+    "method": "model.provider.invoke/v1",
+    "params": {
+      "model_request_asset": {
+        "asset_id": "asset-model-request-1",
+        "content_hash": "81624f1508f9463023bbe91752d1243fc77972948b8356a4489ce8a621f506c9"
+      },
+      "planner_context": {
+        "attempt_id": "attempt-1",
+        "chain_asset_id": "asset-chain-1",
+        "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+        "chain_id": "chain-1",
+        "generation_id": "generation-1",
+        "input_asset_id": "asset-input-1",
+        "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "job_id": "job-1",
+        "lease_epoch": 1,
+        "model_profile_revision_id": "model-profile-rev-1",
+        "operation_key": "execute-op-1",
+        "plugin_id": "com.plotpilot.prompt-skill",
+        "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "run_snapshot_asset_id": "asset-snapshot-1",
+        "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "run_snapshot_id": "snapshot-1",
+        "step_id": "step-1",
+        "workspace_id": "ws-1"
+      },
+      "schema": "model-provider-invoke-request/v2"
+    }
+  },
+  "response_asset_bytes_hex": "7b22736368656d61223a226d6f64656c2d70726f76696465722d726573706f6e73652d61737365742f7631222c2274657874223a2253657474696e672c206269626c652c20616e64206f75746c696e652e227d",
+  "result": {
+    "model_receipt_anchor": {
+      "asset_id": "asset-model-receipt-receipted-1",
+      "attempt_id": "attempt-1",
+      "chain_asset_id": "asset-chain-1",
+      "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "chain_id": "chain-1",
+      "content_hash": "8f8db6061486cd03910d34beee284d35d259d45047685e2ca43e6b010e646d5a",
+      "generation_id": "generation-1",
+      "input_asset_id": "asset-input-1",
+      "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "job_id": "job-1",
+      "lease_epoch": 1,
+      "model_profile_revision_id": "model-profile-rev-1",
+      "operation_key": "execute-op-1",
+      "plugin_id": "com.plotpilot.prompt-skill",
+      "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "receipt_hash": "a3e781723978d41a25fca8818fd88acae9b551bd94f1905dde870744f4b8a4f6",
+      "receipt_id": "model-receipt-receipted-1",
+      "run_snapshot_asset_id": "asset-snapshot-1",
+      "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "run_snapshot_id": "snapshot-1",
+      "step_id": "step-1",
+      "workspace_id": "ws-1"
+    },
+    "model_request_asset": {
+      "asset_id": "asset-model-request-1",
+      "content_hash": "81624f1508f9463023bbe91752d1243fc77972948b8356a4489ce8a621f506c9"
+    },
+    "provider_terminal_state": "receipted",
+    "provider_transport_request_hash": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d",
+    "provider_transport_response_hash": "8b568e9d868ba8bfb247f6ad7f69bcf64d0146144d3b5342603d809f586abed4",
+    "response_asset": {
+      "asset_id": "asset-model-response-1",
+      "content_hash": "4d02c635d52ed562b1d850e0922f785ab3198795260fa79d4a371d6be74dd253"
+    },
+    "schema": "model-provider-invoke-result/v2"
+  },
+  "schema": "model-provider-rpc-golden/v2",
+  "success": {
+    "id": "123e4567-e89b-42d3-a456-426614174100",
+    "jsonrpc": "2.0",
+    "result": {
+      "model_receipt_anchor": {
+        "asset_id": "asset-model-receipt-receipted-1",
+        "attempt_id": "attempt-1",
+        "chain_asset_id": "asset-chain-1",
+        "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+        "chain_id": "chain-1",
+        "content_hash": "8f8db6061486cd03910d34beee284d35d259d45047685e2ca43e6b010e646d5a",
+        "generation_id": "generation-1",
+        "input_asset_id": "asset-input-1",
+        "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "job_id": "job-1",
+        "lease_epoch": 1,
+        "model_profile_revision_id": "model-profile-rev-1",
+        "operation_key": "execute-op-1",
+        "plugin_id": "com.plotpilot.prompt-skill",
+        "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "receipt_hash": "a3e781723978d41a25fca8818fd88acae9b551bd94f1905dde870744f4b8a4f6",
+        "receipt_id": "model-receipt-receipted-1",
+        "run_snapshot_asset_id": "asset-snapshot-1",
+        "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "run_snapshot_id": "snapshot-1",
+        "step_id": "step-1",
+        "workspace_id": "ws-1"
+      },
+      "model_request_asset": {
+        "asset_id": "asset-model-request-1",
+        "content_hash": "81624f1508f9463023bbe91752d1243fc77972948b8356a4489ce8a621f506c9"
+      },
+      "provider_terminal_state": "receipted",
+      "provider_transport_request_hash": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d",
+      "provider_transport_response_hash": "8b568e9d868ba8bfb247f6ad7f69bcf64d0146144d3b5342603d809f586abed4",
+      "response_asset": {
+        "asset_id": "asset-model-response-1",
+        "content_hash": "4d02c635d52ed562b1d850e0922f785ab3198795260fa79d4a371d6be74dd253"
+      },
+      "schema": "model-provider-invoke-result/v2"
+    }
+  },
+  "terminal_results": {
+    "cancelled": {
+      "model_receipt_anchor": {
+        "asset_id": "asset-model-receipt-cancelled-1",
+        "attempt_id": "attempt-1",
+        "chain_asset_id": "asset-chain-1",
+        "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+        "chain_id": "chain-1",
+        "content_hash": "df2927018d7b51ed66946223080e84fa542dbd75bcbdcaacca5d78a2366ad4c1",
+        "generation_id": "generation-1",
+        "input_asset_id": "asset-input-1",
+        "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "job_id": "job-1",
+        "lease_epoch": 1,
+        "model_profile_revision_id": "model-profile-rev-1",
+        "operation_key": "execute-op-1",
+        "plugin_id": "com.plotpilot.prompt-skill",
+        "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "receipt_hash": "4f97d6265e05c857561e58cfd3d09f8b5c5926cba39de0bd84f97e3f111d8f6d",
+        "receipt_id": "model-receipt-cancelled-1",
+        "run_snapshot_asset_id": "asset-snapshot-1",
+        "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "run_snapshot_id": "snapshot-1",
+        "step_id": "step-1",
+        "workspace_id": "ws-1"
+      },
+      "model_request_asset": {
+        "asset_id": "asset-model-request-1",
+        "content_hash": "81624f1508f9463023bbe91752d1243fc77972948b8356a4489ce8a621f506c9"
+      },
+      "provider_terminal_state": "cancelled",
+      "provider_transport_request_hash": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d",
+      "provider_transport_response_hash": null,
+      "response_asset": null,
+      "schema": "model-provider-invoke-result/v2"
+    },
+    "failed": {
+      "model_receipt_anchor": {
+        "asset_id": "asset-model-receipt-failed-1",
+        "attempt_id": "attempt-1",
+        "chain_asset_id": "asset-chain-1",
+        "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+        "chain_id": "chain-1",
+        "content_hash": "19bad72b1d7f9320353bb616e350d9c51958f34b802bc8f495ce224c480475a6",
+        "generation_id": "generation-1",
+        "input_asset_id": "asset-input-1",
+        "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "job_id": "job-1",
+        "lease_epoch": 1,
+        "model_profile_revision_id": "model-profile-rev-1",
+        "operation_key": "execute-op-1",
+        "plugin_id": "com.plotpilot.prompt-skill",
+        "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "receipt_hash": "6a4926d6e7dc7fcc6e2530e617957ad7b8edcecd3fb377d25aa3977d4996ed9d",
+        "receipt_id": "model-receipt-failed-1",
+        "run_snapshot_asset_id": "asset-snapshot-1",
+        "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "run_snapshot_id": "snapshot-1",
+        "step_id": "step-1",
+        "workspace_id": "ws-1"
+      },
+      "model_request_asset": {
+        "asset_id": "asset-model-request-1",
+        "content_hash": "81624f1508f9463023bbe91752d1243fc77972948b8356a4489ce8a621f506c9"
+      },
+      "provider_terminal_state": "failed",
+      "provider_transport_request_hash": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d",
+      "provider_transport_response_hash": "fc441604cba97cc007f532c68235d2efdc7c2bd01b931a76148184f3bd47ac02",
+      "response_asset": null,
+      "schema": "model-provider-invoke-result/v2"
+    },
+    "receipted": {
+      "model_receipt_anchor": {
+        "asset_id": "asset-model-receipt-receipted-1",
+        "attempt_id": "attempt-1",
+        "chain_asset_id": "asset-chain-1",
+        "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+        "chain_id": "chain-1",
+        "content_hash": "8f8db6061486cd03910d34beee284d35d259d45047685e2ca43e6b010e646d5a",
+        "generation_id": "generation-1",
+        "input_asset_id": "asset-input-1",
+        "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "job_id": "job-1",
+        "lease_epoch": 1,
+        "model_profile_revision_id": "model-profile-rev-1",
+        "operation_key": "execute-op-1",
+        "plugin_id": "com.plotpilot.prompt-skill",
+        "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "receipt_hash": "a3e781723978d41a25fca8818fd88acae9b551bd94f1905dde870744f4b8a4f6",
+        "receipt_id": "model-receipt-receipted-1",
+        "run_snapshot_asset_id": "asset-snapshot-1",
+        "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "run_snapshot_id": "snapshot-1",
+        "step_id": "step-1",
+        "workspace_id": "ws-1"
+      },
+      "model_request_asset": {
+        "asset_id": "asset-model-request-1",
+        "content_hash": "81624f1508f9463023bbe91752d1243fc77972948b8356a4489ce8a621f506c9"
+      },
+      "provider_terminal_state": "receipted",
+      "provider_transport_request_hash": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d",
+      "provider_transport_response_hash": "8b568e9d868ba8bfb247f6ad7f69bcf64d0146144d3b5342603d809f586abed4",
+      "response_asset": {
+        "asset_id": "asset-model-response-1",
+        "content_hash": "4d02c635d52ed562b1d850e0922f785ab3198795260fa79d4a371d6be74dd253"
+      },
+      "schema": "model-provider-invoke-result/v2"
+    },
+    "uncertain": {
+      "model_receipt_anchor": {
+        "asset_id": "asset-model-receipt-uncertain-1",
+        "attempt_id": "attempt-1",
+        "chain_asset_id": "asset-chain-1",
+        "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+        "chain_id": "chain-1",
+        "content_hash": "81ce38027bd49bc1605a347649a115143b2b5b7740a42cf562a947f9bd019c73",
+        "generation_id": "generation-1",
+        "input_asset_id": "asset-input-1",
+        "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "job_id": "job-1",
+        "lease_epoch": 1,
+        "model_profile_revision_id": "model-profile-rev-1",
+        "operation_key": "execute-op-1",
+        "plugin_id": "com.plotpilot.prompt-skill",
+        "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "receipt_hash": "5ae3c0285fc761daa4cdd506040bbf18c18d9f3e4f9efc178822d464bc2acce7",
+        "receipt_id": "model-receipt-uncertain-1",
+        "run_snapshot_asset_id": "asset-snapshot-1",
+        "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "run_snapshot_id": "snapshot-1",
+        "step_id": "step-1",
+        "workspace_id": "ws-1"
+      },
+      "model_request_asset": {
+        "asset_id": "asset-model-request-1",
+        "content_hash": "81624f1508f9463023bbe91752d1243fc77972948b8356a4489ce8a621f506c9"
+      },
+      "provider_terminal_state": "uncertain",
+      "provider_transport_request_hash": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d",
+      "provider_transport_response_hash": "7d440aeee047e1227cfbd8a5517f1f3b6ef9f6d601fe6d90b991b64dcdcb8b30",
+      "response_asset": null,
+      "schema": "model-provider-invoke-result/v2"
+    }
+  },
+  "terminal_successes": {
+    "cancelled": {
+      "id": "123e4567-e89b-42d3-a456-426614174100",
+      "jsonrpc": "2.0",
+      "result": {
+        "model_receipt_anchor": {
+          "asset_id": "asset-model-receipt-cancelled-1",
+          "attempt_id": "attempt-1",
+          "chain_asset_id": "asset-chain-1",
+          "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+          "chain_id": "chain-1",
+          "content_hash": "df2927018d7b51ed66946223080e84fa542dbd75bcbdcaacca5d78a2366ad4c1",
+          "generation_id": "generation-1",
+          "input_asset_id": "asset-input-1",
+          "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "job_id": "job-1",
+          "lease_epoch": 1,
+          "model_profile_revision_id": "model-profile-rev-1",
+          "operation_key": "execute-op-1",
+          "plugin_id": "com.plotpilot.prompt-skill",
+          "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "receipt_hash": "4f97d6265e05c857561e58cfd3d09f8b5c5926cba39de0bd84f97e3f111d8f6d",
+          "receipt_id": "model-receipt-cancelled-1",
+          "run_snapshot_asset_id": "asset-snapshot-1",
+          "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "run_snapshot_id": "snapshot-1",
+          "step_id": "step-1",
+          "workspace_id": "ws-1"
+        },
+        "model_request_asset": {
+          "asset_id": "asset-model-request-1",
+          "content_hash": "81624f1508f9463023bbe91752d1243fc77972948b8356a4489ce8a621f506c9"
+        },
+        "provider_terminal_state": "cancelled",
+        "provider_transport_request_hash": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d",
+        "provider_transport_response_hash": null,
+        "response_asset": null,
+        "schema": "model-provider-invoke-result/v2"
+      }
+    },
+    "failed": {
+      "id": "123e4567-e89b-42d3-a456-426614174100",
+      "jsonrpc": "2.0",
+      "result": {
+        "model_receipt_anchor": {
+          "asset_id": "asset-model-receipt-failed-1",
+          "attempt_id": "attempt-1",
+          "chain_asset_id": "asset-chain-1",
+          "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+          "chain_id": "chain-1",
+          "content_hash": "19bad72b1d7f9320353bb616e350d9c51958f34b802bc8f495ce224c480475a6",
+          "generation_id": "generation-1",
+          "input_asset_id": "asset-input-1",
+          "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "job_id": "job-1",
+          "lease_epoch": 1,
+          "model_profile_revision_id": "model-profile-rev-1",
+          "operation_key": "execute-op-1",
+          "plugin_id": "com.plotpilot.prompt-skill",
+          "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "receipt_hash": "6a4926d6e7dc7fcc6e2530e617957ad7b8edcecd3fb377d25aa3977d4996ed9d",
+          "receipt_id": "model-receipt-failed-1",
+          "run_snapshot_asset_id": "asset-snapshot-1",
+          "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "run_snapshot_id": "snapshot-1",
+          "step_id": "step-1",
+          "workspace_id": "ws-1"
+        },
+        "model_request_asset": {
+          "asset_id": "asset-model-request-1",
+          "content_hash": "81624f1508f9463023bbe91752d1243fc77972948b8356a4489ce8a621f506c9"
+        },
+        "provider_terminal_state": "failed",
+        "provider_transport_request_hash": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d",
+        "provider_transport_response_hash": "fc441604cba97cc007f532c68235d2efdc7c2bd01b931a76148184f3bd47ac02",
+        "response_asset": null,
+        "schema": "model-provider-invoke-result/v2"
+      }
+    },
+    "receipted": {
+      "id": "123e4567-e89b-42d3-a456-426614174100",
+      "jsonrpc": "2.0",
+      "result": {
+        "model_receipt_anchor": {
+          "asset_id": "asset-model-receipt-receipted-1",
+          "attempt_id": "attempt-1",
+          "chain_asset_id": "asset-chain-1",
+          "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+          "chain_id": "chain-1",
+          "content_hash": "8f8db6061486cd03910d34beee284d35d259d45047685e2ca43e6b010e646d5a",
+          "generation_id": "generation-1",
+          "input_asset_id": "asset-input-1",
+          "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "job_id": "job-1",
+          "lease_epoch": 1,
+          "model_profile_revision_id": "model-profile-rev-1",
+          "operation_key": "execute-op-1",
+          "plugin_id": "com.plotpilot.prompt-skill",
+          "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "receipt_hash": "a3e781723978d41a25fca8818fd88acae9b551bd94f1905dde870744f4b8a4f6",
+          "receipt_id": "model-receipt-receipted-1",
+          "run_snapshot_asset_id": "asset-snapshot-1",
+          "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "run_snapshot_id": "snapshot-1",
+          "step_id": "step-1",
+          "workspace_id": "ws-1"
+        },
+        "model_request_asset": {
+          "asset_id": "asset-model-request-1",
+          "content_hash": "81624f1508f9463023bbe91752d1243fc77972948b8356a4489ce8a621f506c9"
+        },
+        "provider_terminal_state": "receipted",
+        "provider_transport_request_hash": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d",
+        "provider_transport_response_hash": "8b568e9d868ba8bfb247f6ad7f69bcf64d0146144d3b5342603d809f586abed4",
+        "response_asset": {
+          "asset_id": "asset-model-response-1",
+          "content_hash": "4d02c635d52ed562b1d850e0922f785ab3198795260fa79d4a371d6be74dd253"
+        },
+        "schema": "model-provider-invoke-result/v2"
+      }
+    },
+    "uncertain": {
+      "id": "123e4567-e89b-42d3-a456-426614174100",
+      "jsonrpc": "2.0",
+      "result": {
+        "model_receipt_anchor": {
+          "asset_id": "asset-model-receipt-uncertain-1",
+          "attempt_id": "attempt-1",
+          "chain_asset_id": "asset-chain-1",
+          "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+          "chain_id": "chain-1",
+          "content_hash": "81ce38027bd49bc1605a347649a115143b2b5b7740a42cf562a947f9bd019c73",
+          "generation_id": "generation-1",
+          "input_asset_id": "asset-input-1",
+          "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "job_id": "job-1",
+          "lease_epoch": 1,
+          "model_profile_revision_id": "model-profile-rev-1",
+          "operation_key": "execute-op-1",
+          "plugin_id": "com.plotpilot.prompt-skill",
+          "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "receipt_hash": "5ae3c0285fc761daa4cdd506040bbf18c18d9f3e4f9efc178822d464bc2acce7",
+          "receipt_id": "model-receipt-uncertain-1",
+          "run_snapshot_asset_id": "asset-snapshot-1",
+          "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "run_snapshot_id": "snapshot-1",
+          "step_id": "step-1",
+          "workspace_id": "ws-1"
+        },
+        "model_request_asset": {
+          "asset_id": "asset-model-request-1",
+          "content_hash": "81624f1508f9463023bbe91752d1243fc77972948b8356a4489ce8a621f506c9"
+        },
+        "provider_terminal_state": "uncertain",
+        "provider_transport_request_hash": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d",
+        "provider_transport_response_hash": "7d440aeee047e1227cfbd8a5517f1f3b6ef9f6d601fe6d90b991b64dcdcb8b30",
+        "response_asset": null,
+        "schema": "model-provider-invoke-result/v2"
+      }
+    }
+  }
+}

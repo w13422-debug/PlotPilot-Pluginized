@@ -99,6 +99,53 @@ SCHEMA_NAME_ALIASES.update(
 )
 
 
+def _load_reserved_provider_method_ids() -> frozenset[str]:
+    """Load the additive Provider registry without extending generic RPC."""
+
+    path = SCHEMA_DIR / "model-provider-rpc-method-matrix.v2.json"
+    try:
+        matrix = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ContractValidationError(
+            "model-provider-rpc-method-matrix/v2 is unavailable or invalid"
+        ) from exc
+    if not isinstance(matrix, Mapping):
+        raise ContractValidationError(
+            "model-provider-rpc-method-matrix/v2 must be an object"
+        )
+    reserved = matrix.get("reserved_method_ids")
+    methods = matrix.get("methods")
+    if (
+        matrix.get("schema") != "model-provider-rpc-method-matrix/v2"
+        or matrix.get("authority") != "core"
+        or matrix.get("direction") != "host-to-provider"
+        or matrix.get("plugin_authority_allowed") is not False
+        or reserved != ["model.provider.invoke/v1"]
+        or not isinstance(methods, list)
+        or len(methods) != 1
+        or not isinstance(methods[0], Mapping)
+        or methods[0].get("method") != reserved[0]
+        or methods[0].get("reserved") is not True
+        or methods[0].get("terminal_states_use_jsonrpc_success") is not True
+    ):
+        raise ContractValidationError(
+            "model-provider-rpc-method-matrix/v2 authority or reserved set drift"
+        )
+    return frozenset(reserved)
+
+
+RESERVED_PROVIDER_RPC_METHODS = _load_reserved_provider_method_ids()
+RESERVED_PROVIDER_METHOD_IDS = RESERVED_PROVIDER_RPC_METHODS
+
+
+def _reject_reserved_provider_capability(capability_id: Any, label: str) -> None:
+    if capability_id in RESERVED_PROVIDER_RPC_METHODS:
+        raise ContractError(
+            ErrorCode.RESULT_CONTRACT_MISMATCH,
+            f"{label} cannot expose reserved Core-to-Provider method {capability_id}",
+        )
+
+
 _JOB_RUN_SUCCESS_BRANCHES = {
     "job.start": 7,
     "job.resume": 8,
@@ -234,6 +281,9 @@ def verify_manifest(manifest: Mapping[str, Any]) -> None:
     capability_ids = [item["capability_id"] for item in manifest["capabilities"]]
     _assert_unique(capability_ids, "manifest capability IDs must be unique")
     for capability in manifest["capabilities"]:
+        _reject_reserved_provider_capability(
+            capability["capability_id"], "plugin manifest capability"
+        )
         _assert_unique(capability["operations"], "manifest capability operations must be unique")
     compatibility = manifest["compatibility"]
     if compatibility.get("core_api") != ">=1.0 <2.0" or compatibility.get("plugin_rpc") != "1" or compatibility.get("ui_host") != "1":
@@ -542,7 +592,15 @@ def verify_plan(plan: Mapping[str, Any]) -> None:
         orders = [item["order"] for item in plan[field]]
         if len(orders) != len(set(orders)) or orders != sorted(orders):
             raise ContractValidationError(f"{field} order must be unique and ascending")
+    for binding in plan["bindings"]:
+        _reject_reserved_provider_capability(
+            binding["capability_id"], "plugin Plan binding"
+        )
     synthesizer = plan["synthesizer"]
+    if synthesizer is not None:
+        _reject_reserved_provider_capability(
+            synthesizer["capability_id"], "plugin Plan synthesizer"
+        )
     if plan["result_mode"] == "synthesize":
         if synthesizer is None:
             raise ContractValidationError("synthesize plan requires a synthesizer")
@@ -591,6 +649,9 @@ def verify_capability_descriptor(
 ) -> None:
     """Validate a descriptor and bind it to the capability being described."""
     assert_valid("capability-provider/v1", descriptor)
+    _reject_reserved_provider_capability(
+        descriptor["capability_id"], "capability descriptor"
+    )
     if expected_capability_id is not None and descriptor["capability_id"] != expected_capability_id:
         raise ContractError(ErrorCode.RESULT_CONTRACT_MISMATCH, "capability descriptor ID does not match the request")
     if allowed_capability_ids is not None and descriptor["capability_id"] not in allowed_capability_ids:
@@ -917,6 +978,12 @@ def verify_contract_inventory() -> None:
         raise ContractValidationError("RPC matrix method set differs from §20.4")
     if {int(key): value for key, value in METHOD_MATRIX["error_codes"].items()} != EXPECTED_ERROR_CODES:
         raise ContractValidationError("RPC error code registry differs from §20.5")
+    if RESERVED_PROVIDER_RPC_METHODS != frozenset({"model.provider.invoke/v1"}):
+        raise ContractValidationError("reserved Provider RPC method set drift")
+    if "model.provider.invoke/v1" in METHOD_MATRIX["methods"]:
+        raise ContractValidationError(
+            "reserved Provider RPC method leaked into the generic v1 matrix"
+        )
 
 
 def verify_history_bytes(raw: bytes, expected: bytes) -> None:

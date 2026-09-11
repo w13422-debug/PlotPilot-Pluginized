@@ -1,0 +1,37 @@
+{
+  "expected": "contracts/golden/model-provider-rpc-v2/expected.json",
+  "golden": "contracts/golden/model-provider-rpc-v2/invoke.json",
+  "group_count": 1,
+  "group_ids": [
+    "model-provider-rpc-v2-01"
+  ],
+  "negative_case_count": 76,
+  "negative_case_digest": "2210b996607ec5ee2f5471c28786b9293423c7f1467bc0b9666e60ec1ae49fbf",
+  "positive_fixture_count": 12,
+  "schema": "model-provider-rpc-corpus-manifest/v2",
+  "semantic_assertions": [
+    "asset_content_hash",
+    "asset_pair",
+    "canonical_receipt_binding",
+    "canonical_receipt_required",
+    "closed_schema",
+    "discriminator",
+    "envelope_exactly_one",
+    "envelope_required",
+    "exact_replay",
+    "meta_binding",
+    "planner_context_binding",
+    "receipt_asset_hash",
+    "receipt_self_hash",
+    "request_asset_binding",
+    "request_id",
+    "reserved_boundary",
+    "reserved_method",
+    "response_id",
+    "rpc_error_without_receipt",
+    "safe_integer",
+    "terminal_state",
+    "transport_request_hash",
+    "transport_response_hash"
+  ]
+}

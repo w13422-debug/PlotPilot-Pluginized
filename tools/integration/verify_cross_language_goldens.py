@@ -14,6 +14,7 @@ if str(BACKEND) not in sys.path:
 from verify_contracts import (  # type: ignore  # noqa: E402
     verify_goldens,
     verify_macro_planning_host,
+    verify_model_provider_rpc_v2,
     verify_v2_public_surface,
 )
 
@@ -79,7 +80,13 @@ def main() -> int:
         "integer_vector_result_digest": "d4cfe7ec27c052badd2f67723fa5a4123becd60b6c1be11ce37b07b58f00f13d",
     }:
         raise SystemExit(f"macro-planning integer vector evidence drift: {integer_evidence}")
-    print(json.dumps({"status": "ok", "python": actual, "node": expected, "v2": python_v2, "macro_planning_host": python_macro}, ensure_ascii=False, sort_keys=True, indent=2))
+    python_provider = verify_model_provider_rpc_v2()
+    node_provider = node.get("model_provider_rpc")
+    if node_provider != python_provider:
+        raise SystemExit(
+            f"Model Provider RPC cross-language mismatch:\npython={python_provider}\nnode={node_provider}"
+        )
+    print(json.dumps({"status": "ok", "python": actual, "node": expected, "v2": python_v2, "macro_planning_host": python_macro, "model_provider_rpc": python_provider}, ensure_ascii=False, sort_keys=True, indent=2))
     return 0
 
 

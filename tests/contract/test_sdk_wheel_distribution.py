@@ -111,10 +111,12 @@ def _probe_script(
     macro_positive: dict[str, object],
     integer_vectors: dict[str, object],
     integer_vector_source_sha256: str,
+    model_provider_golden: dict[str, object],
 ) -> str:
     expected = json.dumps(expected_schema_names)
     macro = json.dumps(macro_positive, separators=(",", ":"))
     integers = json.dumps(integer_vectors, separators=(",", ":"))
+    provider = json.dumps(model_provider_golden, separators=(",", ":"))
     return textwrap.dedent(
         f"""\
         import copy
@@ -125,10 +127,17 @@ def _probe_script(
 
         import plotpilot_plugin_sdk
         from plotpilot_plugin_sdk import (
+            MODEL_PROVIDER_INVOKE_METHOD_V1,
+            MODEL_PROVIDER_RESERVED_METHOD_IDS,
+            get_model_provider_rpc_method_matrix_v2,
+            model_provider_operation_digest_v2,
             parse_macro_planning,
+            parse_model_provider_invoke_request_v2,
+            parse_model_provider_invoke_result_v2,
             parse_model_profile_revision_v1,
             parse_project_planner_model_output_v1,
             parse_project_planner_runtime_input_v2,
+            validate_model_provider_rpc_success_v2,
         )
         from plotpilot_plugin_sdk.errors import ContractError, ContractValidationError
         from plotpilot_plugin_sdk.m4_m5_http_v2 import validate_http_exchange
@@ -148,6 +157,7 @@ def _probe_script(
         macro = json.loads({macro!r})
         integer_vectors = json.loads({integers!r})
         integer_vector_source_sha256 = {integer_vector_source_sha256!r}
+        model_provider = json.loads({provider!r})
         schema_dir = Path(sys.prefix) / "Lib" / "contracts" / "json-schema"
         assert SCHEMA_DIR == schema_dir, (SCHEMA_DIR, schema_dir)
         actual = sorted(path.name for path in schema_dir.glob("*.json"))
@@ -186,6 +196,54 @@ def _probe_script(
                 pass
             else:
                 raise AssertionError("invalid RPC success response was accepted")
+
+        assert MODEL_PROVIDER_INVOKE_METHOD_V1 == "model.provider.invoke/v1"
+        assert MODEL_PROVIDER_RESERVED_METHOD_IDS == frozenset(
+            {{"model.provider.invoke/v1"}}
+        )
+        provider_matrix = get_model_provider_rpc_method_matrix_v2()
+        assert provider_matrix["reserved_method_ids"] == [
+            "model.provider.invoke/v1"
+        ]
+        provider_matrix["reserved_method_ids"].append("forged.method/v1")
+        assert get_model_provider_rpc_method_matrix_v2()["reserved_method_ids"] == [
+            "model.provider.invoke/v1"
+        ]
+        provider_request = parse_model_provider_invoke_request_v2(
+            model_provider["request"]
+        )
+        assert (
+            model_provider_operation_digest_v2(provider_request)
+            == model_provider["operation_digest"]
+        )
+
+        provider_resource_names = [
+            "model-provider-rpc-method-matrix.v2.json",
+            "model-provider-invoke-request-v2.schema.json",
+            "model-provider-invoke-result-v2.schema.json",
+            "model-provider-invoke-success-v2.schema.json",
+        ]
+        resource_dir = Path(plotpilot_plugin_sdk.__file__).resolve().parent / "resources"
+        for name in provider_resource_names:
+            assert (resource_dir / name).read_bytes() == (schema_dir / name).read_bytes()
+
+        provider_terminal_states = []
+        for state in ("receipted", "failed", "cancelled", "uncertain"):
+            result = parse_model_provider_invoke_result_v2(
+                model_provider["terminal_results"][state]
+            )
+            parsed = validate_model_provider_rpc_success_v2(
+                model_provider["terminal_successes"][state],
+                request=provider_request,
+                canonical_receipt=model_provider["canonical_receipts"][state],
+            )
+            assert parsed == result
+            provider_terminal_states.append(parsed["provider_terminal_state"])
+        copied_provider_result = parse_model_provider_invoke_result_v2(
+            model_provider["result"]
+        )
+        copied_provider_result["model_receipt_anchor"]["job_id"] = "mutated"
+        assert model_provider["result"]["model_receipt_anchor"]["job_id"] == "job-1"
 
         def _job_request(method, request_id):
             params = {{
@@ -432,6 +490,12 @@ def _probe_script(
                     "macro_integer_vector_source_sha256": integer_vector_source_sha256,
                     "macro_integer_vector_result_digest": integer_vector_result_digest,
                     "macro_wire_whitespace_codepoints": len(WIRE_WHITESPACE_CODEPOINTS),
+                    "model_provider_method": MODEL_PROVIDER_INVOKE_METHOD_V1,
+                    "model_provider_terminal_states": provider_terminal_states,
+                    "model_provider_operation_digest": model_provider_operation_digest_v2(
+                        provider_request
+                    ),
+                    "model_provider_resources": provider_resource_names,
                 }},
                 sort_keys=True,
             )
@@ -461,6 +525,15 @@ def test_real_sdk_wheel_installs_authoritative_verifier_schemas() -> None:
     integer_vector_source_sha256 = hashlib.sha256(integer_vector_bytes).hexdigest()
     assert integer_vector_source_sha256 == (
         "2d9c72efdf8f593deb399567557229f6bcbccad1c95e961d01e819809bbbf88b"
+    )
+    model_provider_golden = json.loads(
+        (
+            ROOT
+            / "contracts"
+            / "golden"
+            / "model-provider-rpc-v2"
+            / "invoke.json"
+        ).read_text(encoding="utf-8")
     )
 
     temp_root = _temporary_root()
@@ -527,6 +600,7 @@ def test_real_sdk_wheel_installs_authoritative_verifier_schemas() -> None:
                 macro_positive,
                 integer_vectors,
                 integer_vector_source_sha256,
+                model_provider_golden,
             ),
             encoding="utf-8",
         )
@@ -548,6 +622,22 @@ def test_real_sdk_wheel_installs_authoritative_verifier_schemas() -> None:
             "d4cfe7ec27c052badd2f67723fa5a4123becd60b6c1be11ce37b07b58f00f13d"
         )
         assert proof["macro_wire_whitespace_codepoints"] == 30
+        assert proof["model_provider_method"] == "model.provider.invoke/v1"
+        assert proof["model_provider_terminal_states"] == [
+            "receipted",
+            "failed",
+            "cancelled",
+            "uncertain",
+        ]
+        assert proof["model_provider_operation_digest"] == model_provider_golden[
+            "operation_digest"
+        ]
+        assert proof["model_provider_resources"] == [
+            "model-provider-rpc-method-matrix.v2.json",
+            "model-provider-invoke-request-v2.schema.json",
+            "model-provider-invoke-result-v2.schema.json",
+            "model-provider-invoke-success-v2.schema.json",
+        ]
         assert proof["macro_routes"] == [
             "model-secret.put",
             "model-profile.revise",

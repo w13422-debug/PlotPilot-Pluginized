@@ -30,7 +30,11 @@ PACKAGE_RESOURCE_SOURCES = {
     "unicode-casefold-v1.json": ROOT / "contracts" / "unicode-casefold-v1.json",
     "rpc-method-matrix.v1.json": SCHEMA_DIR / "rpc-method-matrix.v1.json",
     "rpc-method-matrix.v2.json": SCHEMA_DIR / "rpc-method-matrix.v2.json",
+    "model-provider-rpc-method-matrix.v2.json": SCHEMA_DIR / "model-provider-rpc-method-matrix.v2.json",
     "rpc-error-v1.schema.json": SCHEMA_DIR / "rpc-error-v1.schema.json",
+    "model-provider-invoke-request-v2.schema.json": SCHEMA_DIR / "model-provider-invoke-request-v2.schema.json",
+    "model-provider-invoke-result-v2.schema.json": SCHEMA_DIR / "model-provider-invoke-result-v2.schema.json",
+    "model-provider-invoke-success-v2.schema.json": SCHEMA_DIR / "model-provider-invoke-success-v2.schema.json",
     "prompt-skill-execute-request-v2.schema.json": SCHEMA_DIR / "prompt-skill-execute-request-v2.schema.json",
     "prompt-skill-execute-result-v2.schema.json": SCHEMA_DIR / "prompt-skill-execute-result-v2.schema.json",
     "rpc-method-success-v2.schema.json": SCHEMA_DIR / "rpc-method-success-v2.schema.json",
@@ -1253,6 +1257,202 @@ def model_profile_revision() -> dict[str, Any]:
     )
 
 
+def model_provider_rpc_schemas() -> dict[str, dict[str, Any]]:
+    """Build the additive Core-to-Provider RPC overlay.
+
+    The 23-field receipt anchor deliberately matches the accepted P2
+    ``ModelReceiptIdentity``.  It locates, but never redefines, the existing
+    27-field ``model-receipt/v1`` Asset.
+    """
+
+    asset_identity = obj(
+        {"asset_id": ID, "content_hash": HASH},
+        ("asset_id", "content_hash"),
+    )
+    planner_properties = {
+        "operation_key": ID,
+        "workspace_id": ID,
+        "plugin_id": ID,
+        "plugin_release_id": HASH,
+        "plugin_package_hash": HASH,
+        "generation_id": ID,
+        "job_id": ID,
+        "step_id": ID,
+        "attempt_id": ID,
+        "lease_epoch": JSON_SAFE_POS_INT,
+        "chain_id": ID,
+        "chain_asset_id": ID,
+        "chain_content_hash": HASH,
+        "run_snapshot_id": ID,
+        "run_snapshot_asset_id": ID,
+        "run_snapshot_hash": HASH,
+        "model_profile_revision_id": nullable(ID),
+        "input_asset_id": ID,
+        "input_content_hash": HASH,
+    }
+    planner_fields = (
+        "operation_key",
+        "workspace_id",
+        "plugin_id",
+        "plugin_release_id",
+        "plugin_package_hash",
+        "generation_id",
+        "job_id",
+        "step_id",
+        "attempt_id",
+        "lease_epoch",
+        "chain_id",
+        "chain_asset_id",
+        "chain_content_hash",
+        "run_snapshot_id",
+        "run_snapshot_asset_id",
+        "run_snapshot_hash",
+        "model_profile_revision_id",
+        "input_asset_id",
+        "input_content_hash",
+    )
+    planner_context = obj(copy.deepcopy(planner_properties), planner_fields)
+    receipt_anchor = obj(
+        {
+            "receipt_id": ID,
+            "asset_id": ID,
+            "content_hash": HASH,
+            "receipt_hash": HASH,
+            **copy.deepcopy(planner_properties),
+        },
+        (
+            "receipt_id",
+            "asset_id",
+            "content_hash",
+            "receipt_hash",
+            *planner_fields,
+        ),
+    )
+    receipt_anchor["unevaluatedProperties"] = False
+    meta = obj(
+        {
+            "protocol_version": const("1"),
+            "context": const("attempt"),
+            "operation_id": ID,
+            "generation_id": ID,
+            "job_id": ID,
+            "step_id": ID,
+            "attempt_id": ID,
+            "lease_epoch": JSON_SAFE_POS_INT,
+        },
+        (
+            "protocol_version",
+            "context",
+            "operation_id",
+            "generation_id",
+            "job_id",
+            "step_id",
+            "attempt_id",
+            "lease_epoch",
+        ),
+    )
+    params = obj(
+        {
+            "schema": const("model-provider-invoke-request/v2"),
+            "planner_context": planner_context,
+            "model_request_asset": copy.deepcopy(asset_identity),
+        },
+        ("schema", "planner_context", "model_request_asset"),
+    )
+    request = obj(
+        {
+            "jsonrpc": const("2.0"),
+            "id": UUID,
+            "method": const("model.provider.invoke/v1"),
+            "meta": meta,
+            "params": params,
+        },
+        ("jsonrpc", "id", "method", "meta", "params"),
+    )
+    result = obj(
+        {
+            "schema": const("model-provider-invoke-result/v2"),
+            "model_receipt_anchor": receipt_anchor,
+            "model_request_asset": copy.deepcopy(asset_identity),
+            "provider_transport_request_hash": HASH,
+            "response_asset": nullable(copy.deepcopy(asset_identity)),
+            "provider_transport_response_hash": nullable(HASH),
+            "provider_terminal_state": enum(
+                "receipted", "failed", "cancelled", "uncertain"
+            ),
+        },
+        (
+            "schema",
+            "model_receipt_anchor",
+            "model_request_asset",
+            "provider_transport_request_hash",
+            "response_asset",
+            "provider_transport_response_hash",
+            "provider_terminal_state",
+        ),
+    )
+    success = obj(
+        {
+            "jsonrpc": const("2.0"),
+            "id": UUID,
+            "result": copy.deepcopy(result),
+        },
+        ("jsonrpc", "id", "result"),
+    )
+    return {
+        "model-provider-invoke-request-v2": request,
+        "model-provider-invoke-result-v2": result,
+        "model-provider-invoke-success-v2": success,
+    }
+
+
+def model_provider_rpc_method_matrix_v2() -> dict[str, Any]:
+    """Return the separate reserved-method registry for Provider invocation."""
+
+    method = "model.provider.invoke/v1"
+    terminal_states = ["receipted", "failed", "cancelled", "uncertain"]
+    return {
+        "schema": "model-provider-rpc-method-matrix/v2",
+        "protocol": {
+            "jsonrpc": "2.0",
+            "version": "1",
+            "framing": "content-length-crlf",
+            "encoding": "utf-8",
+            "batch": False,
+        },
+        "authority": "core",
+        "direction": "host-to-provider",
+        "plugin_authority_allowed": False,
+        "reserved_method_ids": [method],
+        "envelope": {
+            "exactly_one": True,
+            "members": ["request", "success", "error"],
+        },
+        "methods": [
+            {
+                "method": method,
+                "reserved": True,
+                "authority": "core",
+                "direction": "host-to-provider",
+                "endpoint": "provider",
+                "protocol_version": "1",
+                "framing": "content-length-crlf",
+                "meta_profile": "attempt",
+                "lease_fenced": True,
+                "operation_key_required": True,
+                "request_schema": "model-provider-invoke-request/v2",
+                "result_schema": "model-provider-invoke-result/v2",
+                "success_schema": "model-provider-invoke-success/v2",
+                "error_schema": "rpc-error/v1",
+                "error_code_registry": "rpc-method-matrix/v1#error_codes",
+                "terminal_states": terminal_states,
+                "terminal_states_use_jsonrpc_success": True,
+                "rpc_error_meaning": "no-verifiable-terminal-receipt",
+            }
+        ],
+    }
+
+
 def model_config_schemas() -> dict[str, dict[str, Any]]:
     secret_command = obj(
         {
@@ -1893,6 +2093,7 @@ def schema_inventory() -> dict[str, dict[str, Any]]:
         **v2_story_state_projection_schemas(),
         **v2_job_http_schemas(),
         **v2_plugin_api_schemas(),
+        **model_provider_rpc_schemas(),
         **model_config_schemas(),
         **model_planning_http_error_schemas(),
         **project_planning_schemas(),
@@ -1926,6 +2127,15 @@ def render() -> dict[str, bytes]:
     # normative application codes remain 1001..1014.
     matrix["error_codes"] = {"1001": "incompatible_generation", "1002": "stale_lease", "1003": "cancelled", "1004": "deadline_exceeded", "1005": "asset_error", "1006": "settings_invalid", "1007": "migration_failed", "1008": "duplicate_request", "1009": "uncertain_external_effect", "1010": "invalid_transition", "1011": "result_contract_mismatch", "1012": "data_interpreter_unavailable", "1013": "release_retiring", "1014": "checkpoint_invalid"}
     rendered["rpc-method-matrix.v1.json"] = (json.dumps(matrix, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    rendered["model-provider-rpc-method-matrix.v2.json"] = (
+        json.dumps(
+            model_provider_rpc_method_matrix_v2(),
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n"
+    ).encode("utf-8")
     compatibility = {"schema": "compatibility-matrix/v1", "core_api": ">=1.0 <2.0", "plugin_rpc": "1", "ui_host": "1", "python": "3.12.*", "handshake_downgrade": False}
     rendered["compatibility-matrix.v1.json"] = (json.dumps(compatibility, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
     rendered["core-api-method-matrix.v1.json"] = (json.dumps(core_api_method_matrix(), ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")

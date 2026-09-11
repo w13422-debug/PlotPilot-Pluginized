@@ -1,0 +1,237 @@
+{
+  "$id": "https://plotpilot.local/contracts/model-provider-invoke-success-v2",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+      "type": "string"
+    },
+    "jsonrpc": {
+      "const": "2.0"
+    },
+    "result": {
+      "additionalProperties": false,
+      "properties": {
+        "model_receipt_anchor": {
+          "additionalProperties": false,
+          "properties": {
+            "asset_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            "attempt_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            "chain_asset_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            "chain_content_hash": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "chain_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            "content_hash": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "generation_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            "input_asset_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            "input_content_hash": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "job_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            "lease_epoch": {
+              "maximum": 9007199254740991,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "model_profile_revision_id": {
+              "anyOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "operation_key": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            "plugin_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            "plugin_package_hash": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "plugin_release_id": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "receipt_hash": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "receipt_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            "run_snapshot_asset_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            "run_snapshot_hash": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "run_snapshot_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            "step_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            "workspace_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "receipt_id",
+            "asset_id",
+            "content_hash",
+            "receipt_hash",
+            "operation_key",
+            "workspace_id",
+            "plugin_id",
+            "plugin_release_id",
+            "plugin_package_hash",
+            "generation_id",
+            "job_id",
+            "step_id",
+            "attempt_id",
+            "lease_epoch",
+            "chain_id",
+            "chain_asset_id",
+            "chain_content_hash",
+            "run_snapshot_id",
+            "run_snapshot_asset_id",
+            "run_snapshot_hash",
+            "model_profile_revision_id",
+            "input_asset_id",
+            "input_content_hash"
+          ],
+          "type": "object",
+          "unevaluatedProperties": false
+        },
+        "model_request_asset": {
+          "additionalProperties": false,
+          "properties": {
+            "asset_id": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+              "type": "string"
+            },
+            "content_hash": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "asset_id",
+            "content_hash"
+          ],
+          "type": "object"
+        },
+        "provider_terminal_state": {
+          "enum": [
+            "receipted",
+            "failed",
+            "cancelled",
+            "uncertain"
+          ]
+        },
+        "provider_transport_request_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "provider_transport_response_hash": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "response_asset": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "asset_id": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                  "type": "string"
+                },
+                "content_hash": {
+                  "pattern": "^[0-9a-f]{64}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "asset_id",
+                "content_hash"
+              ],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "schema": {
+          "const": "model-provider-invoke-result/v2"
+        }
+      },
+      "required": [
+        "schema",
+        "model_receipt_anchor",
+        "model_request_asset",
+        "provider_transport_request_hash",
+        "response_asset",
+        "provider_transport_response_hash",
+        "provider_terminal_state"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "jsonrpc",
+    "id",
+    "result"
+  ],
+  "title": "PlotPilot model-provider-invoke-success-v2",
+  "type": "object"
+}

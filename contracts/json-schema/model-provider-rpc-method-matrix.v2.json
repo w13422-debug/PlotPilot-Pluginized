@@ -1,0 +1,51 @@
+{
+  "authority": "core",
+  "direction": "host-to-provider",
+  "envelope": {
+    "exactly_one": true,
+    "members": [
+      "request",
+      "success",
+      "error"
+    ]
+  },
+  "methods": [
+    {
+      "authority": "core",
+      "direction": "host-to-provider",
+      "endpoint": "provider",
+      "error_code_registry": "rpc-method-matrix/v1#error_codes",
+      "error_schema": "rpc-error/v1",
+      "framing": "content-length-crlf",
+      "lease_fenced": true,
+      "meta_profile": "attempt",
+      "method": "model.provider.invoke/v1",
+      "operation_key_required": true,
+      "protocol_version": "1",
+      "request_schema": "model-provider-invoke-request/v2",
+      "reserved": true,
+      "result_schema": "model-provider-invoke-result/v2",
+      "rpc_error_meaning": "no-verifiable-terminal-receipt",
+      "success_schema": "model-provider-invoke-success/v2",
+      "terminal_states": [
+        "receipted",
+        "failed",
+        "cancelled",
+        "uncertain"
+      ],
+      "terminal_states_use_jsonrpc_success": true
+    }
+  ],
+  "plugin_authority_allowed": false,
+  "protocol": {
+    "batch": false,
+    "encoding": "utf-8",
+    "framing": "content-length-crlf",
+    "jsonrpc": "2.0",
+    "version": "1"
+  },
+  "reserved_method_ids": [
+    "model.provider.invoke/v1"
+  ],
+  "schema": "model-provider-rpc-method-matrix/v2"
+}

@@ -1,0 +1,1077 @@
+{
+  "group_id": "model-provider-rpc-v2-01",
+  "negative": [
+    {
+      "case_id": "provider-request-extra-field",
+      "expected": "closed_schema",
+      "fixture": "invoke.request",
+      "kind": "request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "unexpected"
+        ],
+        "value": true
+      }
+    },
+    {
+      "case_id": "provider-request-missing-id",
+      "expected": "request_id",
+      "fixture": "invoke.request",
+      "kind": "request",
+      "mutation": {
+        "op": "delete",
+        "path": [
+          "id"
+        ]
+      }
+    },
+    {
+      "case_id": "provider-request-invalid-id",
+      "expected": "request_id",
+      "fixture": "invoke.request",
+      "kind": "request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "id"
+        ],
+        "value": "not-a-uuid"
+      }
+    },
+    {
+      "case_id": "provider-request-wrong-method",
+      "expected": "reserved_method",
+      "fixture": "invoke.request",
+      "kind": "request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "method"
+        ],
+        "value": "host.model.invoke/v1"
+      }
+    },
+    {
+      "case_id": "provider-request-wrong-discriminator",
+      "expected": "discriminator",
+      "fixture": "invoke.request",
+      "kind": "request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "params",
+          "schema"
+        ],
+        "value": "model-provider-invoke-request/v1"
+      }
+    },
+    {
+      "case_id": "provider-request-extra-params-field",
+      "expected": "closed_schema",
+      "fixture": "invoke.request",
+      "kind": "request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "params",
+          "unexpected"
+        ],
+        "value": true
+      }
+    },
+    {
+      "case_id": "provider-request-extra-planner-field",
+      "expected": "closed_schema",
+      "fixture": "invoke.request",
+      "kind": "request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "params",
+          "planner_context",
+          "unexpected"
+        ],
+        "value": true
+      }
+    },
+    {
+      "case_id": "provider-request-missing-planner-field",
+      "expected": "closed_schema",
+      "fixture": "invoke.request",
+      "kind": "request",
+      "mutation": {
+        "op": "delete",
+        "path": [
+          "params",
+          "planner_context",
+          "chain_id"
+        ]
+      }
+    },
+    {
+      "case_id": "provider-request-partial-asset",
+      "expected": "asset_pair",
+      "fixture": "invoke.request",
+      "kind": "request",
+      "mutation": {
+        "op": "delete",
+        "path": [
+          "params",
+          "model_request_asset",
+          "content_hash"
+        ]
+      }
+    },
+    {
+      "case_id": "provider-request-unsafe-lease",
+      "expected": "safe_integer",
+      "fixture": "invoke.request",
+      "kind": "request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "params",
+          "planner_context",
+          "lease_epoch"
+        ],
+        "value": 9007199254740992
+      }
+    },
+    {
+      "case_id": "provider-meta-extra-field",
+      "expected": "closed_schema",
+      "fixture": "invoke.request",
+      "kind": "request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "meta",
+          "unexpected"
+        ],
+        "value": true
+      }
+    },
+    {
+      "case_id": "provider-meta-wrong-context",
+      "expected": "meta_binding",
+      "fixture": "invoke.request",
+      "kind": "request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "meta",
+          "context"
+        ],
+        "value": "control"
+      }
+    },
+    {
+      "case_id": "provider-meta-wrong-protocol",
+      "expected": "meta_binding",
+      "fixture": "invoke.request",
+      "kind": "request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "meta",
+          "protocol_version"
+        ],
+        "value": "2"
+      }
+    },
+    {
+      "case_id": "provider-meta-operation-id-drift",
+      "expected": "meta_binding",
+      "fixture": "invoke.request",
+      "kind": "request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "meta",
+          "operation_id"
+        ],
+        "value": "execute-op-other"
+      }
+    },
+    {
+      "case_id": "provider-meta-generation-id-drift",
+      "expected": "meta_binding",
+      "fixture": "invoke.request",
+      "kind": "request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "meta",
+          "generation_id"
+        ],
+        "value": "generation-other"
+      }
+    },
+    {
+      "case_id": "provider-meta-job-id-drift",
+      "expected": "meta_binding",
+      "fixture": "invoke.request",
+      "kind": "request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "meta",
+          "job_id"
+        ],
+        "value": "job-other"
+      }
+    },
+    {
+      "case_id": "provider-meta-step-id-drift",
+      "expected": "meta_binding",
+      "fixture": "invoke.request",
+      "kind": "request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "meta",
+          "step_id"
+        ],
+        "value": "step-other"
+      }
+    },
+    {
+      "case_id": "provider-meta-attempt-id-drift",
+      "expected": "meta_binding",
+      "fixture": "invoke.request",
+      "kind": "request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "meta",
+          "attempt_id"
+        ],
+        "value": "attempt-other"
+      }
+    },
+    {
+      "case_id": "provider-meta-lease-epoch-drift",
+      "expected": "meta_binding",
+      "fixture": "invoke.request",
+      "kind": "request",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "meta",
+          "lease_epoch"
+        ],
+        "value": 2
+      }
+    },
+    {
+      "case_id": "provider-result-extra-field",
+      "expected": "closed_schema",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "unexpected"
+        ],
+        "value": true
+      }
+    },
+    {
+      "case_id": "provider-result-wrong-discriminator",
+      "expected": "discriminator",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "schema"
+        ],
+        "value": "model-provider-invoke-result/v1"
+      }
+    },
+    {
+      "case_id": "provider-result-extra-anchor-field",
+      "expected": "closed_schema",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt_anchor",
+          "unexpected"
+        ],
+        "value": true
+      }
+    },
+    {
+      "case_id": "provider-result-missing-anchor-receipt-id",
+      "expected": "closed_schema",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "delete",
+        "path": [
+          "model_receipt_anchor",
+          "receipt_id"
+        ]
+      }
+    },
+    {
+      "case_id": "provider-result-response-asset-id-only",
+      "expected": "asset_pair",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "delete",
+        "path": [
+          "response_asset",
+          "content_hash"
+        ]
+      }
+    },
+    {
+      "case_id": "provider-result-response-asset-hash-only",
+      "expected": "asset_pair",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "delete",
+        "path": [
+          "response_asset",
+          "asset_id"
+        ]
+      }
+    },
+    {
+      "case_id": "provider-result-invalid-terminal-state",
+      "expected": "terminal_state",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "provider_terminal_state"
+        ],
+        "value": "succeeded"
+      }
+    },
+    {
+      "case_id": "provider-success-extra-field",
+      "expected": "closed_schema",
+      "fixture": "invoke.success.receipted",
+      "kind": "response",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "unexpected"
+        ],
+        "value": true
+      }
+    },
+    {
+      "case_id": "provider-success-id-mismatch",
+      "expected": "response_id",
+      "fixture": "invoke.success.receipted",
+      "kind": "response",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "id"
+        ],
+        "value": "123e4567-e89b-42d3-a456-426614174101"
+      }
+    },
+    {
+      "case_id": "provider-success-missing-id",
+      "expected": "response_id",
+      "fixture": "invoke.success.receipted",
+      "kind": "response",
+      "mutation": {
+        "op": "delete",
+        "path": [
+          "id"
+        ]
+      }
+    },
+    {
+      "case_id": "provider-error-id-mismatch",
+      "expected": "response_id",
+      "fixture": "invoke.error",
+      "kind": "response",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "id"
+        ],
+        "value": "123e4567-e89b-42d3-a456-426614174101"
+      }
+    },
+    {
+      "case_id": "provider-error-null-id-after-parse",
+      "expected": "response_id",
+      "fixture": "invoke.error",
+      "kind": "response",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "id"
+        ],
+        "value": null
+      }
+    },
+    {
+      "case_id": "provider-response-mixed-result-error",
+      "expected": "envelope_exactly_one",
+      "fixture": "invoke.success.receipted",
+      "kind": "response",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "error"
+        ],
+        "value": {
+          "code": 1001,
+          "data": {
+            "details_asset_id": null,
+            "error_id": "model-provider-error-1",
+            "retryable": true
+          },
+          "message": "Provider endpoint unavailable before a terminal receipt formed"
+        }
+      }
+    },
+    {
+      "case_id": "provider-envelope-bare-result",
+      "expected": "envelope_required",
+      "fixture": "invoke.bare-result",
+      "kind": "envelope",
+      "mutation": {
+        "op": "noop"
+      }
+    },
+    {
+      "case_id": "provider-envelope-request-result-mix",
+      "expected": "envelope_exactly_one",
+      "fixture": "invoke.request",
+      "kind": "envelope",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "result"
+        ],
+        "value": {
+          "model_receipt_anchor": {
+            "asset_id": "asset-model-receipt-receipted-1",
+            "attempt_id": "attempt-1",
+            "chain_asset_id": "asset-chain-1",
+            "chain_content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+            "chain_id": "chain-1",
+            "content_hash": "8f8db6061486cd03910d34beee284d35d259d45047685e2ca43e6b010e646d5a",
+            "generation_id": "generation-1",
+            "input_asset_id": "asset-input-1",
+            "input_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "job_id": "job-1",
+            "lease_epoch": 1,
+            "model_profile_revision_id": "model-profile-rev-1",
+            "operation_key": "execute-op-1",
+            "plugin_id": "com.plotpilot.prompt-skill",
+            "plugin_package_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "plugin_release_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "receipt_hash": "a3e781723978d41a25fca8818fd88acae9b551bd94f1905dde870744f4b8a4f6",
+            "receipt_id": "model-receipt-receipted-1",
+            "run_snapshot_asset_id": "asset-snapshot-1",
+            "run_snapshot_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "run_snapshot_id": "snapshot-1",
+            "step_id": "step-1",
+            "workspace_id": "ws-1"
+          },
+          "model_request_asset": {
+            "asset_id": "asset-model-request-1",
+            "content_hash": "81624f1508f9463023bbe91752d1243fc77972948b8356a4489ce8a621f506c9"
+          },
+          "provider_terminal_state": "receipted",
+          "provider_transport_request_hash": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d",
+          "provider_transport_response_hash": "8b568e9d868ba8bfb247f6ad7f69bcf64d0146144d3b5342603d809f586abed4",
+          "response_asset": {
+            "asset_id": "asset-model-response-1",
+            "content_hash": "4d02c635d52ed562b1d850e0922f785ab3198795260fa79d4a371d6be74dd253"
+          },
+          "schema": "model-provider-invoke-result/v2"
+        }
+      }
+    },
+    {
+      "case_id": "provider-success-without-receipt-authority",
+      "expected": "canonical_receipt_required",
+      "fixture": "invoke.success.receipted",
+      "kind": "response-no-evidence",
+      "mutation": {
+        "op": "noop"
+      }
+    },
+    {
+      "case_id": "provider-error-with-terminal-evidence",
+      "expected": "rpc_error_without_receipt",
+      "fixture": "invoke.error",
+      "kind": "error-with-evidence",
+      "mutation": {
+        "op": "noop"
+      }
+    },
+    {
+      "case_id": "provider-anchor-operation-key-drift",
+      "expected": "planner_context_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt_anchor",
+          "operation_key"
+        ],
+        "value": "operation-key-other"
+      }
+    },
+    {
+      "case_id": "provider-anchor-workspace-id-drift",
+      "expected": "planner_context_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt_anchor",
+          "workspace_id"
+        ],
+        "value": "workspace-id-other"
+      }
+    },
+    {
+      "case_id": "provider-anchor-plugin-id-drift",
+      "expected": "planner_context_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt_anchor",
+          "plugin_id"
+        ],
+        "value": "plugin-id-other"
+      }
+    },
+    {
+      "case_id": "provider-anchor-plugin-release-id-drift",
+      "expected": "planner_context_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt_anchor",
+          "plugin_release_id"
+        ],
+        "value": "5555555555555555555555555555555555555555555555555555555555555555"
+      }
+    },
+    {
+      "case_id": "provider-anchor-plugin-package-hash-drift",
+      "expected": "planner_context_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt_anchor",
+          "plugin_package_hash"
+        ],
+        "value": "6666666666666666666666666666666666666666666666666666666666666666"
+      }
+    },
+    {
+      "case_id": "provider-anchor-generation-id-drift",
+      "expected": "planner_context_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt_anchor",
+          "generation_id"
+        ],
+        "value": "generation-id-other"
+      }
+    },
+    {
+      "case_id": "provider-anchor-job-id-drift",
+      "expected": "planner_context_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt_anchor",
+          "job_id"
+        ],
+        "value": "job-id-other"
+      }
+    },
+    {
+      "case_id": "provider-anchor-step-id-drift",
+      "expected": "planner_context_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt_anchor",
+          "step_id"
+        ],
+        "value": "step-id-other"
+      }
+    },
+    {
+      "case_id": "provider-anchor-attempt-id-drift",
+      "expected": "planner_context_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt_anchor",
+          "attempt_id"
+        ],
+        "value": "attempt-id-other"
+      }
+    },
+    {
+      "case_id": "provider-anchor-lease-epoch-drift",
+      "expected": "planner_context_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt_anchor",
+          "lease_epoch"
+        ],
+        "value": 2
+      }
+    },
+    {
+      "case_id": "provider-anchor-chain-id-drift",
+      "expected": "planner_context_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt_anchor",
+          "chain_id"
+        ],
+        "value": "chain-id-other"
+      }
+    },
+    {
+      "case_id": "provider-anchor-chain-asset-id-drift",
+      "expected": "planner_context_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt_anchor",
+          "chain_asset_id"
+        ],
+        "value": "chain-asset-id-other"
+      }
+    },
+    {
+      "case_id": "provider-anchor-chain-content-hash-drift",
+      "expected": "planner_context_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt_anchor",
+          "chain_content_hash"
+        ],
+        "value": "4444444444444444444444444444444444444444444444444444444444444444"
+      }
+    },
+    {
+      "case_id": "provider-anchor-run-snapshot-id-drift",
+      "expected": "planner_context_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt_anchor",
+          "run_snapshot_id"
+        ],
+        "value": "run-snapshot-id-other"
+      }
+    },
+    {
+      "case_id": "provider-anchor-run-snapshot-asset-id-drift",
+      "expected": "planner_context_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt_anchor",
+          "run_snapshot_asset_id"
+        ],
+        "value": "run-snapshot-asset-id-other"
+      }
+    },
+    {
+      "case_id": "provider-anchor-run-snapshot-hash-drift",
+      "expected": "planner_context_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt_anchor",
+          "run_snapshot_hash"
+        ],
+        "value": "7777777777777777777777777777777777777777777777777777777777777777"
+      }
+    },
+    {
+      "case_id": "provider-anchor-model-profile-revision-id-drift",
+      "expected": "planner_context_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt_anchor",
+          "model_profile_revision_id"
+        ],
+        "value": "model-profile-revision-id-other"
+      }
+    },
+    {
+      "case_id": "provider-anchor-input-asset-id-drift",
+      "expected": "planner_context_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt_anchor",
+          "input_asset_id"
+        ],
+        "value": "input-asset-id-other"
+      }
+    },
+    {
+      "case_id": "provider-anchor-input-content-hash-drift",
+      "expected": "planner_context_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt_anchor",
+          "input_content_hash"
+        ],
+        "value": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    {
+      "case_id": "provider-result-model-request-asset-id-drift",
+      "expected": "request_asset_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_request_asset",
+          "asset_id"
+        ],
+        "value": "asset-model-request-other"
+      }
+    },
+    {
+      "case_id": "provider-result-model-request-asset-hash-drift",
+      "expected": "request_asset_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_request_asset",
+          "content_hash"
+        ],
+        "value": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      }
+    },
+    {
+      "case_id": "provider-request-asset-authority-hash-substitution",
+      "expected": "asset_content_hash",
+      "fixture": "invoke.exchange.receipted",
+      "kind": "exchange",
+      "mutation": {
+        "changes": [
+          {
+            "path": [
+              "request",
+              "params",
+              "model_request_asset",
+              "content_hash"
+            ],
+            "value": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d"
+          },
+          {
+            "path": [
+              "response",
+              "result",
+              "model_request_asset",
+              "content_hash"
+            ],
+            "value": "c8248f88b0de1a6ee4bc424dd3066fc9bb0de0687cc1467d4afad289a5016d2d"
+          }
+        ],
+        "op": "set-many"
+      }
+    },
+    {
+      "case_id": "provider-receipt-asset-content-hash-substitution",
+      "expected": "receipt_asset_hash",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt_anchor",
+          "content_hash"
+        ],
+        "value": "a3e781723978d41a25fca8818fd88acae9b551bd94f1905dde870744f4b8a4f6"
+      }
+    },
+    {
+      "case_id": "provider-transport-request-host-hash-substitution",
+      "expected": "transport_request_hash",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "provider_transport_request_hash"
+        ],
+        "value": "81624f1508f9463023bbe91752d1243fc77972948b8356a4489ce8a621f506c9"
+      }
+    },
+    {
+      "case_id": "provider-transport-response-asset-hash-substitution",
+      "expected": "transport_response_hash",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "provider_transport_response_hash"
+        ],
+        "value": "4d02c635d52ed562b1d850e0922f785ab3198795260fa79d4a371d6be74dd253"
+      }
+    },
+    {
+      "case_id": "provider-response-asset-transport-hash-substitution",
+      "expected": "asset_content_hash",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "response_asset",
+          "content_hash"
+        ],
+        "value": "8b568e9d868ba8bfb247f6ad7f69bcf64d0146144d3b5342603d809f586abed4"
+      }
+    },
+    {
+      "case_id": "provider-receipt-self-hash-asset-hash-substitution",
+      "expected": "receipt_self_hash",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt_anchor",
+          "receipt_hash"
+        ],
+        "value": "8f8db6061486cd03910d34beee284d35d259d45047685e2ca43e6b010e646d5a"
+      }
+    },
+    {
+      "case_id": "provider-receipt-id-mirror-drift",
+      "expected": "canonical_receipt_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt_anchor",
+          "receipt_id"
+        ],
+        "value": "model-receipt-other"
+      }
+    },
+    {
+      "case_id": "provider-terminal-state-mirror-drift",
+      "expected": "canonical_receipt_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "provider_terminal_state"
+        ],
+        "value": "failed"
+      }
+    },
+    {
+      "case_id": "provider-profile-revision-mirror-drift",
+      "expected": "canonical_receipt_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "model_receipt_anchor",
+          "model_profile_revision_id"
+        ],
+        "value": "model-profile-rev-other"
+      }
+    },
+    {
+      "case_id": "provider-response-asset-id-mirror-drift",
+      "expected": "canonical_receipt_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "response_asset",
+          "asset_id"
+        ],
+        "value": "asset-model-response-other"
+      }
+    },
+    {
+      "case_id": "provider-null-response-asset-with-receipt-id",
+      "expected": "canonical_receipt_binding",
+      "fixture": "invoke.result.receipted",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "response_asset"
+        ],
+        "value": null
+      }
+    },
+    {
+      "case_id": "provider-nonnull-response-asset-with-null-receipt-id",
+      "expected": "canonical_receipt_binding",
+      "fixture": "invoke.result.failed",
+      "kind": "result",
+      "mutation": {
+        "op": "set",
+        "path": [
+          "response_asset"
+        ],
+        "value": {
+          "asset_id": "asset-model-response-1",
+          "content_hash": "4d02c635d52ed562b1d850e0922f785ab3198795260fa79d4a371d6be74dd253"
+        }
+      }
+    },
+    {
+      "case_id": "provider-ledger-request-drift",
+      "expected": "exact_replay",
+      "fixture": "invoke.ledger",
+      "kind": "ledger",
+      "mutation": {
+        "op": "request-drift"
+      }
+    },
+    {
+      "case_id": "provider-ledger-result-drift",
+      "expected": "exact_replay",
+      "fixture": "invoke.ledger",
+      "kind": "ledger",
+      "mutation": {
+        "op": "result-drift"
+      }
+    },
+    {
+      "case_id": "provider-ledger-unknown-replay",
+      "expected": "exact_replay",
+      "fixture": "invoke.ledger",
+      "kind": "ledger",
+      "mutation": {
+        "op": "unknown-replay"
+      }
+    },
+    {
+      "case_id": "provider-reserved-plan-binding",
+      "expected": "reserved_boundary",
+      "fixture": "reserved.plan.binding",
+      "kind": "reserved",
+      "mutation": {
+        "op": "noop"
+      }
+    },
+    {
+      "case_id": "provider-reserved-plan-synthesizer",
+      "expected": "reserved_boundary",
+      "fixture": "reserved.plan.synthesizer",
+      "kind": "reserved",
+      "mutation": {
+        "op": "noop"
+      }
+    },
+    {
+      "case_id": "provider-reserved-capability-descriptor",
+      "expected": "reserved_boundary",
+      "fixture": "reserved.descriptor",
+      "kind": "reserved",
+      "mutation": {
+        "op": "noop"
+      }
+    },
+    {
+      "case_id": "provider-reserved-plugin-manifest",
+      "expected": "reserved_boundary",
+      "fixture": "reserved.manifest",
+      "kind": "reserved",
+      "mutation": {
+        "op": "noop"
+      }
+    }
+  ],
+  "positive": [
+    "invoke.request",
+    "invoke.result.receipted",
+    "invoke.result.failed",
+    "invoke.result.cancelled",
+    "invoke.result.uncertain",
+    "invoke.success.receipted",
+    "invoke.success.failed",
+    "invoke.success.cancelled",
+    "invoke.success.uncertain",
+    "invoke.error",
+    "ordinary.plan",
+    "ordinary.descriptor"
+  ],
+  "schema": "model-provider-rpc-corpus/v2",
+  "title": "Provider overlay, receipt authority, hash domains and reserved boundary"
+}
