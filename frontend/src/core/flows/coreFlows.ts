@@ -18,7 +18,6 @@ import {
   PROJECT_BRIEF_DOCUMENT_TYPE,
   PROJECT_BRIEF_PAYLOAD_SCHEMA,
   PROJECT_BRIEF_TITLE,
-  bindProjectBriefWorkspace,
   preflightProjectBriefInput,
   projectBriefContentsEqual,
   projectBriefDocumentId,
@@ -102,9 +101,9 @@ export interface CreateCoreFlowsOptions {
 }
 
 interface PendingProjectBriefCreate {
-  fingerprint: string
-  preflightContent: Readonly<ProjectBriefContent>
   workspaceCommand: CoreWorkspaceCreateCommand
+  fingerprint?: string
+  content?: Readonly<ProjectBriefContent>
   workspace?: CoreProjectListItem
 }
 
@@ -543,13 +542,21 @@ export function createCoreFlows(options: CreateCoreFlowsOptions) {
     workspaceId: string,
     documentId: string,
     actor: string,
+    expectedParentRevisionId?: string | null,
   ): Promise<CoreProjectBriefSnapshot> {
     const document = await getProjectBriefDocument(workspaceId, documentId)
     if (document.current_revision_id === null) throw new Error('Core Project Brief Document has no current Revision')
     const revision = await gateway.request('revision.get', {
       schema: 'core-revision-get-query/v1', workspace_id: workspaceId, revision_id: document.current_revision_id,
     })
-    assertProjectBriefRevision(revision, workspaceId, documentId, document.current_revision_id, actor)
+    assertProjectBriefRevision(
+      revision,
+      workspaceId,
+      documentId,
+      document.current_revision_id,
+      actor,
+      expectedParentRevisionId,
+    )
     const serialized = await readRevisionContent(workspaceId, revision.revision_id)
     const content = parseSerializedProjectBriefContent(serialized, workspaceId)
     return { workspaceId, documentId, revisionId: revision.revision_id, content }
@@ -564,11 +571,10 @@ export function createCoreFlows(options: CreateCoreFlowsOptions) {
   }
 
   async function ensureProjectBriefDocument(workspaceId: string, documentId: string): Promise<Readonly<CoreDocument>> {
-    const existing = await findProjectBriefDocument(workspaceId, documentId)
-    if (existing !== null) return existing
-
     let command = pendingProjectBriefDocumentCommands.get(documentId)
     if (command === undefined) {
+      const existing = await findProjectBriefDocument(workspaceId, documentId)
+      if (existing !== null) return existing
       command = {
         schema: 'core-document-create-command/v1',
         operation_key: ids.next('operation'),
@@ -579,7 +585,11 @@ export function createCoreFlows(options: CreateCoreFlowsOptions) {
       }
       pendingProjectBriefDocumentCommands.set(documentId, command)
     }
-    if (command.workspace_id !== workspaceId || command.document_id !== documentId) {
+    if (command.schema !== 'core-document-create-command/v1'
+      || command.workspace_id !== workspaceId
+      || command.document_id !== documentId
+      || command.document_type !== PROJECT_BRIEF_DOCUMENT_TYPE
+      || command.title !== PROJECT_BRIEF_TITLE) {
       throw new Error('Core Project Brief pending Document command crossed Workspace identity')
     }
 
@@ -606,12 +616,14 @@ export function createCoreFlows(options: CreateCoreFlowsOptions) {
     baseRevisionId: string | null,
     content: Readonly<ProjectBriefContent>,
     actor: string,
+    serialized: string,
   ): Promise<CoreProjectBriefSnapshot> {
-    const serialized = serializeProjectBriefContent(content, workspaceId)
     const pending = pendingProjectBriefRevisionCommands.get(documentId)
     let command: CoreDocumentRevisionCreateCommand
     if (pending !== undefined) {
-      if (pending.workspace_id !== workspaceId
+      if (pending.schema !== 'core-document-revision-create-command/v1'
+        || pending.workspace_id !== workspaceId
+        || pending.document_id !== documentId
         || pending.base_revision_id !== baseRevisionId
         || pending.content !== serialized
         || pending.created_by !== actor
@@ -643,7 +655,7 @@ export function createCoreFlows(options: CreateCoreFlowsOptions) {
       if (isStaleCas(error)) {
         clearPendingProjectBriefRevision(command)
         try {
-          await readProjectBriefFromDocument(workspaceId, documentId, actor)
+          await readProjectBriefFromDocument(workspaceId, documentId, actor, command.base_revision_id)
         } catch {
           // The authoritative reload is best-effort; stale CAS remains visible either way.
         }
@@ -652,8 +664,13 @@ export function createCoreFlows(options: CreateCoreFlowsOptions) {
       if (isDefinitePreEffectRejection(error)) clearPendingProjectBriefRevision(command)
       throw error
     }
-    assertProjectBriefRevision(revision, workspaceId, documentId, command.revision_id, actor, baseRevisionId)
-    const verified = await readProjectBriefFromDocument(workspaceId, documentId, actor)
+    assertProjectBriefRevision(revision, workspaceId, documentId, command.revision_id, actor, command.base_revision_id)
+    const verified = await readProjectBriefFromDocument(
+      workspaceId,
+      documentId,
+      actor,
+      command.base_revision_id,
+    )
     if (verified.revisionId !== command.revision_id || !projectBriefContentsEqual(verified.content, content)) {
       throw new Error('Core Project Brief Revision was not durably verified with the requested content')
     }
@@ -667,35 +684,33 @@ export function createCoreFlows(options: CreateCoreFlowsOptions) {
     content: Readonly<ProjectBriefContent>,
     actor: string,
   ): Promise<CoreProjectBriefSnapshot> {
+    const serialized = serializeProjectBriefContent(content, workspaceId)
     const documentId = await projectBriefDocumentId(workspaceId)
     await ensureProjectBriefDocument(workspaceId, documentId)
-    const document = await getProjectBriefDocument(workspaceId, documentId)
     const pending = pendingProjectBriefRevisionCommands.get(documentId)
+    if (pending !== undefined) {
+      return submitProjectBriefRevision(
+        workspaceId,
+        documentId,
+        pending.base_revision_id,
+        content,
+        actor,
+        serialized,
+      )
+    }
+
+    const document = await getProjectBriefDocument(workspaceId, documentId)
 
     if (document.current_revision_id !== null) {
       const current = await readProjectBriefFromDocument(workspaceId, documentId, actor)
-      if (pending !== undefined) {
-        if (current.revisionId === pending.revision_id) {
-          if (!projectBriefContentsEqual(current.content, content)) {
-            throw new Error('Core Project Brief pending Revision resolved with different content')
-          }
-          clearPendingProjectBriefRevision(pending)
-          pendingProjectBriefDocumentCommands.delete(documentId)
-          return current
-        }
-        if (current.revisionId !== pending.base_revision_id) {
-          clearPendingProjectBriefRevision(pending)
-          throw new Error('Core Project Brief stale CAS; authoritative state was reloaded and no overwrite was attempted')
-        }
-      }
       if (projectBriefContentsEqual(current.content, content)) {
         pendingProjectBriefDocumentCommands.delete(documentId)
         return current
       }
-      return submitProjectBriefRevision(workspaceId, documentId, current.revisionId, content, actor)
+      return submitProjectBriefRevision(workspaceId, documentId, current.revisionId, content, actor, serialized)
     }
 
-    return submitProjectBriefRevision(workspaceId, documentId, null, content, actor)
+    return submitProjectBriefRevision(workspaceId, documentId, null, content, actor, serialized)
   }
 
   async function saveProjectBrief(
@@ -704,8 +719,8 @@ export function createCoreFlows(options: CreateCoreFlowsOptions) {
   ): Promise<CoreProjectBriefSnapshot> {
     const workspaceId = assertNonEmpty(workspaceIdInput, 'Workspace identity')
     const actor = authoritativeActor()
-    const preflight = preflightProjectBriefInput(input)
-    return persistProjectBrief(workspaceId, bindProjectBriefWorkspace(preflight.content, workspaceId), actor)
+    const preflight = preflightProjectBriefInput(workspaceId, input)
+    return persistProjectBrief(workspaceId, preflight.content, actor)
   }
 
   async function createProjectWithBrief(
@@ -714,12 +729,9 @@ export function createCoreFlows(options: CreateCoreFlowsOptions) {
   ): Promise<CoreProjectBriefCreateResult> {
     const normalizedTitle = assertNonEmpty(title, 'Project title')
     const actor = authoritativeActor()
-    const preflight = preflightProjectBriefInput(input)
     let pending = pendingProjectBriefCreates.get(normalizedTitle)
     if (pending === undefined) {
       pending = {
-        fingerprint: preflight.fingerprint,
-        preflightContent: preflight.content,
         workspaceCommand: {
           schema: 'core-workspace-create-command/v1',
           operation_key: ids.next('operation'),
@@ -729,6 +741,12 @@ export function createCoreFlows(options: CreateCoreFlowsOptions) {
         },
       }
       pendingProjectBriefCreates.set(normalizedTitle, pending)
+    }
+
+    const preflight = preflightProjectBriefInput(pending.workspaceCommand.workspace_id, input)
+    if (pending.fingerprint === undefined) {
+      pending.fingerprint = preflight.fingerprint
+      pending.content = preflight.content
     } else if (pending.fingerprint !== preflight.fingerprint) {
       throw new Error('Core Project Brief creation is pending; retry the exact unchanged input')
     }
@@ -762,7 +780,8 @@ export function createCoreFlows(options: CreateCoreFlowsOptions) {
         throw new Error('Core Workspace verification crossed its exact identity, kind, or title')
       }
       pending.workspace = projectFromWorkspace(verifiedWorkspace)
-      const content = bindProjectBriefWorkspace(pending.preflightContent, project.workspaceId)
+      const content = pending.content
+      if (content === undefined) throw new Error('Core Project Brief pending create lost its validated content')
       const brief = await persistProjectBrief(project.workspaceId, content, actor)
       pendingProjectBriefCreates.delete(normalizedTitle)
       return { workspaceId: project.workspaceId, project: pending.workspace, brief }

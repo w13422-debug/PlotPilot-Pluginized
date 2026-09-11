@@ -5,7 +5,6 @@ import {
   PROJECT_BRIEF_DOCUMENT_TYPE,
   PROJECT_BRIEF_MAX_SERIALIZED_BYTES,
   PROJECT_BRIEF_PAYLOAD_SCHEMA,
-  bindProjectBriefWorkspace,
   buildProjectBriefContent,
   parseProjectBriefContent,
   parseSerializedProjectBriefContent,
@@ -79,8 +78,11 @@ type StoredRevision = {
 
 interface MemoryOptions {
   loseWorkspaceCreateOnce?: boolean
+  loseDocumentCreateOnce?: boolean
   loseRevisionCreateOnce?: boolean
   staleRevisionCreateOnce?: boolean
+  wrongParentOnRevisionReplayResponse?: boolean
+  wrongParentOnRevisionReadAfterReplay?: boolean
 }
 
 function memoryCore(options: MemoryOptions = {}) {
@@ -89,22 +91,24 @@ function memoryCore(options: MemoryOptions = {}) {
   const documents = new Map<string, StoredDocument>()
   const revisions = new Map<string, StoredRevision>()
   let loseWorkspace = options.loseWorkspaceCreateOnce === true
+  let loseDocument = options.loseDocumentCreateOnce === true
   let loseRevision = options.loseRevisionCreateOnce === true
   let staleRevision = options.staleRevisionCreateOnce === true
+  let replayedRevision = false
 
   const gateway: CoreFlowGateway = {
     async request(routeId, request) {
       calls.push([routeId, structuredClone(request) as CoreAuthorityCommandQuery])
       if (routeId === 'workspace.create') {
-        if (loseWorkspace) {
-          loseWorkspace = false
-          throw new Error('workspace response lost')
-        }
         if (request.schema !== 'core-workspace-create-command/v1') throw new Error('wrong workspace command')
         let current = workspaces.get(request.workspace_id)
         if (current === undefined) {
           current = workspace(request.workspace_id, request.title, 0)
           workspaces.set(current.workspace_id, current)
+        }
+        if (loseWorkspace) {
+          loseWorkspace = false
+          throw new Error('workspace response lost after commit')
         }
         return structuredClone(current) as never
       }
@@ -133,6 +137,10 @@ function memoryCore(options: MemoryOptions = {}) {
           }
           documents.set(current.document_id, current)
         }
+        if (loseDocument) {
+          loseDocument = false
+          throw new Error('document response lost after commit')
+        }
         return structuredClone(current) as never
       }
       if (routeId === 'document.get') {
@@ -143,15 +151,20 @@ function memoryCore(options: MemoryOptions = {}) {
       }
       if (routeId === 'document.revision.create') {
         if (request.schema !== 'core-document-revision-create-command/v1') throw new Error('wrong revision command')
+        const committed = revisions.get(request.revision_id)
+        if (committed !== undefined) {
+          replayedRevision = true
+          const revision = structuredClone(committed.revision)
+          if (options.wrongParentOnRevisionReplayResponse === true) {
+            revision.parent_revision_id = 'wrong-parent'
+          }
+          return revision as never
+        }
         if (staleRevision) {
           staleRevision = false
           throw new CoreFlowHttpError(409, {
             schema: 'core-http-error/v1', error_code: 'stale_cas', message: 'stale base', retryable: false,
           })
-        }
-        if (loseRevision) {
-          loseRevision = false
-          throw new Error('revision response lost')
         }
         const document = documents.get(request.document_id)
         if (document === undefined || document.workspace_id !== request.workspace_id) throw new Error('missing document')
@@ -170,13 +183,21 @@ function memoryCore(options: MemoryOptions = {}) {
         document.current_revision_id = revision.revision_id
         document.revision += 1
         document.updated_at = NOW
+        if (loseRevision) {
+          loseRevision = false
+          throw new Error('revision response lost after commit')
+        }
         return structuredClone(revision) as never
       }
       if (routeId === 'revision.get') {
         if (request.schema !== 'core-revision-get-query/v1') throw new Error('wrong revision query')
         const current = revisions.get(request.revision_id)
         if (current === undefined || current.revision.workspace_id !== request.workspace_id) throw new Error('missing revision')
-        return structuredClone(current.revision) as never
+        const revision = structuredClone(current.revision)
+        if (options.wrongParentOnRevisionReadAfterReplay === true && replayedRevision) {
+          revision.parent_revision_id = 'wrong-parent'
+        }
+        return revision as never
       }
       if (routeId === 'revision.content') {
         if (request.schema !== 'core-revision-content-query/v1') throw new Error('wrong content query')
@@ -192,7 +213,16 @@ function memoryCore(options: MemoryOptions = {}) {
     },
   }
 
-  return { gateway, calls, workspaces, documents, revisions }
+  return {
+    gateway,
+    calls,
+    workspaces,
+    documents,
+    revisions,
+    loseNextRevisionResponse() {
+      loseRevision = true
+    },
+  }
 }
 
 function workspace(id: string, title = id, revision = 1) {
@@ -240,6 +270,44 @@ test('Project Brief rejects malformed, cross-workspace, unknown, non-finite, and
   assert.equal(store.calls.length, 0)
 })
 
+test('preflights the exact real Workspace identity at the 8 MiB boundary before any Gateway request and permits corrected retry', async () => {
+  const realWorkspaceId = `w${'x'.repeat(127)}`
+  let sequence = 0
+  const fixedIds = {
+    next(kind: 'workspace' | 'document' | 'operation' | 'revision') {
+      if (kind === 'workspace') return realWorkspaceId
+      sequence += 1
+      return `${kind}-${sequence}`
+    },
+  }
+  const emptyWorld = input({ worldPreset: '' })
+  const shortBytes = Buffer.byteLength(JSON.stringify(buildProjectBriefContent('w', emptyWorld)), 'utf8')
+  const realBytes = Buffer.byteLength(JSON.stringify(buildProjectBriefContent(realWorkspaceId, emptyWorld)), 'utf8')
+  assert.ok(realBytes > shortBytes)
+  const oneByteTooLarge = PROJECT_BRIEF_MAX_SERIALIZED_BYTES - realBytes + 1
+
+  const store = memoryCore()
+  const flows = createCoreFlows({ ids: fixedIds, createdBy: 'plotpilot.webui.local', gateway: store.gateway })
+  await assert.rejects(
+    () => flows.createProjectWithBrief('真实身份边界', input({ worldPreset: 'x'.repeat(oneByteTooLarge) })),
+    /serialized content exceeds/,
+  )
+  assert.equal(store.calls.length, 0)
+
+  const created = await flows.createProjectWithBrief(
+    '真实身份边界',
+    input({ worldPreset: 'x'.repeat(oneByteTooLarge - 1) }),
+  )
+  assert.equal(created.workspaceId, realWorkspaceId)
+  assert.equal(Buffer.byteLength(serializeProjectBriefContent(created.brief.content, realWorkspaceId), 'utf8'), PROJECT_BRIEF_MAX_SERIALIZED_BYTES)
+  const workspaceCommands = commands(store.calls, 'core-workspace-create-command/v1')
+  assert.equal(workspaceCommands.length, 1)
+  assert.equal(workspaceCommands[0]?.schema, 'core-workspace-create-command/v1')
+  if (workspaceCommands[0]?.schema === 'core-workspace-create-command/v1') {
+    assert.equal(workspaceCommands[0].workspace_id, realWorkspaceId)
+  }
+})
+
 test('creates one verified Core Project Brief Document and first Revision, then reloads every Home field', async () => {
   const store = memoryCore()
   const flows = createCoreFlows({ ids: ids(), createdBy: 'plotpilot.webui.local', gateway: store.gateway })
@@ -283,22 +351,99 @@ test('updates through the current Revision CAS parent chain without changing cha
   if (update?.schema === 'core-document-revision-create-command/v1') assert.equal(update.base_revision_id, first.brief.revisionId)
 })
 
-test('reuses exact Workspace and Revision commands after uncertain response loss and never reports a partial create as success', async () => {
-  const store = memoryCore({ loseWorkspaceCreateOnce: true, loseRevisionCreateOnce: true })
+test('replays exact pending Workspace, Document, and null-parent Revision commands after commit-then-response-loss', async () => {
+  const store = memoryCore({
+    loseWorkspaceCreateOnce: true,
+    loseDocumentCreateOnce: true,
+    loseRevisionCreateOnce: true,
+  })
   const flows = createCoreFlows({ ids: ids(), createdBy: 'plotpilot.webui.local', gateway: store.gateway })
-  await assert.rejects(() => flows.createProjectWithBrief('可恢复建档', input()), /workspace response lost/)
+  await assert.rejects(() => flows.createProjectWithBrief('可恢复建档', input()), /workspace response lost after commit/)
   await assert.rejects(
     () => flows.createProjectWithBrief('可恢复建档', input()),
-    error => error instanceof CoreProjectBriefPartialCreateError && /revision response lost/.test(error.message),
+    error => error instanceof CoreProjectBriefPartialCreateError && /document response lost after commit/.test(error.message),
+  )
+  await assert.rejects(
+    () => flows.createProjectWithBrief('可恢复建档', input()),
+    error => error instanceof CoreProjectBriefPartialCreateError && /revision response lost after commit/.test(error.message),
   )
   const created = await flows.createProjectWithBrief('可恢复建档', input())
   const workspaceCommands = commands(store.calls, 'core-workspace-create-command/v1')
+  const documentCommands = commands(store.calls, 'core-document-create-command/v1')
   const revisionCommands = commands(store.calls, 'core-document-revision-create-command/v1')
   assert.equal(created.brief.content.workspace_id, created.workspaceId)
+  assert.equal(workspaceCommands.length, 2)
+  assert.equal(documentCommands.length, 3)
+  assert.equal(revisionCommands.length, 2)
   assert.deepEqual(workspaceCommands[0], workspaceCommands[1])
+  assert.deepEqual(documentCommands[0], documentCommands[1])
+  assert.deepEqual(documentCommands[1], documentCommands[2])
+  assert.deepEqual(revisionCommands[0], revisionCommands[1])
+  assert.equal(revisionCommands[0]?.schema, 'core-document-revision-create-command/v1')
+  if (revisionCommands[0]?.schema === 'core-document-revision-create-command/v1') {
+    assert.equal(revisionCommands[0].base_revision_id, null)
+  }
+  assert.equal(store.workspaces.size, 1)
+  assert.equal(store.documents.size, 1)
+  assert.equal(store.revisions.size, 1)
+})
+
+test('replays an exact pending update Revision with its original CAS parent after commit-then-response-loss', async () => {
+  const store = memoryCore()
+  const flows = createCoreFlows({ ids: ids(), createdBy: 'plotpilot.webui.local', gateway: store.gateway })
+  const first = await flows.createProjectWithBrief('更新重放', input())
+  store.calls.length = 0
+  store.loseNextRevisionResponse()
+  const updateInput = input({ premise: '响应丢失后的更新。' })
+
+  await assert.rejects(
+    () => flows.saveProjectBrief(first.workspaceId, updateInput),
+    /revision response lost after commit/,
+  )
+  const recovered = await flows.saveProjectBrief(first.workspaceId, updateInput)
+  const revisionCommands = commands(store.calls, 'core-document-revision-create-command/v1')
+  assert.equal(revisionCommands.length, 2)
+  assert.deepEqual(revisionCommands[0], revisionCommands[1])
+  assert.equal(revisionCommands[0]?.schema, 'core-document-revision-create-command/v1')
+  if (revisionCommands[0]?.schema === 'core-document-revision-create-command/v1') {
+    assert.equal(revisionCommands[0].base_revision_id, first.brief.revisionId)
+  }
+  assert.equal(recovered.content.premise, updateInput.premise)
+  assert.equal(store.workspaces.size, 1)
+  assert.equal(store.documents.size, 1)
+  assert.equal(store.revisions.size, 2)
+})
+
+test('rejects a wrong parent returned by the authoritative read after replaying a pending Revision', async () => {
+  const store = memoryCore({ loseRevisionCreateOnce: true, wrongParentOnRevisionReadAfterReplay: true })
+  const flows = createCoreFlows({ ids: ids(), createdBy: 'plotpilot.webui.local', gateway: store.gateway })
+  await assert.rejects(
+    () => flows.createProjectWithBrief('错误父链', input()),
+    error => error instanceof CoreProjectBriefPartialCreateError && /revision response lost after commit/.test(error.message),
+  )
+  await assert.rejects(
+    () => flows.createProjectWithBrief('错误父链', input()),
+    error => error instanceof CoreProjectBriefPartialCreateError && /exact identity, parent, actor/.test(error.message),
+  )
+  const revisionCommands = commands(store.calls, 'core-document-revision-create-command/v1')
+  assert.equal(revisionCommands.length, 2)
   assert.deepEqual(revisionCommands[0], revisionCommands[1])
   assert.equal(store.workspaces.size, 1)
   assert.equal(store.documents.size, 1)
+  assert.equal(store.revisions.size, 1)
+})
+
+test('rejects a wrong parent returned directly by a pending Revision replay', async () => {
+  const store = memoryCore({ loseRevisionCreateOnce: true, wrongParentOnRevisionReplayResponse: true })
+  const flows = createCoreFlows({ ids: ids(), createdBy: 'plotpilot.webui.local', gateway: store.gateway })
+  await assert.rejects(() => flows.createProjectWithBrief('错误重放父链', input()), /revision response lost after commit/)
+  await assert.rejects(
+    () => flows.createProjectWithBrief('错误重放父链', input()),
+    /exact identity, parent, actor/,
+  )
+  const revisionCommands = commands(store.calls, 'core-document-revision-create-command/v1')
+  assert.equal(revisionCommands.length, 2)
+  assert.deepEqual(revisionCommands[0], revisionCommands[1])
   assert.equal(store.revisions.size, 1)
 })
 
@@ -348,10 +493,11 @@ test('an existing Core Workspace without a Project Brief remains safe to inspect
   assert.equal(store.calls.filter(([route]) => route === 'document.create' || route === 'document.revision.create').length, 0)
 })
 
-test('preflight intent is immutable and can only be rebound to the verified Workspace identity', () => {
-  const preflight = preflightProjectBriefInput(input())
-  const rebound = bindProjectBriefWorkspace(preflight.content, 'ws-9')
-  assert.equal(preflight.content.workspace_id, 'project-brief-preflight')
-  assert.equal(rebound.workspace_id, 'ws-9')
-  assert.equal(rebound.structure.writing_style, input().writingStyle)
+test('preflight intent is immutable and remains bound to the frozen real Workspace identity', () => {
+  const preflight = preflightProjectBriefInput('ws-preflight', input())
+  assert.equal(preflight.content.workspace_id, 'ws-preflight')
+  assert.equal(preflight.fingerprint, serializeProjectBriefContent(preflight.content, 'ws-preflight'))
+  assert.equal(preflight.content.structure.writing_style, input().writingStyle)
+  assert.equal(Reflect.set(preflight.content, 'workspace_id', 'ws-9'), false)
+  assert.equal(preflight.content.workspace_id, 'ws-preflight')
 })

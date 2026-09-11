@@ -12,7 +12,6 @@ export const PROJECT_BRIEF_PAYLOAD_SCHEMA = 'plotpilot.project-brief/v1' as cons
 export const PROJECT_BRIEF_TITLE = 'Project Brief' as const
 export const PROJECT_BRIEF_MAX_SERIALIZED_BYTES = 8_388_608
 
-const PREFLIGHT_WORKSPACE_ID = 'project-brief-preflight'
 const TARGET_WORDS_BY_TIER: Readonly<Record<ProjectBriefLengthTier, number>> = {
   short: 300_000,
   standard: 1_000_000,
@@ -126,25 +125,19 @@ export function buildProjectBriefContent(workspaceIdInput: string, input: Readon
   }, workspaceId)
 }
 
-/** Validates all Home-derived values before a Workspace effect and freezes them for retry. */
-export function preflightProjectBriefInput(input: Readonly<ProjectBriefHomeInput> | unknown): Readonly<{
+/** Binds and validates all Home-derived values against the frozen real Workspace identity before effects. */
+export function preflightProjectBriefInput(
+  workspaceId: string,
+  input: Readonly<ProjectBriefHomeInput> | unknown,
+): Readonly<{
   fingerprint: string
   content: ProjectBriefContent
 }> {
-  const content = buildProjectBriefContent(PREFLIGHT_WORKSPACE_ID, input)
+  const content = buildProjectBriefContent(workspaceId, input)
   return Object.freeze({
-    fingerprint: serializeProjectBriefContent(content, PREFLIGHT_WORKSPACE_ID),
+    fingerprint: serializeProjectBriefContent(content, workspaceId),
     content,
   })
-}
-
-/** Rebinds a preflighted immutable intent to the verified Core Workspace identity. */
-export function bindProjectBriefWorkspace(
-  preflightContent: Readonly<ProjectBriefContent>,
-  workspaceIdInput: string,
-): Readonly<ProjectBriefContent> {
-  const workspaceId = assertWorkspaceId(workspaceIdInput)
-  return parseProjectBriefContent({ ...preflightContent, workspace_id: workspaceId }, workspaceId)
 }
 
 export function projectBriefContentsEqual(left: Readonly<ProjectBriefContent>, right: Readonly<ProjectBriefContent>): boolean {
