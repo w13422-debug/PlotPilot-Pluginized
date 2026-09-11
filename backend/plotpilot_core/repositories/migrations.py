@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import sqlite3
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 
 
@@ -14,6 +14,25 @@ class Migration:
     @property
     def sha256(self) -> str:
         return hashlib.sha256(self.sql.encode()).hexdigest()
+
+
+def _iter_sql_statements(sql: str) -> Iterator[str]:
+    """Split SQLite DDL without breaking trigger ``BEGIN ... END`` bodies."""
+
+    buffer: list[str] = []
+    for character in sql:
+        buffer.append(character)
+        if character != ";":
+            continue
+        candidate = "".join(buffer).strip()
+        if candidate and sqlite3.complete_statement(candidate):
+            yield candidate
+            buffer.clear()
+    remainder = "".join(buffer).strip()
+    if remainder:
+        # All production migrations are terminated.  Keeping this explicit
+        # makes a truncated trigger or generated migration fail before effect.
+        raise sqlite3.OperationalError("incomplete migration statement")
 
 
 CORE_MIGRATIONS = (
@@ -183,6 +202,141 @@ ON execution_job_start_receipt(state,worker_run_id);
 """),
 )
 
+
+MODEL_CONFIGURATION_TABLES = frozenset(
+    {
+        "p1_local_secret_value",
+        "p1_model_profile_revision",
+        "p1_plan_revision_reference",
+        "p1_workspace_plan_selection",
+        "p1_configuration_operation",
+    }
+)
+
+MODEL_CONFIGURATION_MIGRATION = Migration(
+    "0007-model-configuration-authority",
+    """
+CREATE TABLE p1_local_secret_value(
+    secret_id TEXT PRIMARY KEY,
+    value TEXT NOT NULL CHECK(length(value) BETWEEN 1 AND 65536),
+    value_hash TEXT NOT NULL CHECK(length(value_hash)=64 AND value_hash NOT GLOB '*[^0-9a-f]*'),
+    revision INTEGER NOT NULL CHECK(revision >= 1),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+CREATE TABLE p1_model_profile_revision(
+    revision_id TEXT PRIMARY KEY,
+    profile_id TEXT NOT NULL,
+    revision_number INTEGER NOT NULL CHECK(revision_number BETWEEN 1 AND 9007199254740991),
+    parent_revision_id TEXT REFERENCES p1_model_profile_revision(revision_id),
+    secret_id TEXT NOT NULL REFERENCES p1_local_secret_value(secret_id),
+    payload_json TEXT NOT NULL CHECK(json_valid(payload_json)),
+    revision_hash TEXT NOT NULL UNIQUE CHECK(length(revision_hash)=64 AND revision_hash NOT GLOB '*[^0-9a-f]*'),
+    created_at TEXT NOT NULL,
+    UNIQUE(profile_id,revision_number),
+    CHECK((revision_number=1 AND parent_revision_id IS NULL) OR (revision_number>1 AND parent_revision_id IS NOT NULL))
+);
+CREATE TABLE p1_plan_revision_reference(
+    generation_id TEXT NOT NULL REFERENCES p2_plugin_generation(generation_id),
+    plan_revision_id TEXT NOT NULL,
+    plan_revision_hash TEXT NOT NULL CHECK(length(plan_revision_hash)=64 AND plan_revision_hash NOT GLOB '*[^0-9a-f]*'),
+    registered_at TEXT NOT NULL,
+    PRIMARY KEY(generation_id,plan_revision_id),
+    UNIQUE(generation_id,plan_revision_hash)
+);
+CREATE TABLE p1_workspace_plan_selection(
+    selection_id TEXT PRIMARY KEY,
+    operation_key TEXT NOT NULL UNIQUE,
+    workspace_id TEXT NOT NULL REFERENCES workspace(workspace_id),
+    previous_plan_revision_id TEXT,
+    previous_plan_revision_hash TEXT,
+    plan_revision_id TEXT NOT NULL,
+    plan_revision_hash TEXT NOT NULL CHECK(length(plan_revision_hash)=64 AND plan_revision_hash NOT GLOB '*[^0-9a-f]*'),
+    model_profile_revision_id TEXT NOT NULL REFERENCES p1_model_profile_revision(revision_id),
+    model_profile_revision_hash TEXT NOT NULL CHECK(length(model_profile_revision_hash)=64 AND model_profile_revision_hash NOT GLOB '*[^0-9a-f]*'),
+    active_generation_id TEXT NOT NULL,
+    selection_mode TEXT NOT NULL CHECK(selection_mode='explicit'),
+    workspace_revision INTEGER NOT NULL CHECK(workspace_revision BETWEEN 1 AND 9007199254740991),
+    created_at TEXT NOT NULL,
+    UNIQUE(workspace_id,workspace_revision),
+    FOREIGN KEY(active_generation_id,plan_revision_id)
+        REFERENCES p1_plan_revision_reference(generation_id,plan_revision_id),
+    CHECK((previous_plan_revision_id IS NULL) = (previous_plan_revision_hash IS NULL))
+);
+CREATE TABLE p1_configuration_operation(
+    route_id TEXT NOT NULL CHECK(route_id IN ('model-secret.put','model-profile.revise','workspace-plan.select','project-planning.start')),
+    operation_key TEXT NOT NULL,
+    request_fingerprint TEXT NOT NULL CHECK(length(request_fingerprint)=64 AND request_fingerprint NOT GLOB '*[^0-9a-f]*'),
+    value_hash TEXT CHECK(value_hash IS NULL OR (length(value_hash)=64 AND value_hash NOT GLOB '*[^0-9a-f]*')),
+    success_status INTEGER NOT NULL CHECK(success_status IN (200,201)),
+    response_json TEXT NOT NULL CHECK(json_valid(response_json)),
+    created_at TEXT NOT NULL,
+    PRIMARY KEY(route_id,operation_key)
+);
+CREATE INDEX p1_model_profile_tip
+    ON p1_model_profile_revision(profile_id,revision_number DESC);
+CREATE INDEX p1_plan_reference_generation
+    ON p1_plan_revision_reference(generation_id,plan_revision_id,plan_revision_hash);
+CREATE INDEX p1_workspace_plan_history
+    ON p1_workspace_plan_selection(workspace_id,workspace_revision DESC);
+CREATE INDEX p1_configuration_operation_created
+    ON p1_configuration_operation(created_at,route_id,operation_key);
+CREATE TRIGGER p1_local_secret_value_update_guard
+BEFORE UPDATE ON p1_local_secret_value
+WHEN NEW.secret_id<>OLD.secret_id OR NEW.created_at<>OLD.created_at OR NEW.revision<>OLD.revision+1
+BEGIN
+    SELECT RAISE(ABORT,'p1 local secret identity/revision is immutable');
+END;
+CREATE TRIGGER p1_local_secret_value_no_delete
+BEFORE DELETE ON p1_local_secret_value
+BEGIN
+    SELECT RAISE(ABORT,'p1 local secret deletion is forbidden');
+END;
+CREATE TRIGGER p1_model_profile_revision_no_update
+BEFORE UPDATE ON p1_model_profile_revision
+BEGIN
+    SELECT RAISE(ABORT,'p1 model profile revisions are immutable');
+END;
+CREATE TRIGGER p1_model_profile_revision_no_delete
+BEFORE DELETE ON p1_model_profile_revision
+BEGIN
+    SELECT RAISE(ABORT,'p1 model profile revisions are immutable');
+END;
+CREATE TRIGGER p1_plan_revision_reference_no_update
+BEFORE UPDATE ON p1_plan_revision_reference
+BEGIN
+    SELECT RAISE(ABORT,'p1 Plan references are immutable');
+END;
+CREATE TRIGGER p1_plan_revision_reference_no_delete
+BEFORE DELETE ON p1_plan_revision_reference
+BEGIN
+    SELECT RAISE(ABORT,'p1 Plan references are immutable');
+END;
+CREATE TRIGGER p1_workspace_plan_selection_no_update
+BEFORE UPDATE ON p1_workspace_plan_selection
+BEGIN
+    SELECT RAISE(ABORT,'p1 Workspace Plan history is immutable');
+END;
+CREATE TRIGGER p1_workspace_plan_selection_no_delete
+BEFORE DELETE ON p1_workspace_plan_selection
+BEGIN
+    SELECT RAISE(ABORT,'p1 Workspace Plan history is immutable');
+END;
+CREATE TRIGGER p1_configuration_operation_no_update
+BEFORE UPDATE ON p1_configuration_operation
+BEGIN
+    SELECT RAISE(ABORT,'p1 configuration operations are immutable');
+END;
+CREATE TRIGGER p1_configuration_operation_no_delete
+BEFORE DELETE ON p1_configuration_operation
+BEGIN
+    SELECT RAISE(ABORT,'p1 configuration operations are immutable');
+END;
+""",
+)
+
+MODEL_CONFIGURATION_MIGRATIONS = (MODEL_CONFIGURATION_MIGRATION,)
+
 PRODUCTION_CORE_MIGRATIONS = (
     CORE_MIGRATIONS
     + PRODUCTION_SUPERVISOR_MIGRATIONS
@@ -209,9 +363,8 @@ class MigrationRunner:
                     continue
                 # ``executescript`` performs an implicit commit in CPython and
                 # would leave partial DDL behind on a later failing statement.
-                for statement in migration.sql.split(";"):
-                    if statement.strip():
-                        self.connection.execute(statement)
+                for statement in _iter_sql_statements(migration.sql):
+                    self.connection.execute(statement)
                 self.connection.execute("INSERT INTO schema_migration(migration_id,sha256) VALUES(?,?)", (migration.migration_id,migration.sha256))
                 self.connection.commit()
             except BaseException:

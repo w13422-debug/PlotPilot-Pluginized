@@ -21,6 +21,12 @@ from backend.plotpilot_core.api.v1.webui import (
 from backend.plotpilot_core.api.v1.webui import (
     route_inventory as private_generation_inventory,
 )
+from backend.plotpilot_core.api.v2.configuration.router import (
+    ROUTE_ALLOWLIST as CONFIGURATION_V2_ROUTE_ALLOWLIST,
+)
+from backend.plotpilot_core.api.v2.configuration.router import (
+    route_inventory as configuration_v2_inventory,
+)
 from backend.plotpilot_core.api.v2.jobs.router import (
     ROUTE_ALLOWLIST as JOBS_V2_ROUTE_ALLOWLIST,
 )
@@ -30,6 +36,10 @@ from backend.plotpilot_core.api.v2.jobs.router import (
 from backend.plotpilot_core.webui import PrivateChapterGenerationFacade
 
 from .m4_authority_adapters import M4AuthorityAdapters, build_m4_authority_adapters
+from .model_configuration_adapters import (
+    ModelConfigurationAdapters,
+    build_model_configuration_adapters,
+)
 from .production_job_runtime import (
     ProductionJobRuntime,
     build_production_job_runtime,
@@ -43,7 +53,7 @@ from .webui_core_runtime import WebUiCoreRuntime, build_webui_core_runtime
 logger = logging.getLogger(__name__)
 
 DEFAULT_JOB_PUMP_INTERVAL_SECONDS = 0.05
-WEBUI_RUNTIME_ROUTE_COUNTS = (26, 6, 8, 2)
+WEBUI_RUNTIME_ROUTE_COUNTS = (26, 6, 5, 8, 2)
 
 _CORE_V2_ROUTE_ALLOWLIST = (
     ("GET", "/api/v2/core/workspaces/{workspace_id}/candidates"),
@@ -89,6 +99,7 @@ def _method_path_inventory(router: APIRouter) -> tuple[tuple[str, str], ...]:
 def _assert_router_contracts(
     core_v1_router: APIRouter,
     core_v2_router: APIRouter,
+    configuration_v2_router: APIRouter,
     jobs_v2_router: APIRouter,
     private_generation_router: APIRouter,
 ) -> None:
@@ -96,6 +107,14 @@ def _assert_router_contracts(
         raise RuntimeError("Core v1 WebUI route inventory drifted")
     if _method_path_inventory(core_v2_router) != _CORE_V2_ROUTE_ALLOWLIST:
         raise RuntimeError("Core v2 WebUI route inventory drifted")
+    expected_configuration = tuple(
+        sorted(
+            CONFIGURATION_V2_ROUTE_ALLOWLIST,
+            key=lambda item: (item["path"], item["method"]),
+        )
+    )
+    if configuration_v2_inventory(configuration_v2_router) != expected_configuration:
+        raise RuntimeError("configuration v2 WebUI route inventory drifted")
     expected_jobs = tuple(
         sorted(
             JOBS_V2_ROUTE_ALLOWLIST,
@@ -113,6 +132,7 @@ def _assert_router_contracts(
     routers = (
         core_v1_router,
         core_v2_router,
+        configuration_v2_router,
         jobs_v2_router,
         private_generation_router,
     )
@@ -156,9 +176,11 @@ class WebUiRuntime:
         plugin_runtime: ProductionPluginRuntime,
         job_runtime: ProductionJobRuntime,
         m4_adapters: M4AuthorityAdapters,
+        model_configuration_adapters: ModelConfigurationAdapters,
         private_generation_facade: PrivateChapterGenerationFacade,
         core_v1_router: APIRouter,
         core_v2_router: APIRouter,
+        configuration_v2_router: APIRouter,
         jobs_v2_router: APIRouter,
         private_generation_router: APIRouter,
         pump_interval_seconds: float = DEFAULT_JOB_PUMP_INTERVAL_SECONDS,
@@ -169,9 +191,11 @@ class WebUiRuntime:
         self.plugin_runtime = plugin_runtime
         self.job_runtime = job_runtime
         self.m4_adapters = m4_adapters
+        self.model_configuration_adapters = model_configuration_adapters
         self.private_generation_facade = private_generation_facade
         self.core_v1_router = core_v1_router
         self.core_v2_router = core_v2_router
+        self.configuration_v2_router = configuration_v2_router
         self.jobs_v2_router = jobs_v2_router
         self.private_generation_router = private_generation_router
         self.pump_interval_seconds = float(pump_interval_seconds)
@@ -224,6 +248,14 @@ class WebUiRuntime:
         return self.m4_adapters
 
     @property
+    def model_configuration(self) -> ModelConfigurationAdapters:
+        return self.model_configuration_adapters
+
+    @property
+    def plan_authority(self):
+        return self.model_configuration_adapters.planning
+
+    @property
     def started(self) -> bool:
         with self._state_condition:
             return self._started
@@ -244,10 +276,13 @@ class WebUiRuntime:
             return self._pump_failure
 
     @property
-    def routers(self) -> tuple[APIRouter, APIRouter, APIRouter, APIRouter]:
+    def routers(
+        self,
+    ) -> tuple[APIRouter, APIRouter, APIRouter, APIRouter, APIRouter]:
         return (
             self.core_v1_router,
             self.core_v2_router,
+            self.configuration_v2_router,
             self.jobs_v2_router,
             self.private_generation_router,
         )
@@ -369,6 +404,9 @@ def build_webui_runtime(
             core_runtime.assets,
             execution_authority=plugin_runtime.execution_authority,
         )
+        model_configuration_adapters = build_model_configuration_adapters(
+            core_runtime.repository
+        )
         private_facade = PrivateChapterGenerationFacade(
             core_runtime.repository,
             core_runtime.assets,
@@ -376,11 +414,13 @@ def build_webui_runtime(
         )
         core_v1_router = create_core_router(core_runtime.adapter)
         core_v2_router = m4_adapters.router()
+        configuration_v2_router = model_configuration_adapters.router()
         jobs_v2_router = job_runtime.router
         private_router = create_private_generation_router(private_facade)
         _assert_router_contracts(
             core_v1_router,
             core_v2_router,
+            configuration_v2_router,
             jobs_v2_router,
             private_router,
         )
@@ -389,9 +429,11 @@ def build_webui_runtime(
             plugin_runtime=plugin_runtime,
             job_runtime=job_runtime,
             m4_adapters=m4_adapters,
+            model_configuration_adapters=model_configuration_adapters,
             private_generation_facade=private_facade,
             core_v1_router=core_v1_router,
             core_v2_router=core_v2_router,
+            configuration_v2_router=configuration_v2_router,
             jobs_v2_router=jobs_v2_router,
             private_generation_router=private_router,
             pump_interval_seconds=pump_interval_seconds,
@@ -409,7 +451,7 @@ def _contains_spa_fallback(router: APIRouter) -> bool:
 
 
 def mount_webui_runtime(app: FastAPI) -> WebUiRuntime:
-    """Atomically mount the 26/6/8/2 graph before any SPA catch-all."""
+    """Atomically mount the 26/6/5/8/2 graph before any SPA catch-all."""
 
     if getattr(app.state, "webui_runtime", None) is not None:
         raise RuntimeError("WebUI production runtime is already mounted")

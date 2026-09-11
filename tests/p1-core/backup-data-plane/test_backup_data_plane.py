@@ -36,8 +36,17 @@ from backend.plotpilot_core.broker.service import (
     ChildCreationRequest,
 )
 from backend.plotpilot_core.candidates import CandidateService
+from backend.plotpilot_core.configuration import (
+    ModelConfigurationAuthority,
+    WorkspacePlanAuthority,
+)
+from backend.plotpilot_core.configuration.plan_authority import (
+    PROJECT_BRIEF_DOCUMENT_TYPE,
+    PROJECT_BRIEF_PAYLOAD_SCHEMA,
+)
 from backend.plotpilot_core.domain import Document, Workspace
 from backend.plotpilot_core.plugins.lifecycle import LifecycleRepository
+from backend.plotpilot_core.plugins.generation import validate_generation
 from backend.plotpilot_core.plugins.package import verify_package
 from backend.plotpilot_core.plugins.store import PackageStore
 from backend.plotpilot_core.publication import PublicationService
@@ -2269,6 +2278,429 @@ def test_workspace_backup_omits_global_p2_authority_with_neutral_pointer(
     assert database.read_bytes() == database_before
 
 
+def test_workspace_backup_restores_exact_p1_configuration_closure_and_triggers(
+    tmp_path: Path,
+) -> None:
+    source, database, assets, _ = _source(tmp_path)
+    repository = CoreAuthorityRepository(database)
+    repository.create_workspace(
+        Workspace("ws-2", "Other", created_at=NOW, updated_at=NOW)
+    )
+    repository.create_document(
+        Document(
+            "brief-ws-1",
+            "ws-1",
+            "Project Brief",
+            PROJECT_BRIEF_DOCUMENT_TYPE,
+            created_at=NOW,
+            updated_at=NOW,
+        )
+    )
+    repository.publish_revision(
+        document_id="brief-ws-1",
+        content='{"workspace_id":"ws-1","premise":"selected"}',
+        expected_revision_id=None,
+        created_by="test",
+        payload_schema=PROJECT_BRIEF_PAYLOAD_SCHEMA,
+        revision_id="brief-ws-1-r1",
+    )
+
+    revision_ids = iter(("profile-ws1-r1", "profile-ws1-r2", "profile-ws1-r3", "profile-ws2-r1"))
+    selection_ids = iter(("selection-ws1-1", "selection-ws1-2", "selection-ws2-1"))
+    configuration = ModelConfigurationAuthority(
+        repository,
+        clock=lambda: NOW,
+        revision_id_factory=lambda: next(revision_ids),
+    )
+    planning = WorkspacePlanAuthority(
+        repository,
+        clock=lambda: NOW,
+        selection_id_factory=lambda: next(selection_ids),
+    )
+
+    selected_secret = {
+        "schema": "model-secret-put-command/v2",
+        "operation_key": "secret-ws1",
+        "secret_id": "secret-ws1",
+        "value": "SELECTED_WORKSPACE_RAW_VALUE",
+    }
+    excluded_secret_marker = "WS2_LOCAL_VALUE_SENTINEL_MUST_NOT_LEAK"
+    excluded_orphan_marker = "ORPHAN_LOCAL_VALUE_SENTINEL_MUST_NOT_LEAK"
+    configuration.put_secret(selected_secret)
+    configuration.put_secret(
+        {
+            **selected_secret,
+            "operation_key": "secret-ws2",
+            "secret_id": "secret-ws2",
+            "value": excluded_secret_marker,
+        }
+    )
+    configuration.put_secret(
+        {
+            **selected_secret,
+            "operation_key": "secret-orphan",
+            "secret_id": "secret-orphan",
+            "value": excluded_orphan_marker,
+        }
+    )
+
+    def profile_command(
+        *,
+        operation_key: str,
+        profile_id: str,
+        parent: str | None,
+        secret_id: str,
+        model_name: str,
+    ) -> dict[str, object]:
+        return {
+            "schema": "model-profile-revise-command/v2",
+            "operation_key": operation_key,
+            "profile_id": profile_id,
+            "expected_parent_revision_id": parent,
+            "provider": {
+                "plugin_id": "com.plotpilot.provider.local",
+                "release_id": "a" * 64,
+                "endpoint": "https://models.example.test/v1",
+                "model_name": model_name,
+                "options": {
+                    "temperature": 0.4,
+                    "top_p": 0.9,
+                    "max_output_tokens": 4096,
+                    "timeout_seconds": 120,
+                    "max_retries": 0,
+                },
+                "api_key_ref": f"secret://{secret_id}",
+            },
+        }
+
+    profile_one_command = profile_command(
+        operation_key="profile-ws1-1",
+        profile_id="profile-ws1",
+        parent=None,
+        secret_id="secret-ws1",
+        model_name="selected-model-1",
+    )
+    profile_one = configuration.revise_profile(profile_one_command)["revision"]
+    profile_two_command = profile_command(
+        operation_key="profile-ws1-2",
+        profile_id="profile-ws1",
+        parent=profile_one["revision_id"],
+        secret_id="secret-ws1",
+        model_name="selected-model-2",
+    )
+    profile_two = configuration.revise_profile(profile_two_command)["revision"]
+    profile_ws2 = configuration.revise_profile(
+        profile_command(
+            operation_key="profile-ws2-1",
+            profile_id="profile-ws2",
+            parent=None,
+            secret_id="secret-ws2",
+            model_name="excluded-model",
+        )
+    )["revision"]
+
+    def member(plugin_id: str, character: str) -> dict[str, object]:
+        return {
+            "plugin_id": plugin_id,
+            "release_id": character * 64,
+            "package_hash": character * 64,
+            "data_generation_id": None,
+            "ui_bundle_hash": None,
+            "global_settings_revision_id": None,
+            "settings_schema_hash": None,
+            "data_bundle_asset_id": None,
+        }
+
+    def activate_generation(generation_id: str, reason: str) -> None:
+        generation = validate_generation(
+            {
+                "schema": "plugin-generation/v1",
+                "generation_id": generation_id,
+                "core_api_version": "1.2.0",
+                "members": sorted(
+                    (
+                        member("com.plotpilot.project-planner", "b"),
+                        member("com.plotpilot.prompt-skill-runtime", "c"),
+                        member("com.plotpilot.provider.local", "a"),
+                    ),
+                    key=lambda item: str(item["plugin_id"]).encode(),
+                ),
+                "created_reason": reason,
+                "created_at": NOW,
+                "health_result_asset_id": f"health-{generation_id}",
+                "parent_generation_id": None,
+                "base_generation_id": None,
+            }
+        )
+        payload = canonical_bytes(generation)
+        with repository.transaction() as connection:
+            connection.execute(
+                "INSERT INTO p2_plugin_generation VALUES(?,?,?)",
+                (
+                    generation_id,
+                    payload.decode(),
+                    hashlib.sha256(payload).hexdigest(),
+                ),
+            )
+            connection.execute(
+                "UPDATE p2_plugin_generation_pointer SET current_generation_id=?,"
+                "safe_mode=0,safe_mode_reason=NULL WHERE singleton=1",
+                (generation_id,),
+            )
+
+    def selection_command(
+        *,
+        operation_key: str,
+        workspace_id: str,
+        workspace_revision: int,
+        previous_id: str | None,
+        previous_hash: str | None,
+        plan_id: str,
+        plan_hash: str,
+        profile: dict[str, object],
+        generation_id: str,
+    ) -> dict[str, object]:
+        return {
+            "schema": "workspace-plan-selection-command/v2",
+            "operation_key": operation_key,
+            "workspace_id": workspace_id,
+            "expected_workspace_revision": workspace_revision,
+            "expected_current_plan_revision_id": previous_id,
+            "expected_current_plan_revision_hash": previous_hash,
+            "selection_mode": "explicit",
+            "plan_revision_id": plan_id,
+            "plan_revision_hash": plan_hash,
+            "model_profile_revision_id": profile["revision_id"],
+            "model_profile_revision_hash": profile["revision_hash"],
+            "expected_active_generation_id": generation_id,
+        }
+
+    activate_generation("generation-ws1", "selected generation")
+    for plan_id, plan_hash in (("plan-ws1-1", "1" * 64), ("plan-ws1-2", "2" * 64)):
+        planning.register_verified_plan_reference(
+            generation_id="generation-ws1",
+            plan_revision_id=plan_id,
+            plan_revision_hash=plan_hash,
+        )
+    first_selection = selection_command(
+        operation_key="plan-ws1-1",
+        workspace_id="ws-1",
+        workspace_revision=0,
+        previous_id=None,
+        previous_hash=None,
+        plan_id="plan-ws1-1",
+        plan_hash="1" * 64,
+        profile=profile_one,
+        generation_id="generation-ws1",
+    )
+    planning.select_workspace_plan(first_selection)
+    latest_selection = selection_command(
+        operation_key="plan-ws1-2",
+        workspace_id="ws-1",
+        workspace_revision=1,
+        previous_id="plan-ws1-1",
+        previous_hash="1" * 64,
+        plan_id="plan-ws1-2",
+        plan_hash="2" * 64,
+        profile=profile_two,
+        generation_id="generation-ws1",
+    )
+    planning.select_workspace_plan(latest_selection)
+
+    excluded_successor_marker = "UNSELECTED_PROFILE_SUCCESSOR_MUST_NOT_LEAK"
+    configuration.revise_profile(
+        profile_command(
+            operation_key="profile-ws1-3",
+            profile_id="profile-ws1",
+            parent=profile_two["revision_id"],
+            secret_id="secret-ws1",
+            model_name=excluded_successor_marker,
+        )
+    )
+
+    excluded_generation_marker = "WS2_GENERATION_SENTINEL_MUST_NOT_LEAK"
+    activate_generation("generation-ws2", excluded_generation_marker)
+    planning.register_verified_plan_reference(
+        generation_id="generation-ws2",
+        plan_revision_id="plan-ws2",
+        plan_revision_hash="3" * 64,
+    )
+    planning.select_workspace_plan(
+        selection_command(
+            operation_key="plan-ws2",
+            workspace_id="ws-2",
+            workspace_revision=0,
+            previous_id=None,
+            previous_hash=None,
+            plan_id="plan-ws2",
+            plan_hash="3" * 64,
+            profile=profile_ws2,
+            generation_id="generation-ws2",
+        )
+    )
+    repository.close()
+
+    backup = _plane(source, database, assets).create_backup(
+        tmp_path / "p1-closure-backup",
+        _request("p1-closure-backup", workspace_ids=("ws-1",)),
+    )
+    projected_path = backup.bundle_root / "core/core.db"
+    projected = sqlite3.connect(projected_path)
+    try:
+        assert projected.execute(
+            "SELECT migration_id FROM schema_migration "
+            "WHERE migration_id='0007-model-configuration-authority'"
+        ).fetchall() == [("0007-model-configuration-authority",)]
+        assert projected.execute("SELECT count(*) FROM schema_migration").fetchone() == (13,)
+        assert projected.execute(
+            "SELECT count(*) FROM sqlite_schema WHERE type='table' "
+            "AND name NOT LIKE 'sqlite_%'"
+        ).fetchone() == (44,)
+        assert projected.execute(
+            "SELECT count(*) FROM sqlite_schema WHERE type='index' AND sql IS NOT NULL"
+        ).fetchone() == (23,)
+        assert projected.execute(
+            "SELECT count(*) FROM sqlite_schema WHERE type='trigger'"
+        ).fetchone() == (10,)
+        assert projected.execute(
+            "SELECT generation_id FROM p2_plugin_generation"
+        ).fetchall() == [("generation-ws1",)]
+        assert projected.execute(
+            "SELECT singleton,current_generation_id,lkg_generation_id,safe_mode,"
+            "safe_mode_reason,revision FROM p2_plugin_generation_pointer"
+        ).fetchall() == [(1, None, None, 0, None, 0)]
+        assert projected.execute(
+            "SELECT secret_id FROM p1_local_secret_value"
+        ).fetchall() == [("secret-ws1",)]
+        assert projected.execute(
+            "SELECT revision_id FROM p1_model_profile_revision "
+            "ORDER BY revision_number"
+        ).fetchall() == [("profile-ws1-r1",), ("profile-ws1-r2",)]
+        assert projected.execute(
+            "SELECT plan_revision_id FROM p1_plan_revision_reference "
+            "ORDER BY plan_revision_id"
+        ).fetchall() == [("plan-ws1-1",), ("plan-ws1-2",)]
+        assert projected.execute(
+            "SELECT operation_key FROM p1_workspace_plan_selection "
+            "ORDER BY workspace_revision"
+        ).fetchall() == [("plan-ws1-1",), ("plan-ws1-2",)]
+        assert projected.execute(
+            "SELECT route_id,operation_key FROM p1_configuration_operation "
+            "ORDER BY route_id,operation_key"
+        ).fetchall() == [
+            ("model-profile.revise", "profile-ws1-1"),
+            ("model-profile.revise", "profile-ws1-2"),
+            ("model-secret.put", "secret-ws1"),
+            ("workspace-plan.select", "plan-ws1-1"),
+            ("workspace-plan.select", "plan-ws1-2"),
+        ]
+        assert projected.execute("PRAGMA foreign_key_check").fetchall() == []
+        assert projected.execute("PRAGMA integrity_check").fetchone() == ("ok",)
+
+        guarded_mutations = (
+            "UPDATE p1_local_secret_value SET revision=revision",
+            "DELETE FROM p1_local_secret_value",
+            "UPDATE p1_model_profile_revision SET profile_id=profile_id",
+            "DELETE FROM p1_model_profile_revision",
+            "UPDATE p1_plan_revision_reference SET plan_revision_id=plan_revision_id",
+            "DELETE FROM p1_plan_revision_reference",
+            "UPDATE p1_workspace_plan_selection SET selection_mode=selection_mode",
+            "DELETE FROM p1_workspace_plan_selection",
+            "UPDATE p1_configuration_operation SET success_status=success_status",
+            "DELETE FROM p1_configuration_operation",
+        )
+        for statement in guarded_mutations:
+            with pytest.raises(sqlite3.IntegrityError):
+                projected.execute(statement)
+            projected.rollback()
+    finally:
+        projected.close()
+
+    for marker in (
+        excluded_secret_marker,
+        excluded_orphan_marker,
+        excluded_successor_marker,
+        excluded_generation_marker,
+    ):
+        assert all(
+            marker.encode() not in path.read_bytes()
+            for path in backup.bundle_root.rglob("*")
+            if path.is_file()
+        )
+
+    restored = _plane(source, database, assets).stage_restore(
+        backup.bundle_root,
+        tmp_path / "p1-closure-restored",
+        _restore_request("restore-p1-closure"),
+    )
+    restored_repository = CoreAuthorityRepository(restored.target_root / "core/core.db")
+    try:
+        with restored_repository.read_connection() as connection:
+            assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+            assert connection.execute(
+                "SELECT count(*) FROM sqlite_schema WHERE type='trigger'"
+            ).fetchone()[0] == 10
+            assert [
+                row[0]
+                for row in connection.execute(
+                    "SELECT workspace_id FROM p1_workspace_plan_selection"
+                ).fetchall()
+            ] == ["ws-1", "ws-1"]
+        restored_configuration = ModelConfigurationAuthority(restored_repository)
+        restored_planning = WorkspacePlanAuthority(restored_repository)
+        assert restored_configuration.put_secret(selected_secret)["idempotent"] is True
+        assert restored_configuration.revise_profile(profile_one_command)["idempotent"] is True
+        assert restored_configuration.revise_profile(profile_two_command)["idempotent"] is True
+        assert restored_planning.select_workspace_plan(latest_selection)["idempotent"] is True
+        assert restored_planning.planning_availability("ws-1") == {
+            "schema": "project-planning-availability-result/v2",
+            "workspace_id": "ws-1",
+            "available": False,
+            "reason": "active_generation_missing",
+        }
+    finally:
+        restored_repository.close()
+
+
+def test_workspace_backup_rejects_p1_planning_start_operation_before_p2a(
+    tmp_path: Path,
+) -> None:
+    source, database, assets, _ = _source(tmp_path)
+    repository = CoreAuthorityRepository(database)
+    with repository.transaction() as connection:
+        connection.execute(
+            "INSERT INTO p1_configuration_operation("
+            "route_id,operation_key,request_fingerprint,value_hash,success_status,"
+            "response_json,created_at) VALUES(?,?,?,?,?,?,?)",
+            (
+                "project-planning.start",
+                "unexpected-start",
+                "1" * 64,
+                None,
+                200,
+                '{"idempotent":false}',
+                NOW,
+            ),
+        )
+    repository.close()
+
+    destination = tmp_path / "unexpected-p1-start-backup"
+    with pytest.raises(BackupValidationError, match="safely scoped"):
+        _plane(source, database, assets).create_backup(
+            destination,
+            _request("unexpected-p1-start"),
+        )
+    assert not destination.exists()
+    source_connection = sqlite3.connect(database)
+    try:
+        assert source_connection.execute(
+            "SELECT operation_key FROM p1_configuration_operation "
+            "WHERE route_id='project-planning.start'"
+        ).fetchall() == [("unexpected-start",)]
+    finally:
+        source_connection.close()
+
+
 def test_workspace_backup_rejects_cross_workspace_generation_writer_fence(
     tmp_path: Path,
 ) -> None:
@@ -2571,6 +3003,7 @@ def test_workspace_backup_projects_integrated_execution_and_broker_closure(
             ("0005-production-supervisor-authority",),
             ("0006-production-job-command-receipt",),
             ("0100-plugin-lifecycle-v1",),
+            ("0007-model-configuration-authority",),
             ("p3-jobs-001",),
             ("0003-execution-authority",),
             ("0004-execution-remediation",),
@@ -2579,7 +3012,7 @@ def test_workspace_backup_projects_integrated_execution_and_broker_closure(
         ]
         assert connection.execute(
             "SELECT count(*) FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%'"
-        ).fetchone()[0] == 58
+        ).fetchone()[0] == 77
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
         assert connection.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
         assert connection.execute(

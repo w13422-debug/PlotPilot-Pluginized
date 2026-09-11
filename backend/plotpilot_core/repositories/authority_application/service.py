@@ -422,7 +422,14 @@ class CoreAuthorityApplication:
             row = self._require_workspace(connection, workspace_id)
             if row["revision"] != value["expected_revision"]:
                 raise StaleCasError("workspace revision changed")
-            for table in ("document", "node", "relation", "candidate", "execution_job"):
+            for table in (
+                "document",
+                "node",
+                "relation",
+                "candidate",
+                "execution_job",
+                "p1_workspace_plan_selection",
+            ):
                 if table == "candidate":
                     dependent = connection.execute(
                         "SELECT 1 FROM candidate WHERE json_extract(item_json,'$.target.workspace_id')=? LIMIT 1",

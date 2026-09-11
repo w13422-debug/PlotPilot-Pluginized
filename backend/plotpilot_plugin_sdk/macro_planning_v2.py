@@ -10,7 +10,8 @@ from __future__ import annotations
 import copy
 import math
 import re
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
+from types import MappingProxyType
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -84,6 +85,17 @@ _ERROR_SCHEMAS = frozenset(
 )
 _READY_REASON = "ready"
 _MISSING = object()
+FIXED_HTTP_ERROR_MESSAGES = MappingProxyType({
+    "malformed_request": "Request is malformed.",
+    "unknown_reference": "Referenced authority record was not found.",
+    "cross_workspace": "Referenced authority record belongs to another Workspace.",
+    "stale_cas": "Authority compare-and-swap is stale.",
+    "duplicate_operation": "Operation key was reused with different input.",
+    "invalid_secret_reference": "Secret reference is not a local opaque reference.",
+    "secret_value_rejected": "Secret value was rejected.",
+    "generation_conflict": "Active plugin Generation does not match.",
+    "planning_unavailable": "Project planning is unavailable.",
+})
 _MODEL_OPTION_INTEGER_BOUNDS = (
     ("max_output_tokens", 1, 10_000_000),
     ("timeout_seconds", 1, 86_400),
@@ -394,22 +406,18 @@ def parse_model_planning_http_error_v2(value: Mapping[str, Any]) -> dict[str, An
     return parsed
 
 
-def _secret_leak_path(value: Any, raw_value: str, path: str = "$") -> str | None:
-    if isinstance(value, str):
-        return path if raw_value in value else None
-    if isinstance(value, Mapping):
-        for key, child in value.items():
-            if isinstance(key, str) and raw_value in key:
-                return f"{path}.<key>"
-            found = _secret_leak_path(child, raw_value, f"{path}.{key}")
-            if found is not None:
-                return found
-    elif isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
-        for index, child in enumerate(value):
-            found = _secret_leak_path(child, raw_value, f"{path}[{index}]")
-            if found is not None:
-                return found
-    return None
+def validate_fixed_model_planning_http_error_v2(
+    value: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Bind an HTTP error to the adjudicated fixed code/message provenance."""
+
+    parsed = parse_model_planning_http_error_v2(value)
+    expected_message = FIXED_HTTP_ERROR_MESSAGES.get(parsed["error_code"])
+    if expected_message is None or parsed["message"] != expected_message:
+        _fail("HTTP error message is not fixed for its error_code", path="/message")
+    if parsed["retryable"] is not False:
+        _fail("HTTP error retryable must be false", path="/retryable")
+    return parsed
 
 
 def validate_secret_put_exchange(
@@ -419,10 +427,6 @@ def validate_secret_put_exchange(
     parsed_command = parse_model_config_v2(command)
     if parsed_command["schema"] != "model-secret-put-command/v2":
         _fail("secret exchange requires a PUT command")
-    raw_value = parsed_command["value"]
-    leak_path = _secret_leak_path(response, raw_value)
-    if leak_path is not None:
-        _fail(f"secret PUT output contains the raw value at {leak_path}")
     parsed_response = parse_macro_planning(response)
     if parsed_response["schema"] == "model-secret-put-result/v2":
         if (
@@ -431,6 +435,9 @@ def validate_secret_put_exchange(
         ):
             _fail("secret PUT result is not bound to its command")
     elif parsed_response["schema"] == "model-secret-http-error/v2":
+        parsed_response = validate_fixed_model_planning_http_error_v2(
+            parsed_response
+        )
         if parsed_response["secret_id"] != parsed_command["secret_id"]:
             _fail("secret PUT error is not bound to its command")
         if parsed_response["operation_key"] not in {None, parsed_command["operation_key"]}:
@@ -623,6 +630,7 @@ __all__ = [
     "PROJECT_PLANNING_CONTRACT",
     "WIRE_WHITESPACE_CODEPOINTS",
     "contains_wire_whitespace",
+    "FIXED_HTTP_ERROR_MESSAGES",
     "has_non_wire_whitespace_character",
     "is_wire_whitespace_character",
     "model_profile_revision_hash",
@@ -635,6 +643,7 @@ __all__ = [
     "parse_project_planning_v2",
     "planner_runtime_input_hash",
     "validate_model_profile_revision_exchange",
+    "validate_fixed_model_planning_http_error_v2",
     "validate_project_planning_start",
     "validate_project_planning_start_exchange",
     "validate_secret_put_exchange",

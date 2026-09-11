@@ -37,14 +37,14 @@
       "sha256": "2d9c72efdf8f593deb399567557229f6bcbccad1c95e961d01e819809bbbf88b"
     },
     {
-      "bytes": 1353,
+      "bytes": 1391,
       "path": "macro-planning-host-v1/manifest.json",
-      "sha256": "ed0151790ab07fe543525ae3e8e48d93d073821d196850d1e5c8f33b9df73743"
+      "sha256": "105832a0b8c64870c4e3569c988e70aa82c78252065f7205d92db81eac23af3a"
     },
     {
-      "bytes": 16179,
+      "bytes": 16183,
       "path": "macro-planning-host-v1/negative.json",
-      "sha256": "098c8ac356c87f0a2725d93c53cfc4ff32a954d0382f6dab6735fc80ba2b87fe"
+      "sha256": "493ec40b040eac9bf73a058c16fd53c9ac80cb72cab7284ff2d19f0aed06fe7b"
     },
     {
       "bytes": 28156,
@@ -83,7 +83,7 @@
     },
     {
       "manifest": "macro-planning-host-v1/manifest.json",
-      "sha256": "ed0151790ab07fe543525ae3e8e48d93d073821d196850d1e5c8f33b9df73743"
+      "sha256": "105832a0b8c64870c4e3569c988e70aa82c78252065f7205d92db81eac23af3a"
     },
     {
       "manifest": "model-provider-rpc-v2/manifest.json",
