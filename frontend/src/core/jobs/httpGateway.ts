@@ -380,7 +380,7 @@ export class JobHttpGateway implements JobDrawerGateway {
   private async request(routeId: JobRouteId, input: JsonRecord): Promise<Readonly<JsonRecord>> {
     const request = parseHttpRequestV2(routeId, input) as Readonly<JsonRecord>
     const [url, init] = buildRequest(routeId, request, this.baseUrl)
-    const response = await this.fetchImpl(url, init)
+    const response = await this.fetchImpl.call(globalThis, url, init)
     const contentType = response.headers.get('content-type') ?? ''
     if (!contentType.toLowerCase().includes('application/json')) {
       throw new Error(`Job route ${routeId} returned a non-JSON response`)

@@ -105,6 +105,25 @@ test('Jobs v2 discovery pages through the shared contract ingress and projects o
   assert.equal(queue.calls[1]!.url, '/api/v2/jobs/ws-1?cursor=job%2Fjob-v2%2F5&limit=200')
 })
 
+test('browser-native fetch receives globalThis as its invocation receiver', async () => {
+  const fixture = await golden()
+  const queue = queuedFetch([response(fixture.list_result), response(terminalList(fixture.list_result))])
+  const receivers: unknown[] = []
+  const receiverSensitiveFetch = (async function (
+    this: unknown,
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ): Promise<Response> {
+    receivers.push(this)
+    return queue.fetch(input, init)
+  }) as typeof globalThis.fetch
+  const gateway = new JobHttpGateway({ fetch: receiverSensitiveFetch })
+
+  await gateway.discover('ws-1')
+
+  assert.deepEqual(receivers, [globalThis, globalThis])
+})
+
 test('Jobs v2 recovery maps replay cursors into the accepted Job stream ingress', async () => {
   const fixture = await golden()
   const queue = queuedFetch([
