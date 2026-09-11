@@ -18,8 +18,10 @@ async function source(relative: string): Promise<string> {
 
 test('F1 new Workspace uses the existing direct Home-to-Workbench route without a wizard', async () => {
   const home = await source('frontend/src/views/Home.vue')
-  assert.match(home, /requireCoreFlowRuntime\(\)\.createProject\(newBook\.value\.title\)/)
+  assert.match(home, /requireCoreFlowRuntime\(\)\.createProjectWithBrief\(newBook\.value\.title/)
   assert.match(home, /await router\.push\(`\/book\/\$\{result\.workspaceId\}\/workbench`\)/)
+  assert.match(home, /Project Planner package\/lifecycle 尚未可用/)
+  assert.match(home, /Project Brief 已保存，创建成功/)
   assert.doesNotMatch(home, /wizard|onboarding|import.*token/i)
   assert.doesNotMatch(home, /novelApi|chapterApi|bibleApi|foreshadowApi/i)
 })
