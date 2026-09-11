@@ -22,7 +22,12 @@ from ..domain.entities import (
     Workspace,
     utc_now,
 )
-from .migrations import Migration, MigrationRunner
+from .migrations import (
+    MODEL_CONFIGURATION_MIGRATIONS,
+    MODEL_CONFIGURATION_TABLES,
+    Migration,
+    MigrationRunner,
+)
 
 
 def _load_p3_job_migrations() -> tuple[Migration, ...]:
@@ -410,6 +415,7 @@ class CoreAuthorityRepository:
         from ..plugins.lifecycle.repository import LIFECYCLE_MIGRATIONS
 
         MigrationRunner(self._connection).apply(LIFECYCLE_MIGRATIONS)
+        MigrationRunner(self._connection).apply(MODEL_CONFIGURATION_MIGRATIONS)
         MigrationRunner(self._connection).apply(P3_JOB_MIGRATIONS)
         MigrationRunner(self._connection).apply(EXECUTION_MIGRATIONS)
 
@@ -454,6 +460,24 @@ class CoreAuthorityRepository:
         if actual != required:
             missing = ",".join(sorted(required - actual))
             raise RuntimeError(f"chapter authority schema is unavailable: {missing}")
+
+    def ensure_model_configuration_schema(self) -> None:
+        """Fail closed unless migration 0007 is present in this Core database."""
+
+        with self.read_connection() as connection:
+            actual = {
+                row[0]
+                for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' "
+                    f"AND name IN ({','.join('?' for _ in MODEL_CONFIGURATION_TABLES)})",
+                    tuple(sorted(MODEL_CONFIGURATION_TABLES)),
+                ).fetchall()
+            }
+        if actual != MODEL_CONFIGURATION_TABLES:
+            missing = ",".join(sorted(MODEL_CONFIGURATION_TABLES - actual))
+            raise RuntimeError(
+                f"model configuration authority schema is unavailable: {missing}"
+            )
 
     @contextmanager
     def read_connection(self):
@@ -762,6 +786,46 @@ class CoreAuthorityRepository:
             r=connection.execute("SELECT * FROM workspace WHERE workspace_id=?",(workspace_id,)).fetchone()
         if not r: raise NotFoundError(workspace_id)
         return Workspace(r["workspace_id"],r["title"],r["workspace_kind"],r["status"],r["current_plan_revision_id"],self._u(r["metadata_json"]),r["created_at"],r["updated_at"],r["revision"])
+
+    def cas_workspace_plan_in_transaction(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        workspace_id: str,
+        expected_revision: int,
+        expected_current_plan_revision_id: str | None,
+        target_plan_revision_id: str,
+        updated_at: str,
+    ) -> int:
+        """Advance the sole Workspace Plan pointer inside the caller's transaction."""
+
+        if connection is not self._connection or not connection.in_transaction:
+            raise RuntimeError(
+                "Workspace Plan CAS requires the repository transaction connection"
+            )
+        if (
+            isinstance(expected_revision, bool)
+            or not isinstance(expected_revision, int)
+            or expected_revision < 0
+            or not isinstance(target_plan_revision_id, str)
+            or not target_plan_revision_id
+        ):
+            raise ValueError("invalid Workspace Plan CAS input")
+        changed = connection.execute(
+            "UPDATE workspace SET current_plan_revision_id=?,updated_at=?,"
+            "revision=revision+1 WHERE workspace_id=? AND revision=? "
+            "AND current_plan_revision_id IS ?",
+            (
+                target_plan_revision_id,
+                updated_at,
+                workspace_id,
+                expected_revision,
+                expected_current_plan_revision_id,
+            ),
+        ).rowcount
+        if changed != 1:
+            raise ConflictError("stale Workspace Plan CAS")
+        return expected_revision + 1
 
     def create_document(self, value: Document) -> Document:
         with self.transaction() as c:

@@ -66,7 +66,7 @@ def _table_counts(runtime) -> dict[str, int]:
         }
 
 
-def test_mounts_exact_26_6_8_2_route_graph_with_shared_authorities(
+def test_mounts_exact_26_6_5_8_2_route_graph_with_shared_authorities(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -77,9 +77,22 @@ def test_mounts_exact_26_6_8_2_route_graph_with_shared_authorities(
     runtime = runtime_module.mount_webui_runtime(app)
     try:
         routes = _api_routes(app)
+        configuration_route_names = {
+            "model-secret.put",
+            "model-profile.revise",
+            "workspace-plan.select",
+            "project-planning.get",
+            "project-planning.start",
+        }
         groups = (
             [route for route in routes if route.path.startswith("/api/v1/core")],
-            [route for route in routes if route.path.startswith("/api/v2/core")],
+            [
+                route
+                for route in routes
+                if route.path.startswith("/api/v2/core")
+                and route.name not in configuration_route_names
+            ],
+            [route for route in routes if route.name in configuration_route_names],
             [route for route in routes if route.path.startswith("/api/v2/jobs")],
             [
                 route
@@ -87,7 +100,7 @@ def test_mounts_exact_26_6_8_2_route_graph_with_shared_authorities(
                 if route.path.startswith("/api/v1/webui/workspaces/")
             ],
         )
-        assert tuple(len(group) for group in groups) == (26, 6, 8, 2)
+        assert tuple(len(group) for group in groups) == (26, 6, 5, 8, 2)
         assert not any(
             route.path == "/api/v1/plugins"
             or route.path.startswith("/api/v1/plugins/")
@@ -121,6 +134,13 @@ def test_mounts_exact_26_6_8_2_route_graph_with_shared_authorities(
         )
         assert runtime.job_runtime.composition.repository is runtime.repository
         assert runtime.job_runtime.composition.assets is runtime.assets
+        assert runtime.model_configuration.repository is runtime.repository
+        assert (
+            runtime.model_configuration.configuration.repository
+            is runtime.repository
+        )
+        assert runtime.model_configuration.planning.repository is runtime.repository
+        assert runtime.plan_authority is runtime.model_configuration.planning
         assert runtime.private_generation_facade.repository is runtime.repository
         assert runtime.private_generation_facade.assets is runtime.assets
         assert runtime.private_generation_facade.job_runtime is runtime.job_runtime
