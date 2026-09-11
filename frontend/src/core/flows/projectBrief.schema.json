@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "plotpilot.project-brief/v1",
+  "title": "PlotPilot Project Brief v1",
+  "description": "Closed Core-owned Project Brief payload. Stable source mappings: genres.genre <- Home genre; market.world_preset <- Home worldPreset; structure.story_structure/pacing_control/writing_style/special_requirements <- their Home camelCase counterparts; length.tier/use_custom/custom_chapters/custom_words_per_chapter <- Home length tier and custom chapter/word controls.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "workspace_id",
+    "premise",
+    "genres",
+    "target_words",
+    "structure",
+    "market",
+    "length"
+  ],
+  "properties": {
+    "workspace_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+      "description": "Exact owning Core Workspace identity."
+    },
+    "premise": {
+      "type": "string",
+      "maxLength": 2000,
+      "description": "Home premise/synopsis text."
+    },
+    "genres": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["genre"],
+      "properties": {
+        "genre": {
+          "type": "string",
+          "description": "Home genre, including the selected market taxonomy label when present."
+        }
+      }
+    },
+    "target_words": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Resolved planned total word count for the selected tier or custom length."
+    },
+    "structure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["story_structure", "pacing_control", "writing_style", "special_requirements"],
+      "properties": {
+        "story_structure": { "type": "string", "description": "Home storyStructure." },
+        "pacing_control": { "type": "string", "description": "Home pacingControl." },
+        "writing_style": { "type": "string", "description": "Home writingStyle." },
+        "special_requirements": { "type": "string", "description": "Home specialRequirements." }
+      }
+    },
+    "market": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["world_preset"],
+      "properties": {
+        "world_preset": { "type": "string", "description": "Home worldPreset." }
+      }
+    },
+    "length": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tier", "use_custom", "custom_chapters", "custom_words_per_chapter"],
+      "properties": {
+        "tier": {
+          "type": "string",
+          "enum": ["short", "standard", "epic"],
+          "description": "Home lengthTier, retained even when custom sizing is enabled."
+        },
+        "use_custom": {
+          "type": "boolean",
+          "description": "Whether target_words is resolved from the custom chapter and per-chapter controls."
+        },
+        "custom_chapters": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9999,
+          "description": "Home custom chapters value."
+        },
+        "custom_words_per_chapter": {
+          "type": "integer",
+          "minimum": 500,
+          "maximum": 20000,
+          "description": "Home custom words-per-chapter value."
+        }
+      }
+    }
+  }
+}

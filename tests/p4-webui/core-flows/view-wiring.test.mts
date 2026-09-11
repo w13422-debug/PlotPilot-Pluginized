@@ -9,10 +9,16 @@ const runtime = readFileSync(new URL('../../../frontend/src/core/flows/runtime.t
 
 test('Home is wired to Core flows without a wizard or legacy project authority', () => {
   assert.match(home, /requireCoreFlowRuntime\(\)\.listProjects\(\)/)
-  assert.match(home, /requireCoreFlowRuntime\(\)\.createProject/)
+  assert.match(home, /requireCoreFlowRuntime\(\)\.createProjectWithBrief/)
   assert.match(home, /requireCoreFlowRuntime\(\)\.deleteProject/)
   assert.doesNotMatch(home, /novelApi|NovelSetupGuide|isWizardCompleted|setupWizard|StatsSidebar/)
-  assert.match(home, /仅创建权威 Core Workspace/)
+  assert.doesNotMatch(home, /requireCoreFlowRuntime\(\)\.createProject\(newBook\.value\.title\)/)
+  assert.match(home, /Project Planner package\/lifecycle 尚未可用/)
+  assert.match(home, /premise: newBook\.value\.premise/)
+  assert.match(home, /genre: newBook\.value\.genre/)
+  assert.match(home, /customChapters: newBook\.value\.chapters/)
+  assert.match(home, /customWordsPerChapter: newBook\.value\.words/)
+  assert.match(home, /:disabled="creating"/)
   assert.match(home, /projectListGeneration\.begin\('project-list'\)/)
   assert.match(home, /if \(!projectListGeneration\.isCurrent\(requestGeneration\)\) return false/)
   assert.match(home, /const succeededIds = new Set<string>\(\)/)

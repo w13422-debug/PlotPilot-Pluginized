@@ -229,7 +229,7 @@ test('loads chapter navigation, opens paged content, edits and saves a new Core 
     if (route === 'workspace.get') return workspace('ws-1', 'Project')
     if (route === 'document.list') return { schema: 'core-document-page/v1', items: [
       document('doc-10', 'ws-1', '第10章', 'rev-old'), document('doc-2', 'ws-1', '第2章'),
-      { ...document('notes', 'ws-1', 'Notes'), document_type: 'core.notes' },
+      { ...document('project-brief:legacy-safe', 'ws-1', 'Project Brief'), document_type: 'plotpilot.project-brief' },
     ], offset: 0, limit: 100, total: 3, next_offset: null }
     if (route === 'document.get') return document('doc-10', 'ws-1', '第10章', 'rev-old')
     if (route === 'revision.get') return { schema: 'core-revision/v1', revision_id: 'rev-old', workspace_id: 'ws-1',

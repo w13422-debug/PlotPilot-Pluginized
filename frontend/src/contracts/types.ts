@@ -457,6 +457,56 @@ export interface CoreRevision {
   payload_schema: Id | null
 }
 
+/** Closed payload carried by one Core Document Revision for a PlotPilot Project Brief. */
+export type ProjectBriefLengthTier = 'short' | 'standard' | 'epic'
+
+export interface ProjectBriefGenres {
+  genre: string
+}
+
+export interface ProjectBriefStructure {
+  story_structure: string
+  pacing_control: string
+  writing_style: string
+  special_requirements: string
+}
+
+export interface ProjectBriefMarket {
+  world_preset: string
+}
+
+export interface ProjectBriefLength {
+  tier: ProjectBriefLengthTier
+  use_custom: boolean
+  custom_chapters: number
+  custom_words_per_chapter: number
+}
+
+export interface ProjectBriefContent {
+  workspace_id: Id
+  premise: string
+  genres: ProjectBriefGenres
+  target_words: number
+  structure: ProjectBriefStructure
+  market: ProjectBriefMarket
+  length: ProjectBriefLength
+}
+
+/** UI-facing names preserve the existing Home model while the persisted shape stays snake_case. */
+export interface ProjectBriefHomeInput {
+  premise: string
+  genre: string
+  worldPreset: string
+  storyStructure: string
+  pacingControl: string
+  writingStyle: string
+  specialRequirements: string
+  lengthTier: ProjectBriefLengthTier
+  useCustomLength: boolean
+  customChapters: number
+  customWordsPerChapter: number
+}
+
 export type CoreAuthorityEntity = CoreWorkspace | CoreDocument | CoreNode | CoreRelation | CoreRevision
 
 export interface CorePage<T, S extends string = string> {

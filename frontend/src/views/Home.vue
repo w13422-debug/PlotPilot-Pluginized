@@ -28,7 +28,7 @@
           <div class="header-content">
             <h1 class="title">墨枢 · 长篇叙事工作台</h1>
             <p class="subtitle">
-              以梗概与类型开局，选定目标篇幅；宏观结构、幕次与节拍由后台自动编排，你专注把故事写下去即可。
+              以梗概、类型与目标篇幅开局；宏观结构、幕次、节拍与生成暂不可用：Project Planner package/lifecycle 尚未可用。
             </p>
           </div>
         </header>
@@ -50,7 +50,7 @@
             </div>
 
             <n-alert type="info" :show-icon="true">
-              当前源码节点仅创建权威 Core Workspace；书名会立即保存，梗概、市场分区与篇幅规划等待后续 Planning Publication 接入后启用。
+              书名、梗概、市场分区与篇幅规划会保存到权威 Core Project Brief。宏观规划与生成仍不可用：Project Planner package/lifecycle 尚未可用。
             </n-alert>
 
             <n-form-item label="书名" :show-feedback="false">
@@ -68,7 +68,7 @@
               type="textarea"
               placeholder="用一段话写清主线与爽点预期（不超过 2000 字）…&#10;&#10;例如：废柴赘婿觉醒签到系统，从被退婚到一方巨擘。"
               :rows="5"
-              disabled
+              :disabled="creating"
               size="large"
               class="premise-input"
               show-count
@@ -87,7 +87,7 @@
                 v-model:pacingControl="newBook.pacingControl"
                 v-model:writingStyle="newBook.writingStyle"
                 v-model:specialRequirements="newBook.specialRequirements"
-                disabled
+                :disabled="creating"
               />
             </div>
 
@@ -99,7 +99,7 @@
                     v-for="opt in lengthTierOptions"
                     :key="opt.value"
                     :value="opt.value"
-                    disabled
+                    :disabled="creating"
                     class="length-tier-radio"
                   >
                     <div class="length-tier-option-inner">
@@ -113,22 +113,22 @@
 
             <div v-show="showAdvanced" class="advanced-settings">
               <n-alert type="info" :show-icon="true" style="margin-bottom: 12px; font-size: 12px">
-                自定义章数与每章字数时，不再使用「目标篇幅」档位推导；结构提示仍会在后台写入梗概供模型使用。
+                自定义章数与每章字数时，不再使用「目标篇幅」档位推导；全部设置会保存到 Core Project Brief。宏观规划与生成仍不可用：Project Planner package/lifecycle 尚未可用。
               </n-alert>
               <n-grid :cols="2" :x-gap="16" :y-gap="16" responsive="screen">
                 <n-gi>
                   <n-form-item label="书名">
-                    <n-input v-model:value="newBook.title" disabled />
+                    <n-input v-model:value="newBook.title" :disabled="creating" />
                   </n-form-item>
                 </n-gi>
                 <n-gi>
                   <n-form-item label="章节数">
-                    <n-input-number v-model:value="newBook.chapters" :min="1" :max="9999" class="w-full" disabled />
+                    <n-input-number v-model:value="newBook.chapters" :min="1" :max="9999" class="w-full" :disabled="creating" />
                   </n-form-item>
                 </n-gi>
                 <n-gi>
                   <n-form-item label="每章字数">
-                    <n-input-number v-model:value="newBook.words" :min="500" :max="20000" :step="500" class="w-full" disabled />
+                    <n-input-number v-model:value="newBook.words" :min="500" :max="20000" :step="500" class="w-full" :disabled="creating" />
                   </n-form-item>
                 </n-gi>
               </n-grid>
@@ -609,9 +609,21 @@ const handleCreate = async () => {
 
   creating.value = true
   try {
-    const result = await requireCoreFlowRuntime().createProject(newBook.value.title)
-    message.success('创建成功')
+    const result = await requireCoreFlowRuntime().createProjectWithBrief(newBook.value.title, {
+      premise: newBook.value.premise,
+      genre: newBook.value.genre,
+      worldPreset: newBook.value.worldPreset,
+      storyStructure: newBook.value.storyStructure,
+      pacingControl: newBook.value.pacingControl,
+      writingStyle: newBook.value.writingStyle,
+      specialRequirements: newBook.value.specialRequirements,
+      lengthTier: lengthTier.value,
+      useCustomLength: showAdvanced.value,
+      customChapters: newBook.value.chapters,
+      customWordsPerChapter: newBook.value.words,
+    })
     await router.push(`/book/${result.workspaceId}/workbench`)
+    message.success('Project Brief 已保存，创建成功')
   } catch (error: unknown) {
     message.error(error instanceof Error ? error.message : '创建失败')
   } finally {
