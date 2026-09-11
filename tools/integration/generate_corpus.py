@@ -17,6 +17,8 @@ ROOT = Path(__file__).resolve().parents[2]
 CORPUS = ROOT / "contracts" / "corpus"
 V2_CORPUS = CORPUS / "m4-m5-public-surface-v2"
 MACRO_CORPUS = CORPUS / "macro-planning-host-v1"
+MODEL_PROVIDER_CORPUS = CORPUS / "model-provider-rpc-v2"
+MODEL_PROVIDER_GOLDEN = ROOT / "contracts" / "golden" / "model-provider-rpc-v2"
 CORPUS_V2_MANIFEST = CORPUS / "manifest-v2.json"
 FROZEN_V1_MANIFEST_SHA256 = "bcaafab242980366546c34c824256a0396ed370345d70f3e5b1582090a68ce77"
 JSON_MAX_SAFE_INTEGER = 9_007_199_254_740_991
@@ -35,6 +37,21 @@ def dump(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if not path.is_file() or path.read_bytes() != data:
         path.write_bytes(data)
+
+
+def _canonical_bytes(value: Any) -> bytes:
+    """Canonical bytes for the ASCII-keyed P0B fixture domain."""
+
+    return json.dumps(
+        value,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+
+
+def _hash_jcs(prefix: str, value: Any) -> str:
+    return hashlib.sha256(prefix.encode("ascii") + b"\n" + _canonical_bytes(value)).hexdigest()
 
 
 def load_frozen_m0_groups() -> list[dict[str, Any]]:
@@ -186,6 +203,496 @@ def v2_groups() -> list[dict[str, Any]]:
                 {"case_id": "v2-plugin-discovery-cursor-request-domain", "fixture": "http.plugin.discovery.error", "route_id": "plugin.discovery", "kind": "http_request", "mutation": {"op": "set", "path": ["request", "cursor"], "value": "candidate/ws-1/1"}, "expected": "cursor_domain_mismatch"},
             ],
         },
+    ]
+
+
+def model_provider_golden() -> dict[str, Any]:
+    """Return the one deterministic P0B Provider/receipt bridge fixture."""
+
+    planner_context = {
+        "operation_key": "execute-op-1",
+        "workspace_id": "ws-1",
+        "plugin_id": "com.plotpilot.prompt-skill",
+        "plugin_release_id": "a" * 64,
+        "plugin_package_hash": "b" * 64,
+        "generation_id": "generation-1",
+        "job_id": "job-1",
+        "step_id": "step-1",
+        "attempt_id": "attempt-1",
+        "lease_epoch": 1,
+        "chain_id": "chain-1",
+        "chain_asset_id": "asset-chain-1",
+        "chain_content_hash": "1" * 64,
+        "run_snapshot_id": "snapshot-1",
+        "run_snapshot_asset_id": "asset-snapshot-1",
+        "run_snapshot_hash": "b" * 64,
+        "model_profile_revision_id": "model-profile-rev-1",
+        "input_asset_id": "asset-input-1",
+        "input_content_hash": "c" * 64,
+    }
+    model_request_payload = {
+        "schema": "model-provider-request-asset/v1",
+        "profile_revision_id": "model-profile-rev-1",
+        "messages": [{"role": "user", "content": "Create the macro plan."}],
+        "options": {"temperature": 0, "stream": False},
+    }
+    model_request_bytes = _canonical_bytes(model_request_payload)
+    model_request_asset = {
+        "asset_id": "asset-model-request-1",
+        "content_hash": hashlib.sha256(model_request_bytes).hexdigest(),
+    }
+    provider_body = {
+        "model": "planner-model-1",
+        "messages": model_request_payload["messages"],
+        "temperature": 0,
+        "stream": False,
+    }
+    provider_request_hash = _hash_jcs(
+        "openai-compatible-request/v1",
+        {
+            "endpoint": "https://models.example.test/v1",
+            "model": "planner-model-1",
+            "body": provider_body,
+            "profile_revision_id": "model-profile-rev-1",
+            "provider_plugin_id": "com.plotpilot.provider.openai-compatible",
+            "provider_release_id": "9" * 64,
+        },
+    )
+    response_payload = {
+        "schema": "model-provider-response-asset/v1",
+        "text": "Setting, bible, and outline.",
+    }
+    response_asset_bytes = _canonical_bytes(response_payload)
+    response_asset = {
+        "asset_id": "asset-model-response-1",
+        "content_hash": hashlib.sha256(response_asset_bytes).hexdigest(),
+    }
+    response_hashes = {
+        "receipted": _hash_jcs(
+            "model-response/v1",
+            {
+                "text": "Setting, bible, and outline.",
+                "chunks": [],
+                "usage": {
+                    "prompt_tokens": 11,
+                    "completion_tokens": 7,
+                    "total_tokens": 18,
+                    "cost": "0.0025",
+                },
+                "termination": "response",
+                "finish_reason": "stop",
+                "response_id": "provider-response-1",
+            },
+        ),
+        "failed": _hash_jcs(
+            "model-response/v1",
+            {
+                "status_code": 503,
+                "body": {"error": {"message": "provider unavailable"}},
+            },
+        ),
+        "cancelled": None,
+        "uncertain": _hash_jcs(
+            "model-response/v1",
+            {"partial": "sent without a verifiable response Asset"},
+        ),
+    }
+
+    receipt_context = {
+        "job_id": planner_context["job_id"],
+        "step_id": planner_context["step_id"],
+        "attempt_id": planner_context["attempt_id"],
+        "lease_epoch": planner_context["lease_epoch"],
+        "run_snapshot_hash": planner_context["run_snapshot_hash"],
+        "generation_id": planner_context["generation_id"],
+        "chain_id": planner_context["chain_id"],
+        "chain_index": 0,
+        "skill_id": "skill.prompt",
+        "release_id": "c" * 64,
+        "package_hash": "d" * 64,
+        "parameters_asset_id": None,
+        "parameters_hash": None,
+        "input_asset_id": planner_context["input_asset_id"],
+        "input_hash": planner_context["input_content_hash"],
+        "workspace_id": planner_context["workspace_id"],
+        "plugin_id": planner_context["plugin_id"],
+        "plugin_release_id": planner_context["plugin_release_id"],
+        "plugin_package_hash": planner_context["plugin_package_hash"],
+        "operation_key": planner_context["operation_key"],
+        "run_snapshot_id": planner_context["run_snapshot_id"],
+        "run_snapshot_asset_id": planner_context["run_snapshot_asset_id"],
+        "chain_asset_id": planner_context["chain_asset_id"],
+        "chain_content_hash": planner_context["chain_content_hash"],
+    }
+
+    terminal_receipts: dict[str, dict[str, Any]] = {}
+    receipt_asset_identities: dict[str, dict[str, str]] = {}
+    receipt_asset_bytes_hex: dict[str, str] = {}
+    terminal_results: dict[str, dict[str, Any]] = {}
+    terminal_successes: dict[str, dict[str, Any]] = {}
+    request_id = "123e4567-e89b-42d3-a456-426614174100"
+    request = {
+        "jsonrpc": "2.0",
+        "id": request_id,
+        "method": "model.provider.invoke/v1",
+        "meta": {
+            "protocol_version": "1",
+            "context": "attempt",
+            "operation_id": planner_context["operation_key"],
+            "generation_id": planner_context["generation_id"],
+            "job_id": planner_context["job_id"],
+            "step_id": planner_context["step_id"],
+            "attempt_id": planner_context["attempt_id"],
+            "lease_epoch": planner_context["lease_epoch"],
+        },
+        "params": {
+            "schema": "model-provider-invoke-request/v2",
+            "planner_context": planner_context,
+            "model_request_asset": model_request_asset,
+        },
+    }
+
+    terminal_configuration = {
+        "receipted": {
+            "response_asset": response_asset,
+            "response_asset_id": response_asset["asset_id"],
+            "error": None,
+            "uncertain": False,
+            "lifecycle": ["prepared", "sent", "receipted"],
+            "stream_termination": "response",
+        },
+        "failed": {
+            "response_asset": None,
+            "response_asset_id": None,
+            "error": "provider unavailable",
+            "uncertain": False,
+            "lifecycle": ["prepared", "sent", "failed"],
+            "stream_termination": "http_error",
+        },
+        "cancelled": {
+            "response_asset": None,
+            "response_asset_id": None,
+            "error": "cancelled",
+            "uncertain": False,
+            "lifecycle": ["prepared", "cancelled"],
+            "stream_termination": "cancelled",
+        },
+        "uncertain": {
+            "response_asset": None,
+            "response_asset_id": None,
+            "error": "sent without terminal acknowledgement",
+            "uncertain": True,
+            "lifecycle": ["prepared", "sent", "uncertain"],
+            "stream_termination": "transport_unknown",
+        },
+    }
+    for state, configuration in terminal_configuration.items():
+        receipted = state == "receipted"
+        receipt = {
+            "schema": "model-receipt/v1",
+            "receipt_id": f"model-receipt-{state}-1",
+            "invocation_id": "provider-invocation-1",
+            "invocation_key": "provider-invocation-key-1",
+            "state": state,
+            "request_hash": provider_request_hash,
+            "response_hash": response_hashes[state],
+            "profile_revision_id": "model-profile-rev-1",
+            "provider_plugin_id": "com.plotpilot.provider.openai-compatible",
+            "provider_release_id": "9" * 64,
+            "endpoint": "https://models.example.test/v1",
+            "model": "planner-model-1",
+            "lifecycle": configuration["lifecycle"],
+            "prompt_tokens": 11 if receipted else None,
+            "completion_tokens": 7 if receipted else None,
+            "total_tokens": 18 if receipted else None,
+            "cost": "0.0025" if receipted else None,
+            "retry_count": 0,
+            "stream_termination": configuration["stream_termination"],
+            "error": configuration["error"],
+            "input_context": receipt_context,
+            "profile_revision": {
+                "profile_revision_id": "model-profile-rev-1",
+                "provider_plugin_id": "com.plotpilot.provider.openai-compatible",
+                "provider_release_id": "9" * 64,
+                "endpoint": "https://models.example.test/v1",
+                "model_name": "planner-model-1",
+            },
+            "metadata": {"fixture": "p0b", "terminal_state": state},
+            "response_asset_id": configuration["response_asset_id"],
+            "recovered": False,
+            "uncertain": configuration["uncertain"],
+            "receipt_hash": "",
+        }
+        receipt["receipt_hash"] = _hash_jcs(
+            "model-receipt/v1",
+            {key: value for key, value in receipt.items() if key != "receipt_hash"},
+        )
+        receipt_bytes = _canonical_bytes(receipt)
+        receipt_asset = {
+            "asset_id": f"asset-model-receipt-{state}-1",
+            "content_hash": hashlib.sha256(receipt_bytes).hexdigest(),
+        }
+        anchor = {
+            "receipt_id": receipt["receipt_id"],
+            **receipt_asset,
+            "receipt_hash": receipt["receipt_hash"],
+            **planner_context,
+        }
+        result = {
+            "schema": "model-provider-invoke-result/v2",
+            "model_receipt_anchor": anchor,
+            "model_request_asset": model_request_asset,
+            "provider_transport_request_hash": provider_request_hash,
+            "response_asset": configuration["response_asset"],
+            "provider_transport_response_hash": response_hashes[state],
+            "provider_terminal_state": state,
+        }
+        terminal_receipts[state] = receipt
+        receipt_asset_identities[state] = receipt_asset
+        receipt_asset_bytes_hex[state] = receipt_bytes.hex()
+        terminal_results[state] = result
+        terminal_successes[state] = {
+            "jsonrpc": "2.0",
+            "id": request_id,
+            "result": result,
+        }
+
+    receipted = terminal_results["receipted"]
+    distinct_hashes = {
+        model_request_asset["content_hash"],
+        receipted["model_receipt_anchor"]["content_hash"],
+        receipted["provider_transport_request_hash"],
+        receipted["provider_transport_response_hash"],
+        receipted["response_asset"]["content_hash"],
+        receipted["model_receipt_anchor"]["receipt_hash"],
+    }
+    if len(distinct_hashes) != 6:
+        raise ValueError("P0B golden does not separate all six hash domains")
+
+    bridge_projection = {
+        "method": request["method"],
+        "request": request,
+        "terminal_results": terminal_results,
+        "canonical_receipt_identities": {
+            state: {
+                field: receipt[field]
+                for field in (
+                    "receipt_id",
+                    "receipt_hash",
+                    "state",
+                    "request_hash",
+                    "response_hash",
+                    "response_asset_id",
+                    "profile_revision_id",
+                    "provider_plugin_id",
+                    "provider_release_id",
+                )
+            }
+            for state, receipt in terminal_receipts.items()
+        },
+        "prompt_skill_anchor": terminal_results["receipted"][
+            "model_receipt_anchor"
+        ],
+    }
+    operation_bytes = _canonical_bytes(request["params"])
+    return {
+        "schema": "model-provider-rpc-golden/v2",
+        "request": request,
+        "result": terminal_results["receipted"],
+        "success": terminal_successes["receipted"],
+        "error": {
+            "jsonrpc": "2.0",
+            "id": request_id,
+            "error": {
+                "code": 1001,
+                "message": "Provider endpoint unavailable before a terminal receipt formed",
+                "data": {
+                    "error_id": "model-provider-error-1",
+                    "retryable": True,
+                    "details_asset_id": None,
+                },
+            },
+        },
+        "terminal_results": terminal_results,
+        "terminal_successes": terminal_successes,
+        "canonical_receipts": terminal_receipts,
+        "receipt_asset_identities": receipt_asset_identities,
+        "receipt_asset_bytes_hex": receipt_asset_bytes_hex,
+        "model_request_asset_bytes_hex": model_request_bytes.hex(),
+        "response_asset_bytes_hex": response_asset_bytes.hex(),
+        "operation_canonical_bytes_hex": operation_bytes.hex(),
+        "operation_digest": _hash_jcs("model-provider-invoke/v2", request["params"]),
+        "bridge_projection": bridge_projection,
+        "bridge_digest": _hash_jcs(
+            "model-provider-rpc-bridge/v2", bridge_projection
+        ),
+    }
+
+
+def model_provider_groups(golden: dict[str, Any]) -> list[dict[str, Any]]:
+    """Executable P0B negatives shared by Python and Node gates."""
+
+    cases: list[dict[str, Any]] = []
+
+    def add(
+        case_id: str,
+        fixture: str,
+        kind: str,
+        mutation: dict[str, Any],
+        expected: str,
+    ) -> None:
+        cases.append(
+            {
+                "case_id": case_id,
+                "fixture": fixture,
+                "kind": kind,
+                "mutation": mutation,
+                "expected": expected,
+            }
+        )
+
+    set_value = lambda path, value: {"op": "set", "path": path, "value": value}
+    delete = lambda path: {"op": "delete", "path": path}
+    noop = {"op": "noop"}
+
+    add("provider-request-extra-field", "invoke.request", "request", set_value(["unexpected"], True), "closed_schema")
+    add("provider-request-missing-id", "invoke.request", "request", delete(["id"]), "request_id")
+    add("provider-request-invalid-id", "invoke.request", "request", set_value(["id"], "not-a-uuid"), "request_id")
+    add("provider-request-wrong-method", "invoke.request", "request", set_value(["method"], "host.model.invoke/v1"), "reserved_method")
+    add("provider-request-wrong-discriminator", "invoke.request", "request", set_value(["params", "schema"], "model-provider-invoke-request/v1"), "discriminator")
+    add("provider-request-extra-params-field", "invoke.request", "request", set_value(["params", "unexpected"], True), "closed_schema")
+    add("provider-request-extra-planner-field", "invoke.request", "request", set_value(["params", "planner_context", "unexpected"], True), "closed_schema")
+    add("provider-request-missing-planner-field", "invoke.request", "request", delete(["params", "planner_context", "chain_id"]), "closed_schema")
+    add("provider-request-partial-asset", "invoke.request", "request", delete(["params", "model_request_asset", "content_hash"]), "asset_pair")
+    add("provider-request-unsafe-lease", "invoke.request", "request", set_value(["params", "planner_context", "lease_epoch"], JSON_MAX_SAFE_INTEGER + 1), "safe_integer")
+    add("provider-meta-extra-field", "invoke.request", "request", set_value(["meta", "unexpected"], True), "closed_schema")
+    add("provider-meta-wrong-context", "invoke.request", "request", set_value(["meta", "context"], "control"), "meta_binding")
+    add("provider-meta-wrong-protocol", "invoke.request", "request", set_value(["meta", "protocol_version"], "2"), "meta_binding")
+    for meta_field, replacement in (
+        ("operation_id", "execute-op-other"),
+        ("generation_id", "generation-other"),
+        ("job_id", "job-other"),
+        ("step_id", "step-other"),
+        ("attempt_id", "attempt-other"),
+        ("lease_epoch", 2),
+    ):
+        add(
+            f"provider-meta-{meta_field.replace('_', '-')}-drift",
+            "invoke.request",
+            "request",
+            set_value(["meta", meta_field], replacement),
+            "meta_binding",
+        )
+
+    add("provider-result-extra-field", "invoke.result.receipted", "result", set_value(["unexpected"], True), "closed_schema")
+    add("provider-result-wrong-discriminator", "invoke.result.receipted", "result", set_value(["schema"], "model-provider-invoke-result/v1"), "discriminator")
+    add("provider-result-extra-anchor-field", "invoke.result.receipted", "result", set_value(["model_receipt_anchor", "unexpected"], True), "closed_schema")
+    add("provider-result-missing-anchor-receipt-id", "invoke.result.receipted", "result", delete(["model_receipt_anchor", "receipt_id"]), "closed_schema")
+    add("provider-result-response-asset-id-only", "invoke.result.receipted", "result", delete(["response_asset", "content_hash"]), "asset_pair")
+    add("provider-result-response-asset-hash-only", "invoke.result.receipted", "result", delete(["response_asset", "asset_id"]), "asset_pair")
+    add("provider-result-invalid-terminal-state", "invoke.result.receipted", "result", set_value(["provider_terminal_state"], "succeeded"), "terminal_state")
+    add("provider-success-extra-field", "invoke.success.receipted", "response", set_value(["unexpected"], True), "closed_schema")
+    add("provider-success-id-mismatch", "invoke.success.receipted", "response", set_value(["id"], "123e4567-e89b-42d3-a456-426614174101"), "response_id")
+    add("provider-success-missing-id", "invoke.success.receipted", "response", delete(["id"]), "response_id")
+    add("provider-error-id-mismatch", "invoke.error", "response", set_value(["id"], "123e4567-e89b-42d3-a456-426614174101"), "response_id")
+    add("provider-error-null-id-after-parse", "invoke.error", "response", set_value(["id"], None), "response_id")
+    add("provider-response-mixed-result-error", "invoke.success.receipted", "response", set_value(["error"], golden["error"]["error"]), "envelope_exactly_one")
+    add("provider-envelope-bare-result", "invoke.bare-result", "envelope", noop, "envelope_required")
+    add("provider-envelope-request-result-mix", "invoke.request", "envelope", set_value(["result"], golden["result"]), "envelope_exactly_one")
+    add("provider-success-without-receipt-authority", "invoke.success.receipted", "response-no-evidence", noop, "canonical_receipt_required")
+    add("provider-error-with-terminal-evidence", "invoke.error", "error-with-evidence", noop, "rpc_error_without_receipt")
+
+    anchor = golden["result"]["model_receipt_anchor"]
+    context_hash_fields = {
+        "plugin_release_id",
+        "plugin_package_hash",
+        "chain_content_hash",
+        "run_snapshot_hash",
+        "input_content_hash",
+    }
+    for index, field in enumerate(
+        (
+            "operation_key",
+            "workspace_id",
+            "plugin_id",
+            "plugin_release_id",
+            "plugin_package_hash",
+            "generation_id",
+            "job_id",
+            "step_id",
+            "attempt_id",
+            "lease_epoch",
+            "chain_id",
+            "chain_asset_id",
+            "chain_content_hash",
+            "run_snapshot_id",
+            "run_snapshot_asset_id",
+            "run_snapshot_hash",
+            "model_profile_revision_id",
+            "input_asset_id",
+            "input_content_hash",
+        ),
+        start=2,
+    ):
+        if field == "lease_epoch":
+            replacement: Any = 2
+        elif field in context_hash_fields:
+            replacement = f"{index % 10}" * 64
+            if replacement == anchor[field]:
+                replacement = "f" * 64
+        else:
+            replacement = f"{field.replace('_', '-')}-other"
+        add(
+            f"provider-anchor-{field.replace('_', '-')}-drift",
+            "invoke.result.receipted",
+            "result",
+            set_value(["model_receipt_anchor", field], replacement),
+            "planner_context_binding",
+        )
+
+    add("provider-result-model-request-asset-id-drift", "invoke.result.receipted", "result", set_value(["model_request_asset", "asset_id"], "asset-model-request-other"), "request_asset_binding")
+    add("provider-result-model-request-asset-hash-drift", "invoke.result.receipted", "result", set_value(["model_request_asset", "content_hash"], "e" * 64), "request_asset_binding")
+    add("provider-request-asset-authority-hash-substitution", "invoke.exchange.receipted", "exchange", {"op": "set-many", "changes": [{"path": ["request", "params", "model_request_asset", "content_hash"], "value": golden["result"]["provider_transport_request_hash"]}, {"path": ["response", "result", "model_request_asset", "content_hash"], "value": golden["result"]["provider_transport_request_hash"]}]}, "asset_content_hash")
+    add("provider-receipt-asset-content-hash-substitution", "invoke.result.receipted", "result", set_value(["model_receipt_anchor", "content_hash"], golden["result"]["model_receipt_anchor"]["receipt_hash"]), "receipt_asset_hash")
+    add("provider-transport-request-host-hash-substitution", "invoke.result.receipted", "result", set_value(["provider_transport_request_hash"], golden["request"]["params"]["model_request_asset"]["content_hash"]), "transport_request_hash")
+    add("provider-transport-response-asset-hash-substitution", "invoke.result.receipted", "result", set_value(["provider_transport_response_hash"], golden["result"]["response_asset"]["content_hash"]), "transport_response_hash")
+    add("provider-response-asset-transport-hash-substitution", "invoke.result.receipted", "result", set_value(["response_asset", "content_hash"], golden["result"]["provider_transport_response_hash"]), "asset_content_hash")
+    add("provider-receipt-self-hash-asset-hash-substitution", "invoke.result.receipted", "result", set_value(["model_receipt_anchor", "receipt_hash"], golden["result"]["model_receipt_anchor"]["content_hash"]), "receipt_self_hash")
+    add("provider-receipt-id-mirror-drift", "invoke.result.receipted", "result", set_value(["model_receipt_anchor", "receipt_id"], "model-receipt-other"), "canonical_receipt_binding")
+    add("provider-terminal-state-mirror-drift", "invoke.result.receipted", "result", set_value(["provider_terminal_state"], "failed"), "canonical_receipt_binding")
+    add("provider-profile-revision-mirror-drift", "invoke.result.receipted", "result", set_value(["model_receipt_anchor", "model_profile_revision_id"], "model-profile-rev-other"), "canonical_receipt_binding")
+    add("provider-response-asset-id-mirror-drift", "invoke.result.receipted", "result", set_value(["response_asset", "asset_id"], "asset-model-response-other"), "canonical_receipt_binding")
+    add("provider-null-response-asset-with-receipt-id", "invoke.result.receipted", "result", set_value(["response_asset"], None), "canonical_receipt_binding")
+    add("provider-nonnull-response-asset-with-null-receipt-id", "invoke.result.failed", "result", set_value(["response_asset"], golden["result"]["response_asset"]), "canonical_receipt_binding")
+    add("provider-ledger-request-drift", "invoke.ledger", "ledger", {"op": "request-drift"}, "exact_replay")
+    add("provider-ledger-result-drift", "invoke.ledger", "ledger", {"op": "result-drift"}, "exact_replay")
+    add("provider-ledger-unknown-replay", "invoke.ledger", "ledger", {"op": "unknown-replay"}, "exact_replay")
+    add("provider-reserved-plan-binding", "reserved.plan.binding", "reserved", noop, "reserved_boundary")
+    add("provider-reserved-plan-synthesizer", "reserved.plan.synthesizer", "reserved", noop, "reserved_boundary")
+    add("provider-reserved-capability-descriptor", "reserved.descriptor", "reserved", noop, "reserved_boundary")
+    add("provider-reserved-plugin-manifest", "reserved.manifest", "reserved", noop, "reserved_boundary")
+
+    return [
+        {
+            "schema": "model-provider-rpc-corpus/v2",
+            "group_id": "model-provider-rpc-v2-01",
+            "title": "Provider overlay, receipt authority, hash domains and reserved boundary",
+            "positive": [
+                "invoke.request",
+                "invoke.result.receipted",
+                "invoke.result.failed",
+                "invoke.result.cancelled",
+                "invoke.result.uncertain",
+                "invoke.success.receipted",
+                "invoke.success.failed",
+                "invoke.success.cancelled",
+                "invoke.success.uncertain",
+                "invoke.error",
+                "ordinary.plan",
+                "ordinary.descriptor",
+            ],
+            "negative": cases,
+        }
     ]
 
 
@@ -438,6 +945,90 @@ def write_v2_corpus() -> None:
     )
 
 
+def write_model_provider_corpus() -> None:
+    golden = model_provider_golden()
+    groups = model_provider_groups(golden)
+    if len(groups) != 1:
+        raise ValueError("P0B corpus must contain exactly one group")
+
+    invoke_path = MODEL_PROVIDER_GOLDEN / "invoke.json"
+    group_path = MODEL_PROVIDER_CORPUS / "01-invoke.json"
+    dump(invoke_path, golden)
+    dump(group_path, groups[0])
+    invoke_bytes = _EXPECTED_BYTES[invoke_path.resolve()]
+    group_bytes = _EXPECTED_BYTES[group_path.resolve()]
+    case_ids = [case["case_id"] for case in groups[0]["negative"]]
+    if len(case_ids) != len(set(case_ids)):
+        raise ValueError("P0B corpus case IDs must be unique")
+    case_digest = hashlib.sha256(
+        json.dumps(
+            sorted(case_ids), ensure_ascii=True, separators=(",", ":")
+        ).encode("ascii")
+    ).hexdigest()
+    dump(
+        MODEL_PROVIDER_CORPUS / "manifest.json",
+        {
+            "schema": "model-provider-rpc-corpus-manifest/v2",
+            "group_ids": [groups[0]["group_id"]],
+            "group_count": 1,
+            "negative_case_count": len(case_ids),
+            "negative_case_digest": case_digest,
+            "positive_fixture_count": len(groups[0]["positive"]),
+            "golden": "contracts/golden/model-provider-rpc-v2/invoke.json",
+            "expected": "contracts/golden/model-provider-rpc-v2/expected.json",
+            "semantic_assertions": sorted(
+                {case["expected"] for case in groups[0]["negative"]}
+            ),
+        },
+    )
+    matrix_path = (
+        ROOT
+        / "contracts"
+        / "json-schema"
+        / "model-provider-rpc-method-matrix.v2.json"
+    )
+    dump(
+        MODEL_PROVIDER_GOLDEN / "expected.json",
+        {
+            "schema": "model-provider-rpc-golden-expected/v2",
+            "fixture_files": {
+                "invoke.json": hashlib.sha256(invoke_bytes).hexdigest()
+            },
+            "corpus_files": {
+                "01-invoke.json": hashlib.sha256(group_bytes).hexdigest()
+            },
+            "method_matrix_sha256": hashlib.sha256(
+                matrix_path.read_bytes()
+            ).hexdigest(),
+            "terminal_states": [
+                "receipted",
+                "failed",
+                "cancelled",
+                "uncertain",
+            ],
+            "terminal_states_use_jsonrpc_success": True,
+            "planner_context_field_count": 19,
+            "model_receipt_anchor_field_count": 23,
+            "canonical_receipt_field_count": 27,
+            "hash_domains": [
+                "model_request_asset.content_hash",
+                "model_receipt_anchor.content_hash",
+                "provider_transport_request_hash",
+                "provider_transport_response_hash",
+                "response_asset.content_hash",
+                "model_receipt_anchor.receipt_hash",
+            ],
+            "operation_canonical_bytes_hex": golden[
+                "operation_canonical_bytes_hex"
+            ],
+            "operation_digest": golden["operation_digest"],
+            "bridge_digest": golden["bridge_digest"],
+            "negative_case_count": len(case_ids),
+            "negative_case_digest": case_digest,
+        },
+    )
+
+
 def write_macro_planning_corpus() -> None:
     groups = macro_planning_groups()
     integer_representations = macro_integer_representations()
@@ -530,6 +1121,7 @@ def write_corpus_v2_manifest() -> None:
         "m4-m5-public-surface-v2/manifest.json",
         "prompt-skill-rpc-v2/manifest.json",
         "macro-planning-host-v1/manifest.json",
+        "model-provider-rpc-v2/manifest.json",
     ]
     routes = []
     for route_path in route_paths:
@@ -622,6 +1214,7 @@ def main() -> int:
     dump(CORPUS / "manifest.json", {"schema": "contract-corpus/v1", "negative_groups": [group["group_id"] for group in groups], "required_group_count": 14, "additional_negative_profiles": [publication_path], "path_corpus": "paths/windows-paths.json", "compatibility": ["compatibility/valid.json", "compatibility/invalid.json"], "history": "history/v1-raw.json"})
     write_v2_corpus()
     write_macro_planning_corpus()
+    write_model_provider_corpus()
     write_corpus_v2_manifest()
     if _DRIFT:
         print("corpus drift: " + ", ".join(sorted(set(_DRIFT))))
@@ -630,7 +1223,8 @@ def main() -> int:
     print(
         f"{action} 14 frozen groups, {len(publication_cases['cases'])} contract-publication probes, "
         f"{len(v2_groups())} M4/M5 groups, {sum(len(group['negative']) for group in macro_planning_groups())} "
-        f"macro-planning negatives and {macro_integer_representations()['vector_count']} raw integer vectors"
+        f"macro-planning negatives, {macro_integer_representations()['vector_count']} raw integer vectors, and "
+        f"{sum(len(group['negative']) for group in model_provider_groups(model_provider_golden()))} Provider RPC negatives"
     )
     return 0
 

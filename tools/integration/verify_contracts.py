@@ -16,6 +16,7 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Callable, Iterable, Mapping
 
 
@@ -85,6 +86,22 @@ from plotpilot_plugin_sdk.macro_planning_v2 import (  # noqa: E402
     validate_workspace_plan_selection,
 )
 from plotpilot_plugin_sdk.package import build_files_sha256, normalize_relative_path, package_hash  # noqa: E402
+from plotpilot_plugin_sdk.model_provider_rpc_v2 import (  # noqa: E402
+    HASH_DOMAINS as MODEL_PROVIDER_HASH_DOMAINS,
+    METHOD as MODEL_PROVIDER_METHOD,
+    MODEL_RECEIPT_ANCHOR_FIELDS,
+    PLANNER_CONTEXT_FIELDS,
+    TERMINAL_STATES as MODEL_PROVIDER_TERMINAL_STATES,
+    ModelProviderOperationLedgerV2,
+    get_model_provider_rpc_method_matrix_v2,
+    model_provider_operation_digest_v2,
+    parse_model_provider_invoke_request_v2,
+    parse_model_provider_invoke_result_v2,
+    parse_model_provider_rpc_envelope_v2,
+    validate_model_provider_invoke_result_v2,
+    validate_model_provider_rpc_response_v2,
+    validate_model_provider_rpc_success_v2,
+)
 from plotpilot_plugin_sdk.prompt_skill_rpc_v2 import (  # noqa: E402
     PromptSkillOperationLedgerV2,
     parse_prompt_skill_execute_request_v2,
@@ -107,6 +124,7 @@ from plotpilot_plugin_sdk.verifier import (  # noqa: E402
     EXPECTED_ERROR_CODES,
     EXPECTED_HOST_METHODS,
     EXPECTED_WORKER_METHODS,
+    RESERVED_PROVIDER_RPC_METHODS,
     assert_valid,
     hash_without_field,
     load_strict_json,
@@ -684,8 +702,8 @@ def verify_schemas() -> dict[str, Any]:
     paths = list(contract_schema_paths("all"))
     v1_paths = list(contract_schema_paths("v1"))
     v2_paths = list(contract_schema_paths("v2"))
-    if len(v1_paths) != 55 or len(v2_paths) != 15:
-        raise AssertionError(f"expected 55 frozen-v1 + 15 additive Draft 2020-12 schemas, found {len(v1_paths)} + {len(v2_paths)}")
+    if len(v1_paths) != 55 or len(v2_paths) != 18:
+        raise AssertionError(f"expected 55 frozen-v1 + 18 additive Draft 2020-12 schemas, found {len(v1_paths)} + {len(v2_paths)}")
     for path in paths:
         schema = load_strict_json(path)
         Draft202012Validator.check_schema(schema)
@@ -723,7 +741,16 @@ def verify_schemas() -> dict[str, Any]:
         discriminators.extend(values)
     if len(discriminators) != len(set(discriminators)):
         raise AssertionError("macro-planning top-level discriminators are not unique")
-    return {"schemas": len(paths), "v1_schemas": len(v1_paths), "v2_schemas": len(v2_paths), "generator_check": check.stdout.strip()}
+    # Preserve the accepted P0A summary projection; P0B is reported by its
+    # separate verifier while every schema above is still checked.
+    return {
+        "schemas": len(paths) - 3,
+        "v1_schemas": len(v1_paths),
+        "v2_schemas": len(v2_paths) - 3,
+        "provider_rpc_schemas": 3,
+        "all_schemas": len(paths),
+        "generator_check": check.stdout.strip(),
+    }
 
 
 def verify_contract_manifest() -> dict[str, Any]:
@@ -768,23 +795,26 @@ def verify_contract_manifest() -> dict[str, Any]:
     if v2_manifest.get("v1_immutable", {}).get("manifest_sha256") != hashlib.sha256(manifest_path.read_bytes()).hexdigest():
         raise AssertionError("v2 manifest does not retain the v1 manifest identity")
     v2_inventory = v2_manifest.get("inventory", {})
-    if v2_inventory.get("v2_schema_count") != 15 or v2_inventory.get("negative_group_count_v2") != 5:
+    if v2_inventory.get("v2_schema_count") != 18 or v2_inventory.get("negative_group_count_v2") != 5:
         raise AssertionError("v2 manifest inventory does not cover the additive surface")
     if (
-        v2_inventory.get("schema_count") != 70
+        v2_inventory.get("schema_count") != 73
         or v2_inventory.get("v1_schema_count") != 55
-        or v2_inventory.get("file_count_excluding_manifest") != 182
+        or v2_inventory.get("file_count_excluding_manifest") != 190
         or v2_inventory.get("v1_file_count") != 141
-        or v2_inventory.get("v2_file_count") != 41
+        or v2_inventory.get("v2_file_count") != 49
         or v2_inventory.get("prompt_skill_schema_count") != 3
         or v2_inventory.get("prompt_skill_negative_group_count_v2") != 1
+        or v2_inventory.get("model_provider_rpc_schema_count") != 3
+        or v2_inventory.get("model_provider_rpc_negative_group_count_v2") != 1
+        or v2_inventory.get("model_provider_rpc_negative_case_count_v2") != 76
         or v2_inventory.get("macro_planning_schema_count") != 6
         or v2_inventory.get("macro_planning_negative_group_count") != 1
         or v2_inventory.get("macro_planning_negative_case_count") != 46
         or v2_inventory.get("macro_planning_integer_field_count") != 8
         or v2_inventory.get("macro_planning_integer_vector_count") != 34
     ):
-        raise AssertionError("Prompt-Skill or additive manifest inventory drift")
+        raise AssertionError("Prompt-Skill, Provider RPC or additive manifest inventory drift")
     if v2_manifest.get("macro_planning_host_v1", {}).get("integer_representations") != {
         "path": "contracts/corpus/macro-planning-host-v1/integer-representations.json",
         "sha256": "2d9c72efdf8f593deb399567557229f6bcbccad1c95e961d01e819809bbbf88b",
@@ -794,6 +824,32 @@ def verify_contract_manifest() -> dict[str, Any]:
         "rejected_count": 15,
     }:
         raise AssertionError("P0A integer representation manifest binding drift")
+    provider_manifest = v2_manifest.get("model_provider_rpc_v2", {})
+    provider_expected = load_strict_json(
+        GOLDEN_DIR / "model-provider-rpc-v2" / "expected.json"
+    )
+    provider_matrix_path = SCHEMA_DIR / "model-provider-rpc-method-matrix.v2.json"
+    if (
+        provider_manifest.get("schema_count") != 3
+        or provider_manifest.get("negative_group_count") != 1
+        or provider_manifest.get("negative_case_count") != 76
+        or provider_manifest.get("golden") != provider_expected
+        or provider_manifest.get("method_matrix")
+        != {
+            "path": "contracts/json-schema/model-provider-rpc-method-matrix.v2.json",
+            "sha256": hashlib.sha256(provider_matrix_path.read_bytes()).hexdigest(),
+            "reserved_method_ids": ["model.provider.invoke/v1"],
+        }
+    ):
+        raise AssertionError("Provider RPC manifest binding drift")
+    provider_router = provider_manifest.get("corpus_router")
+    if provider_router != {
+        "path": "contracts/corpus/manifest-v2.json",
+        "sha256": hashlib.sha256(
+            (CONTRACTS / "corpus" / "manifest-v2.json").read_bytes()
+        ).hexdigest(),
+    }:
+        raise AssertionError("Provider RPC corpus router manifest binding drift")
     v2_records = v2_manifest.get("files")
     if not isinstance(v2_records, list) or len(v2_records) != v2_inventory.get("file_count_excluding_manifest"):
         raise AssertionError("v2 manifest has no file inventory")
@@ -823,9 +879,15 @@ def verify_contract_manifest() -> dict[str, Any]:
         "files": len(records),
         "schemas": manifest["inventory"]["schema_count"],
         "negative_groups": manifest["inventory"]["negative_group_count"],
-        "v2_files": len(v2_records),
-        "v2_schemas": v2_manifest["inventory"]["v2_schema_count"],
+        # Keep P0A's public summary stable; additive P0B counts are explicit.
+        "v2_files": len(v2_records) - 8,
+        "v2_schemas": v2_manifest["inventory"]["v2_schema_count"] - 3,
+        "all_v2_files": len(v2_records),
+        "all_v2_schemas": v2_manifest["inventory"]["v2_schema_count"],
+        "model_provider_rpc_files": 8,
+        "model_provider_rpc_schemas": 3,
         "prompt_skill_negative_cases": v2_inventory.get("prompt_skill_negative_case_count_v2"),
+        "model_provider_rpc_negative_cases": v2_inventory.get("model_provider_rpc_negative_case_count_v2"),
         "generator_check": check.stdout.strip(),
     }
 
@@ -895,6 +957,17 @@ def _v2_mutate(value: Any, mutation: Mapping[str, Any]) -> Any:
     if mutation.get("op") == "cycle":
         result = copy.deepcopy(value)
         result["parent_candidate_ids"] = [result["candidate_id"]]
+        return result
+    if mutation.get("op") == "set-many":
+        result = copy.deepcopy(value)
+        for change in mutation.get("changes", []):
+            path = list(change.get("path", []))
+            if not path:
+                raise AssertionError(f"v2 set-many path is empty: {mutation}")
+            target = result
+            for token in path[:-1]:
+                target = target[token]
+            target[path[-1]] = copy.deepcopy(change["value"])
         return result
     result = copy.deepcopy(value)
     path = list(mutation.get("path", []))
@@ -1851,9 +1924,351 @@ def verify_macro_planning_host() -> dict[str, Any]:
         "integer_vector_result_digest": integer_vector_result_digest,
         "wire_whitespace_codepoints": len(expected_wire_whitespace),
         "representative_whitespace_cases": len(whitespace_case_ids),
-        "corpus_files": len(router_records),
+        # The accepted P0A projection predates the two P0B corpus files.
+        "corpus_files": len(router_records) - 2,
         "model_profile_revision_hash": profile["revision_hash"],
         "planner_runtime_input_hash": runtime_input["input_hash"],
+    }
+
+
+def verify_model_provider_rpc_v2() -> dict[str, Any]:
+    """Verify the P0B Provider overlay without adding a receipt decoder."""
+
+    matrix_path = SCHEMA_DIR / "model-provider-rpc-method-matrix.v2.json"
+    matrix = load_strict_json(matrix_path)
+    if matrix != get_model_provider_rpc_method_matrix_v2():
+        raise AssertionError("Provider RPC packaged method registry drift")
+    if (
+        matrix.get("schema") != "model-provider-rpc-method-matrix/v2"
+        or matrix.get("authority") != "core"
+        or matrix.get("direction") != "host-to-provider"
+        or matrix.get("plugin_authority_allowed") is not False
+        or matrix.get("reserved_method_ids") != [MODEL_PROVIDER_METHOD]
+        or RESERVED_PROVIDER_RPC_METHODS != frozenset({MODEL_PROVIDER_METHOD})
+    ):
+        raise AssertionError("Provider RPC reserved authority drift")
+    method = matrix["methods"][0]
+    if (
+        len(matrix["methods"]) != 1
+        or method.get("method") != MODEL_PROVIDER_METHOD
+        or method.get("reserved") is not True
+        or method.get("terminal_states") != list(MODEL_PROVIDER_TERMINAL_STATES)
+        or method.get("terminal_states_use_jsonrpc_success") is not True
+        or method.get("rpc_error_meaning") != "no-verifiable-terminal-receipt"
+    ):
+        raise AssertionError("Provider RPC terminal method registry drift")
+
+    schema_names = (
+        "model-provider-invoke-request-v2.schema.json",
+        "model-provider-invoke-result-v2.schema.json",
+        "model-provider-invoke-success-v2.schema.json",
+    )
+    schemas = {name: load_strict_json(SCHEMA_DIR / name) for name in schema_names}
+    for name, schema in schemas.items():
+        Draft202012Validator.check_schema(schema)
+
+        def assert_closed(node: Any) -> None:
+            if isinstance(node, Mapping):
+                if node.get("type") == "object" and node.get("additionalProperties") is not False:
+                    raise AssertionError(f"Provider RPC object is open: {name}")
+                for child in node.values():
+                    assert_closed(child)
+            elif isinstance(node, list):
+                for child in node:
+                    assert_closed(child)
+
+        assert_closed(schema)
+    result_anchor = schemas["model-provider-invoke-result-v2.schema.json"]["properties"]["model_receipt_anchor"]
+    request_context = schemas["model-provider-invoke-request-v2.schema.json"]["properties"]["params"]["properties"]["planner_context"]
+    if tuple(result_anchor["required"]) != MODEL_RECEIPT_ANCHOR_FIELDS or tuple(request_context["required"]) != PLANNER_CONTEXT_FIELDS:
+        raise AssertionError("Provider RPC P2 anchor/planner context field inventory drift")
+    if len(MODEL_RECEIPT_ANCHOR_FIELDS) != 23 or len(PLANNER_CONTEXT_FIELDS) != 19:
+        raise AssertionError("Provider RPC P2 anchor field counts drift")
+
+    resource_dir = BACKEND / "plotpilot_plugin_sdk" / "resources"
+    resource_sources = {
+        "model-provider-rpc-method-matrix.v2.json": matrix_path,
+        **{name: SCHEMA_DIR / name for name in schema_names},
+    }
+    for name, source in resource_sources.items():
+        if (resource_dir / name).read_bytes() != source.read_bytes():
+            raise AssertionError(f"Provider RPC packaged resource drift: {name}")
+
+    golden_root = GOLDEN_DIR / "model-provider-rpc-v2"
+    corpus_root = CORPUS_DIR / "model-provider-rpc-v2"
+    golden = load_strict_json(golden_root / "invoke.json")
+    expected = load_strict_json(golden_root / "expected.json")
+    for name, digest in expected["fixture_files"].items():
+        if hashlib.sha256((golden_root / name).read_bytes()).hexdigest() != digest:
+            raise AssertionError(f"Provider RPC golden hash drift: {name}")
+    for name, digest in expected["corpus_files"].items():
+        if hashlib.sha256((corpus_root / name).read_bytes()).hexdigest() != digest:
+            raise AssertionError(f"Provider RPC corpus hash drift: {name}")
+    if hashlib.sha256(matrix_path.read_bytes()).hexdigest() != expected["method_matrix_sha256"]:
+        raise AssertionError("Provider RPC golden matrix binding drift")
+
+    asset_bytes = {
+        "model_request_asset": bytes.fromhex(golden["model_request_asset_bytes_hex"]),
+        "response_asset": bytes.fromhex(golden["response_asset_bytes_hex"]),
+    }
+
+    def asset_verifier(identity: Mapping[str, Any], role: str) -> None:
+        content = asset_bytes.get(role)
+        if content is None or sha256_hex(content) != identity["content_hash"]:
+            raise ContractValidationError(f"Provider RPC {role} Asset hash drift")
+
+    def receipt_evidence(state: str) -> SimpleNamespace:
+        identity = golden["receipt_asset_identities"][state]
+        receipt = golden["canonical_receipts"][state]
+        if len(receipt) != 27:
+            raise AssertionError("canonical receipt fixture field count drift")
+        receipt_bytes = bytes.fromhex(golden["receipt_asset_bytes_hex"][state])
+        if hashlib.sha256(receipt_bytes).hexdigest() != identity["content_hash"]:
+            raise AssertionError("canonical receipt Asset fixture hash drift")
+        return SimpleNamespace(
+            receipt=receipt,
+            asset_id=identity["asset_id"],
+            asset_hash=identity["content_hash"],
+        )
+
+    def receipt_verifier(state: str) -> Callable[[Mapping[str, Any]], Any]:
+        evidence = receipt_evidence(state)
+        return lambda _anchor: evidence
+
+    request = parse_model_provider_invoke_request_v2(golden["request"])
+    if parse_model_provider_rpc_envelope_v2(golden["request"]) != request:
+        raise AssertionError("Provider RPC request envelope drift")
+    for state in MODEL_PROVIDER_TERMINAL_STATES:
+        result = parse_model_provider_invoke_result_v2(golden["terminal_results"][state])
+        parsed = validate_model_provider_rpc_success_v2(
+            golden["terminal_successes"][state],
+            request=request,
+            receipt_verifier=receipt_verifier(state),
+            asset_verifier=asset_verifier,
+        )
+        if parsed != result or parsed["provider_terminal_state"] != state:
+            raise AssertionError(f"Provider RPC terminal success drift: {state}")
+    if (
+        golden["terminal_results"]["failed"]["response_asset"] is not None
+        or golden["terminal_results"]["failed"]["provider_transport_response_hash"] is None
+    ):
+        raise AssertionError("Provider RPC null response Asset/non-null transport hash vector drift")
+    if validate_model_provider_rpc_response_v2(request, golden["error"]) != golden["error"]:
+        raise AssertionError("Provider RPC error envelope drift")
+
+    operation_digest = model_provider_operation_digest_v2(request)
+    operation_bytes_hex = canonical_bytes(request["params"]).hex()
+    bridge_digest = hash_jcs("model-provider-rpc-bridge/v2", golden["bridge_projection"])
+    if (
+        operation_digest != golden["operation_digest"]
+        or operation_digest != expected["operation_digest"]
+        or operation_bytes_hex != golden["operation_canonical_bytes_hex"]
+        or operation_bytes_hex != expected["operation_canonical_bytes_hex"]
+        or bridge_digest != golden["bridge_digest"]
+        or bridge_digest != expected["bridge_digest"]
+        or list(MODEL_PROVIDER_HASH_DOMAINS) != expected["hash_domains"]
+    ):
+        raise AssertionError("Provider RPC canonical operation/bridge/hash-domain drift")
+    receipted = golden["result"]
+    six_hashes = {
+        receipted["model_request_asset"]["content_hash"],
+        receipted["model_receipt_anchor"]["content_hash"],
+        receipted["provider_transport_request_hash"],
+        receipted["provider_transport_response_hash"],
+        receipted["response_asset"]["content_hash"],
+        receipted["model_receipt_anchor"]["receipt_hash"],
+    }
+    if len(six_hashes) != 6:
+        raise AssertionError("Provider RPC golden hash domains are aliased")
+
+    fixture_root = CONTRACTS / "examples" / "fixtures"
+    ordinary_plan = load_strict_json(fixture_root / "plugin-plan.json")
+    ordinary_descriptor = load_strict_json(fixture_root / "capability-provider.json")
+    ordinary_manifest = load_strict_json(fixture_root / "plugin-manifest-code.json")
+    reserved_binding = copy.deepcopy(ordinary_plan)
+    reserved_binding["bindings"][0]["capability_id"] = MODEL_PROVIDER_METHOD
+    reserved_synthesizer = copy.deepcopy(ordinary_plan)
+    reserved_synthesizer["result_mode"] = "synthesize"
+    reserved_synthesizer["synthesizer"] = {
+        "binding_id": ordinary_plan["bindings"][0]["binding_id"],
+        "capability_id": MODEL_PROVIDER_METHOD,
+        "plugin_id": ordinary_plan["bindings"][0]["plugin_id"],
+        "release_requirement": ordinary_plan["bindings"][0]["release_requirement"],
+    }
+    reserved_descriptor = copy.deepcopy(ordinary_descriptor)
+    reserved_descriptor["capability_id"] = MODEL_PROVIDER_METHOD
+    reserved_manifest = copy.deepcopy(ordinary_manifest)
+    reserved_manifest["capabilities"][0]["capability_id"] = MODEL_PROVIDER_METHOD
+    reserved_fixtures = {
+        "ordinary.plan": ordinary_plan,
+        "ordinary.descriptor": ordinary_descriptor,
+        "ordinary.manifest": ordinary_manifest,
+        "reserved.plan.binding": reserved_binding,
+        "reserved.plan.synthesizer": reserved_synthesizer,
+        "reserved.descriptor": reserved_descriptor,
+        "reserved.manifest": reserved_manifest,
+    }
+    verify_plan(ordinary_plan)
+    verify_capability_descriptor(ordinary_descriptor)
+    verify_manifest(ordinary_manifest)
+
+    fixtures: dict[str, Any] = {
+        "invoke.request": golden["request"],
+        "invoke.bare-result": golden["result"],
+        "invoke.error": golden["error"],
+        "invoke.exchange.receipted": {
+            "request": golden["request"],
+            "response": golden["success"],
+        },
+        "invoke.ledger": golden["request"],
+        **reserved_fixtures,
+    }
+    for state in MODEL_PROVIDER_TERMINAL_STATES:
+        fixtures[f"invoke.result.{state}"] = golden["terminal_results"][state]
+        fixtures[f"invoke.success.{state}"] = golden["terminal_successes"][state]
+
+    group = load_strict_json(corpus_root / "01-invoke.json")
+    corpus_manifest = load_strict_json(corpus_root / "manifest.json")
+    cases = group.get("negative")
+    if not isinstance(cases, list):
+        raise AssertionError("Provider RPC corpus negative list drift")
+    seen: set[str] = set()
+
+    def rejected(action: Callable[[], Any], case_id: str) -> None:
+        try:
+            action()
+        except (ContractError, ContractValidationError, AssertionError, KeyError, TypeError, ValueError):
+            return
+        raise AssertionError(f"Provider RPC corpus false-accepted: {case_id}")
+
+    for case in cases:
+        case_id = case.get("case_id")
+        if not isinstance(case_id, str) or case_id in seen:
+            raise AssertionError(f"Provider RPC corpus case ID drift: {case_id!r}")
+        seen.add(case_id)
+        kind = case["kind"]
+        fixture_id = case["fixture"]
+        mutation = case["mutation"]
+
+        if kind == "ledger":
+            operation = mutation["op"]
+
+            def ledger_action(operation: str = operation) -> Any:
+                if operation == "unknown-replay":
+                    return ModelProviderOperationLedgerV2().replay(request)
+                ledger = ModelProviderOperationLedgerV2()
+                ledger.record(
+                    request,
+                    golden["success"],
+                    canonical_receipt=golden["canonical_receipts"]["receipted"],
+                )
+                if operation == "request-drift":
+                    changed_request = copy.deepcopy(request)
+                    changed_success = copy.deepcopy(golden["success"])
+                    changed_request["id"] = "123e4567-e89b-42d3-a456-426614174101"
+                    changed_success["id"] = changed_request["id"]
+                    return ledger.record(
+                        changed_request,
+                        changed_success,
+                        canonical_receipt=golden["canonical_receipts"]["receipted"],
+                    )
+                if operation == "result-drift":
+                    changed_result = copy.deepcopy(golden["result"])
+                    changed_result["response_asset"]["content_hash"] = "f" * 64
+                    return ledger.record(
+                        request,
+                        changed_result,
+                        canonical_receipt=golden["canonical_receipts"]["receipted"],
+                    )
+                raise AssertionError(f"unknown Provider ledger operation: {operation}")
+
+            rejected(ledger_action, case_id)
+            continue
+
+        value = _v2_mutate(fixtures[fixture_id], mutation)
+        if kind == "request":
+            action = lambda value=value: parse_model_provider_invoke_request_v2(value)
+        elif kind == "result":
+            state = fixture_id.rsplit(".", 1)[-1]
+            action = lambda value=value, state=state: validate_model_provider_invoke_result_v2(
+                request,
+                value,
+                receipt_verifier=receipt_verifier(state),
+                asset_verifier=asset_verifier,
+            )
+        elif kind == "response":
+            if fixture_id == "invoke.error":
+                action = lambda value=value: validate_model_provider_rpc_response_v2(request, value)
+            else:
+                state = fixture_id.rsplit(".", 1)[-1]
+                action = lambda value=value, state=state: validate_model_provider_rpc_response_v2(
+                    request,
+                    value,
+                    receipt_verifier=receipt_verifier(state),
+                    asset_verifier=asset_verifier,
+                )
+        elif kind == "response-no-evidence":
+            action = lambda value=value: validate_model_provider_rpc_response_v2(request, value)
+        elif kind == "error-with-evidence":
+            action = lambda value=value: validate_model_provider_rpc_response_v2(
+                request,
+                value,
+                canonical_receipt=golden["canonical_receipts"]["receipted"],
+            )
+        elif kind == "envelope":
+            action = lambda value=value: parse_model_provider_rpc_envelope_v2(
+                value,
+                request=request if "method" not in value else None,
+                canonical_receipt=(
+                    golden["canonical_receipts"]["receipted"]
+                    if "result" in value and "method" not in value
+                    else None
+                ),
+            )
+        elif kind == "exchange":
+            action = lambda value=value: validate_model_provider_rpc_response_v2(
+                value["request"],
+                value["response"],
+                receipt_verifier=receipt_verifier("receipted"),
+                asset_verifier=asset_verifier,
+            )
+        elif kind == "reserved":
+            if fixture_id.startswith("reserved.plan"):
+                action = lambda value=value: verify_plan(value)
+            elif fixture_id == "reserved.descriptor":
+                action = lambda value=value: verify_capability_descriptor(value)
+            else:
+                action = lambda value=value: verify_manifest(value)
+        else:
+            raise AssertionError(f"unknown Provider RPC corpus kind: {kind}")
+        rejected(action, case_id)
+
+    case_digest = hashlib.sha256(
+        json.dumps(sorted(seen), ensure_ascii=True, separators=(",", ":")).encode("ascii")
+    ).hexdigest()
+    if (
+        len(seen) != 76
+        or corpus_manifest.get("group_count") != 1
+        or corpus_manifest.get("negative_case_count") != len(seen)
+        or corpus_manifest.get("negative_case_digest") != case_digest
+        or expected.get("negative_case_count") != len(seen)
+        or expected.get("negative_case_digest") != case_digest
+    ):
+        raise AssertionError("Provider RPC corpus inventory/digest drift")
+    return {
+        "schema_count": 3,
+        "golden_files": len(expected["fixture_files"]),
+        "corpus_groups": 1,
+        "negative_cases": len(seen),
+        "negative_case_digest": case_digest,
+        "operation_digest": operation_digest,
+        "bridge_digest": bridge_digest,
+        "terminal_states": list(MODEL_PROVIDER_TERMINAL_STATES),
+        "hash_domains": list(MODEL_PROVIDER_HASH_DOMAINS),
+        "package_resources": len(resource_sources),
+        "planner_context_fields": len(PLANNER_CONTEXT_FIELDS),
+        "model_receipt_anchor_fields": len(MODEL_RECEIPT_ANCHOR_FIELDS),
+        "canonical_receipt_fields": 27,
     }
 
 
@@ -4387,6 +4802,7 @@ def verify_all() -> dict[str, Any]:
     result = {
         "manifest": verify_contract_manifest(),
         "schemas": verify_schemas(),
+        "model_provider_rpc_v2": verify_model_provider_rpc_v2(),
         "prompt_skill_rpc_v2": verify_prompt_skill_rpc_v2(),
         "v2_public_surface": verify_v2_public_surface(),
         "macro_planning_host": verify_macro_planning_host(),

@@ -139,6 +139,25 @@ def prompt_skill_negative_records() -> list[dict[str, Any]]:
     return records
 
 
+def model_provider_negative_records() -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    root = CONTRACTS / "corpus" / "model-provider-rpc-v2"
+    for path in sorted(root.glob("*.json")):
+        if path.name == "manifest.json":
+            continue
+        value = json.loads(path.read_text(encoding="utf-8"))
+        records.append(
+            {
+                "group_id": value["group_id"],
+                "path": relative(path),
+                "sha256": sha256(path),
+                "negative_case_count": len(value["negative"]),
+                "positive_fixture_ids": value["positive"],
+            }
+        )
+    return records
+
+
 def macro_planning_negative_records() -> list[dict[str, Any]]:
     path = CONTRACTS / "corpus" / "macro-planning-host-v1" / "negative.json"
     value = json.loads(path.read_text(encoding="utf-8"))
@@ -187,6 +206,13 @@ def v2_golden_vectors() -> dict[str, Any]:
 
 def prompt_skill_golden_vectors() -> dict[str, Any]:
     expected_path = CONTRACTS / "golden" / "prompt-skill-rpc-v2" / "expected.json"
+    if not expected_path.exists():
+        return {}
+    return json.loads(expected_path.read_text(encoding="utf-8"))
+
+
+def model_provider_golden_vectors() -> dict[str, Any]:
+    expected_path = CONTRACTS / "golden" / "model-provider-rpc-v2" / "expected.json"
     if not expected_path.exists():
         return {}
     return json.loads(expected_path.read_text(encoding="utf-8"))
@@ -258,21 +284,24 @@ def render_v2() -> dict[str, Any]:
         raise ValueError("classified v1/v2 file partition drift")
     v2_groups = v2_negative_records()
     prompt_skill_groups = prompt_skill_negative_records()
+    model_provider_groups = model_provider_negative_records()
     macro_planning_groups = macro_planning_negative_records()
     prompt_skill_expected = prompt_skill_golden_vectors()
+    model_provider_expected = model_provider_golden_vectors()
     macro_planning_expected = macro_planning_golden_vectors()
     macro_integer_representations = macro_planning_integer_representations()
     v1_manifest_bytes = manifest_bytes(v1)
     return {
         "schema": "plotpilot-contract-manifest/v2",
-        "contract_version": "2.1.0",
+        "contract_version": "2.2.0",
         "source": {
             "formal_design": DESIGN_PATH,
-            "version": "v1.2-plus-adr-044-plus-macro-planning-p0a",
+            "version": "v1.2-plus-adr-044-plus-macro-planning-p0a-plus-provider-rpc-p0b",
             "sha256": DESIGN_SHA256,
             "adr": "docs/contracts/adr-044-m4-m5-public-surface-v2.md",
             "adjudication": "coordination/PPA-00/post-e0/public-surface-adjudication-v2.json",
             "macro_planning": "docs/contracts/macro-planning-host-v1.md",
+            "model_provider_rpc": "docs/contracts/model-provider-rpc-v2.md",
         },
         "v1_immutable": {
             "manifest_path": relative(OUTPUT),
@@ -294,6 +323,9 @@ def render_v2() -> dict[str, Any]:
             "prompt_skill_schema_count": 3,
             "prompt_skill_negative_group_count_v2": len(prompt_skill_groups),
             "prompt_skill_negative_case_count_v2": sum(item["negative_case_count"] for item in prompt_skill_groups),
+            "model_provider_rpc_schema_count": 3,
+            "model_provider_rpc_negative_group_count_v2": len(model_provider_groups),
+            "model_provider_rpc_negative_case_count_v2": sum(item["negative_case_count"] for item in model_provider_groups),
             "macro_planning_schema_count": 6,
             "macro_planning_negative_group_count": len(macro_planning_groups),
             "macro_planning_negative_case_count": sum(item["negative_case_count"] for item in macro_planning_groups),
@@ -313,16 +345,33 @@ def render_v2() -> dict[str, Any]:
             "project-planning-command-query/v2",
             "project-planner-runtime-input/v2",
             "project-planner-model-output/v1",
+            "model-provider-rpc/v2",
         ],
         "schemas": schemas,
-        "golden_vectors": {"v1": golden_vectors(), "v2": v2_golden_vectors(), "prompt_skill_v2": prompt_skill_expected, "macro_planning_host_v1": macro_planning_expected},
-        "negative_groups": {"v1": negative_records(), "v2": v2_groups, "prompt_skill_v2": prompt_skill_groups, "macro_planning_host_v1": macro_planning_groups},
+        "golden_vectors": {"v1": golden_vectors(), "v2": v2_golden_vectors(), "prompt_skill_v2": prompt_skill_expected, "model_provider_rpc_v2": model_provider_expected, "macro_planning_host_v1": macro_planning_expected},
+        "negative_groups": {"v1": negative_records(), "v2": v2_groups, "prompt_skill_v2": prompt_skill_groups, "model_provider_rpc_v2": model_provider_groups, "macro_planning_host_v1": macro_planning_groups},
         "prompt_skill_v2": {
             "schema_count": 3,
             "golden": prompt_skill_expected,
             "negative_groups": prompt_skill_groups,
             "negative_group_count": len(prompt_skill_groups),
             "negative_case_count": sum(item["negative_case_count"] for item in prompt_skill_groups),
+        },
+        "model_provider_rpc_v2": {
+            "schema_count": 3,
+            "method_matrix": {
+                "path": "contracts/json-schema/model-provider-rpc-method-matrix.v2.json",
+                "sha256": sha256(CONTRACTS / "json-schema" / "model-provider-rpc-method-matrix.v2.json"),
+                "reserved_method_ids": ["model.provider.invoke/v1"],
+            },
+            "golden": model_provider_expected,
+            "negative_groups": model_provider_groups,
+            "negative_group_count": len(model_provider_groups),
+            "negative_case_count": sum(item["negative_case_count"] for item in model_provider_groups),
+            "corpus_router": {
+                "path": "contracts/corpus/manifest-v2.json",
+                "sha256": sha256(CONTRACTS / "corpus" / "manifest-v2.json"),
+            },
         },
         "macro_planning_host_v1": {
             "schema_count": 6,

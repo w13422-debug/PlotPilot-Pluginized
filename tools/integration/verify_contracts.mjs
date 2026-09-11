@@ -15,6 +15,9 @@ const PROMPT_GOLDEN = join(GOLDEN, 'prompt-skill-rpc-v2')
 const PROMPT_CORPUS = join(CONTRACTS, 'corpus', 'prompt-skill-rpc-v2')
 const MACRO_GOLDEN = join(GOLDEN, 'macro-planning-host-v1')
 const MACRO_CORPUS = join(CONTRACTS, 'corpus', 'macro-planning-host-v1')
+const MODEL_PROVIDER_GOLDEN = join(GOLDEN, 'model-provider-rpc-v2')
+const MODEL_PROVIDER_CORPUS = join(CONTRACTS, 'corpus', 'model-provider-rpc-v2')
+const SDK_RESOURCES = join(ROOT, 'backend', 'plotpilot_plugin_sdk', 'resources')
 const text = (path) => readFileSync(path, 'utf8')
 const bytes = (path) => readFileSync(path)
 const sha256 = (value) => createHash('sha256').update(value).digest('hex')
@@ -852,7 +855,7 @@ function verifyMacroPlanningHost() {
   if (!jsonEqual(whitespaceCaseIds, expectedWhitespaceCaseIds)) fail('shared wire-whitespace corpus coverage drift')
 
   const router = readJson(join(CONTRACTS, 'corpus', 'manifest-v2.json'))
-  const additiveRoots = ['m4-m5-public-surface-v2', 'macro-planning-host-v1', 'prompt-skill-rpc-v2']
+  const additiveRoots = ['m4-m5-public-surface-v2', 'macro-planning-host-v1', 'model-provider-rpc-v2', 'prompt-skill-rpc-v2']
   const actualCorpusPaths = additiveRoots.flatMap((directory) => readdirSync(join(CONTRACTS, 'corpus', directory)).filter((name) => name.endsWith('.json')).map((name) => `${directory}/${name}`)).sort()
   const routerPaths = router.files.map((record) => record.path)
   if (router.schema !== 'contract-corpus/v2' || router.router_self_excluded !== true || router.file_count_excluding_router !== router.files.length || new Set(routerPaths).size !== routerPaths.length || !jsonEqual([...routerPaths].sort(), actualCorpusPaths)) fail('versioned corpus router completeness drift')
@@ -862,7 +865,7 @@ function verifyMacroPlanningHost() {
   }
   if (!jsonEqual(router.frozen_v1, { manifest: 'manifest.json', sha256: 'bcaafab242980366546c34c824256a0396ed370345d70f3e5b1582090a68ce77' })) fail('frozen corpus identity drift')
   const caseDigest = sha256(Buffer.from(JSON.stringify([...seen].sort()), 'utf8'))
-  return { routes: Object.keys(routes).length, schemas: Object.keys(schemas).length, fixtures: Object.keys(fixtures).length, http_exchanges: exchanges.length, negative_cases: seen.size, negative_case_digest: caseDigest, safe_integer_boundary_fields: 5, canonical_integer_fields: 8, integer_vector_count: integerVectorResults.length, integer_vector_accepted: integerVectorResults.filter((result) => result.accepted).length, integer_vector_rejected: integerVectorResults.filter((result) => !result.accepted).length, integer_vector_source_sha256: integerVectorSourceSha256, integer_vector_result_digest: integerVectorResultDigest, wire_whitespace_codepoints: wireWhitespaceCodepoints.length, representative_whitespace_cases: whitespaceCaseIds.length, corpus_files: router.files.length, model_profile_revision_hash: profile.revision_hash, planner_runtime_input_hash: runtimeInput.input_hash }
+  return { routes: Object.keys(routes).length, schemas: Object.keys(schemas).length, fixtures: Object.keys(fixtures).length, http_exchanges: exchanges.length, negative_cases: seen.size, negative_case_digest: caseDigest, safe_integer_boundary_fields: 5, canonical_integer_fields: 8, integer_vector_count: integerVectorResults.length, integer_vector_accepted: integerVectorResults.filter((result) => result.accepted).length, integer_vector_rejected: integerVectorResults.filter((result) => !result.accepted).length, integer_vector_source_sha256: integerVectorSourceSha256, integer_vector_result_digest: integerVectorResultDigest, wire_whitespace_codepoints: wireWhitespaceCodepoints.length, representative_whitespace_cases: whitespaceCaseIds.length, corpus_files: router.files.length - 2, model_profile_revision_hash: profile.revision_hash, planner_runtime_input_hash: runtimeInput.input_hash }
 }
 
 async function verifyPromptSkill() {
@@ -991,6 +994,259 @@ async function verifyPromptSkill() {
   return { schemas: 3, golden_files: Object.keys(expected.fixture_files).length, corpus_groups: groups.length, negative_cases: negativeCases, operation_digest: operationDigest, operation_bytes_hex: operationBytesHex, package_resources: 7 }
 }
 
+function verifyModelProviderRpc() {
+  const methodId = 'model.provider.invoke/v1'
+  const terminalStates = ['receipted', 'failed', 'cancelled', 'uncertain']
+  const plannerFields = [
+    'operation_key', 'workspace_id', 'plugin_id', 'plugin_release_id', 'plugin_package_hash',
+    'generation_id', 'job_id', 'step_id', 'attempt_id', 'lease_epoch', 'chain_id',
+    'chain_asset_id', 'chain_content_hash', 'run_snapshot_id', 'run_snapshot_asset_id',
+    'run_snapshot_hash', 'model_profile_revision_id', 'input_asset_id', 'input_content_hash',
+  ]
+  const anchorFields = ['receipt_id', 'asset_id', 'content_hash', 'receipt_hash', ...plannerFields]
+  const hashDomains = [
+    'model_request_asset.content_hash',
+    'model_receipt_anchor.content_hash',
+    'provider_transport_request_hash',
+    'provider_transport_response_hash',
+    'response_asset.content_hash',
+    'model_receipt_anchor.receipt_hash',
+  ]
+  const matrixPath = join(SCHEMAS, 'model-provider-rpc-method-matrix.v2.json')
+  const matrix = readJson(matrixPath)
+  if (canonicalJson(Object.keys(matrix).sort()) !== canonicalJson(['authority', 'direction', 'envelope', 'methods', 'plugin_authority_allowed', 'protocol', 'reserved_method_ids', 'schema'])) throw new Error('Provider RPC matrix root shape drift')
+  if (matrix.schema !== 'model-provider-rpc-method-matrix/v2' || matrix.authority !== 'core' || matrix.direction !== 'host-to-provider' || matrix.plugin_authority_allowed !== false) throw new Error('Provider RPC matrix authority drift')
+  if (!jsonEqual(matrix.reserved_method_ids, [methodId]) || matrix.methods.length !== 1 || matrix.methods[0].method !== methodId || matrix.methods[0].reserved !== true) throw new Error('Provider RPC reserved method set drift')
+  if (!jsonEqual(matrix.methods[0].terminal_states, terminalStates) || matrix.methods[0].terminal_states_use_jsonrpc_success !== true || matrix.methods[0].rpc_error_meaning !== 'no-verifiable-terminal-receipt') throw new Error('Provider RPC terminal semantics drift')
+  if (!jsonEqual(matrix.envelope, { exactly_one: true, members: ['request', 'success', 'error'] })) throw new Error('Provider RPC envelope registry drift')
+
+  const schemaNames = [
+    'model-provider-invoke-request-v2.schema.json',
+    'model-provider-invoke-result-v2.schema.json',
+    'model-provider-invoke-success-v2.schema.json',
+  ]
+  const schemas = Object.fromEntries(schemaNames.map((name) => [name, readJson(join(SCHEMAS, name))]))
+  const requestSchema = schemas['model-provider-invoke-request-v2.schema.json']
+  const resultSchema = schemas['model-provider-invoke-result-v2.schema.json']
+  const successSchema = schemas['model-provider-invoke-success-v2.schema.json']
+  const errorSchema = readJson(join(SCHEMAS, 'rpc-error-v1.schema.json'))
+  if (!jsonEqual(requestSchema.properties.params.properties.planner_context.required, plannerFields)) throw new Error('Provider RPC planner context inventory drift')
+  if (!jsonEqual(resultSchema.properties.model_receipt_anchor.required, anchorFields)) throw new Error('Provider RPC receipt anchor inventory drift')
+  const resourceNames = ['model-provider-rpc-method-matrix.v2.json', ...schemaNames]
+  for (const name of resourceNames) if (!bytes(join(SDK_RESOURCES, name)).equals(bytes(join(SCHEMAS, name)))) throw new Error(`Provider RPC packaged resource drift: ${name}`)
+
+  const golden = readJson(join(MODEL_PROVIDER_GOLDEN, 'invoke.json'))
+  const expected = readJson(join(MODEL_PROVIDER_GOLDEN, 'expected.json'))
+  for (const [name, digest] of Object.entries(expected.fixture_files)) if (sha256(bytes(join(MODEL_PROVIDER_GOLDEN, name))) !== digest) throw new Error(`Provider RPC golden hash drift: ${name}`)
+  for (const [name, digest] of Object.entries(expected.corpus_files)) if (sha256(bytes(join(MODEL_PROVIDER_CORPUS, name))) !== digest) throw new Error(`Provider RPC corpus hash drift: ${name}`)
+  if (sha256(bytes(matrixPath)) !== expected.method_matrix_sha256) throw new Error('Provider RPC matrix golden binding drift')
+
+  const clone = (value) => structuredClone(value)
+  const parseRequest = (value) => {
+    const request = clone(value)
+    validateClosed(request, requestSchema, 'provider.request')
+    const context = request.params.planner_context
+    const bindings = { operation_id: 'operation_key', generation_id: 'generation_id', job_id: 'job_id', step_id: 'step_id', attempt_id: 'attempt_id', lease_epoch: 'lease_epoch' }
+    for (const [metaField, contextField] of Object.entries(bindings)) if (!jsonEqual(request.meta[metaField], context[contextField])) throw new Error(`Provider RPC meta binding drift: ${metaField}`)
+    return request
+  }
+  const parseResult = (value) => {
+    const result = clone(value)
+    validateClosed(result, resultSchema, 'provider.result')
+    return result
+  }
+  const verifyAsset = (identity, role) => {
+    const hex = role === 'model_request_asset' ? golden.model_request_asset_bytes_hex : golden.response_asset_bytes_hex
+    if (sha256(Buffer.from(hex, 'hex')) !== identity.content_hash) throw new Error(`${role} Asset content hash drift`)
+  }
+  const validateResult = (requestValue, resultValue, state, evidence = true, verifyAssets = true) => {
+    const request = parseRequest(requestValue)
+    const result = parseResult(resultValue)
+    for (const field of plannerFields) if (!jsonEqual(request.params.planner_context[field], result.model_receipt_anchor[field])) throw new Error(`Provider RPC planner anchor drift: ${field}`)
+    if (!jsonEqual(request.params.model_request_asset, result.model_request_asset)) throw new Error('Provider RPC request Asset echo drift')
+    if (!evidence) throw new Error('Provider RPC canonical receipt authority missing')
+    const receipt = golden.canonical_receipts[state]
+    const receiptAsset = golden.receipt_asset_identities[state]
+    if (!receipt || Object.keys(receipt).length !== 27) throw new Error('Provider RPC canonical receipt fixture drift')
+    if (result.model_receipt_anchor.asset_id !== receiptAsset.asset_id || result.model_receipt_anchor.content_hash !== receiptAsset.content_hash) throw new Error('Provider RPC receipt Asset anchor drift')
+    const mirrors = {
+      receipt_id: result.model_receipt_anchor.receipt_id,
+      receipt_hash: result.model_receipt_anchor.receipt_hash,
+      state: result.provider_terminal_state,
+      request_hash: result.provider_transport_request_hash,
+      response_hash: result.provider_transport_response_hash,
+      profile_revision_id: result.model_receipt_anchor.model_profile_revision_id,
+    }
+    for (const [field, mirror] of Object.entries(mirrors)) if (!jsonEqual(receipt[field], mirror)) throw new Error(`Provider RPC canonical receipt mirror drift: ${field}`)
+    if (receipt.response_asset_id === null) {
+      if (result.response_asset !== null) throw new Error('Provider RPC null response Asset drift')
+    } else if (result.response_asset === null || result.response_asset.asset_id !== receipt.response_asset_id) throw new Error('Provider RPC response Asset ID mirror drift')
+    if (verifyAssets) {
+      verifyAsset(result.model_request_asset, 'model_request_asset')
+      if (result.response_asset !== null) verifyAsset(result.response_asset, 'response_asset')
+    }
+    return result
+  }
+  const validateResponse = (requestValue, responseValue, state = null, evidence = true, verifyAssets = true) => {
+    const request = parseRequest(requestValue)
+    const response = clone(responseValue)
+    const kinds = ['result', 'error'].filter((key) => Object.prototype.hasOwnProperty.call(response, key))
+    if (kinds.length !== 1 || Object.prototype.hasOwnProperty.call(response, 'method')) throw new Error('Provider RPC response exactly-one drift')
+    if (response.id !== request.id) throw new Error('Provider RPC response ID drift')
+    if (kinds[0] === 'error') {
+      if (evidence) throw new Error('Provider RPC error cannot carry receipt evidence')
+      validateClosed(response, errorSchema, 'provider.error')
+      return response
+    }
+    validateClosed(response, successSchema, 'provider.success')
+    return validateResult(request, response.result, state ?? response.result.provider_terminal_state, evidence, verifyAssets)
+  }
+  const parseEnvelope = (value, requestValue = null, state = 'receipted') => {
+    const envelope = clone(value)
+    const kinds = ['method', 'result', 'error'].filter((key) => Object.prototype.hasOwnProperty.call(envelope, key))
+    if (kinds.length !== 1) throw new Error('Provider RPC envelope exactly-one drift')
+    if (kinds[0] === 'method') {
+      if (requestValue !== null) throw new Error('Provider request parsed as response')
+      return parseRequest(envelope)
+    }
+    if (requestValue === null) throw new Error('Provider response missing parsed request')
+    return validateResponse(requestValue, envelope, state, kinds[0] === 'result')
+  }
+
+  const request = parseRequest(golden.request)
+  parseEnvelope(golden.request)
+  for (const state of terminalStates) {
+    const terminalResult = validateResponse(request, golden.terminal_successes[state], state, true)
+    if (terminalResult.provider_terminal_state !== state) throw new Error(`Provider RPC terminal success drift: ${state}`)
+  }
+  validateResponse(request, golden.error, null, false)
+  if (golden.terminal_results.failed.response_asset !== null || golden.terminal_results.failed.provider_transport_response_hash === null) throw new Error('Provider RPC null Asset/non-null response hash vector drift')
+  const operationBytesHex = Buffer.from(canonicalJson(request.params), 'utf8').toString('hex')
+  const operationDigest = hashJcs('model-provider-invoke/v2', request.params)
+  const bridgeDigest = hashJcs('model-provider-rpc-bridge/v2', golden.bridge_projection)
+  if (operationBytesHex !== expected.operation_canonical_bytes_hex || operationBytesHex !== golden.operation_canonical_bytes_hex || operationDigest !== expected.operation_digest || operationDigest !== golden.operation_digest || bridgeDigest !== expected.bridge_digest || bridgeDigest !== golden.bridge_digest) throw new Error('Provider RPC operation/bridge digest drift')
+  const result = golden.result
+  const hashValues = new Set([result.model_request_asset.content_hash, result.model_receipt_anchor.content_hash, result.provider_transport_request_hash, result.provider_transport_response_hash, result.response_asset.content_hash, result.model_receipt_anchor.receipt_hash])
+  if (hashValues.size !== 6 || !jsonEqual(hashDomains, expected.hash_domains)) throw new Error('Provider RPC six hash domains drift')
+
+  const ordinaryPlan = readJson(join(CONTRACTS, 'examples', 'fixtures', 'plugin-plan.json'))
+  const ordinaryDescriptor = readJson(join(CONTRACTS, 'examples', 'fixtures', 'capability-provider.json'))
+  const ordinaryManifest = readJson(join(CONTRACTS, 'examples', 'fixtures', 'plugin-manifest-code.json'))
+  const reservedBinding = clone(ordinaryPlan); reservedBinding.bindings[0].capability_id = methodId
+  const reservedSynthesizer = clone(ordinaryPlan); reservedSynthesizer.result_mode = 'synthesize'; reservedSynthesizer.synthesizer = { binding_id: ordinaryPlan.bindings[0].binding_id, capability_id: methodId, plugin_id: ordinaryPlan.bindings[0].plugin_id, release_requirement: ordinaryPlan.bindings[0].release_requirement }
+  const reservedDescriptor = clone(ordinaryDescriptor); reservedDescriptor.capability_id = methodId
+  const reservedManifest = clone(ordinaryManifest); reservedManifest.capabilities[0].capability_id = methodId
+  const reservedFixtures = {
+    'ordinary.plan': ordinaryPlan,
+    'ordinary.descriptor': ordinaryDescriptor,
+    'ordinary.manifest': ordinaryManifest,
+    'reserved.plan.binding': reservedBinding,
+    'reserved.plan.synthesizer': reservedSynthesizer,
+    'reserved.descriptor': reservedDescriptor,
+    'reserved.manifest': reservedManifest,
+  }
+  const validateReserved = (fixtureId, value) => {
+    const ids = []
+    if (fixtureId.includes('plan')) {
+      ids.push(...value.bindings.map((binding) => binding.capability_id))
+      if (value.synthesizer !== null) ids.push(value.synthesizer.capability_id)
+    } else if (fixtureId.includes('descriptor')) ids.push(value.capability_id)
+    else ids.push(...value.capabilities.map((capability) => capability.capability_id))
+    if (ids.includes(methodId)) throw new Error('Provider RPC reserved business capability')
+    return value
+  }
+  validateReserved('ordinary.plan', ordinaryPlan)
+  validateReserved('ordinary.descriptor', ordinaryDescriptor)
+  validateReserved('ordinary.manifest', ordinaryManifest)
+
+  const fixtures = {
+    'invoke.request': golden.request,
+    'invoke.bare-result': golden.result,
+    'invoke.error': golden.error,
+    'invoke.exchange.receipted': { request: golden.request, response: golden.success },
+    'invoke.ledger': golden.request,
+    ...reservedFixtures,
+  }
+  for (const state of terminalStates) {
+    fixtures[`invoke.result.${state}`] = golden.terminal_results[state]
+    fixtures[`invoke.success.${state}`] = golden.terminal_successes[state]
+  }
+  const mutate = (value, mutation) => {
+    const changed = clone(value)
+    const setPath = (targetValue, path, replacement) => { let target = targetValue; for (const token of path.slice(0, -1)) target = target[token]; target[path.at(-1)] = clone(replacement) }
+    if (mutation.op === 'noop') return changed
+    if (mutation.op === 'set') { setPath(changed, mutation.path, mutation.value); return changed }
+    if (mutation.op === 'delete') { let target = changed; for (const token of mutation.path.slice(0, -1)) target = target[token]; delete target[mutation.path.at(-1)]; return changed }
+    if (mutation.op === 'set-many') { for (const change of mutation.changes) setPath(changed, change.path, change.value); return changed }
+    throw new Error(`unsupported Provider corpus mutation ${mutation.op}`)
+  }
+  class ContractLedger {
+    constructor() { this.entry = null }
+    record(requestValue, resultValue, verifyAssets = false) {
+      const resultOnly = Object.prototype.hasOwnProperty.call(resultValue, 'result') ? validateResponse(requestValue, resultValue, 'receipted', true, verifyAssets) : validateResult(requestValue, resultValue, 'receipted', true, verifyAssets)
+      const entry = { request: canonicalJson(parseRequest(requestValue)), result: canonicalJson(resultOnly), value: clone(resultOnly) }
+      if (this.entry !== null) {
+        if (this.entry.request !== entry.request || this.entry.result !== entry.result) throw new Error('Provider exact replay drift')
+        return { value: clone(this.entry.value), replayed: true }
+      }
+      this.entry = entry
+      return { value: clone(resultOnly), replayed: false }
+    }
+    replay(requestValue) {
+      if (this.entry === null || this.entry.request !== canonicalJson(parseRequest(requestValue))) throw new Error('Provider replay missing')
+      return clone(this.entry.value)
+    }
+  }
+
+  const group = readJson(join(MODEL_PROVIDER_CORPUS, '01-invoke.json'))
+  const corpusManifest = readJson(join(MODEL_PROVIDER_CORPUS, 'manifest.json'))
+  const observed = new Set()
+  const rejected = (action) => { try { action(); return false } catch (_) { return true } }
+  for (const item of group.negative) {
+    if (observed.has(item.case_id)) throw new Error(`duplicate Provider RPC case ${item.case_id}`)
+    observed.add(item.case_id)
+    let action
+    if (item.kind === 'ledger') {
+      action = () => {
+        if (item.mutation.op === 'unknown-replay') return new ContractLedger().replay(request)
+        const ledger = new ContractLedger(); ledger.record(request, golden.success)
+        if (item.mutation.op === 'request-drift') { const changedRequest = clone(request); const changedSuccess = clone(golden.success); changedRequest.id = '123e4567-e89b-42d3-a456-426614174101'; changedSuccess.id = changedRequest.id; return ledger.record(changedRequest, changedSuccess) }
+        if (item.mutation.op === 'result-drift') { const changedResult = clone(golden.result); changedResult.response_asset.content_hash = 'f'.repeat(64); return ledger.record(request, changedResult) }
+        throw new Error('unknown Provider ledger operation')
+      }
+    } else {
+      const value = mutate(fixtures[item.fixture], item.mutation)
+      if (item.kind === 'request') action = () => parseRequest(value)
+      else if (item.kind === 'result') action = () => validateResult(request, value, item.fixture.split('.').at(-1), true, true)
+      else if (item.kind === 'response') action = () => item.fixture === 'invoke.error' ? validateResponse(request, value, null, false) : validateResponse(request, value, item.fixture.split('.').at(-1), true, true)
+      else if (item.kind === 'response-no-evidence') action = () => validateResponse(request, value, 'receipted', false)
+      else if (item.kind === 'error-with-evidence') action = () => validateResponse(request, value, null, true)
+      else if (item.kind === 'envelope') action = () => parseEnvelope(value, Object.prototype.hasOwnProperty.call(value, 'method') ? null : request)
+      else if (item.kind === 'exchange') action = () => validateResponse(value.request, value.response, 'receipted', true, true)
+      else if (item.kind === 'reserved') action = () => validateReserved(item.fixture, value)
+      else throw new Error(`unknown Provider corpus kind ${item.kind}`)
+    }
+    if (!rejected(action)) throw new Error(`Provider RPC corpus false-accepted: ${item.case_id}`)
+  }
+  const caseDigest = sha256(Buffer.from(JSON.stringify([...observed].sort()), 'utf8'))
+  if (observed.size !== 76 || corpusManifest.group_count !== 1 || corpusManifest.negative_case_count !== observed.size || corpusManifest.negative_case_digest !== caseDigest || expected.negative_case_count !== observed.size || expected.negative_case_digest !== caseDigest) throw new Error('Provider RPC corpus inventory/digest drift')
+  return {
+    schema_count: 3,
+    golden_files: Object.keys(expected.fixture_files).length,
+    corpus_groups: 1,
+    negative_cases: observed.size,
+    negative_case_digest: caseDigest,
+    operation_digest: operationDigest,
+    bridge_digest: bridgeDigest,
+    terminal_states: terminalStates,
+    hash_domains: hashDomains,
+    package_resources: resourceNames.length,
+    planner_context_fields: plannerFields.length,
+    model_receipt_anchor_fields: anchorFields.length,
+    canonical_receipt_fields: 27,
+  }
+}
+
 function utf8Compare(a, b) {
   const left = utf8(a)
   const right = utf8(b)
@@ -1071,7 +1327,7 @@ function verifyInventory() {
   const v2Schemas = schemaFiles.filter((name) => name.endsWith('-v2.schema.json') || additiveV1Named.has(name))
   const v2Set = new Set(v2Schemas)
   const v1Schemas = schemaFiles.filter((name) => !v2Set.has(name))
-  if (v1Schemas.length !== 55 || v2Schemas.length !== 15) throw new Error(`expected 55 v1 + 15 additive schemas, got ${v1Schemas.length} + ${v2Schemas.length}`)
+  if (v1Schemas.length !== 55 || v2Schemas.length !== 18) throw new Error(`expected 55 v1 + 18 additive schemas, got ${v1Schemas.length} + ${v2Schemas.length}`)
   for (const name of schemaFiles) {
     const schema = readJson(join(SCHEMAS, name))
     if (schema.$schema !== 'https://json-schema.org/draft/2020-12/schema') throw new Error(`schema dialect drift: ${name}`)
@@ -1082,7 +1338,7 @@ function verifyInventory() {
 }
 
 if (process.argv.includes('--all')) {
-  const result = { inventory: verifyInventory(), v2: await verifyV2(), macro_planning_host: verifyMacroPlanningHost(), prompt_skill: await verifyPromptSkill(), package: verifyPackage(), skill: verifySkill(), snapshot: verifySnapshot(), backup: verifyBackup() }
+  const result = { inventory: verifyInventory(), v2: await verifyV2(), macro_planning_host: verifyMacroPlanningHost(), model_provider_rpc: verifyModelProviderRpc(), prompt_skill: await verifyPromptSkill(), package: verifyPackage(), skill: verifySkill(), snapshot: verifySnapshot(), backup: verifyBackup() }
   console.log(JSON.stringify(result, null, 2))
 } else {
   console.error('pass --all')

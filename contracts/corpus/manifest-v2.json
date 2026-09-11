@@ -1,5 +1,5 @@
 {
-  "file_count_excluding_router": 11,
+  "file_count_excluding_router": 13,
   "files": [
     {
       "bytes": 5468,
@@ -47,6 +47,16 @@
       "sha256": "098c8ac356c87f0a2725d93c53cfc4ff32a954d0382f6dab6735fc80ba2b87fe"
     },
     {
+      "bytes": 28156,
+      "path": "model-provider-rpc-v2/01-invoke.json",
+      "sha256": "220eedb1bee52ea17fd20b18b596495044c57147e68f215799b5837b13ece397"
+    },
+    {
+      "bytes": 1029,
+      "path": "model-provider-rpc-v2/manifest.json",
+      "sha256": "2edf3dc09810813d33f8ffaa3fb6305589c288567c6b453bb6bd1d86b6c4b419"
+    },
+    {
       "bytes": 12806,
       "path": "prompt-skill-rpc-v2/01-execute.json",
       "sha256": "49c476fe83d7d6e6bf8bd6b5d453c7cd9f0dfe85daa1bb505cdbbffcb2553e49"
@@ -74,6 +84,10 @@
     {
       "manifest": "macro-planning-host-v1/manifest.json",
       "sha256": "ed0151790ab07fe543525ae3e8e48d93d073821d196850d1e5c8f33b9df73743"
+    },
+    {
+      "manifest": "model-provider-rpc-v2/manifest.json",
+      "sha256": "2edf3dc09810813d33f8ffaa3fb6305589c288567c6b453bb6bd1d86b6c4b419"
     }
   ],
   "schema": "contract-corpus/v2"

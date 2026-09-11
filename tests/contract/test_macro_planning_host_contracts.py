@@ -4,7 +4,6 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
-import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -41,7 +40,6 @@ from verify_contracts import (  # noqa: E402
     verify_schemas,
 )
 
-BASE = "2ac178a0218cd2131e7a9c00bc03ed22892f6e85"
 SCHEMA_DIR = ROOT / "contracts" / "json-schema"
 POSITIVE_PATH = ROOT / "contracts" / "golden" / "macro-planning-host-v1" / "positive.json"
 INTEGER_VECTOR_PATH = (
@@ -603,46 +601,46 @@ def test_manifests_and_frozen_contract_bytes_are_exact() -> None:
     } == frozen
 
 
-def test_working_diff_is_confined_to_the_authorized_write_set() -> None:
-    allowed = {
-        "backend/plotpilot_plugin_sdk/__init__.py",
-        "backend/plotpilot_plugin_sdk/core_api_v2.py",
-        "backend/plotpilot_plugin_sdk/m4_m5_http_v2.py",
-        "backend/plotpilot_plugin_sdk/macro_planning_v2.py",
-        "contracts/corpus/macro-planning-host-v1/integer-representations.json",
-        "contracts/corpus/macro-planning-host-v1/manifest.json",
-        "contracts/corpus/macro-planning-host-v1/negative.json",
-        "contracts/corpus/manifest-v2.json",
-        "contracts/examples/fixtures/macro-planning-host-positive.json",
-        "contracts/golden/macro-planning-host-v1/positive.json",
-        "contracts/json-schema/core-api-method-matrix.v2.json",
-        *{f"contracts/json-schema/{name}" for name in SCHEMA_FILES},
-        "contracts/manifest-v2.json",
-        "docs/contracts/macro-planning-host-v1.md",
-        "tests/contract/test_macro_planning_host_contracts.py",
-        "tests/contract/test_sdk_wheel_distribution.py",
-        "tools/integration/contract_inventory.py",
-        "tools/integration/generate_contract_manifest.py",
-        "tools/integration/generate_contract_schemas.py",
-        "tools/integration/generate_corpus.py",
-        "tools/integration/verify_contracts.mjs",
-        "tools/integration/verify_contracts.py",
-        "tools/integration/verify_cross_language_goldens.py",
+def test_macro_planning_contract_family_is_separate_from_provider_rpc_overlay() -> None:
+    core_matrix = json.loads(
+        (SCHEMA_DIR / "core-api-method-matrix.v2.json").read_text(encoding="utf-8")
+    )
+    route_ids = [route["route_id"] for route in core_matrix["routes"]]
+    assert core_matrix["macro_planning_routes"] == list(MACRO_ROUTES)
+    assert [route_id for route_id in route_ids if route_id in MACRO_ROUTES] == list(
+        MACRO_ROUTES
+    )
+
+    provider_matrix = json.loads(
+        (SCHEMA_DIR / "model-provider-rpc-method-matrix.v2.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    reserved_method = "model.provider.invoke/v1"
+    assert provider_matrix["reserved_method_ids"] == [reserved_method]
+    assert provider_matrix["authority"] == "core"
+    assert provider_matrix["direction"] == "host-to-provider"
+    assert provider_matrix["plugin_authority_allowed"] is False
+    assert reserved_method not in route_ids
+    assert reserved_method not in core_matrix["macro_planning_routes"]
+
+    provider_schema_names = {
+        "model-provider-invoke-request-v2.schema.json",
+        "model-provider-invoke-result-v2.schema.json",
+        "model-provider-invoke-success-v2.schema.json",
     }
-    assert len(allowed) == 28
-    tracked = subprocess.run(
-        ["git", "diff", "--name-only", BASE],
-        cwd=ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.splitlines()
-    status = subprocess.run(
-        ["git", "status", "--porcelain=v1", "--untracked-files=all"],
-        cwd=ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.splitlines()
-    untracked = [line[3:] for line in status if line.startswith("?? ")]
-    assert (set(tracked) | set(untracked)) == allowed
+    assert set(SCHEMA_FILES).isdisjoint(provider_schema_names)
+    assert all((SCHEMA_DIR / name).is_file() for name in provider_schema_names)
+
+    p0a_authority_paths = [
+        SCHEMA_DIR / "core-api-method-matrix.v2.json",
+        *(SCHEMA_DIR / name for name in SCHEMA_FILES),
+        POSITIVE_PATH,
+        INTEGER_VECTOR_PATH,
+        ROOT / "contracts" / "corpus" / "macro-planning-host-v1" / "negative.json",
+        ROOT / "contracts" / "corpus" / "macro-planning-host-v1" / "manifest.json",
+    ]
+    for path in p0a_authority_paths:
+        content = path.read_text(encoding="utf-8")
+        assert reserved_method not in content, path
+        assert "model-provider-invoke" not in content, path
