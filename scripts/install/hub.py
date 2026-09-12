@@ -136,7 +136,7 @@ class HubWindow(BaseWindow):
 
         # 初始底部文字（含致谢信息）
         self.foot_bar.set_text(
-            "感谢 梦幻AI动漫 提供原始部署设计  |  抖音：林亦 91472902104 每晚9点随缘直播",
+            "基于既有 PlotPilot 源码的插件化改造项目  | QQ群：663844122",
             fg="#4a5568",
         )
 
@@ -196,7 +196,7 @@ class HubWindow(BaseWindow):
 
         # ── 致谢 & 联系方式（底部栏小字）──
         self.foot_bar.set_text(
-            "感谢 梦幻AI动漫 提供原始部署设计  |  抖音：林亦 91472902104 每晚9点随缘直播",
+            "基于既有 PlotPilot 源码的插件化改造项目  | QQ群：663844122",
             fg="#4a5568",
         )
 

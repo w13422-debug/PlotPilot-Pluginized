@@ -19,18 +19,9 @@
         <span class="info-value">{{ BRAND.team }}</span>
       </div>
       <div class="info-item">
-        <span class="info-label">直播时间</span>
-        <span class="info-value">{{ BRAND.liveSchedule }}</span>
+        <span class="info-label">交流方式</span>
+        <span class="info-value">{{ BRAND.groupLabel }}</span>
       </div>
-      <a
-        class="info-item info-item--link"
-        :href="BRAND.douyinUrl"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <span class="info-label">抖音</span>
-        <span class="info-value">{{ BRAND.douyinLabel }}</span>
-      </a>
     </div>
   </section>
 </template>

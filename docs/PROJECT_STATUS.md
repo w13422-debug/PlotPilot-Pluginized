@@ -6,6 +6,8 @@
 
 PlotPilot-Pluginized 是 PlotPilot 的 WebUI 与插件化重构方向：
 
+> **作者归属声明：** 本仓库不是 PlotPilot 原作者的官方仓库，也不代表原作者或原项目团队。本项目是在既有 PlotPilot 源码和公开项目基础上进行的独立插件化改造、WebUI 集成和工程化实验；本项目维护者不自称原软件作者。原始代码、品牌、作者署名和许可证权利仍按上游项目及本仓库许可证处理。
+
 - **Core** 负责 Workspace、Document、Revision、Job、Asset、Candidate、Publication 等稳定权威数据；
 - **插件**负责模型 Provider、Prompt-Skill、Planner、写作、质量分析、导出等可替换能力；
 - **WebUI**只负责用户入口、状态展示和调用已注册能力，不把具体能力写死在页面里；
@@ -13,6 +15,8 @@ PlotPilot-Pluginized 是 PlotPilot 的 WebUI 与插件化重构方向：
 - 未安装、未激活或不满足 Generation 条件的能力应明确显示为不可用，而不是静默伪装成已完成。
 
 这套设计的目标是：以后升级某个拆书、文风、规划或导出能力时，优先替换插件，不必重写 Core 和整套 WebUI。
+
+交流 QQ 群：`663844122`。欢迎对插件化改造、WebUI 集成和小说工程化感兴趣的朋友加入交流。
 
 ## 2. 当前公开分支
 

@@ -4,15 +4,7 @@
     <span class="brand-footer__sep">·</span>
     <span class="brand-footer__sub">{{ BRAND.chineseName }}</span>
     <span class="brand-footer__text">{{ BRAND.credit }}</span>
-    <a
-      class="brand-footer__link"
-      :href="BRAND.douyinUrl"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      {{ BRAND.douyinLabel }}
-    </a>
-    <span class="brand-footer__text">{{ BRAND.liveSchedule }}</span>
+    <span class="brand-footer__text">{{ BRAND.groupLabel }}</span>
   </footer>
 </template>
 
