@@ -39,6 +39,13 @@ from backend.plotpilot_core.jobs.http_rpc.dispatcher import (
     HostRpcHandler,
     PreparedHostRpcResult,
 )
+from backend.plotpilot_core.jobs.http_rpc.model_handlers import (
+    build_model_host_handlers,
+)
+from backend.plotpilot_core.model.broker import (
+    HostProviderAdapterPort,
+    ModelBroker,
+)
 from backend.plotpilot_core.repositories import CoreAuthorityRepository
 from backend.plotpilot_core.repositories.execution import ExecutionAuthority
 from backend.plotpilot_core.supervisor.job_control import JobControl
@@ -269,6 +276,8 @@ class JobRuntimeComposition:
     capability_broker: CapabilityBroker
     backup: JobRuntimeBackupContributor
     handlers: Mapping[str, HostRpcHandler]
+    model_broker: ModelBroker
+    model_handlers: Mapping[str, HostRpcHandler]
     dispatcher: HostRpcApplicationDispatcher
     command_query: JobCommandQueryAdapter
 
@@ -306,6 +315,8 @@ def compose_job_runtime(
     control_resolver: Any,
     provenance_receipt_resolver: Any,
     stream_commit_policy_resolver: Any | None = None,
+    model_broker: ModelBroker | None = None,
+    host_provider_adapter: HostProviderAdapterPort | None = None,
     sse_replay_limit: int = 10_000,
 ) -> JobRuntimeComposition:
     """Compose P3 without opening another database or process authority."""
@@ -330,6 +341,21 @@ def compose_job_runtime(
     if any(actual is not expected for actual, expected in broker_authorities):
         raise TypeError(
             "capability_broker ports must use the exact composed ExecutionAuthority"
+        )
+    if model_broker is not None and host_provider_adapter is not None:
+        raise TypeError(
+            "an explicit model_broker cannot be combined with a Host Provider adapter"
+        )
+    if model_broker is None:
+        model_broker = ModelBroker(authority, host_provider_adapter)
+    if (
+        not isinstance(model_broker, ModelBroker)
+        or model_broker.authority is not authority
+        or model_broker.repository is not repository
+        or model_broker.assets is not assets
+    ):
+        raise TypeError(
+            "model_broker must use the exact composed ExecutionAuthority"
         )
 
     required_supervisor_ports = (
@@ -376,9 +402,10 @@ def compose_job_runtime(
         provenance_receipt_resolver=provenance_receipt_resolver,
         stream_commit_policy_resolver=stream_policy,
     )
+    model_handlers = build_model_host_handlers(model_broker)
     dispatcher = HostRpcApplicationDispatcher(
         supervisor,
-        handlers,
+        {**dict(handlers), **dict(model_handlers)},
         event_disposition=job_control,
     )
     catalog = _RepositoryJobCatalog(authority)
@@ -407,6 +434,8 @@ def compose_job_runtime(
         capability_broker=capability_broker,
         backup=backup,
         handlers=handlers,
+        model_broker=model_broker,
+        model_handlers=model_handlers,
         dispatcher=dispatcher,
         command_query=command_query,
     )

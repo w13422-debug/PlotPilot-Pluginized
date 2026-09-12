@@ -22,10 +22,17 @@ from backend.plotpilot_plugin_sdk.macro_planning_v2 import (
     parse_model_config_v2,
     parse_model_profile_revision_v1,
 )
+from backend.plotpilot_plugin_sdk.model_provider_rpc_v2 import (
+    PLANNER_CONTEXT_FIELDS,
+    parse_model_provider_invoke_request_v2,
+    parse_model_provider_invoke_result_v2,
+)
 from backend.plotpilot_plugin_sdk.framing import decode_frame
 from backend.plotpilot_plugin_sdk.verifier import (
     assert_valid,
     hash_without_field,
+    validate_rpc_request,
+    validate_rpc_result,
     verify_checkpoint,
     verify_snapshot,
 )
@@ -36,6 +43,7 @@ from ..broker.service import (
     verify_child_snapshot_binding,
 )
 from ..candidates.service import CandidateService
+from ..model.invocation import HOST_MODEL_METHOD
 from ..repositories.authority import CoreAuthorityRepository
 from ..repositories.execution import _broker_context_identity, _dependency_ids
 
@@ -152,6 +160,7 @@ _CORE_TABLE_ORDER = (
     "execution_job",
     "execution_step",
     "execution_attempt",
+    "model_invocation",
     "execution_job_start_receipt",
     "execution_receipt",
     "execution_job_event",
@@ -411,6 +420,12 @@ class SqliteWorkspaceDatabaseProjector:
         selected["execution_attempt"] = [
             row for row in _rows(connection, "execution_attempt") if row.get("job_id") in job_ids
         ]
+        selected["model_invocation"] = _rows(
+            connection,
+            "model_invocation",
+            where='"workspace_id"=?',
+            parameters=(workspace_id,),
+        )
         selected["execution_job_start_receipt"] = _rows(
             connection,
             "execution_job_start_receipt",
@@ -1342,6 +1357,304 @@ class SqliteWorkspaceDatabaseProjector:
             ):
                 raise WorkspaceProjectionError("execution attempt crosses Workspace")
             attempt_owner[attempt_id] = owner
+
+        def canonical_row_mapping(
+            row: Mapping[str, object], field: str, label: str
+        ) -> dict[str, object] | None:
+            raw = row.get(field)
+            if raw is None:
+                return None
+            value = SqliteWorkspaceDatabaseProjector._json_mapping(raw, label)
+            if canonical_bytes(value).decode("utf-8") != raw:
+                raise WorkspaceProjectionError(f"{label} is not canonical JSON")
+            return value
+
+        def require_content_asset(
+            asset_id: object, content_hash: object, label: str
+        ) -> None:
+            if (asset_id is None) != (content_hash is None):
+                raise WorkspaceProjectionError(f"{label} Asset pair is partial")
+            if asset_id is not None and asset_id != f"asset-sha256-{content_hash}":
+                raise WorkspaceProjectionError(f"{label} Asset identity is invalid")
+
+        for row in _rows(connection, "model_invocation"):
+            owner = require(
+                workspace_owner, row.get("workspace_id"), "model invocation Workspace"
+            )
+            job_id = str(row.get("job_id"))
+            step_id = str(row.get("step_id"))
+            attempt_id = str(row.get("attempt_id"))
+            job = job_rows.get(job_id)
+            step = step_rows.get(step_id)
+            attempt = attempt_rows.get(attempt_id)
+            if (
+                job is None
+                or step is None
+                or attempt is None
+                or require(job_owner, job_id, "model invocation Job") != owner
+                or require(step_owner, step_id, "model invocation Step") != owner
+                or require(attempt_owner, attempt_id, "model invocation Attempt")
+                != owner
+                or step.get("job_id") != job_id
+                or attempt.get("job_id") != job_id
+                or attempt.get("step_id") != step_id
+                or row.get("context_identity")
+                != _broker_context_identity(job_id, step_id, attempt_id)
+                or row.get("method") != HOST_MODEL_METHOD
+                or row.get("lease_epoch") != attempt.get("lease_epoch")
+                or row.get("caller_plugin_id") != attempt.get("plugin_id")
+                or row.get("caller_plugin_release_id") != attempt.get("release_id")
+                or row.get("caller_plugin_package_hash") != attempt.get("package_hash")
+                or row.get("generation_id") != attempt.get("generation_id")
+                or row.get("run_snapshot_asset_id")
+                != job.get("run_snapshot_asset_id")
+                or row.get("run_snapshot_hash") != job.get("run_snapshot_hash")
+            ):
+                raise WorkspaceProjectionError(
+                    "model invocation crosses Workspace or Attempt authority"
+                )
+            snapshot = job_snapshots[job_id]
+            if (
+                snapshot.get("snapshot_id") != row.get("run_snapshot_id")
+                or snapshot.get("plan_revision_id") != row.get("plan_revision_id")
+                or snapshot.get("model_profile_revision_id")
+                != row.get("model_profile_revision_id")
+            ):
+                raise WorkspaceProjectionError(
+                    "model invocation is not pinned by its RunSnapshot"
+                )
+            selection = connection.execute(
+                "SELECT plan_revision_hash,model_profile_revision_hash "
+                "FROM p1_workspace_plan_selection WHERE workspace_id=? "
+                "AND plan_revision_id=? AND model_profile_revision_id=? "
+                "AND active_generation_id=? ORDER BY workspace_revision DESC LIMIT 1",
+                (
+                    owner,
+                    row.get("plan_revision_id"),
+                    row.get("model_profile_revision_id"),
+                    row.get("generation_id"),
+                ),
+            ).fetchone()
+            profile_row = connection.execute(
+                "SELECT payload_json,revision_hash FROM p1_model_profile_revision "
+                "WHERE revision_id=?",
+                (row.get("model_profile_revision_id"),),
+            ).fetchone()
+            if (
+                selection is None
+                or profile_row is None
+                or selection[0] != row.get("plan_revision_hash")
+                or selection[1] != row.get("model_profile_revision_hash")
+                or profile_row[1] != row.get("model_profile_revision_hash")
+            ):
+                raise WorkspaceProjectionError(
+                    "model invocation Plan/Profile authority drifted"
+                )
+            try:
+                profile = parse_model_profile_revision_v1(
+                    parse_json_bytes(str(profile_row[0]).encode("utf-8"))
+                )
+            except Exception as exc:
+                raise WorkspaceProjectionError(
+                    "model invocation Model Profile is invalid"
+                ) from exc
+            provider = profile["provider"]
+            if (
+                provider["plugin_id"] != row.get("provider_plugin_id")
+                or provider["release_id"] != row.get("provider_release_id")
+            ):
+                raise WorkspaceProjectionError(
+                    "model invocation Provider identity drifted"
+                )
+
+            host_request = canonical_row_mapping(
+                row, "host_request_json", "model invocation Host request"
+            )
+            if host_request is None:
+                raise WorkspaceProjectionError("model invocation Host request is missing")
+            try:
+                validate_rpc_request(host_request)
+            except Exception as exc:
+                raise WorkspaceProjectionError(
+                    "model invocation Host request violates its contract"
+                ) from exc
+            host_meta = host_request["meta"]
+            host_params = host_request["params"]
+            if (
+                host_request.get("method") != HOST_MODEL_METHOD
+                or hashlib.sha256(canonical_bytes(host_request)).hexdigest()
+                != row.get("host_request_hash")
+                or host_params.get("operation_key") != row.get("operation_key")
+                or host_params.get("invocation_id") != row.get("invocation_id")
+                or host_params.get("invocation_key") != row.get("invocation_key")
+                or host_params.get("replay_policy") != row.get("replay_policy")
+                or host_params.get("model_profile_revision_id")
+                != row.get("model_profile_revision_id")
+                or host_params.get("request_asset_id")
+                != row.get("source_request_asset_id")
+                or host_meta.get("job_id") != job_id
+                or host_meta.get("step_id") != step_id
+                or host_meta.get("attempt_id") != attempt_id
+                or host_meta.get("lease_epoch") != row.get("lease_epoch")
+                or host_meta.get("generation_id") != row.get("generation_id")
+                or host_meta.get("plugin_release_id")
+                != row.get("caller_plugin_release_id")
+            ):
+                raise WorkspaceProjectionError(
+                    "model invocation Host request identity drifted"
+                )
+            require_content_asset(
+                row.get("source_request_asset_id"),
+                row.get("source_request_asset_hash"),
+                "model source request",
+            )
+            require_content_asset(
+                row.get("response_asset_id"),
+                row.get("response_asset_hash"),
+                "model response",
+            )
+            require_content_asset(
+                row.get("receipt_asset_id"),
+                row.get("receipt_asset_hash"),
+                "ModelReceipt",
+            )
+
+            provider_request = canonical_row_mapping(
+                row, "provider_request_json", "model invocation Provider request"
+            )
+            state = row.get("state")
+            if state == "reserved":
+                if provider_request is not None:
+                    raise WorkspaceProjectionError(
+                        "reserved model invocation already has a Provider request"
+                    )
+                continue
+            if provider_request is None:
+                raise WorkspaceProjectionError(
+                    "post-reservation model invocation lacks a Provider request"
+                )
+            try:
+                parsed_provider_request = parse_model_provider_invoke_request_v2(
+                    provider_request
+                )
+            except Exception as exc:
+                raise WorkspaceProjectionError(
+                    "model invocation Provider request violates P0B"
+                ) from exc
+            planner_context = parsed_provider_request["params"]["planner_context"]
+            provider_bindings = {
+                "operation_key": row.get("operation_key"),
+                "workspace_id": owner,
+                "plugin_id": row.get("caller_plugin_id"),
+                "plugin_release_id": row.get("caller_plugin_release_id"),
+                "plugin_package_hash": row.get("caller_plugin_package_hash"),
+                "generation_id": row.get("generation_id"),
+                "job_id": job_id,
+                "step_id": step_id,
+                "attempt_id": attempt_id,
+                "lease_epoch": row.get("lease_epoch"),
+                "run_snapshot_id": row.get("run_snapshot_id"),
+                "run_snapshot_asset_id": row.get("run_snapshot_asset_id"),
+                "run_snapshot_hash": row.get("run_snapshot_hash"),
+                "model_profile_revision_id": row.get(
+                    "model_profile_revision_id"
+                ),
+            }
+            if any(
+                planner_context.get(field) != expected
+                for field, expected in provider_bindings.items()
+            ) or parsed_provider_request["params"]["model_request_asset"] != {
+                "asset_id": row.get("source_request_asset_id"),
+                "content_hash": row.get("source_request_asset_hash"),
+            }:
+                raise WorkspaceProjectionError(
+                    "model invocation Provider request crossed its pinned authority"
+                )
+            snapshot_assets = {
+                item.get("asset_id"): item.get("sha256")
+                for item in snapshot.get("asset_hashes", [])
+                if isinstance(item, Mapping)
+            }
+            if any(
+                snapshot_assets.get(planner_context.get(asset_field))
+                != planner_context.get(hash_field)
+                for asset_field, hash_field in (
+                    ("chain_asset_id", "chain_content_hash"),
+                    ("input_asset_id", "input_content_hash"),
+                )
+            ):
+                raise WorkspaceProjectionError(
+                    "model invocation Provider assets escaped the RunSnapshot"
+                )
+            if state == "dispatching":
+                continue
+
+            provider_success = canonical_row_mapping(
+                row, "provider_success_json", "model invocation Provider success"
+            )
+            host_result = canonical_row_mapping(
+                row, "host_result_json", "model invocation Host result"
+            )
+            if state == "uncertain" and provider_success is None:
+                if host_result is not None or row.get("receipt_asset_id") is not None:
+                    raise WorkspaceProjectionError(
+                        "receipt-less model uncertainty fabricated terminal evidence"
+                    )
+                continue
+            if provider_success is None or host_result is None:
+                raise WorkspaceProjectionError(
+                    "receipt-backed model invocation closure is incomplete"
+                )
+            try:
+                if (
+                    set(provider_success) != {"jsonrpc", "id", "result"}
+                    or provider_success["jsonrpc"] != "2.0"
+                    or provider_success["id"] != parsed_provider_request["id"]
+                ):
+                    raise ValueError("Provider success envelope identity drift")
+                provider_result = parse_model_provider_invoke_result_v2(
+                    provider_success["result"]
+                )
+                validate_rpc_result(HOST_MODEL_METHOD, host_result, request=host_request)
+            except Exception as exc:
+                raise WorkspaceProjectionError(
+                    "model invocation terminal contracts are invalid"
+                ) from exc
+            anchor = provider_result["model_receipt_anchor"]
+            expected_host_state = {
+                "receipted": "received",
+                "failed": "failed",
+                "cancelled": "failed",
+                "uncertain": "uncertain",
+            }[provider_result["provider_terminal_state"]]
+            response_asset = provider_result["response_asset"]
+            if (
+                provider_result["model_request_asset"]
+                != parsed_provider_request["params"]["model_request_asset"]
+                or any(
+                    anchor[field] != planner_context[field]
+                    for field in PLANNER_CONTEXT_FIELDS
+                )
+                or anchor["asset_id"] != row.get("receipt_asset_id")
+                or anchor["content_hash"] != row.get("receipt_asset_hash")
+                or anchor["receipt_id"] != row.get("model_receipt_id")
+                or anchor["receipt_hash"] != row.get("receipt_hash")
+                or provider_result["provider_transport_request_hash"]
+                != row.get("provider_transport_request_hash")
+                or provider_result["provider_transport_response_hash"]
+                != row.get("provider_transport_response_hash")
+                or (None if response_asset is None else response_asset["asset_id"])
+                != row.get("response_asset_id")
+                or (None if response_asset is None else response_asset["content_hash"])
+                != row.get("response_asset_hash")
+                or host_result.get("state") != expected_host_state
+                or host_result.get("response_asset_id")
+                != row.get("response_asset_id")
+                or host_result.get("receipt_id") != row.get("receipt_asset_id")
+            ):
+                raise WorkspaceProjectionError(
+                    "model invocation terminal digest/Asset domains drifted"
+                )
 
         for row in _rows(connection, "execution_job_start_receipt"):
             owner = require(

@@ -141,6 +141,14 @@ def test_mounts_exact_26_6_5_8_2_route_graph_with_shared_authorities(
         )
         assert runtime.model_configuration.planning.repository is runtime.repository
         assert runtime.plan_authority is runtime.model_configuration.planning
+        assert runtime.model_broker is runtime.job_runtime.model_broker
+        assert runtime.model_broker.repository is runtime.repository
+        assert runtime.host_provider_adapter is None
+        assert runtime.model_broker.provider_port is None
+        assert set(runtime.job_runtime.composition.model_handlers) == {
+            "host.model.invoke/v1"
+        }
+        assert runtime.job_runtime.model_invocation_recovery == 0
         assert runtime.private_generation_facade.repository is runtime.repository
         assert runtime.private_generation_facade.assets is runtime.assets
         assert runtime.private_generation_facade.job_runtime is runtime.job_runtime
@@ -481,8 +489,8 @@ def test_partial_build_and_mount_failures_release_all_owners(
         captured["core"] = core
         return core
 
-    def capture_job(plugin_runtime):
-        job = original_job_builder(plugin_runtime)
+    def capture_job(plugin_runtime, **kwargs):
+        job = original_job_builder(plugin_runtime, **kwargs)
         captured["job"] = job
         return job
 
@@ -537,9 +545,9 @@ def test_lifespan_start_failure_rolls_back_runtime_before_legacy_shutdown(
     tmp_path: Path,
 ) -> None:
     from application import paths
-    from interfaces import main
 
     monkeypatch.setattr(paths, "DATA_DIR", tmp_path / "start-failure")
+    from interfaces import main
     events: list[str] = []
 
     class RecordingLifecycle:

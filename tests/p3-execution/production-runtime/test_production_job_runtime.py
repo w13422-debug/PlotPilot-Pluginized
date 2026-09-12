@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import sqlite3
+import sys
 import threading
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
@@ -12,6 +13,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
+
+ROOT = Path(__file__).resolve().parents[3]
+BACKEND_ROOT = ROOT / "backend"
+if str(BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(BACKEND_ROOT))
 
 import pytest
 
@@ -1045,6 +1051,7 @@ def test_j7_startup_reconciles_sqlite_claim_and_attempt_without_process(
             "attempts": 1,
             "jobs": 1,
             "claims": 1,
+            "model_invocations": 0,
         }
         with stack.repository.read_connection() as connection:
             attempt_state = connection.execute(
@@ -1105,6 +1112,7 @@ def test_f6_restart_repairs_an_already_fenced_orphan_once(tmp_path: Path) -> Non
             "attempts": 0,
             "jobs": 1,
             "claims": 1,
+            "model_invocations": 0,
         }
         with stack.repository.read_connection() as connection:
             row = connection.execute(
@@ -1304,5 +1312,37 @@ def test_j9_invalid_installed_artifact_or_snapshot_has_no_source_fallback(
         }
         assert stack.processes.starts == 0
         assert _rows(stack) == (0, 0, 0)
+    finally:
+        stack.close()
+
+
+def test_combined_model_broker_recovery_and_handler_are_in_production_composition(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from backend.plotpilot_core.model import HOST_MODEL_METHOD, ModelBroker
+
+    stack = _open_stack(tmp_path, "p2a-production", compose=False)
+    recoveries: list[CoreAuthorityRepository] = []
+
+    def recover(self: ModelBroker) -> int:
+        recoveries.append(self.repository)
+        return 3
+
+    monkeypatch.setattr(ModelBroker, "recover_dispatching", recover)
+    try:
+        stack.runtime = build_production_job_runtime(stack.plugin)
+        runtime = stack.runtime
+        assert runtime.model_broker is runtime.composition.model_broker
+        assert runtime.model_broker.repository is stack.repository
+        assert runtime.model_broker.assets is stack.assets
+        assert runtime.model_broker.provider_port is None
+        assert runtime.host_provider_adapter is None
+        assert set(runtime.composition.model_handlers) == {HOST_MODEL_METHOD}
+        assert HOST_MODEL_METHOD in runtime.composition.dispatcher._handlers
+        assert runtime.model_invocation_recovery == 3
+        assert runtime.restart_reconciliation["model_invocations"] == 3
+        assert recoveries == [stack.repository]
+        assert stack.processes.starts == 0
     finally:
         stack.close()

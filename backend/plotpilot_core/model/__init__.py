@@ -1,9 +1,26 @@
 """Model profile domain and injectable persistence adapters."""
 
+from .broker import (
+    HostProviderAdapterPort,
+    ModelBroker,
+    PreparedModelInvocation,
+    ProviderInvocationCommand,
+    ProviderInvocationExchange,
+    ProviderInvocationPreparation,
+    ReceiptProofVerifier,
+)
+from .invocation import (
+    HOST_MODEL_METHOD,
+    MODEL_INVOCATION_STATES,
+    MODEL_INVOCATION_TERMINAL_STATES,
+    ModelInvocationLedger,
+    ModelInvocationRecord,
+)
 from .profile import (
+    MODEL_PROFILE_SCHEMA,
+    PROVIDER_CONFIG_SCHEMA,
     ApiKeyRef,
     Endpoint,
-    MODEL_PROFILE_SCHEMA,
     ModelName,
     ModelProfile,
     ModelProfileConflictError,
@@ -12,7 +29,6 @@ from .profile import (
     ModelProfileRevision,
     ModelProfileRevisionHash,
     ModelProfileValidationError,
-    PROVIDER_CONFIG_SCHEMA,
     ProviderConfig,
     ProviderConfiguration,
     ProviderIdentity,
@@ -30,11 +46,19 @@ from .repository import (
 )
 
 __all__ = [
+    "HOST_MODEL_METHOD",
+    "HostProviderAdapterPort",
+    "MODEL_INVOCATION_STATES",
+    "MODEL_INVOCATION_TERMINAL_STATES",
+    "MODEL_PROFILE_SCHEMA",
+    "PROVIDER_CONFIG_SCHEMA",
     "ApiKeyRef",
     "Endpoint",
     "InMemoryModelProfileRepository",
     "InMemoryModelProfileRevisionRepository",
-    "MODEL_PROFILE_SCHEMA",
+    "ModelBroker",
+    "ModelInvocationLedger",
+    "ModelInvocationRecord",
     "ModelName",
     "ModelProfile",
     "ModelProfileConflictError",
@@ -45,11 +69,15 @@ __all__ = [
     "ModelProfileRevisionHash",
     "ModelProfileRevisionRepository",
     "ModelProfileValidationError",
-    "PROVIDER_CONFIG_SCHEMA",
+    "PreparedModelInvocation",
     "ProviderConfig",
     "ProviderConfigRepository",
     "ProviderConfiguration",
     "ProviderIdentity",
+    "ProviderInvocationCommand",
+    "ProviderInvocationExchange",
+    "ProviderInvocationPreparation",
+    "ReceiptProofVerifier",
     "SQLiteModelProfileRepository",
     "SQLiteModelProfileRevisionRepository",
     "SecretRef",

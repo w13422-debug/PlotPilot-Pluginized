@@ -5,11 +5,17 @@ import io
 import json
 import os
 import sqlite3
+import sys
 import threading
 import zipfile
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
+
+ROOT = Path(__file__).resolve().parents[3]
+BACKEND_ROOT = ROOT / "backend"
+if str(BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(BACKEND_ROOT))
 
 import pytest
 
@@ -2551,17 +2557,17 @@ def test_workspace_backup_restores_exact_p1_configuration_closure_and_triggers(
             "SELECT migration_id FROM schema_migration "
             "WHERE migration_id='0007-model-configuration-authority'"
         ).fetchall() == [("0007-model-configuration-authority",)]
-        assert projected.execute("SELECT count(*) FROM schema_migration").fetchone() == (13,)
+        assert projected.execute("SELECT count(*) FROM schema_migration").fetchone() == (14,)
         assert projected.execute(
             "SELECT count(*) FROM sqlite_schema WHERE type='table' "
             "AND name NOT LIKE 'sqlite_%'"
-        ).fetchone() == (44,)
+        ).fetchone() == (45,)
         assert projected.execute(
             "SELECT count(*) FROM sqlite_schema WHERE type='index' AND sql IS NOT NULL"
-        ).fetchone() == (23,)
+        ).fetchone() == (26,)
         assert projected.execute(
             "SELECT count(*) FROM sqlite_schema WHERE type='trigger'"
-        ).fetchone() == (10,)
+        ).fetchone() == (12,)
         assert projected.execute(
             "SELECT generation_id FROM p2_plugin_generation"
         ).fetchall() == [("generation-ws1",)]
@@ -2639,7 +2645,7 @@ def test_workspace_backup_restores_exact_p1_configuration_closure_and_triggers(
             assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
             assert connection.execute(
                 "SELECT count(*) FROM sqlite_schema WHERE type='trigger'"
-            ).fetchone()[0] == 10
+            ).fetchone()[0] == 12
             assert [
                 row[0]
                 for row in connection.execute(
@@ -3009,10 +3015,11 @@ def test_workspace_backup_projects_integrated_execution_and_broker_closure(
             ("0004-execution-remediation",),
             ("0005-durable-checkpoint-authority",),
             ("0006-durable-authority-operation-closure",),
+            ("p2a-model-invocation-001",),
         ]
         assert connection.execute(
             "SELECT count(*) FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%'"
-        ).fetchone()[0] == 77
+        ).fetchone()[0] == 83
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
         assert connection.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
         assert connection.execute(
@@ -4216,3 +4223,136 @@ def test_backup_publish_window_interruption_recovers_existing_bundle(
         plane.create_backup(destination, request)
     recovered = plane.create_backup(destination, request)
     assert recovered.bundle_root == destination
+
+
+def test_workspace_backup_restores_model_invocation_terminal_uncertain_and_assets(
+    tmp_path: Path,
+) -> None:
+    import sys
+
+    model_tests = (
+        Path(__file__).resolve().parents[2]
+        / "p3-execution"
+        / "model-broker"
+    )
+    if str(model_tests) not in sys.path:
+        sys.path.insert(0, str(model_tests))
+    from test_model_broker import (
+        FakeProviderPort,
+        _broker,
+        _build_authority,
+        _host_request,
+    )
+
+    stack = _build_authority(tmp_path, "model-backup-source")
+    successful = FakeProviderPort(stack)
+    first_request = _host_request(stack)
+    prepared = _broker(stack, successful).prepare_host_invocation(first_request)
+    prepared.commit()
+    receipt_asset_id = str(prepared.result["receipt_id"])
+    response_asset_id = str(prepared.result["response_asset_id"])
+
+    receiptless = FakeProviderPort(stack, mode="raise")
+    second_request = _host_request(
+        stack,
+        id="123e4567-e89b-42d3-a456-426614174201",
+        meta__operation_id="model-operation-2",
+        params__operation_key="model-operation-2",
+        params__invocation_id="provider-invocation-2",
+        params__invocation_key="provider-invocation-key-2",
+    )
+    with pytest.raises(ContractError) as uncertain:
+        _broker(stack, receiptless).prepare_host_invocation(second_request)
+    assert uncertain.value.code == int(ErrorCode.UNCERTAIN_EXTERNAL_EFFECT)
+    with stack.repository.read_connection() as connection:
+        assert [
+            tuple(row)
+            for row in connection.execute(
+                "SELECT operation_key,state,receipt_asset_id FROM model_invocation "
+                "ORDER BY operation_key"
+            ).fetchall()
+        ] == [
+            ("model-operation-1", "received", receipt_asset_id),
+            ("model-operation-2", "uncertain", None),
+        ]
+    stack.close()
+
+    plane = _plane(stack.root, stack.root / "core.db", stack.root / "assets")
+    backup = plane.create_backup(
+        tmp_path / "model-backup",
+        _request("model-backup", workspace_ids=("workspace-1",)),
+    )
+    projected = sqlite3.connect(backup.bundle_root / "core/core.db")
+    try:
+        assert projected.execute(
+            "SELECT operation_key,state,receipt_asset_id FROM model_invocation "
+            "ORDER BY operation_key"
+        ).fetchall() == [
+            ("model-operation-1", "received", receipt_asset_id),
+            ("model-operation-2", "uncertain", None),
+        ]
+        assert projected.execute(
+            "SELECT migration_id FROM schema_migration "
+            "WHERE migration_id='p2a-model-invocation-001'"
+        ).fetchall() == [("p2a-model-invocation-001",)]
+        assert {
+            row[0]
+            for row in projected.execute(
+                "SELECT name FROM sqlite_schema WHERE type='index' "
+                "AND name LIKE 'model_invocation_%'"
+            )
+        } == {
+            "model_invocation_state",
+            "model_invocation_workspace_invocation_id",
+            "model_invocation_workspace_invocation_key",
+        }
+        assert {
+            row[0]
+            for row in projected.execute(
+                "SELECT name FROM sqlite_schema WHERE type='trigger' "
+                "AND name LIKE 'model_invocation_%'"
+            )
+        } == {
+            "model_invocation_no_delete",
+            "model_invocation_transition_guard",
+        }
+        transition_sql = projected.execute(
+            "SELECT sql FROM sqlite_schema WHERE type='trigger' "
+            "AND name='model_invocation_transition_guard'"
+        ).fetchone()[0]
+        assert (
+            "OLD.state='dispatching' AND NEW.provider_request_json IS NOT "
+            "OLD.provider_request_json"
+        ) in transition_sql
+        assert projected.execute("PRAGMA foreign_key_check").fetchall() == []
+    finally:
+        projected.close()
+    assert receipt_asset_id in backup.receipt["asset_ids"]
+    assert response_asset_id in backup.receipt["asset_ids"]
+
+    restored = plane.stage_restore(
+        backup.bundle_root,
+        tmp_path / "model-restored",
+        _restore_request("restore-model-invocation"),
+    )
+    restored_repository = CoreAuthorityRepository(restored.target_root / "core/core.db")
+    try:
+        restored_repository.ensure_model_invocation_schema()
+        with restored_repository.read_connection() as connection:
+            assert [
+                tuple(row)
+                for row in connection.execute(
+                    "SELECT state,count(*) FROM model_invocation "
+                    "GROUP BY state ORDER BY state"
+                ).fetchall()
+            ] == [("received", 1), ("uncertain", 1)]
+            assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+        restored_assets = AssetStore(restored.target_root / "assets")
+        assert restored_assets.read(receipt_asset_id)
+        assert restored_assets.read(response_asset_id)
+        for asset_id in (receipt_asset_id, response_asset_id):
+            metadata = restored_assets.describe(asset_id)
+            assert metadata.logical_role == "core_internal"
+            assert metadata.provenance == "core:execution"
+    finally:
+        restored_repository.close()

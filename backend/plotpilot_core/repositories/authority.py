@@ -51,6 +51,36 @@ def _load_p3_job_migrations() -> tuple[Migration, ...]:
 P3_JOB_MIGRATIONS = _load_p3_job_migrations()
 
 
+def _load_model_invocation_migrations() -> tuple[Migration, ...]:
+    """Load the P2A ledger DDL into the sole Core migration authority."""
+
+    root = Path(__file__).parent.parent / "model" / "migrations"
+    manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+    if (
+        manifest.get("schema") != "p2a-module-migrations/v1"
+        or manifest.get("module") != "plotpilot_core.model"
+        or manifest.get("runner_owner") != "Core"
+    ):
+        raise RuntimeError("invalid P2A Model migration manifest identity")
+    steps = manifest.get("steps")
+    if not isinstance(steps, list) or len(steps) != 1:
+        raise RuntimeError("unexpected P2A Model migration manifest")
+    step = steps[0]
+    if (
+        step.get("id") != "p2a-model-invocation-001"
+        or step.get("path") != "001_model_invocation_ledger.sql"
+        or step.get("transactional") is not True
+    ):
+        raise RuntimeError("unexpected P2A Model migration step")
+    raw = (root / step["path"]).read_bytes()
+    if hashlib.sha256(raw).hexdigest() != step.get("sha256"):
+        raise RuntimeError("P2A Model migration hash mismatch")
+    return (Migration(step["id"], raw.decode("utf-8")),)
+
+
+MODEL_INVOCATION_MIGRATIONS = _load_model_invocation_migrations()
+
+
 def verify_attempt_snapshot_binding(snapshot: Mapping[str, object], attempt: Mapping[str, object]) -> None:
     """Bind an Attempt to the one immutable plugin release in its RunSnapshot."""
     verify_snapshot(snapshot)
@@ -418,6 +448,7 @@ class CoreAuthorityRepository:
         MigrationRunner(self._connection).apply(MODEL_CONFIGURATION_MIGRATIONS)
         MigrationRunner(self._connection).apply(P3_JOB_MIGRATIONS)
         MigrationRunner(self._connection).apply(EXECUTION_MIGRATIONS)
+        MigrationRunner(self._connection).apply(MODEL_INVOCATION_MIGRATIONS)
 
     def close(self) -> None:
         with self._lock:
@@ -478,6 +509,35 @@ class CoreAuthorityRepository:
             raise RuntimeError(
                 f"model configuration authority schema is unavailable: {missing}"
             )
+
+    def ensure_model_invocation_schema(self) -> None:
+        """Fail closed unless the P2A table, indexes, triggers and receipt exist."""
+
+        expected = {
+            ("table", "model_invocation"),
+            ("index", "model_invocation_workspace_invocation_id"),
+            ("index", "model_invocation_workspace_invocation_key"),
+            ("index", "model_invocation_state"),
+            ("trigger", "model_invocation_transition_guard"),
+            ("trigger", "model_invocation_no_delete"),
+        }
+        migration = MODEL_INVOCATION_MIGRATIONS[0]
+        with self.read_connection() as connection:
+            actual = {
+                (str(row["type"]), str(row["name"]))
+                for row in connection.execute(
+                    "SELECT type,name FROM sqlite_schema WHERE name IN "
+                    "('model_invocation','model_invocation_workspace_invocation_id',"
+                    "'model_invocation_workspace_invocation_key','model_invocation_state',"
+                    "'model_invocation_transition_guard','model_invocation_no_delete')"
+                ).fetchall()
+            }
+            receipt = connection.execute(
+                "SELECT sha256 FROM schema_migration WHERE migration_id=?",
+                (migration.migration_id,),
+            ).fetchone()
+        if actual != expected or receipt is None or receipt["sha256"] != migration.sha256:
+            raise RuntimeError("model invocation authority schema is unavailable")
 
     @contextmanager
     def read_connection(self):

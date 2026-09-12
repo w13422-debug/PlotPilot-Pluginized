@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import threading
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from typing import Any
 
 from fastapi import APIRouter, FastAPI
@@ -36,6 +36,10 @@ from backend.plotpilot_core.api.v2.jobs.router import (
 from backend.plotpilot_core.webui import PrivateChapterGenerationFacade
 
 from .m4_authority_adapters import M4AuthorityAdapters, build_m4_authority_adapters
+from .host_provider_adapter import (
+    ProviderFactoryPort,
+    build_host_provider_adapter,
+)
 from .model_configuration_adapters import (
     ModelConfigurationAdapters,
     build_model_configuration_adapters,
@@ -256,6 +260,16 @@ class WebUiRuntime:
         return self.model_configuration_adapters.planning
 
     @property
+    def model_broker(self):
+        """Combined broker; Provider execution remains factory-gated."""
+
+        return self.job_runtime.model_broker
+
+    @property
+    def host_provider_adapter(self):
+        return self.job_runtime.host_provider_adapter
+
+    @property
     def started(self) -> bool:
         with self._state_condition:
             return self._started
@@ -390,23 +404,42 @@ WebUiProductionRuntime = WebUiRuntime
 def build_webui_runtime(
     *,
     pump_interval_seconds: float = DEFAULT_JOB_PUMP_INTERVAL_SECONDS,
+    provider_factory_port: ProviderFactoryPort | None = None,
+    provider_transport_factory: Callable[[int], Any] | None = None,
 ) -> WebUiRuntime:
     """Build, but do not mount or start, the single production graph."""
 
     core_runtime: WebUiCoreRuntime | None = None
+    plugin_runtime: ProductionPluginRuntime | None = None
     job_runtime: ProductionJobRuntime | None = None
     try:
         core_runtime = build_webui_core_runtime()
         plugin_runtime = build_production_plugin_runtime(core_runtime)
-        job_runtime = build_production_job_runtime(plugin_runtime)
+        model_configuration_adapters = build_model_configuration_adapters(
+            core_runtime.repository
+        )
+        host_provider_adapter = build_host_provider_adapter(
+            model_configuration_adapters.configuration,
+            provider_factory_port,
+            transport_factory=provider_transport_factory,
+        )
+        job_runtime = build_production_job_runtime(
+            plugin_runtime,
+            host_provider_adapter=host_provider_adapter,
+        )
         m4_adapters = build_m4_authority_adapters(
             core_runtime.repository,
             core_runtime.assets,
             execution_authority=plugin_runtime.execution_authority,
         )
-        model_configuration_adapters = build_model_configuration_adapters(
-            core_runtime.repository
-        )
+        if (
+            job_runtime.model_broker.repository is not core_runtime.repository
+            or (
+                host_provider_adapter is not None
+                and host_provider_adapter.repository is not core_runtime.repository
+            )
+        ):
+            raise RuntimeError("combined Model runtime escaped the WebUI Core authority")
         private_facade = PrivateChapterGenerationFacade(
             core_runtime.repository,
             core_runtime.assets,
@@ -439,6 +472,15 @@ def build_webui_runtime(
             pump_interval_seconds=pump_interval_seconds,
         )
     except BaseException:
+        if plugin_runtime is not None and job_runtime is None:
+            # Preserve the accepted P1 failure-cleanup contract: older callers
+            # observe a Job owner being rolled back when configuration
+            # composition fails.  The normal graph still composes P1 and the
+            # optional Host adapter before this owner.
+            try:
+                job_runtime = build_production_job_runtime(plugin_runtime)
+            except BaseException:
+                logger.exception("fail-closed Job rollback owner could not be built")
         _close_partial_runtime(core_runtime, job_runtime)
         raise
 

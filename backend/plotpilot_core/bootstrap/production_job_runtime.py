@@ -27,6 +27,9 @@ from backend.plotpilot_core.jobs.production import (
     ProductionWorkerLauncher,
     build_production_capability_broker,
 )
+from backend.plotpilot_core.model.broker import (
+    HostProviderAdapterPort,
+)
 from backend.plotpilot_core.supervisor.models import WorkerFence
 from backend.plotpilot_plugin_sdk import ContractError, ErrorCode
 
@@ -357,9 +360,15 @@ class ProductionJobPump:
 class ProductionJobRuntime:
     """One production Jobs v2 graph over the exact WU-2A/Core authorities."""
 
-    def __init__(self, plugin_runtime: ProductionPluginRuntime) -> None:
+    def __init__(
+        self,
+        plugin_runtime: ProductionPluginRuntime,
+        *,
+        host_provider_adapter: HostProviderAdapterPort | None = None,
+    ) -> None:
         if not isinstance(plugin_runtime, ProductionPluginRuntime):
             raise TypeError("plugin_runtime must be ProductionPluginRuntime")
+        self.host_provider_adapter = host_provider_adapter
         self._shutdown_lock = threading.Lock()
         self._shutdown_complete = False
         _claim_local_runtime(plugin_runtime, self)
@@ -426,6 +435,12 @@ class ProductionJobRuntime:
             control_resolver=self.control_resolver,
             provenance_receipt_resolver=self.provenance_receipt_resolver,
             stream_commit_policy_resolver=self.stream_commit_policy_resolver,
+            host_provider_adapter=self.host_provider_adapter,
+        )
+        self.model_broker = self.composition.model_broker
+        self.model_invocation_recovery = self.model_broker.recover_dispatching()
+        self.restart_reconciliation["model_invocations"] = (
+            self.model_invocation_recovery
         )
         self.job_runtime = self.composition
         self.command_query = self.composition.command_query
@@ -461,10 +476,15 @@ class ProductionJobRuntime:
 
 def build_production_job_runtime(
     plugin_runtime: ProductionPluginRuntime,
+    *,
+    host_provider_adapter: HostProviderAdapterPort | None = None,
 ) -> ProductionJobRuntime:
-    """Compose WU-2B without mounting routes or starting a background service."""
+    """Compose WU-2B/P2A without mounting routes or starting a service."""
 
-    return ProductionJobRuntime(plugin_runtime)
+    return ProductionJobRuntime(
+        plugin_runtime,
+        host_provider_adapter=host_provider_adapter,
+    )
 
 
 __all__ = [

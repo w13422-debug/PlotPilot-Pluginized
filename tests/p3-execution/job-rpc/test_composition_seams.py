@@ -88,3 +88,24 @@ def test_delta_records_attempt_binding_secrets_disposition_and_reconciliation():
         "atomic created/replayed disposition",
     ):
         assert required in delta
+
+
+def test_combined_model_handler_is_explicitly_composed_without_source_discovery():
+    from backend.plotpilot_core.jobs.http_rpc.composition import compose_job_runtime
+    from backend.plotpilot_core.jobs.http_rpc.model_handlers import (
+        MODEL_HOST_METHODS,
+        ModelHostHandler,
+    )
+    from backend.plotpilot_core.model import HOST_MODEL_METHOD, ModelBroker
+
+    parameters = inspect.signature(compose_job_runtime).parameters
+    assert MODEL_HOST_METHODS == (HOST_MODEL_METHOD,) == ("host.model.invoke/v1",)
+    assert {"model_broker", "host_provider_adapter"}.issubset(parameters)
+    assert inspect.signature(ModelBroker).parameters["provider_port"].default is inspect.Parameter.empty
+    assert "model.provider.invoke/v1" not in inspect.getsource(ModelHostHandler)
+    source = inspect.getsource(compose_job_runtime)
+    assert "build_model_host_handlers" in source
+    assert "host_provider_adapter" in source
+    assert "ModelConfigurationAuthority" not in source
+    assert "resolve_secret_value" not in source
+    assert "capability_broker.select" not in source

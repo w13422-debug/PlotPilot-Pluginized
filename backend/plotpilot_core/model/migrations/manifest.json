@@ -1,0 +1,13 @@
+{
+  "schema": "p2a-module-migrations/v1",
+  "module": "plotpilot_core.model",
+  "runner_owner": "Core",
+  "steps": [
+    {
+      "id": "p2a-model-invocation-001",
+      "path": "001_model_invocation_ledger.sql",
+      "sha256": "9cd3a1f40e796bd10b4d5c473d8d31280540a737b59d40862a6fe153262e4063",
+      "transactional": true
+    }
+  ]
+}
