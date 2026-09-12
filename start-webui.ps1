@@ -923,9 +923,9 @@ function Test-SourceEnvironment {
                 'from backend.plotpilot_core.repositories.authority import P3_JOB_MIGRATIONS',
                 'assert public_sdk is backend_sdk',
                 'assert public_error is backend_error',
-                'assert sys.modules["plotpilot_plugin_sdk"] is backend_sdk',
+                'assert sys.modules.get(public_sdk.__name__) is backend_sdk',
                 'assert P3_JOB_MIGRATIONS',
-                'print("source SDK identity and migrations verified")'
+                'print(public_sdk.__name__)'
             ) -join [Environment]::NewLine
             & $Tools.Python -B -c $sdkProbe
             if ($LASTEXITCODE -ne 0) {
