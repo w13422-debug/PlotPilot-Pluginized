@@ -25,6 +25,14 @@
 
 ---
 
+## 当前公开版本说明
+
+本仓库同时包含历史 PlotPilot 剧情引擎实现和当前 PlotPilot-Pluginized WebUI 重构。当前实际可运行范围、插件化设计、已知问题、稳定分支与未审计 WIP 分支，请先阅读 [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md)。
+
+当前稳定预览优先使用分支 `codex/webui-preview-accepted-20260912`；P2AB 分支带有 `wip-unaccepted` 标记，不能视为已验收版本。
+
+---
+
 <p align="center">
   <img src="docs/screenshots/workbench-writing.png" alt="工作台 — 写作区与知识图谱" width="49%" />
   <img src="docs/screenshots/workbench-dag.png" alt="工作台 — 故事线 DAG 与人物设定" width="49%" />
