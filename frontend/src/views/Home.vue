@@ -304,11 +304,8 @@
           <span class="footer-brand">PlotPilot</span>
           <span class="footer-sep">·</span>
           <span class="footer-sub">墨枢</span>
-          <span class="footer-text">由 PlotPilot（墨枢）团队倾力开发</span>
-          <a class="footer-link" href="https://www.douyin.com/user/MS4wLjABAAAA91472902104" target="_blank" rel="noopener noreferrer">
-            抖音：林亦 91472902104
-          </a>
-          <span class="footer-text">每晚 9 点随缘直播</span>
+          <span class="footer-text">基于既有 PlotPilot 源码的插件化改造与 WebUI 集成（非原作者官方版本）</span>
+          <span class="footer-text">QQ群：663844122</span>
         </footer>
       </div>
     </div>

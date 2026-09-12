@@ -24,7 +24,7 @@ use backend::BackendManager;
 use tauri::{Manager, WindowEvent};
 
 const BRAND_DISPLAY_NAME: &str = "PlotPilot · 墨枢";
-const BRAND_CREDIT: &str = "由 PlotPilot（墨枢）团队倾力开发";
+const BRAND_CREDIT: &str = "基于既有 PlotPilot 源码的插件化改造与 WebUI 集成（非原作者官方版本）";
 
 /// 防止重复 spawn 多条优雅退出线程（用户连点关闭）
 static GRACEFUL_SHUTDOWN_STARTED: AtomicBool = AtomicBool::new(false);

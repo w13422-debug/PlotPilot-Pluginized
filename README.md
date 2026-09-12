@@ -7,11 +7,11 @@
 </p>
 
 <p align="center">
-  <strong>开源剧情引擎内核</strong>
+  <strong>PlotPilot 插件化改造版 · WebUI / Pluginized Fork</strong>
 </p>
 
 <p align="center">
-  面向长篇 AI 创作的基础设施：持久记忆 · 知识图谱 · 自动推进流水线 · 质量治理闭环
+  基于既有 PlotPilot 源码的独立插件化改造、WebUI 集成与工程化实验
 </p>
 
 <p align="center">
@@ -33,6 +33,16 @@
 
 ---
 
+## 上游来源与作者归属声明
+
+本仓库**不是 PlotPilot 原作者的官方仓库，也不代表原作者或原项目团队**。本项目是在既有 PlotPilot 源码和公开项目基础上进行的独立插件化改造、WebUI 集成和工程化实验；本仓库维护者不自称原软件作者。
+
+原项目的名称、原始代码、原作者署名和原始许可证权利仍按上游项目及本仓库许可证处理。本仓库只对新增或修改的插件化接线、Core 集成、WebUI 适配和相关文档负责。上游项目链接见 [PlotPilot 原项目](https://github.com/shenminglinyi/PlotPilot)，该链接不是本仓库的归属声明。
+
+本仓库当前版本是衍生改造版，不应被理解为 PlotPilot 官方发行版。
+
+---
+
 <p align="center">
   <img src="docs/screenshots/workbench-writing.png" alt="工作台 — 写作区与知识图谱" width="49%" />
   <img src="docs/screenshots/workbench-dag.png" alt="工作台 — 故事线 DAG 与人物设定" width="49%" />
@@ -42,7 +52,7 @@
 
 ## 这是什么
 
-PlotPilot 是一个**剧情引擎内核（Narrative Engine Kernel）**，不是聊天式写作助手，也不是一组提示词模板。
+上游 PlotPilot 项目是一个**剧情引擎内核（Narrative Engine Kernel）**，不是聊天式写作助手，也不是一组提示词模板。本仓库是在其既有源码基础上的插件化改造版本，不是上游官方仓库。
 
 大多数 AI 写作工具解决的是"生成一段文字"的问题。PlotPilot 解决的是一个更难的工程问题：
 
@@ -50,13 +60,13 @@ PlotPilot 是一个**剧情引擎内核（Narrative Engine Kernel）**，不是�
 
 这不是提示词优化问题，而是**系统工程问题**。PlotPilot 的答案是：构建一套完整的剧情状态管理基础设施，让 LLM 只做它最擅长的事——在结构化上下文中生成高质量叙事片段。
 
-本仓库是这套基础设施的**开源内核**。上层生态（垂直应用、编辑器插件、云服务）均以此为基石构建。
+上游 PlotPilot 项目提供了这套剧情引擎基础设施。本仓库是在其既有源码基础上进行的**插件化改造和 WebUI 集成版本**，不是上游原项目的官方发行版。
 
 项目边界很明确：
 
 - **不是** 单轮续写器：核心目标是长篇连续生产，而不是回答一次写作请求。
 - **不是** 大上下文堆料：世界观、人物、伏笔、故事线会被结构化为可追踪状态。
-- **不是** 单一前端产品：官方工作台只是内核的一个使用界面，核心能力通过 REST API 暴露。
+- **不是** 单一前端产品：原项目工作台和本仓库 WebUI 都只是内核的使用界面，核心能力通过 REST API 或插件接口暴露。
 
 ---
 
@@ -193,7 +203,7 @@ PlotPilot 内核（本仓库）
 
 ### 方式二：桌面安装版（Windows · Tauri）
 
-前往 [GitHub Releases](https://github.com/shenminglinyi/PlotPilot/releases) 下载最新安装包，内含冻结后端，无需单独安装 Python。
+如需查看上游原项目的历史安装包，可访问 [PlotPilot 原项目 Releases](https://github.com/shenminglinyi/PlotPilot/releases)；该页面不是本仓库的发行页面。本仓库当前主要提供 WebUI 源码分支，暂不提供桌面端发行包。
 
 构建流程见 [docs/BUILD_INSTALLER.md](docs/BUILD_INSTALLER.md)。
 
@@ -311,7 +321,7 @@ cd frontend && npm install && npm run dev
 │   ├── daemon_manager.py  # 后端内自动驾驶进程管理
 │   └── api/v1/            # REST API（core / world / blueprint / engine / audit / analyst 等）
 │
-├── frontend/              # 官方工作台 — Vue 3 + TypeScript + Tauri 桌面壳
+├── frontend/              # 基于原项目改造的 WebUI — Vue 3 + TypeScript
 │   ├── src/               # 工作台、自动驾驶、知识图谱、设置、API client
 │   └── src-tauri/         # Tauri 桌面客户端与后端 sidecar
 │
@@ -366,10 +376,10 @@ pytest tests/ --cov=. --cov-report=term-missing
 
 **当前关注方向**：内核引擎研发、生态应用构建、提示词工程、前端工作台
 
-如果你对"用工程化手段解决创作问题"这件事感兴趣，欢迎来直播间转一圈，大概就能判断这个项目的调性：
+如果你对“用工程化手段解决创作问题”和 PlotPilot 插件化改造感兴趣，欢迎加入 QQ 群一起交流：
 
-- **抖音**：搜索直播间 **91472902104**（每晚约 21:00 随缘开播）
-- **联系方式**：直播间私信附简历即可
+- **交流 QQ 群：663844122**
+- 交流内容：插件化改造、WebUI 集成、小说工程化和功能扩展思路
 
 ---
 
